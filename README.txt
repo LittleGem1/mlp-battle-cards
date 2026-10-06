@@ -1,12 +1,16 @@
-ERSETZE NUR DIESE DATEIEN:
+NUR DIESE 2 DATEIEN ERSETZEN:
 - style.css
 - public/style.css
 
-Dieser Mini-Fix macht die Namens-Accessoires im Startbildschirm kleiner.
-Sie sollen nur das Namensfeld ergänzen und nicht mehr den ganzen Screen überdecken.
+Was sich ändert:
+- Flügel werden optisch geteilt: ein Flügel links, einer rechts vom Namen.
+- Ballons, Sweets/Lollis und andere Einzel-Items sitzen klein rechts neben dem Namen.
+- Krone/Halo/Horn usw. sitzen oben mittig.
+- Orbit-/Magieeffekte bleiben eng um das Namensschild.
+- Auch die kleineren Namensfelder in Lobby und Spiel werden passend skaliert.
 
 Danach:
 1. beide Dateien bei GitHub ersetzen
 2. committen
 3. Render -> Manual Deploy -> Deploy latest commit
-4. danach im Browser Strg+F5
+4. Strg+F5
