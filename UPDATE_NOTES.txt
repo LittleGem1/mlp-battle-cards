@@ -1,0 +1,13 @@
+MLP Battle Cards – Update
+
+Geändert:
+- Photo Finish durch die korrigierte finale Karte ersetzt.
+- Sapphire Shores durch die korrigierte finale Karte ersetzt.
+- Spieltitel auf „MLP Battle Cards“ angepasst.
+- Namens-Accessoire-System auf 24 sammelbare Items erweitert.
+- Startauswahl bleibt: Changeling-Flügel, Ballon oder Süßigkeiten.
+- Nach einem Sieg wird weiterhin ein zufälliges, noch nicht freigeschaltetes Item vergeben.
+- Neues Accessoire-Menü mit Vorschau, Sammlung 0/24, gesperrten und freigeschalteten Items.
+- Gewähltes Accessoire wird an Namensschildern in Lobby und Spiel angezeigt.
+
+Die Freischaltungen werden weiterhin lokal im Browser gespeichert.

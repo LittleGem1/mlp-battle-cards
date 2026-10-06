@@ -1,4 +1,4 @@
-# Crystal Clash – Multiplayer-Prototyp
+# MLP Battle Cards – Multiplayer-Prototyp
 
 Ein spielbarer Web-Prototyp für das Pony-Kartenspiel mit 2–8 Spielern.
 
