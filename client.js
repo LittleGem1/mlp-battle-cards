@@ -3,30 +3,30 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const screens={home:$('#home'),lobby:$('#lobby'),game:$('#game')};
 
 const ACCESSORIES={
-  changeling:{icon:'🦋',name:'Changeling-Flügel',desc:'Leuchtende Flügel hinter deinem Namen.'},
-  balloon:{icon:'🎈',name:'Ballon',desc:'Ein schimmernder Party-Ballon am Namensschild.'},
-  candy:{icon:'🍭',name:'Süßigkeiten',desc:'Bunte Bonbons und Lolli-Deko.'},
-  catears:{icon:'🐱',name:'Katzenohren',desc:'Süße Katzenohren oben am Schild.'},
-  crystalcrown:{icon:'💎',name:'Kristallkrone',desc:'Eine funkelnde Kristallkrone.'},
-  bow:{icon:'🎀',name:'Schleife',desc:'Eine große glänzende Schleife.'},
-  stars:{icon:'⭐',name:'Sternchen',desc:'Goldene Sterne rund um deinen Namen.'},
-  butterflies:{icon:'🦋',name:'Schmetterlinge',desc:'Kleine bunte Schmetterlinge.'},
-  moon:{icon:'🌙',name:'Mond-Anhänger',desc:'Mond und kleine Kristallanhänger.'},
-  halo:{icon:'💞',name:'Herz-Halo',desc:'Ein Herz-Halo schwebt über deinem Namen.'},
-  partyhat:{icon:'🥳',name:'Partyhut',desc:'Partyhut mit Sternen und Glitzer.'},
-  flowerclip:{icon:'🌸',name:'Blumenclip',desc:'Blumen und Blätter am Namensschild.'},
-  glittertrail:{icon:'💫',name:'Glitzer-Spur',desc:'Eine Sternspur zieht um deinen Namen.'},
-  ribbon:{icon:'〰️',name:'Band',desc:'Ein glänzendes Band schwingt seitlich.'},
-  gemcluster:{icon:'🔮',name:'Edelstein-Cluster',desc:'Mehrere Kristalle am Rand.'},
-  confetti:{icon:'🎉',name:'Konfetti',desc:'Buntes Konfetti explodiert um deinen Namen.'},
-  fairywings:{icon:'🪽',name:'Feenflügel',desc:'Feine violette Feenflügel.'},
-  laurel:{icon:'🌿',name:'Lorbeerkranz',desc:'Ein eleganter Lorbeerkranz.'},
-  rainbowcloud:{icon:'🌈',name:'Regenbogenwolke',desc:'Wolken und Regenbogen über dem Namen.'},
-  thorncrown:{icon:'♛',name:'Dornkrone',desc:'Eine dunkle Kristall-Dornkrone.'},
-  vines:{icon:'🌿',name:'Ranken',desc:'Magische Blumenranken um den Rahmen.'},
-  dragonwings:{icon:'🐉',name:'Drachenflügel',desc:'Dunkle Drachenflügel hinter dem Schild.'},
-  floatingcrystals:{icon:'💠',name:'Schwebende Kristalle',desc:'Kristalle schweben um deinen Namen.'},
-  starorbit:{icon:'🪐',name:'Sternen-Orbit',desc:'Kleine Sterne und Planeten kreisen um den Namen.'}
+  changeling:{image:'/assets/accessories/changeling-wings.png',name:'Changeling-Flügel',desc:'Leuchtende Changeling-Flügel hinter deinem Namen.'},
+  balloon:{image:'/assets/accessories/balloon.png',name:'Ballons',desc:'Drei Herzballons schweben an deinem Namensschild.'},
+  candy:{image:'/assets/accessories/sweets.png',name:'Süßigkeiten',desc:'Zwei süße Lollis schmücken deinen Namen.'},
+  crystalhorn:{image:'/assets/accessories/04_crystal-horn.png',name:'Kristallhorn',desc:'Ein funkelndes Kristallhorn über deinem Namen.'},
+  crown:{image:'/assets/accessories/05_crown.png',name:'Kristallkrone',desc:'Eine große dunkle Kristallkrone.'},
+  halo:{image:'/assets/accessories/06_halo.png',name:'Kristall-Halo',desc:'Ein schwebender Halo mit Kristallanhängern.'},
+  angelwings:{image:'/assets/accessories/07_angel-wings.png',name:'Engelsflügel',desc:'Helle gefiederte Flügel hinter deinem Namen.'},
+  batwings:{image:'/assets/accessories/08_bat-wings.png',name:'Fledermausflügel',desc:'Dunkle violette Flügel hinter deinem Namen.'},
+  magicflames:{image:'/assets/accessories/09_magic-flames.png',name:'Magische Flammen',desc:'Blaue und violette Magieflammen.'},
+  orbitcrystals:{image:'/assets/accessories/10_orbit-crystals.png',name:'Kristall-Orbit',desc:'Schwebende Kristalle kreisen um deinen Namen.'},
+  bow:{image:'/assets/accessories/11_bow.png',name:'Schleife',desc:'Eine große funkelnde Schleife.'},
+  scarf:{image:'/assets/accessories/12_scarf.png',name:'Sternenschal',desc:'Ein dunkler Sternenschal am Namensschild.'},
+  goggles:{image:'/assets/accessories/13_goggles.png',name:'Kristallbrille',desc:'Steampunk-Brille mit Kristallgläsern.'},
+  gears:{image:'/assets/accessories/14_gears.png',name:'Zahnräder',desc:'Mechanische Zahnräder und Kristalle.'},
+  flowercrown:{image:'/assets/accessories/15_flower-crown.png',name:'Blumenkrone',desc:'Leuchtende Blumen und Kristalle.'},
+  butterflies:{image:'/assets/accessories/16_butterflies.png',name:'Schmetterlinge',desc:'Bunte magische Schmetterlinge.'},
+  bandages:{image:'/assets/accessories/17_bandages.png',name:'Pflaster',desc:'Bunte Herz- und Kristallpflaster.'},
+  potions:{image:'/assets/accessories/18_potions.png',name:'Zaubertränke',desc:'Glitzernde Fläschchen voller Magie.'},
+  collar:{image:'/assets/accessories/19_collar.png',name:'Nietenhalsband',desc:'Dunkles Halsband mit Kristallanhänger.'},
+  bell:{image:'/assets/accessories/20_bell.png',name:'Glöckchen',desc:'Eine Schleife mit goldenem Glöckchen.'},
+  cape:{image:'/assets/accessories/21_cape.png',name:'Sternencape',desc:'Ein dunkles Cape mit Galaxieglanz.'},
+  cards:{image:'/assets/accessories/22_cards.png',name:'Magische Karten',desc:'Leuchtende Spielkarten um deinen Namen.'},
+  techwings:{image:'/assets/accessories/23_tech-wings.png',name:'Tech-Flügel',desc:'Mechanische Kristallflügel.'},
+  moon:{image:'/assets/accessories/24_moon.png',name:'Mond',desc:'Ein schwebender Mond mit Kristallanhängern.'}
 };
 const ACCESSORY_KEYS=Object.keys(ACCESSORIES);
 
@@ -44,7 +44,7 @@ function escapeHtml(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':
 
 function accessoryDecor(key){
   const a=ACCESSORIES[key]||ACCESSORIES.changeling;
-  return `<span class="decor decor-${key}" aria-hidden="true"><span>${a.icon}</span></span>`;
+  return `<span class="decor decor-${key}" aria-hidden="true"><img src="${a.image}" alt=""></span>`;
 }
 function nameplateHTML(name,key,small=false){
   const safe=escapeHtml(name||'Spieler');
@@ -70,7 +70,7 @@ function renderAccessoryGrid(){
   for(const key of ACCESSORY_KEYS){
     const a=ACCESSORIES[key], unlocked=unlocks.includes(key);
     const b=document.createElement('button'); b.type='button'; b.className=`accessory-card ${unlocked?'unlocked':'locked'} ${key===selectedAccessory?'selected':''}`;
-    b.innerHTML=`<span class="item-art item-${key}">${a.icon}</span><strong>${a.name}</strong><span class="status">${unlocked?(key===selectedAccessory?'Ausgewählt':'Freigeschaltet'):'🔒 Noch nicht freigeschaltet'}</span>`;
+    b.innerHTML=`<span class="item-art item-${key}"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${unlocked?(key===selectedAccessory?'Ausgewählt':'Freigeschaltet'):'🔒 Noch nicht freigeschaltet'}</span>`;
     b.disabled=!unlocked;
     if(unlocked)b.addEventListener('click',()=>{selectedAccessory=key;localStorage.setItem('cc_accessory',key);renderAccessoryGrid();updateHomePreview(); if(state)renderGame();});
     g.append(b);
@@ -123,7 +123,7 @@ $('#giftBox').addEventListener('click',()=>{
   const key=locked.length?locked[Math.floor(Math.random()*locked.length)]:ACCESSORY_KEYS[Math.floor(Math.random()*ACCESSORY_KEYS.length)];
   if(!unlocks.includes(key)){unlocks.push(key);localStorage.setItem('cc_unlocks',JSON.stringify(unlocks))}
   const a=ACCESSORIES[key]; $('#giftBox').style.display='none';
-  $('#giftResult').innerHTML=`<div class="gift-item"><span class="item-art item-${key}">${a.icon}</span><strong>${a.name}</strong><small>${a.desc}</small></div>`;
+  $('#giftResult').innerHTML=`<div class="gift-item"><span class="item-art item-${key}"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><small>${a.desc}</small></div>`;
   renderAccessoryGrid(); beep(1200,.35);
 });
 

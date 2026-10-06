@@ -1,0 +1,16 @@
+MLP BATTLE CARDS – KOMPLETTE ERSATZVERSION
+
+Diese Version enthält:
+- alle bisherigen 60 normalen Karten
+- 6 Spezialkarten
+- Kartenrückseite
+- alle 24 Namens-Accessoires
+- echte PNGs statt Emoji-Platzhaltern
+- Accessoire-Auswahl und Gewinn-Freischaltung
+- aktualisierte client.js, index.html und style.css
+
+WICHTIG:
+Entpacke diese ZIP und nutze den INHALT dieses Ordners als neue Projektversion.
+Wenn du in dein bestehendes Projekt kopierst: "Dateien im Ziel ersetzen" wählen.
+
+Danach GitHub aktualisieren und Render neu deployen.
