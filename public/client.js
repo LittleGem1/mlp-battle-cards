@@ -91,11 +91,19 @@ function renderAccessoryGrid(){
       ? `<span class="item-art item-${key}"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${key===selectedAccessory?'Ausgewählt':'Freigeschaltet'}</span>`
       : `<span class="mystery-art">?</span><strong>Geheimes Accessoire</strong><span class="status">🔒 Durch einen Sieg freischalten</span>`;
     b.disabled=!unlocked;
-    if(unlocked)b.addEventListener('click',()=>{selectedAccessory=key;localStorage.setItem('cc_accessory',key);renderAccessoryGrid();updateHomePreview(); if(state)renderGame();});
+    if(unlocked)b.addEventListener('click',()=>{
+      selectedAccessory=key;
+      localStorage.setItem('cc_accessory',key);
+      renderAccessoryGrid();
+      updateHomePreview();
+      if(state?.phase==='lobby') socket.emit('setAccessory',{accessory:key});
+      if(state && state.phase!=='lobby') renderGame();
+    });
     g.append(b);
   }
 }
 $('#accessoryBtn').addEventListener('click',()=>{if(!ensureStarter())return;renderAccessoryGrid();$('#accessoryDialog').showModal()});
+$('#lobbyAccessoryBtn')?.addEventListener('click',()=>{renderAccessoryGrid();$('#accessoryDialog').showModal()});
 
 $('#createBtn').addEventListener('click',()=>{ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim();if(!name)return toast('Bitte zuerst einen Namen eingeben.');remember();socket.emit('createRoom',{name,accessory:selectedAccessory})});
 $('#joinBtn').addEventListener('click',()=>{ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim(),code=$('#roomCode').value.trim();if(!name||!code)return toast('Name und Raumcode eingeben.');remember();socket.emit('joinRoom',{name,code,accessory:selectedAccessory})});
@@ -108,6 +116,8 @@ socket.on('hand',h=>{hand=h;renderHand();if(state)renderGame()});
 
 function renderLobby(){
   $('#lobbyCode').textContent=state.code; $('#lobbyHint').textContent=state.players.length<2?'Schick den Code an deine Mitspieler.':'Bereit zum Start!';
+  const me=state.players.find(p=>p.id===myId);
+  if(me?.accessory && ACCESSORIES[me.accessory]) selectedAccessory=me.accessory;
   $('#lobbyPlayers').innerHTML=state.players.map(p=>`<div class="lobby-player">${nameplateHTML(p.name,p.accessory,true)}<div>${p.id===state.hostId?'Host 👑':'Mitspieler'} · ${p.handCount} Karten</div></div>`).join('');
   $('#startBtn').style.display=myId===state.hostId?'inline-block':'none'; $('#startBtn').disabled=state.players.length<2; updateMusicButtons();
 }
@@ -118,16 +128,41 @@ function renderGame(){
   $('#opponents').innerHTML=others.map(p=>`<div class="opponent" data-player-id="${p.id}">${nameplateHTML(p.name,p.accessory,true)}<div class="opponent-meta"><span>${p.handCount} Karten</span>${p.selected?'<span>✓ gewählt</span>':''}</div><div class="back-fan">${Array.from({length:Math.min(p.handCount,7)},(_,i)=>`<img src="/assets/card_back.webp" alt="verdeckte Karte" style="transform:rotate(${(i-3)*5}deg)">`).join('')}</div></div>`).join('');
   renderHand();
 }
-function renderHand(){const wrap=$('#hand');if(!wrap)return;wrap.innerHTML='';for(const c of hand){const el=document.createElement('div');el.className=`hand-card ${c.type==='special'?'special':''}`;const img=document.createElement('img');img.src=c.image;img.alt=c.name;el.append(img);if(c.type==='normal'){el.tabIndex=0;const play=()=>{if(state?.phase!=='select')return toast('Warte auf die nächste Auswahl.');socket.emit('playCard',{cardId:c.id})};el.addEventListener('click',play);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();play()}})}else{const b=document.createElement('button');b.className='special-use';b.type='button';b.textContent='Spezial einsetzen';b.addEventListener('click',e=>{e.stopPropagation();if(state?.phase!=='select')return toast('Spezialkarten werden während der Auswahl eingesetzt.');socket.emit('useSpecial',{cardId:c.id})});el.append(b)}wrap.append(el)}}
+function renderHand(){
+  const wrap=$('#hand'); if(!wrap)return;
+  wrap.innerHTML='';
+  const me=state?.players?.find(p=>p.id===myId);
+  const blockedId=me?.lastPlayedCardId||null;
 
-function ensureAudio(){
-  try{
-    const A=window.AudioContext||window.webkitAudioContext;
-    if(!ensureAudio.ctx) ensureAudio.ctx=new A();
-    if(ensureAudio.ctx.state==='suspended') ensureAudio.ctx.resume();
-    restartMusic();
-    return ensureAudio.ctx;
-  }catch{return null}
+  for(const c of hand){
+    const blocked=c.type==='normal' && c.id===blockedId;
+    const el=document.createElement('div');
+    el.className=`hand-card ${c.type==='special'?'special':''} ${blocked?'recently-played disabled':''}`;
+    const img=document.createElement('img'); img.src=c.image; img.alt=c.name; el.append(img);
+
+    if(blocked){
+      const lock=document.createElement('div');
+      lock.className='recent-lock';
+      lock.textContent='⏳ Gerade gespielt';
+      el.append(lock);
+    }
+
+    if(c.type==='normal'){
+      el.tabIndex=blocked?-1:0;
+      const play=()=>{
+        if(blocked)return toast('Diese Karte hast du gerade gespielt – nimm diesmal eine andere.');
+        if(state?.phase!=='select')return toast('Warte auf die nächste Auswahl.');
+        socket.emit('playCard',{cardId:c.id});
+      };
+      el.addEventListener('click',play);
+      el.addEventListener('keydown',e=>{if(!blocked&&(e.key==='Enter'||e.key===' ')){e.preventDefault();play()}});
+    }else{
+      const b=document.createElement('button');b.className='special-use';b.type='button';b.textContent='Spezial einsetzen';
+      b.addEventListener('click',e=>{e.stopPropagation();if(state?.phase!=='select')return toast('Spezialkarten werden während der Auswahl eingesetzt.');socket.emit('useSpecial',{cardId:c.id})});
+      el.append(b);
+    }
+    wrap.append(el);
+  }
 }
 function tone(freq=620,dur=.1,gain=.045,type='sine',when=0){
   if(!musicEnabled)return;
@@ -142,11 +177,39 @@ function setMusicMode(mode){musicMode=mode;restartMusic()}
 function restartMusic(){
   if(musicTimer){clearInterval(musicTimer);musicTimer=null}
   if(!musicEnabled || !ensureAudio.ctx || musicMode==='home')return;
-  const lobby=[261.63,329.63,392,523.25,392,329.63];
-  const game=[220,293.66,349.23,440,392,293.66,261.63,329.63];
-  const seq=musicMode==='game'?game:lobby; musicStep=0;
-  const play=()=>{if(!musicEnabled)return;const f=seq[musicStep++%seq.length];tone(f,.65,.012,'triangle');if(musicStep%4===0)tone(f*2,.22,.008,'sine',.12)};
-  play();musicTimer=setInterval(play,musicMode==='game'?620:820);
+
+  musicStep=0;
+  if(musicMode==='lobby'){
+    const lobby=[261.63,329.63,392,523.25,392,329.63];
+    const play=()=>{
+      if(!musicEnabled)return;
+      const f=lobby[musicStep++%lobby.length];
+      tone(f,.62,.011,'triangle');
+      if(musicStep%3===0)tone(f*2,.16,.006,'sine',.10);
+    };
+    play();
+    musicTimer=setInterval(play,820);
+    return;
+  }
+
+  // Eigenes, prozedurales Battle-Thema: schneller Moll-Puls + Bass/Schlag.
+  // Keine externe oder urheberrechtlich geschützte Musikdatei nötig.
+  const lead=[220,261.63,293.66,329.63,293.66,349.23,329.63,261.63,
+              220,261.63,329.63,392,349.23,329.63,293.66,261.63];
+  const bass=[110,110,130.81,110,146.83,130.81,110,98];
+  const play=()=>{
+    if(!musicEnabled)return;
+    const step=musicStep++;
+    const f=lead[step%lead.length];
+    tone(f,.23,.013,step%4===3?'sawtooth':'square');
+    tone(bass[Math.floor(step/2)%bass.length],.18,.018,'triangle');
+    // kurzer "Drum"-Impuls
+    if(step%2===0) tone(72,.075,.024,'sine');
+    if(step%4===2) tone(145,.055,.010,'square',.03);
+    if(step%8===7) tone(f*2,.12,.008,'sine',.08);
+  };
+  play();
+  musicTimer=setInterval(play,285);
 }
 function toggleMusic(){musicEnabled=!musicEnabled;localStorage.setItem('mlp_music',musicEnabled?'on':'off');if(musicEnabled)ensureAudio();else if(musicTimer){clearInterval(musicTimer);musicTimer=null}updateMusicButtons();restartMusic()}
 function updateMusicButtons(){document.querySelectorAll('.music-toggle').forEach(b=>b.textContent=musicEnabled?'🔊 Musik an':'🔇 Musik aus')}

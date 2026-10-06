@@ -6,7 +6,14 @@ const normal = [
   [41,'Coco Pommel',3,5,2,6],[42,'Hoity Toity',3,5,4,6],[43,'Photo Finish',2,6,4,6],[44,'Sapphire Shores',4,6,3,8],[45,'Prim Hemline',3,4,4,6],[46,'Trenderhoof',3,6,3,6],[47,'Vinyl Scratch',4,8,7,8],[48,'Octavia Melody',4,5,3,7],[49,'Lyra Heartstrings',3,5,6,6],[50,'Sweetie Drops',4,4,2,7],
   [51,'Derpy Hooves',4,7,2,8],[52,'Doctor Hooves',3,6,5,7],[53,'Minuette',3,6,6,7],[54,'Moondancer',3,4,8,6],[55,'Spitfire',7,9,2,9],[56,'Soarin',7,9,2,8],[57,'Fleetfoot',6,9,2,8],[58,'Lightning Dust',6,9,2,9],[59,'Misty Fly',5,8,2,8],[60,'Cheerilee',4,4,3,8]
 ].map(([n,name,strength,speed,magic,energy]) => ({
-  id:`n${String(n).padStart(2,'0')}`, type:'normal', name, strength, speed, magic, energy,
+  id:`n${String(n).padStart(2,'0')}`,
+  type:'normal',
+  name,
+  // Harte Obergrenze: keine normale Karten-Eigenschaft darf jemals über 9 liegen.
+  strength:Math.min(9,strength),
+  speed:Math.min(9,speed),
+  magic:Math.min(9,magic),
+  energy:Math.min(9,energy),
   image:`/assets/cards/${String(n).padStart(2,'0')}_${name.replaceAll(' ','_')}.webp`
 }));
 

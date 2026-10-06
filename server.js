@@ -20,7 +20,7 @@ function roomPlayers(r){ return [...r.players.values()]; }
 function publicState(r){
   return {
     code:r.code, hostId:r.hostId, phase:r.phase, category:r.category,
-    players:roomPlayers(r).map(p=>({id:p.id,name:p.name,accessory:p.accessory,handCount:p.hand.length,selected:!!p.selected,eliminated:p.hand.length===0})),
+    players:roomPlayers(r).map(p=>({id:p.id,name:p.name,accessory:p.accessory,handCount:p.hand.length,selected:!!p.selected,eliminated:p.hand.length===0,lastPlayedCardId:p.lastPlayedCardId||null})),
     round:r.round
   };
 }
@@ -33,7 +33,7 @@ function clearPending(r){ if(r.roundTimer){clearTimeout(r.roundTimer);r.roundTim
 function resetToLobby(r){
   clearPending(r);
   r.phase='lobby'; r.category=null; r.round=0; r.played={}; r.dice={}; r.tieIds=[]; r.roundBuff={};
-  for(const p of roomPlayers(r)){ p.hand=[]; p.selected=null; }
+  for(const p of roomPlayers(r)){ p.hand=[]; p.selected=null; p.lastPlayedCardId=null; }
   io.to(r.code).emit('backToLobby');
   sendState(r);
 }
@@ -94,7 +94,9 @@ function evaluate(r){
     const buff=r.roundBuff[pid]||{};
     if(r.category==='speed' && buff.speed) v+=buff.speed;
     if(r.category==='strength' && buff.strength) v+=buff.strength;
-    vals.push({pid,cardId:c.id,value:v,base:c[r.category],bonus:v-c[r.category]});
+    // Auch mit Spezialbonus niemals über 9: bei Gleichstand entscheidet weiter der Würfel.
+    v=Math.min(9,v);
+    vals.push({pid,cardId:c.id,value:v,base:Math.min(9,c[r.category]),bonus:v-Math.min(9,c[r.category])});
   }
   if(!vals.length) return;
   const max=Math.max(...vals.map(x=>x.value)); const tied=vals.filter(x=>x.value===max);
@@ -131,7 +133,7 @@ io.on('connection', socket=>{
   socket.on('createRoom',({name,accessory})=>{
     let c; do c=code(); while(rooms.has(c));
     const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundTimer:null};
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',hand:[],selected:null});
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',hand:[],selected:null,lastPlayedCardId:null});
     rooms.set(c,r); socket.join(c); socket.data.room=c; sendState(r);
   });
   socket.on('joinRoom',({code:rc,name,accessory})=>{
@@ -139,14 +141,25 @@ io.on('connection', socket=>{
     if(!r) return socket.emit('errorMsg','Raum nicht gefunden.');
     if(r.phase!=='lobby') return socket.emit('errorMsg','Die Partie läuft bereits.');
     if(r.players.size>=8) return socket.emit('errorMsg','Der Raum ist voll.');
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',hand:[],selected:null});
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',hand:[],selected:null,lastPlayedCardId:null});
     socket.join(c); socket.data.room=c; sendState(r);
   });
+  socket.on('setAccessory',({accessory})=>{
+    const r=getRoom(socket);
+    if(!r||r.phase!=='lobby') return;
+    const p=r.players.get(socket.id);
+    if(!p) return;
+    const allowed=new Set(['changeling','balloon','candy','crystalhorn','crown','halo','angelwings','batwings','magicflames','orbitcrystals','bow','scarf','goggles','gears','flowercrown','butterflies','bandages','potions','collar','bell','cape','cards','techwings','moon']);
+    if(!allowed.has(accessory)) return;
+    p.accessory=accessory;
+    sendState(r);
+  });
+
   socket.on('startGame',()=>{
     const r=getRoom(socket); if(!r||r.hostId!==socket.id||r.phase!=='lobby') return;
     if(r.players.size<2) return socket.emit('errorMsg','Mindestens 2 Spieler werden benötigt.');
     const pool=freshPool(); const ps=roomPlayers(r);
-    for(const p of ps) p.hand=[];
+    for(const p of ps){ p.hand=[]; p.lastPlayedCardId=null; }
     for(let k=0;k<7;k++) for(const p of ps) p.hand.push(pool.shift());
     r.phase='countdown'; r.round=0;
     io.to(r.code).emit('countdown',{seconds:5}); sendState(r);
@@ -156,7 +169,13 @@ io.on('connection', socket=>{
     const r=getRoom(socket); if(!r||r.phase!=='select') return;
     const p=r.players.get(socket.id); const c=byId[cardId];
     if(!p||!c||c.type!=='normal'||p.selected||!p.hand.includes(cardId)) return;
-    p.selected=cardId; p.hand.splice(p.hand.indexOf(cardId),1); r.played[socket.id]={cardId};
+    if(p.lastPlayedCardId===cardId){
+      return socket.emit('errorMsg','Diese Karte hast du gerade erst gespielt. Wähle in dieser Runde eine andere Karte.');
+    }
+    p.selected=cardId;
+    p.lastPlayedCardId=cardId;
+    p.hand.splice(p.hand.indexOf(cardId),1);
+    r.played[socket.id]={cardId};
     // Everyone sees a face-down card fly onto the table as soon as a player commits.
     io.to(r.code).emit('cardCommitted',{playerId:socket.id,name:p.name});
     io.to(r.code).emit('playerSelected',{playerId:socket.id}); sendState(r);

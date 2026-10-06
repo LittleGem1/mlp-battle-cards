@@ -1,23 +1,42 @@
-MLP Battle Cards – großer Gameplay-Patch
+MLP BATTLE CARDS – BALANCE / LOBBY / MUSIK PATCH
 
-ERSETZEN MUSST DU NUR:
-- server.js
+Enthalten sind NUR:
 - cards.js
+- server.js
 - public/index.html
 - public/client.js
 - public/style.css
 
-Was neu ist:
-- Karten deutlich größer
-- keine normalen Kartenwerte von 10 mehr (alle bisherigen 10er sind 9)
-- Hauptmenü-Buttons in Lobby und Spiel
-- Host kann eine laufende Partie abbrechen und alle gehen zurück in die Lobby
-- Nach Spielende: Zurück-zur-Lobby-, Hauptmenü- und Schließen-Button
-- Gewinn-Belohnung hat X- und Schließen-Button
-- Würfeln wird für ALLE Spieler sichtbar animiert
-- abgelegte Karten fliegen verdeckt in die Mitte und drehen beim Aufdecken um
-- gewonnene Karten fliegen sichtbar zum Gewinner
-- Lobby bekommt animierten Kristall-/Aurora-Hintergrund
-- leise, selbst erzeugte Hintergrundmusik + Soundeffekte, mit Musik-an/aus-Button
+Änderungen:
+1. Kartenwerte:
+   - Alle Basiswerte sind hart auf maximal 9 begrenzt.
+   - Kontrollierter höchster Basiswert in cards.js: 9
+   - Auch Spezial-Boni können den Rundenwert nicht mehr über 9 drücken.
+     Bei 9 gegen 9 entsteht ein Gleichstand -> Würfeln.
 
-Danach GitHub committen, Render -> Manual Deploy -> Deploy latest commit und Strg+F5.
+2. Accessoire in der Lobby:
+   - Neuer Button "✨ Accessoire wählen".
+   - Auswahl wird sofort an alle Spieler synchronisiert und im Lobby-Namensschild aktualisiert.
+
+3. Gerade gespielte Karte:
+   - Eine Karte, die du in der letzten Runde gespielt und zurückgewonnen hast,
+     kann in der direkt folgenden Runde NICHT erneut gespielt werden.
+   - Sie ist sichtbar abgedunkelt mit "⏳ Gerade gespielt".
+   - Der Server blockiert sie zusätzlich, also nicht nur optisch.
+
+4. Musik:
+   - Lobby bleibt ruhiger.
+   - Im Kartenduell läuft jetzt ein schnelleres, selbst erzeugtes Battle-Thema
+     mit Moll-Puls, Bass und Schlag-Impulsen.
+   - Keine externe Musikdatei notwendig.
+
+Installation:
+1. ZIP entpacken.
+2. Genau diese 5 Dateien im Projekt ersetzen.
+3. Bei GitHub nur diese Dateien hochladen/committen.
+4. Render -> Manual Deploy -> Deploy latest commit.
+5. Browser -> Strg + F5.
+
+Hinweis:
+Die korrigierten Bilder von Photo Finish und Sapphire Shores sind ein separater
+2-Karten-Patch und werden von diesem Code-Patch nicht überschrieben.
