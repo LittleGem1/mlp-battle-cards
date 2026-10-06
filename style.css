@@ -113,3 +113,111 @@
 .starter-grid .item-art{
   margin:0 auto 6px;
 }
+
+
+/* ===== Accessory layout fix v2 =====
+   Starters are available immediately.
+   Locked rewards show only a mystery tile.
+   Name accessories stay attached to the nameplate instead of covering the UI.
+*/
+.nameplate-preview{
+  min-height:118px;
+  margin:-2px 0 18px;
+  overflow:visible;
+}
+.nameplate{
+  isolation:isolate;
+}
+.nameplate .decor{
+  z-index:0;
+}
+.nameplate-text{
+  z-index:2;
+}
+
+/* Keep the Changeling wings around the plaque, not across the page. */
+.nameplate.changeling .decor{
+  width:300px;
+  height:112px;
+  inset:auto;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  place-items:center;
+}
+.nameplate.changeling .decor img{
+  width:300px;
+  height:112px;
+  object-fit:fill;
+  opacity:.92;
+}
+.nameplate-small.changeling .decor{
+  width:205px;
+  height:76px;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  inset:auto;
+}
+.nameplate-small.changeling .decor img{
+  width:205px;
+  height:76px;
+  object-fit:fill;
+}
+
+/* Other large wing/cape rewards are constrained the same way. */
+.nameplate.angelwings .decor,
+.nameplate.batwings .decor,
+.nameplate.techwings .decor,
+.nameplate.cape .decor{
+  width:300px;
+  height:112px;
+  inset:auto;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+}
+.nameplate.angelwings .decor img,
+.nameplate.batwings .decor img,
+.nameplate.techwings .decor img,
+.nameplate.cape .decor img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+.nameplate-small.angelwings .decor,
+.nameplate-small.batwings .decor,
+.nameplate-small.techwings .decor,
+.nameplate-small.cape .decor{
+  width:205px;
+  height:76px;
+  inset:auto;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+}
+
+/* Locked rewards: absolutely no preview of their artwork. */
+.accessory-card.locked{
+  opacity:.72;
+  filter:none;
+  background:linear-gradient(145deg,rgba(25,25,66,.9),rgba(12,17,49,.95));
+}
+.accessory-card.locked .item-art,
+.accessory-card.locked img{
+  display:none!important;
+}
+.mystery-art{
+  width:68px;
+  height:58px;
+  display:grid!important;
+  place-items:center;
+  margin:auto;
+  border-radius:50%;
+  border:2px solid rgba(151,232,255,.35);
+  background:radial-gradient(circle,rgba(130,94,255,.28),rgba(20,18,65,.92));
+  color:#dff9ff;
+  font-size:36px!important;
+  font-weight:900;
+  box-shadow:0 0 18px rgba(115,111,255,.18);
+}

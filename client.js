@@ -29,6 +29,7 @@ const ACCESSORIES={
   moon:{image:'/assets/accessories/24_moon.png',name:'Mond',desc:'Ein schwebender Mond mit Kristallanhängern.'}
 };
 const ACCESSORY_KEYS=Object.keys(ACCESSORIES);
+const STARTER_KEYS=['changeling','balloon','candy'];
 
 let state=null, hand=[], myId=null;
 let selectedAccessory=localStorage.getItem('cc_accessory')||'';
@@ -39,7 +40,7 @@ const playerName=$('#playerName'); playerName.value=localStorage.getItem('cc_nam
 function show(name){Object.values(screens).forEach(x=>x.classList.remove('active'));screens[name].classList.add('active')}
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2600)}
 function remember(){const n=playerName.value.trim();if(n)localStorage.setItem('cc_name',n)}
-function ensureStarter(){ if(selectedAccessory&&ACCESSORIES[selectedAccessory])return true; $('#starterDialog').showModal(); return false; }
+function ensureStarter(){ return true; }
 function escapeHtml(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 
 function accessoryDecor(key){
@@ -56,7 +57,7 @@ playerName.addEventListener('input',updateHomePreview);
 
 $$('.starter-grid button').forEach(b=>b.addEventListener('click',()=>{
   selectedAccessory=b.value;
-  unlocks=[b.value];
+  unlocks=[...new Set([...unlocks,...STARTER_KEYS])];
   localStorage.setItem('cc_accessory',b.value);
   localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));
   $('#starterDialog').close();
@@ -70,7 +71,9 @@ function renderAccessoryGrid(){
   for(const key of ACCESSORY_KEYS){
     const a=ACCESSORIES[key], unlocked=unlocks.includes(key);
     const b=document.createElement('button'); b.type='button'; b.className=`accessory-card ${unlocked?'unlocked':'locked'} ${key===selectedAccessory?'selected':''}`;
-    b.innerHTML=`<span class="item-art item-${key}"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${unlocked?(key===selectedAccessory?'Ausgewählt':'Freigeschaltet'):'🔒 Noch nicht freigeschaltet'}</span>`;
+    b.innerHTML=unlocked
+      ? `<span class="item-art item-${key}"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${key===selectedAccessory?'Ausgewählt':'Freigeschaltet'}</span>`
+      : `<span class="mystery-art">?</span><strong>Geheimes Accessoire</strong><span class="status">🔒 Durch einen Sieg freischalten</span>`;
     b.disabled=!unlocked;
     if(unlocked)b.addEventListener('click',()=>{selectedAccessory=key;localStorage.setItem('cc_accessory',key);renderAccessoryGrid();updateHomePreview(); if(state)renderGame();});
     g.append(b);
@@ -82,7 +85,7 @@ $('#createBtn').addEventListener('click',()=>{if(!ensureStarter())return;const n
 $('#joinBtn').addEventListener('click',()=>{if(!ensureStarter())return;const name=playerName.value.trim(),code=$('#roomCode').value.trim();if(!name||!code)return toast('Name und Raumcode eingeben.');remember();socket.emit('joinRoom',{name,code,accessory:selectedAccessory})});
 $('#startBtn').addEventListener('click',()=>socket.emit('startGame'));
 
-socket.on('connect',()=>{myId=socket.id;if(!selectedAccessory)setTimeout(ensureStarter,200)});
+socket.on('connect',()=>{myId=socket.id;updateHomePreview();});
 socket.on('errorMsg',toast); socket.on('notice',toast); socket.on('specialDone',e=>toast(e.text));
 socket.on('roomState',s=>{state=s;if(s.phase==='lobby'){show('lobby');renderLobby()}else{show('game');renderGame()}});
 socket.on('hand',h=>{hand=h;renderHand();if(state)renderGame()});
@@ -119,7 +122,7 @@ function showChoices(title,cards,cb){$('#choiceTitle').textContent=title;const g
 
 $('#giftBox').addEventListener('click',()=>{
   if(!pendingGift)return; pendingGift=false;
-  const locked=ACCESSORY_KEYS.filter(x=>!unlocks.includes(x));
+  const locked=ACCESSORY_KEYS.filter(x=>!STARTER_KEYS.includes(x)&&!unlocks.includes(x));
   const key=locked.length?locked[Math.floor(Math.random()*locked.length)]:ACCESSORY_KEYS[Math.floor(Math.random()*ACCESSORY_KEYS.length)];
   if(!unlocks.includes(key)){unlocks.push(key);localStorage.setItem('cc_unlocks',JSON.stringify(unlocks))}
   const a=ACCESSORIES[key]; $('#giftBox').style.display='none';
