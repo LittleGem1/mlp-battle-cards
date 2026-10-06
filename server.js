@@ -7,7 +7,13 @@ const { normal, specials, byId } = require('./cards');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-app.use(express.static(path.join(__dirname, 'public')));
+// Frontend-Dateien bewusst aus dem Projekt-Hauptordner laden.
+// /assets sucht zuerst im neuen Root-Assets-Ordner und fällt dann auf public/assets zurück.
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
+app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
+app.get('/client.js', (req,res)=>res.sendFile(path.join(__dirname,'client.js')));
+app.get('/style.css', (req,res)=>res.sendFile(path.join(__dirname,'style.css')));
+app.get('/', (req,res)=>res.sendFile(path.join(__dirname,'index.html')));
 
 const rooms = new Map();
 const CATEGORIES = ['strength','speed','energy','magic'];
