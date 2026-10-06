@@ -1,19 +1,20 @@
-NUR DIESE DATEIEN ERSETZEN
+DIESER PATCH ENTHÄLT NUR DIE ACCESSOIRE-BILDER.
 
-Enthalten:
-- client.js
-- index.html
-- style.css
-- server.js
-- public/client.js
-- public/index.html
-- public/style.css
+Warum:
+Dein Server liefert jetzt ausschließlich den Ordner /public aus.
+Die Bilder lagen vorher außerhalb davon, deshalb kam das kaputte Bildsymbol.
 
-Vorgehen:
+So anwenden:
 1. ZIP entpacken.
-2. Diese Dateien in deinem Projektordner ersetzen.
-3. Nur diese geänderten Dateien bei GitHub hochladen/committen.
-4. Render -> Manual Deploy -> Deploy latest commit.
-5. Website mit Strg+F5 neu laden.
+2. Den enthaltenen Ordner "public" in deinen Projektordner ziehen.
+3. "Dateien im Ziel ersetzen/zusammenführen" bestätigen.
+4. Bei GitHub nur den Ordner:
+   public/assets/accessories/
+   hochladen bzw. ergänzen.
+5. Committen.
+6. Render -> Manual Deploy -> Deploy latest commit.
+7. Website mit Strg+F5 neu laden.
 
-Deine Accessoire-PNGs müssen bereits im Projekt vorhanden sein.
+Es müssen danach 24 PNG-Dateien unter
+public/assets/accessories/
+liegen.
