@@ -29,10 +29,33 @@ function nextCategory(r){ r.category=CATEGORIES[Math.floor(Math.random()*CATEGOR
 function freshPool(){ return shuffle([...normal,...specials].map(c=>c.id)); }
 function getRoom(socket){ const rc=socket.data.room; return rc?rooms.get(rc):null; }
 function activePlayers(r){ return roomPlayers(r).filter(p=>p.hand.length>0); }
+function clearPending(r){ if(r.roundTimer){clearTimeout(r.roundTimer);r.roundTimer=null;} }
+function resetToLobby(r){
+  clearPending(r);
+  r.phase='lobby'; r.category=null; r.round=0; r.played={}; r.dice={}; r.tieIds=[]; r.roundBuff={};
+  for(const p of roomPlayers(r)){ p.hand=[]; p.selected=null; }
+  io.to(r.code).emit('backToLobby');
+  sendState(r);
+}
+function removePlayerFromRoom(socket, notify=true){
+  const r=getRoom(socket); if(!r) return;
+  r.players.delete(socket.id); socket.leave(r.code); socket.data.room=null;
+  socket.emit('roomLeft');
+  if(!r.players.size){ clearPending(r); rooms.delete(r.code); return; }
+  if(r.hostId===socket.id) r.hostId=roomPlayers(r)[0].id;
+  if(notify) io.to(r.code).emit('notice','Ein Spieler hat den Raum verlassen.');
+  sendState(r);
+  if(r.phase==='select'){
+    const expected=roomPlayers(r).filter(x=>x.hand.length>0||x.selected);
+    if(expected.length && expected.every(x=>x.selected)) evaluate(r);
+  }
+}
 
 function startRound(r, delay=900){
-  setTimeout(()=>{
+  clearPending(r);
+  r.roundTimer=setTimeout(()=>{
     if(!rooms.has(r.code)) return;
+    r.roundTimer=null;
     r.round += 1; r.phase='select'; r.played={}; r.dice={}; r.tieIds=[]; r.roundBuff={};
     for(const p of roomPlayers(r)) p.selected=null;
     nextCategory(r);
@@ -41,13 +64,9 @@ function startRound(r, delay=900){
   },delay);
 }
 
-function settleRound(r,winnerId){
-  const playedIds=Object.values(r.played).map(x=>x.cardId);
-  const winner=r.players.get(winnerId);
-  if(!winner) return;
+function finishAfterCapture(r,winnerId,playedIds){
+  const winner=r.players.get(winnerId); if(!winner) return;
   winner.hand.push(...playedIds);
-  r.phase='result';
-  io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:playedIds.map(id=>byId[id])});
   sendState(r);
   const alive=activePlayers(r);
   if(alive.length<=1){
@@ -56,7 +75,16 @@ function settleRound(r,winnerId){
     io.to(r.code).emit('gameOver',{winnerId:champion.id,winnerName:champion.name,counts:roomPlayers(r).map(p=>({id:p.id,name:p.name,count:p.hand.length}))});
     sendState(r); return;
   }
-  startRound(r,2600);
+  startRound(r,1500);
+}
+
+function settleRound(r,winnerId){
+  const playedIds=Object.values(r.played).map(x=>x.cardId);
+  const winner=r.players.get(winnerId); if(!winner) return;
+  r.phase='result';
+  io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:playedIds.map(id=>byId[id])});
+  // Give the clients enough time to visibly animate the cards flying to the winner.
+  setTimeout(()=>finishAfterCapture(r,winnerId,playedIds),1050);
 }
 
 function evaluate(r){
@@ -68,6 +96,7 @@ function evaluate(r){
     if(r.category==='strength' && buff.strength) v+=buff.strength;
     vals.push({pid,cardId:c.id,value:v,base:c[r.category],bonus:v-c[r.category]});
   }
+  if(!vals.length) return;
   const max=Math.max(...vals.map(x=>x.value)); const tied=vals.filter(x=>x.value===max);
   r.phase='reveal';
   io.to(r.code).emit('reveal',{category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],entries:vals.map(x=>({...x,card:byId[x.cardId],name:r.players.get(x.pid)?.name||'?'}))});
@@ -87,11 +116,22 @@ function drawFromPool(r,count,exclude=[]){
   return available.slice(0,count);
 }
 
+function completeDiceRoll(r,pid){
+  if(!r || r.phase!=='tie' || r.dice[pid]!=='rolling' || !r.tieIds.includes(pid)) return;
+  const value=1+Math.floor(Math.random()*6); r.dice[pid]=value;
+  io.to(r.code).emit('diceRolled',{playerId:pid,name:r.players.get(pid)?.name,value});
+  if(r.tieIds.every(id=>typeof r.dice[id]==='number')){
+    const max=Math.max(...r.tieIds.map(id=>r.dice[id])); const top=r.tieIds.filter(id=>r.dice[id]===max);
+    if(top.length===1){ setTimeout(()=>settleRound(r,top[0]),1300); }
+    else { setTimeout(()=>{ r.tieIds=top; r.dice={}; io.to(r.code).emit('tieAgain',{playerIds:top,names:top.map(id=>r.players.get(id)?.name)}); sendState(r); },1300); }
+  }
+}
+
 io.on('connection', socket=>{
   socket.on('createRoom',({name,accessory})=>{
     let c; do c=code(); while(rooms.has(c));
-    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,round:0,played:{},dice:{},tieIds:[],roundBuff:{}};
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'balloon',hand:[],selected:null});
+    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundTimer:null};
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',hand:[],selected:null});
     rooms.set(c,r); socket.join(c); socket.data.room=c; sendState(r);
   });
   socket.on('joinRoom',({code:rc,name,accessory})=>{
@@ -99,7 +139,7 @@ io.on('connection', socket=>{
     if(!r) return socket.emit('errorMsg','Raum nicht gefunden.');
     if(r.phase!=='lobby') return socket.emit('errorMsg','Die Partie läuft bereits.');
     if(r.players.size>=8) return socket.emit('errorMsg','Der Raum ist voll.');
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'balloon',hand:[],selected:null});
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',hand:[],selected:null});
     socket.join(c); socket.data.room=c; sendState(r);
   });
   socket.on('startGame',()=>{
@@ -107,7 +147,6 @@ io.on('connection', socket=>{
     if(r.players.size<2) return socket.emit('errorMsg','Mindestens 2 Spieler werden benötigt.');
     const pool=freshPool(); const ps=roomPlayers(r);
     for(const p of ps) p.hand=[];
-    // 7 unique cards per player, across the entire table.
     for(let k=0;k<7;k++) for(const p of ps) p.hand.push(pool.shift());
     r.phase='countdown'; r.round=0;
     io.to(r.code).emit('countdown',{seconds:5}); sendState(r);
@@ -118,12 +157,13 @@ io.on('connection', socket=>{
     const p=r.players.get(socket.id); const c=byId[cardId];
     if(!p||!c||c.type!=='normal'||p.selected||!p.hand.includes(cardId)) return;
     p.selected=cardId; p.hand.splice(p.hand.indexOf(cardId),1); r.played[socket.id]={cardId};
+    // Everyone sees a face-down card fly onto the table as soon as a player commits.
+    io.to(r.code).emit('cardCommitted',{playerId:socket.id,name:p.name});
     io.to(r.code).emit('playerSelected',{playerId:socket.id}); sendState(r);
-    const alive=activePlayers(r).concat(roomPlayers(r).filter(x=>x.id===socket.id && x.selected));
     const expected=roomPlayers(r).filter(x=>x.hand.length>0||x.selected);
     if(expected.every(x=>x.selected)) evaluate(r);
   });
-  socket.on('useSpecial',({cardId,targetCardId})=>{
+  socket.on('useSpecial',({cardId})=>{
     const r=getRoom(socket); if(!r||r.phase!=='select') return;
     const p=r.players.get(socket.id); const c=byId[cardId];
     if(!p||!c||c.type!=='special'||!p.hand.includes(cardId)) return;
@@ -158,27 +198,22 @@ io.on('connection', socket=>{
     socket.data.pendingRarity=null; socket.emit('specialDone',{text:d.length?`${byId[cardId].name} wurde gegen ${byId[d[0]].name} getauscht.`:'Keine freie Karte mehr im Stapel.'}); sendState(r);
   });
   socket.on('rollDice',()=>{
-    const r=getRoom(socket); if(!r||r.phase!=='tie'||!r.tieIds.includes(socket.id)||r.dice[socket.id]) return;
-    const value=1+Math.floor(Math.random()*6); r.dice[socket.id]=value;
-    io.to(r.code).emit('diceRolled',{playerId:socket.id,name:r.players.get(socket.id)?.name,value});
-    if(r.tieIds.every(id=>r.dice[id])){
-      const max=Math.max(...r.tieIds.map(id=>r.dice[id])); const top=r.tieIds.filter(id=>r.dice[id]===max);
-      if(top.length===1){ setTimeout(()=>settleRound(r,top[0]),1500); }
-      else { setTimeout(()=>{ r.tieIds=top; r.dice={}; io.to(r.code).emit('tieAgain',{playerIds:top,names:top.map(id=>r.players.get(id)?.name)}); sendState(r); },1400); }
-    }
+    const r=getRoom(socket); if(!r||r.phase!=='tie'||!r.tieIds.includes(socket.id)||r.dice[socket.id]!==undefined) return;
+    r.dice[socket.id]='rolling';
+    io.to(r.code).emit('diceRolling',{playerId:socket.id,name:r.players.get(socket.id)?.name});
+    setTimeout(()=>completeDiceRoll(r,socket.id),900);
   });
-  socket.on('disconnect',()=>{
-    const r=getRoom(socket); if(!r) return;
-    r.players.delete(socket.id);
-    if(!r.players.size){rooms.delete(r.code);return;}
-    if(r.hostId===socket.id) r.hostId=roomPlayers(r)[0].id;
-    io.to(r.code).emit('notice','Ein Spieler hat den Raum verlassen.');
-    sendState(r);
-    if(r.phase==='select'){
-      const expected=roomPlayers(r).filter(x=>x.hand.length>0||x.selected);
-      if(expected.length && expected.every(x=>x.selected)) evaluate(r);
-    }
+  socket.on('returnToLobby',()=>{
+    const r=getRoom(socket); if(!r||r.phase!=='gameover') return;
+    resetToLobby(r);
   });
+  socket.on('abortGame',()=>{
+    const r=getRoom(socket); if(!r||r.hostId!==socket.id||r.phase==='lobby') return socket.emit('errorMsg','Nur der Host kann die laufende Partie abbrechen.');
+    io.to(r.code).emit('notice','Die Partie wurde vom Host abgebrochen.');
+    resetToLobby(r);
+  });
+  socket.on('leaveRoom',()=>removePlayerFromRoom(socket));
+  socket.on('disconnect',()=>removePlayerFromRoom(socket));
 });
 
 const PORT=process.env.PORT||3000;

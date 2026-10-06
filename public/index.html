@@ -31,12 +31,21 @@
         <h2>Raum <span id="lobbyCode"></span></h2>
         <p id="lobbyHint">Warte auf Mitspieler …</p>
         <div id="lobbyPlayers" class="lobby-players"></div>
-        <button id="startBtn" class="primary-btn" type="button">Spiel starten</button>
+        <div class="lobby-actions">
+          <button id="startBtn" class="primary-btn" type="button">Spiel starten</button>
+          <button id="leaveLobbyBtn" class="soft-btn" type="button">← Hauptmenü</button>
+          <button id="musicLobbyBtn" class="soft-btn music-toggle" type="button">🔊 Musik an</button>
+        </div>
       </div>
     </section>
 
     <section id="game" class="screen">
       <div class="arena">
+        <div class="game-actions">
+          <button id="abortBtn" class="danger-btn" type="button">⏹ Spiel abbrechen</button>
+          <button id="leaveGameBtn" class="soft-btn" type="button">← Hauptmenü</button>
+          <button id="musicGameBtn" class="soft-btn music-toggle" type="button">🔊 Musik an</button>
+        </div>
         <div class="crystal c1"></div><div class="crystal c2"></div><div class="crystal c3"></div><div class="crystal c4"></div>
         <div id="opponents" class="opponents"></div>
         <div class="center-stage">
@@ -83,7 +92,27 @@
   </dialog>
 
   <dialog id="choiceDialog" class="modal"><form method="dialog"><h3 id="choiceTitle">Wähle eine Karte</h3><div id="choiceCards" class="choice-cards"></div></form></dialog>
-  <dialog id="giftDialog" class="modal gift-modal"><div class="gift-wrap"><h3>Du hast gewonnen! ✨</h3><button id="giftBox" class="gift-box" type="button">🎁</button><div id="giftResult"></div></div></dialog>
+  <dialog id="gameOverDialog" class="modal gameover-modal">
+    <div class="gameover-wrap">
+      <h3 id="gameOverTitle">Spiel beendet</h3>
+      <p id="gameOverText"></p>
+      <div class="gameover-actions">
+        <button id="rewardBtn" class="primary-btn" type="button">🎁 Belohnung öffnen</button>
+        <button id="returnLobbyBtn" class="primary-btn" type="button">↩ Zurück in die Lobby</button>
+        <button id="gameOverHomeBtn" class="soft-btn" type="button">⌂ Hauptmenü</button>
+        <button id="closeGameOverBtn" class="soft-btn" type="button">Schließen</button>
+      </div>
+    </div>
+  </dialog>
+  <dialog id="giftDialog" class="modal gift-modal">
+    <div class="gift-wrap">
+      <button id="closeGiftBtn" class="dialog-x" type="button" aria-label="Schließen">×</button>
+      <h3>Deine Gewinn-Belohnung ✨</h3>
+      <button id="giftBox" class="gift-box" type="button">🎁</button>
+      <div id="giftResult"></div>
+      <button id="giftDoneBtn" class="soft-btn" type="button">Schließen</button>
+    </div>
+  </dialog>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/client.js"></script>

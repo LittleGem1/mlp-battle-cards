@@ -49,9 +49,11 @@ localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));
 localStorage.setItem('cc_accessory',selectedAccessory);
 
 let pendingGift=false, lastReveal=[];
+let musicEnabled=localStorage.getItem('mlp_music')!=='off', musicMode='home', musicTimer=null, musicStep=0;
+const diceAnimations=new Map();
 const playerName=$('#playerName'); playerName.value=localStorage.getItem('cc_name')||'';
 
-function show(name){Object.values(screens).forEach(x=>x.classList.remove('active'));screens[name].classList.add('active')}
+function show(name){Object.values(screens).forEach(x=>x.classList.remove('active'));screens[name].classList.add('active');setMusicMode(name)}
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2600)}
 function remember(){const n=playerName.value.trim();if(n)localStorage.setItem('cc_name',n)}
 function ensureStarter(){ return true; }
@@ -95,9 +97,9 @@ function renderAccessoryGrid(){
 }
 $('#accessoryBtn').addEventListener('click',()=>{if(!ensureStarter())return;renderAccessoryGrid();$('#accessoryDialog').showModal()});
 
-$('#createBtn').addEventListener('click',()=>{if(!ensureStarter())return;const name=playerName.value.trim();if(!name)return toast('Bitte zuerst einen Namen eingeben.');remember();socket.emit('createRoom',{name,accessory:selectedAccessory})});
-$('#joinBtn').addEventListener('click',()=>{if(!ensureStarter())return;const name=playerName.value.trim(),code=$('#roomCode').value.trim();if(!name||!code)return toast('Name und Raumcode eingeben.');remember();socket.emit('joinRoom',{name,code,accessory:selectedAccessory})});
-$('#startBtn').addEventListener('click',()=>socket.emit('startGame'));
+$('#createBtn').addEventListener('click',()=>{ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim();if(!name)return toast('Bitte zuerst einen Namen eingeben.');remember();socket.emit('createRoom',{name,accessory:selectedAccessory})});
+$('#joinBtn').addEventListener('click',()=>{ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim(),code=$('#roomCode').value.trim();if(!name||!code)return toast('Name und Raumcode eingeben.');remember();socket.emit('joinRoom',{name,code,accessory:selectedAccessory})});
+$('#startBtn').addEventListener('click',()=>{ensureAudio();socket.emit('startGame')});
 
 socket.on('connect',()=>{myId=socket.id;updateHomePreview();});
 socket.on('errorMsg',toast); socket.on('notice',toast); socket.on('specialDone',e=>toast(e.text));
@@ -107,29 +109,115 @@ socket.on('hand',h=>{hand=h;renderHand();if(state)renderGame()});
 function renderLobby(){
   $('#lobbyCode').textContent=state.code; $('#lobbyHint').textContent=state.players.length<2?'Schick den Code an deine Mitspieler.':'Bereit zum Start!';
   $('#lobbyPlayers').innerHTML=state.players.map(p=>`<div class="lobby-player">${nameplateHTML(p.name,p.accessory,true)}<div>${p.id===state.hostId?'Host 👑':'Mitspieler'} · ${p.handCount} Karten</div></div>`).join('');
-  $('#startBtn').style.display=myId===state.hostId?'inline-block':'none'; $('#startBtn').disabled=state.players.length<2;
+  $('#startBtn').style.display=myId===state.hostId?'inline-block':'none'; $('#startBtn').disabled=state.players.length<2; updateMusicButtons();
 }
 function renderGame(){
-  if(!state)return; const me=state.players.find(p=>p.id===myId); if(!me)return;
+  if(!state)return; const me=state.players.find(p=>p.id===myId); if(!me)return; $('#abortBtn').style.display=myId===state.hostId&&state.phase!=='gameover'?'inline-block':'none'; updateMusicButtons();
   $('#selfName').textContent=me.name; $('#selfCount').textContent=`${me.handCount} Karten`; $('#selfNameplate').innerHTML=nameplateHTML(me.name,me.accessory,true);
   const others=state.players.filter(p=>p.id!==myId);
-  $('#opponents').innerHTML=others.map(p=>`<div class="opponent">${nameplateHTML(p.name,p.accessory,true)}<div class="opponent-meta"><span>${p.handCount} Karten</span>${p.selected?'<span>✓ gewählt</span>':''}</div><div class="back-fan">${Array.from({length:Math.min(p.handCount,7)},(_,i)=>`<img src="/assets/card_back.webp" alt="verdeckte Karte" style="transform:rotate(${(i-3)*5}deg)">`).join('')}</div></div>`).join('');
+  $('#opponents').innerHTML=others.map(p=>`<div class="opponent" data-player-id="${p.id}">${nameplateHTML(p.name,p.accessory,true)}<div class="opponent-meta"><span>${p.handCount} Karten</span>${p.selected?'<span>✓ gewählt</span>':''}</div><div class="back-fan">${Array.from({length:Math.min(p.handCount,7)},(_,i)=>`<img src="/assets/card_back.webp" alt="verdeckte Karte" style="transform:rotate(${(i-3)*5}deg)">`).join('')}</div></div>`).join('');
   renderHand();
 }
 function renderHand(){const wrap=$('#hand');if(!wrap)return;wrap.innerHTML='';for(const c of hand){const el=document.createElement('div');el.className=`hand-card ${c.type==='special'?'special':''}`;const img=document.createElement('img');img.src=c.image;img.alt=c.name;el.append(img);if(c.type==='normal'){el.tabIndex=0;const play=()=>{if(state?.phase!=='select')return toast('Warte auf die nächste Auswahl.');socket.emit('playCard',{cardId:c.id})};el.addEventListener('click',play);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();play()}})}else{const b=document.createElement('button');b.className='special-use';b.type='button';b.textContent='Spezial einsetzen';b.addEventListener('click',e=>{e.stopPropagation();if(state?.phase!=='select')return toast('Spezialkarten werden während der Auswahl eingesetzt.');socket.emit('useSpecial',{cardId:c.id})});el.append(b)}wrap.append(el)}}
 
-function beep(freq=620,dur=.1){try{const A=window.AudioContext||window.webkitAudioContext;const ctx=beep.ctx||(beep.ctx=new A());const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=freq;g.gain.setValueAtTime(.06,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+dur);o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+dur)}catch{}}
-socket.on('countdown',({seconds})=>{show('game');let n=seconds;const cd=$('#countdown');const tick=()=>{if(n<=0){cd.textContent='';return}cd.textContent=n;cd.style.animation='none';void cd.offsetWidth;cd.style.animation='countfade .9s ease both';beep(420+n*80,.12);n--;setTimeout(tick,1000)};tick()});
-socket.on('roundStart',e=>{$('#categoryIcon').textContent=e.icon;$('#categoryText').textContent=e.label;$('#tableCards').innerHTML='';$('#roundMessage').textContent='Wähle deine beste Karte.';$('#diceZone').innerHTML='';beep(760,.15)});
+function ensureAudio(){
+  try{
+    const A=window.AudioContext||window.webkitAudioContext;
+    if(!ensureAudio.ctx) ensureAudio.ctx=new A();
+    if(ensureAudio.ctx.state==='suspended') ensureAudio.ctx.resume();
+    restartMusic();
+    return ensureAudio.ctx;
+  }catch{return null}
+}
+function tone(freq=620,dur=.1,gain=.045,type='sine',when=0){
+  if(!musicEnabled)return;
+  const ctx=ensureAudio.ctx||ensureAudio(); if(!ctx)return;
+  const o=ctx.createOscillator(),g=ctx.createGain();
+  o.type=type;o.frequency.value=freq;
+  const t=ctx.currentTime+when;g.gain.setValueAtTime(gain,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+dur);
+}
+function beep(freq=620,dur=.1){tone(freq,dur,.055,'sine')}
+function setMusicMode(mode){musicMode=mode;restartMusic()}
+function restartMusic(){
+  if(musicTimer){clearInterval(musicTimer);musicTimer=null}
+  if(!musicEnabled || !ensureAudio.ctx || musicMode==='home')return;
+  const lobby=[261.63,329.63,392,523.25,392,329.63];
+  const game=[220,293.66,349.23,440,392,293.66,261.63,329.63];
+  const seq=musicMode==='game'?game:lobby; musicStep=0;
+  const play=()=>{if(!musicEnabled)return;const f=seq[musicStep++%seq.length];tone(f,.65,.012,'triangle');if(musicStep%4===0)tone(f*2,.22,.008,'sine',.12)};
+  play();musicTimer=setInterval(play,musicMode==='game'?620:820);
+}
+function toggleMusic(){musicEnabled=!musicEnabled;localStorage.setItem('mlp_music',musicEnabled?'on':'off');if(musicEnabled)ensureAudio();else if(musicTimer){clearInterval(musicTimer);musicTimer=null}updateMusicButtons();restartMusic()}
+function updateMusicButtons(){document.querySelectorAll('.music-toggle').forEach(b=>b.textContent=musicEnabled?'🔊 Musik an':'🔇 Musik aus')}
+function clearTable(){lastReveal=[];$('#tableCards').innerHTML=''}
+function addCommitGhost(e){
+  const t=$('#tableCards'); if(t.querySelector(`[data-player-id="${e.playerId}"]`))return;
+  const d=document.createElement('div');d.className='played-card ghost-card card-commit';d.dataset.playerId=e.playerId;
+  d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-back-face"><img src="/assets/card_back.webp" alt="verdeckte Karte"></div></div><div class="who">${escapeHtml(e.name)}</div>`;
+  t.append(d); beep(340,.06);
+}
+function revealCards(e){
+  lastReveal=e.entries;const t=$('#tableCards');
+  e.entries.forEach((x,i)=>{
+    let d=t.querySelector(`[data-player-id="${x.pid}"]`);
+    if(!d){d=document.createElement('div');t.append(d)}
+    d.className='played-card reveal-flip';d.dataset.playerId=x.pid;d.style.animationDelay=`${i*.07}s`;
+    d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-front-face"><img src="${x.card.image}" alt="${escapeHtml(x.card.name)}"><span class="value">${x.value}${x.bonus?` (+${x.bonus})`:''}</span></div></div><div class="who">${escapeHtml(x.name)}</div>`;
+  });
+  $('#roundMessage').textContent='Karten werden verglichen …';beep(920,.12);
+}
+function animateCapture(winnerId){
+  const target=winnerId===myId?$('#hand'):document.querySelector(`.opponent[data-player-id="${winnerId}"]`);
+  if(!target)return;
+  const tr=target.getBoundingClientRect();const tx=tr.left+tr.width/2,ty=tr.top+tr.height/2;
+  [...document.querySelectorAll('#tableCards .played-card')].forEach((el,i)=>{
+    const r=el.getBoundingClientRect();const dx=tx-(r.left+r.width/2),dy=ty-(r.top+r.height/2);
+    el.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${dx}px,${dy}px) scale(.28) rotate(${i%2?18:-18}deg)`,opacity:.05}],{duration:850,delay:i*60,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
+  });
+  setTimeout(()=>{$('#tableCards').innerHTML=''},980);
+}
+function setupDice(e,msg){
+  $('#roundMessage').textContent=msg;const z=$('#diceZone');z.innerHTML='<div id="diceSpectacle" class="dice-spectacle"></div>';
+  if(e.playerIds.includes(myId)){
+    const b=document.createElement('button');b.type='button';b.className='dice-btn roll-trigger';b.textContent='🎲 Würfeln';
+    b.addEventListener('click',()=>{b.disabled=true;socket.emit('rollDice')});z.append(b)
+  }else{
+    const w=document.createElement('div');w.className='dice-wait';w.textContent='Die betroffenen Spieler würfeln …';z.append(w)
+  }
+}
+function diceTile(id,name){
+  let d=document.querySelector(`.dice-result[data-player-id="${id}"]`);if(d)return d;
+  const z=$('#diceSpectacle')||$('#diceZone');d=document.createElement('div');d.className='dice-result';d.dataset.playerId=id;d.innerHTML=`<strong>${escapeHtml(name||'Spieler')}</strong><span class="dice-face">⚄</span>`;z.prepend(d);return d;
+}
+function startDiceAnimation(e){
+  const d=diceTile(e.playerId,e.name),face=d.querySelector('.dice-face');d.classList.add('rolling-live');
+  let n=0;const faces=['⚀','⚁','⚂','⚃','⚄','⚅'];const timer=setInterval(()=>{face.textContent=faces[n++%6]},70);diceAnimations.set(e.playerId,timer);beep(250,.22)
+}
+function stopDiceAnimation(e){
+  const timer=diceAnimations.get(e.playerId);if(timer){clearInterval(timer);diceAnimations.delete(e.playerId)}
+  const d=diceTile(e.playerId,e.name),face=d.querySelector('.dice-face');d.classList.remove('rolling-live');face.textContent=['⚀','⚁','⚂','⚃','⚄','⚅'][e.value-1];d.classList.add('dice-landed');toast(`${e.name} würfelt ${e.value}`);beep(520+e.value*70,.1)
+}
+
+socket.on('countdown',({seconds})=>{show('game');ensureAudio();let n=seconds;const cd=$('#countdown');const tick=()=>{if(n<=0){cd.textContent='';return}cd.textContent=n;cd.style.animation='none';void cd.offsetWidth;cd.style.animation='countfade .9s ease both';beep(420+n*80,.12);n--;setTimeout(tick,1000)};tick()});
+socket.on('roundStart',e=>{$('#categoryIcon').textContent=e.icon;$('#categoryText').textContent=e.label;clearTable();$('#roundMessage').textContent='Wähle deine beste Karte.';$('#diceZone').innerHTML='';beep(760,.15)});
+socket.on('cardCommitted',addCommitGhost);
 socket.on('playerSelected',()=>beep(300,.05));
-socket.on('reveal',e=>{lastReveal=e.entries;const t=$('#tableCards');t.innerHTML='';e.entries.forEach((x,i)=>{const d=document.createElement('div');d.className='played-card';d.style.animationDelay=`${i*.08}s`;d.innerHTML=`<img src="${x.card.image}" alt="${escapeHtml(x.card.name)}"><span class="value">${x.value}${x.bonus?` (+${x.bonus})`:''}</span><div class="who">${escapeHtml(x.name)}</div>`;t.append(d)});$('#roundMessage').textContent='Karten werden verglichen …';beep(920,.12)});
-socket.on('roundWinner',e=>{$('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;beep(1040,.22)});
+socket.on('reveal',revealCards);
+socket.on('roundWinner',e=>{$('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;animateCapture(e.winnerId);beep(1040,.22)});
 socket.on('tieStart',e=>setupDice(e,'Gleichstand! Würfeln entscheidet.'));
 socket.on('tieAgain',e=>setupDice(e,'Schon wieder Gleichstand – nochmal würfeln!'));
-function setupDice(e,msg){$('#roundMessage').textContent=msg;const z=$('#diceZone');z.innerHTML='';if(e.playerIds.includes(myId)){const b=document.createElement('button');b.type='button';b.className='dice-btn';b.textContent='🎲';b.addEventListener('click',()=>{b.disabled=true;b.classList.add('rolling');beep(250,.3);setTimeout(()=>socket.emit('rollDice'),500)});z.append(b)}else z.textContent='Die betroffenen Spieler würfeln …'}
-socket.on('diceRolled',e=>{toast(`${e.name} würfelt ${e.value}`);beep(520+e.value*70,.08)});
-socket.on('gameOver',e=>{$('#roundMessage').textContent=`👑 ${e.winnerName} ist Champion!`;if(e.winnerId===myId){pendingGift=true;setTimeout(()=>{const d=$('#giftDialog');$('#giftResult').textContent='';$('#giftBox').style.display='inline-block';d.showModal()},800)}});
-
+socket.on('diceRolling',startDiceAnimation);
+socket.on('diceRolled',stopDiceAnimation);
+socket.on('gameOver',e=>{
+  $('#roundMessage').textContent=`👑 ${e.winnerName} ist Champion!`;
+  $('#gameOverTitle').textContent=`👑 ${e.winnerName} gewinnt!`;
+  $('#gameOverText').textContent='Die Partie ist beendet. Ihr könnt gemeinsam in die Lobby zurückkehren oder ins Hauptmenü gehen.';
+  pendingGift=e.winnerId===myId;$('#rewardBtn').style.display=pendingGift?'inline-block':'none';
+  if(!$('#gameOverDialog').open)$('#gameOverDialog').showModal();
+});
+socket.on('backToLobby',()=>{try{$('#gameOverDialog').close()}catch{};try{$('#giftDialog').close()}catch{};clearTable()});
+socket.on('roomLeft',()=>{state=null;hand=[];clearTable();renderHand();show('home');toast('Du hast den Raum verlassen.')});
 socket.on('flutterChoices',e=>showChoices('Fluttershy: Welche Karte möchtest du behalten?',e.cards,c=>socket.emit('flutterKeep',{cardId:c.id})));
 socket.on('rarityChoose',e=>showChoices('Rarity: Welche Karte möchtest du austauschen?',e.cards,c=>socket.emit('raritySwap',{cardId:c.id})));
 function showChoices(title,cards,cb){$('#choiceTitle').textContent=title;const g=$('#choiceCards');g.innerHTML='';cards.forEach(c=>{const b=document.createElement('button');b.type='button';b.innerHTML=`<img src="${c.image}" alt="${escapeHtml(c.name)}">`;b.addEventListener('click',()=>{$('#choiceDialog').close();cb(c)});g.append(b)});$('#choiceDialog').showModal()}
@@ -144,4 +232,17 @@ $('#giftBox').addEventListener('click',()=>{
   renderAccessoryGrid(); beep(1200,.35);
 });
 
+
+function leaveRoomNow(){ if(confirm('Raum wirklich verlassen und zum Hauptmenü zurück?')) socket.emit('leaveRoom') }
+$('#leaveLobbyBtn').addEventListener('click',leaveRoomNow);
+$('#leaveGameBtn').addEventListener('click',leaveRoomNow);
+$('#abortBtn').addEventListener('click',()=>{if(confirm('Die laufende Partie für alle abbrechen und zur Lobby zurückkehren?'))socket.emit('abortGame')});
+$('#returnLobbyBtn').addEventListener('click',()=>socket.emit('returnToLobby'));
+$('#gameOverHomeBtn').addEventListener('click',()=>{try{$('#gameOverDialog').close()}catch{};socket.emit('leaveRoom')});
+$('#closeGameOverBtn').addEventListener('click',()=>$('#gameOverDialog').close());
+$('#rewardBtn').addEventListener('click',()=>{try{$('#gameOverDialog').close()}catch{};$('#giftResult').textContent='';$('#giftBox').style.display='inline-block';$('#giftDialog').showModal()});
+$('#closeGiftBtn').addEventListener('click',()=>$('#giftDialog').close());
+$('#giftDoneBtn').addEventListener('click',()=>$('#giftDialog').close());
+document.querySelectorAll('.music-toggle').forEach(b=>b.addEventListener('click',toggleMusic));
+updateMusicButtons();
 updateHomePreview();

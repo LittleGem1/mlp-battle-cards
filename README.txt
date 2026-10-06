@@ -1,16 +1,23 @@
-NUR DIESE 2 DATEIEN ERSETZEN:
-- style.css
+MLP Battle Cards – großer Gameplay-Patch
+
+ERSETZEN MUSST DU NUR:
+- server.js
+- cards.js
+- public/index.html
+- public/client.js
 - public/style.css
 
-Was sich ändert:
-- Flügel werden optisch geteilt: ein Flügel links, einer rechts vom Namen.
-- Ballons, Sweets/Lollis und andere Einzel-Items sitzen klein rechts neben dem Namen.
-- Krone/Halo/Horn usw. sitzen oben mittig.
-- Orbit-/Magieeffekte bleiben eng um das Namensschild.
-- Auch die kleineren Namensfelder in Lobby und Spiel werden passend skaliert.
+Was neu ist:
+- Karten deutlich größer
+- keine normalen Kartenwerte von 10 mehr (alle bisherigen 10er sind 9)
+- Hauptmenü-Buttons in Lobby und Spiel
+- Host kann eine laufende Partie abbrechen und alle gehen zurück in die Lobby
+- Nach Spielende: Zurück-zur-Lobby-, Hauptmenü- und Schließen-Button
+- Gewinn-Belohnung hat X- und Schließen-Button
+- Würfeln wird für ALLE Spieler sichtbar animiert
+- abgelegte Karten fliegen verdeckt in die Mitte und drehen beim Aufdecken um
+- gewonnene Karten fliegen sichtbar zum Gewinner
+- Lobby bekommt animierten Kristall-/Aurora-Hintergrund
+- leise, selbst erzeugte Hintergrundmusik + Soundeffekte, mit Musik-an/aus-Button
 
-Danach:
-1. beide Dateien bei GitHub ersetzen
-2. committen
-3. Render -> Manual Deploy -> Deploy latest commit
-4. Strg+F5
+Danach GitHub committen, Render -> Manual Deploy -> Deploy latest commit und Strg+F5.
