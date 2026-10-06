@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Crystal Clash – Sammle die meisten Karten</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <main id="app">
+    <section id="home" class="screen active">
+      <div class="hero crystal-panel">
+        <div class="logo-gem">✦</div>
+        <h1>Crystal Clash</h1>
+        <p>Sammle die meisten Karten, um zu gewinnen.</p>
+        <div class="profile-row">
+          <label>Dein Name <input id="playerName" maxlength="24" placeholder="Spielername" /></label>
+          <button id="accessoryBtn" class="soft-btn" type="button">Namens-Accessoire ändern</button>
+        </div>
+        <div class="menu-grid">
+          <button id="createBtn" class="primary-btn" type="button">✨ Raum erstellen</button>
+          <div class="join-box"><input id="roomCode" maxlength="5" placeholder="RAUMCODE" /><button id="joinBtn" class="primary-btn" type="button">Beitreten</button></div>
+        </div>
+        <p class="hint">2–8 Spieler · 7 zufällige, einzigartige Karten pro Spieler</p>
+      </div>
+    </section>
+
+    <section id="lobby" class="screen">
+      <div class="lobby crystal-panel">
+        <h2>Raum <span id="lobbyCode"></span></h2>
+        <p id="lobbyHint">Warte auf Mitspieler …</p>
+        <div id="lobbyPlayers" class="lobby-players"></div>
+        <button id="startBtn" class="primary-btn" type="button">Spiel starten</button>
+      </div>
+    </section>
+
+    <section id="game" class="screen">
+      <div class="arena">
+        <div class="crystal c1"></div><div class="crystal c2"></div><div class="crystal c3"></div><div class="crystal c4"></div>
+        <div id="opponents" class="opponents"></div>
+        <div class="center-stage">
+          <div id="category" class="category"><span id="categoryIcon">✦</span><strong id="categoryText">Bereit?</strong></div>
+          <div id="countdown" class="countdown" aria-live="assertive"></div>
+          <div id="tableCards" class="table-cards"></div>
+          <div id="roundMessage" class="round-message" aria-live="polite"></div>
+          <div id="diceZone" class="dice-zone"></div>
+        </div>
+        <div class="self-bar"><span id="selfAccessory"></span><strong id="selfName"></strong><span id="selfCount"></span></div>
+        <div id="hand" class="hand"></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <dialog id="accessoryDialog" class="modal"><form method="dialog"><h3>Namens-Accessoire</h3><p>Wähle aus deinen freigeschalteten Items.</p><div id="accessoryGrid" class="accessory-grid"></div><button class="soft-btn">Schließen</button></form></dialog>
+  <dialog id="starterDialog" class="modal"><form method="dialog"><h3>Dein erstes Accessoire</h3><p>Wähle eins. Die anderen kannst du später durch Siege bekommen.</p><div class="starter-grid"><button value="changeling" type="button">🦋<span>Changeling-Flügel</span></button><button value="balloon" type="button">🎈<span>Ballon</span></button><button value="candy" type="button">🍬<span>Süßigkeiten</span></button></div></form></dialog>
+  <dialog id="choiceDialog" class="modal"><form method="dialog"><h3 id="choiceTitle">Wähle eine Karte</h3><div id="choiceCards" class="choice-cards"></div></form></dialog>
+  <dialog id="giftDialog" class="modal gift-modal"><div class="gift-wrap"><h3>Du hast gewonnen! ✨</h3><button id="giftBox" class="gift-box" type="button">🎁</button><div id="giftResult"></div></div></dialog>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/client.js"></script>
+</body>
+</html>
