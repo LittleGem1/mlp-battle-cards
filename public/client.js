@@ -32,8 +32,22 @@ const ACCESSORY_KEYS=Object.keys(ACCESSORIES);
 const STARTER_KEYS=['changeling','balloon','candy'];
 
 let state=null, hand=[], myId=null;
-let selectedAccessory=localStorage.getItem('cc_accessory')||'';
+
+/* Die drei Start-Accessoires sind IMMER sofort verfügbar.
+   Das repariert auch alte Browser-Spielstände, in denen nur eins freigeschaltet war. */
+let selectedAccessory=localStorage.getItem('cc_accessory')||'changeling';
 let unlocks=JSON.parse(localStorage.getItem('cc_unlocks')||'[]').filter(x=>ACCESSORIES[x]);
+
+for(const starter of STARTER_KEYS){
+  if(!unlocks.includes(starter)) unlocks.push(starter);
+}
+if(!STARTER_KEYS.includes(selectedAccessory) && !unlocks.includes(selectedAccessory)){
+  selectedAccessory='changeling';
+}
+
+localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));
+localStorage.setItem('cc_accessory',selectedAccessory);
+
 let pendingGift=false, lastReveal=[];
 const playerName=$('#playerName'); playerName.value=localStorage.getItem('cc_name')||'';
 

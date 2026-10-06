@@ -1,20 +1,17 @@
-DIESER PATCH ENTHÄLT NUR DIE ACCESSOIRE-BILDER.
+DIESER PATCH ÄNDERT NUR client.js.
 
-Warum:
-Dein Server liefert jetzt ausschließlich den Ordner /public aus.
-Die Bilder lagen vorher außerhalb davon, deshalb kam das kaputte Bildsymbol.
+Er behebt:
+- Changeling-Flügel sind von Anfang an frei.
+- Ballons sind von Anfang an frei.
+- Süßigkeiten sind von Anfang an frei.
+- Alle drei können direkt im Namens-Accessoire-Menü ausgewählt werden.
+- Alte Browser-Spielstände werden automatisch repariert.
+- Alle weiteren Accessoires bleiben gesperrt und werden erst durch Siege freigeschaltet.
 
-So anwenden:
+Anwendung:
 1. ZIP entpacken.
-2. Den enthaltenen Ordner "public" in deinen Projektordner ziehen.
-3. "Dateien im Ziel ersetzen/zusammenführen" bestätigen.
-4. Bei GitHub nur den Ordner:
-   public/assets/accessories/
-   hochladen bzw. ergänzen.
-5. Committen.
-6. Render -> Manual Deploy -> Deploy latest commit.
-7. Website mit Strg+F5 neu laden.
-
-Es müssen danach 24 PNG-Dateien unter
-public/assets/accessories/
-liegen.
+2. client.js im Hauptordner ersetzen.
+3. public/client.js ersetzen.
+4. Nur diese beiden Dateien zu GitHub hochladen und committen.
+5. Render -> Manual Deploy -> Deploy latest commit.
+6. Website mit Strg+F5 neu laden.
