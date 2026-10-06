@@ -1,17 +1,12 @@
-DIESER PATCH ÄNDERT NUR client.js.
+ERSETZE NUR DIESE DATEIEN:
+- style.css
+- public/style.css
 
-Er behebt:
-- Changeling-Flügel sind von Anfang an frei.
-- Ballons sind von Anfang an frei.
-- Süßigkeiten sind von Anfang an frei.
-- Alle drei können direkt im Namens-Accessoire-Menü ausgewählt werden.
-- Alte Browser-Spielstände werden automatisch repariert.
-- Alle weiteren Accessoires bleiben gesperrt und werden erst durch Siege freigeschaltet.
+Dieser Mini-Fix macht die Namens-Accessoires im Startbildschirm kleiner.
+Sie sollen nur das Namensfeld ergänzen und nicht mehr den ganzen Screen überdecken.
 
-Anwendung:
-1. ZIP entpacken.
-2. client.js im Hauptordner ersetzen.
-3. public/client.js ersetzen.
-4. Nur diese beiden Dateien zu GitHub hochladen und committen.
-5. Render -> Manual Deploy -> Deploy latest commit.
-6. Website mit Strg+F5 neu laden.
+Danach:
+1. beide Dateien bei GitHub ersetzen
+2. committen
+3. Render -> Manual Deploy -> Deploy latest commit
+4. danach im Browser Strg+F5

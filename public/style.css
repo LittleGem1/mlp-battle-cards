@@ -221,3 +221,121 @@
   font-weight:900;
   box-shadow:0 0 18px rgba(115,111,255,.18);
 }
+
+
+/* ===== MINI FIX: start-screen name accessories smaller and attached to the nameplate ===== */
+.nameplate-preview{
+  min-height: 92px !important;
+  margin: 4px 0 18px !important;
+  overflow: visible;
+}
+
+.nameplate{
+  min-width: 220px;
+  min-height: 54px;
+  padding: 10px 28px;
+}
+
+/* Wings closer to the plate */
+.nameplate.changeling .decor,
+.nameplate.angelwings .decor,
+.nameplate.batwings .decor,
+.nameplate.techwings .decor,
+.nameplate.cape .decor{
+  width: 230px !important;
+  height: 86px !important;
+  left: 50% !important;
+  top: 50% !important;
+  inset: auto !important;
+  transform: translate(-50%, -50%) !important;
+  place-items: center;
+}
+.nameplate.changeling .decor img,
+.nameplate.angelwings .decor img,
+.nameplate.batwings .decor img,
+.nameplate.techwings .decor img,
+.nameplate.cape .decor img{
+  width: 230px !important;
+  height: 86px !important;
+  object-fit: contain !important;
+  opacity: .95;
+}
+.nameplate-small.changeling .decor,
+.nameplate-small.angelwings .decor,
+.nameplate-small.batwings .decor,
+.nameplate-small.techwings .decor,
+.nameplate-small.cape .decor{
+  width: 170px !important;
+  height: 64px !important;
+  left: 50% !important;
+  top: 50% !important;
+  inset: auto !important;
+  transform: translate(-50%, -50%) !important;
+}
+.nameplate-small.changeling .decor img,
+.nameplate-small.angelwings .decor img,
+.nameplate-small.batwings .decor img,
+.nameplate-small.techwings .decor img,
+.nameplate-small.cape .decor img{
+  width: 170px !important;
+  height: 64px !important;
+  object-fit: contain !important;
+}
+
+/* Balloon accessory: small cluster to the right of the name only */
+.nameplate.balloon .decor{
+  width: 112px !important;
+  height: 88px !important;
+  left: 100% !important;
+  top: 50% !important;
+  inset: auto !important;
+  transform: translate(-38%, -54%) !important;
+  place-items: center;
+}
+.nameplate.balloon .decor img{
+  width: 112px !important;
+  height: 88px !important;
+  object-fit: contain !important;
+}
+.nameplate-small.balloon .decor{
+  width: 82px !important;
+  height: 64px !important;
+  left: 100% !important;
+  top: 50% !important;
+  inset: auto !important;
+  transform: translate(-38%, -54%) !important;
+}
+.nameplate-small.balloon .decor img{
+  width: 82px !important;
+  height: 64px !important;
+  object-fit: contain !important;
+}
+
+/* Sweets accessory: small candy to the lower right of the plate */
+.nameplate.candy .decor{
+  width: 82px !important;
+  height: 82px !important;
+  left: 100% !important;
+  top: 50% !important;
+  inset: auto !important;
+  transform: translate(-10%, -10%) rotate(-10deg) !important;
+  place-items: center;
+}
+.nameplate.candy .decor img{
+  width: 82px !important;
+  height: 82px !important;
+  object-fit: contain !important;
+}
+.nameplate-small.candy .decor{
+  width: 60px !important;
+  height: 60px !important;
+  left: 100% !important;
+  top: 50% !important;
+  inset: auto !important;
+  transform: translate(-8%, -12%) rotate(-10deg) !important;
+}
+.nameplate-small.candy .decor img{
+  width: 60px !important;
+  height: 60px !important;
+  object-fit: contain !important;
+}
