@@ -139,7 +139,7 @@ function finishAfterCapture(r,winnerId,playedIds){
   if(gameOverIfNeeded(r))return;
   startRound(r,1500);
 }
-const FINISHERS=['dragonfire','dissolve','starbarrage','gunshots','flowerdevour','cakebites','loserplank','freeze','lightningstorm','portalvoid','crystalburst','shadowchains'];
+const FINISHERS=['dragonfire','dissolve','starbarrage','gunshots','flowerdevour','cakebites','loserplank','freeze','lightningstorm','portalvoid','crystalburst','shadowchains','paintbomb','stickerstorm','cometcrash','magicseal'];
 function pickFinisher(r){
   const choices=FINISHERS.filter(x=>x!==r.lastFinisher);
   const f=choices[Math.floor(Math.random()*choices.length)]||FINISHERS[0];
@@ -148,10 +148,10 @@ function pickFinisher(r){
 function settleRound(r,winnerId){
   const ids=Object.values(r.played).map(x=>x.cardId),winner=r.players.get(winnerId);if(!winner)return;
   r.phase='result';
-  const finisher=pickFinisher(r),duration=3300;
+  const finisher=pickFinisher(r),duration=4600;
   io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:ids.map(id=>byId[id]).filter(Boolean),finisher,duration});
   sendState(r);
-  setTimeout(()=>finishAfterCapture(r,winnerId,ids),duration+1050);
+  setTimeout(()=>finishAfterCapture(r,winnerId,ids),duration+220);
 }
 function evaluate(r){
   if(r.phase!=='select')return;

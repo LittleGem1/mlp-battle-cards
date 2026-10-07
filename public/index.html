@@ -8,6 +8,7 @@
 </head>
 <body class="scene-home">
   <div id="crystalDrift" class="crystal-drift" aria-hidden="true"></div>
+  <div id="lobbySceneVfx" class="lobby-scene-vfx" aria-hidden="true"></div>
   <main id="app">
     <section id="home" class="screen active">
       <div class="hero crystal-panel">
@@ -52,7 +53,7 @@
         <div id="opponents" class="opponents"></div>
         <div class="center-stage">
           <div id="category" class="category"><span id="categoryIcon">✦</span><strong id="categoryText">Bereit?</strong></div>
-          <div id="countdown" class="countdown" aria-live="assertive"></div>
+          <div id="countdownAnchor" class="countdown-anchor" aria-hidden="true"></div>
           <div id="tableCards" class="table-cards"></div>
           <div id="selectionTimer" class="selection-timer" aria-live="polite"></div>
           <div id="roundMessage" class="round-message" aria-live="polite"></div>
@@ -65,6 +66,15 @@
     </section>
   </main>
 
+  <div id="countdown" class="countdown global-countdown" aria-live="assertive"></div>
+  <div id="finisherOverlay" class="finisher-overlay" aria-hidden="true">
+    <div class="finisher-stage">
+      <div id="finisherHeadline" class="finisher-headline"></div>
+      <div id="finisherWinner" class="finisher-winner"></div>
+      <div id="finisherLosers" class="finisher-losers"></div>
+      <div id="finisherImpact" class="finisher-impact" aria-hidden="true"></div>
+    </div>
+  </div>
   <div id="toast" class="toast" role="status"></div>
   <div id="roundIntroOverlay" class="round-intro-overlay" aria-hidden="true"><div class="round-intro-card"><span id="roundIntroRound">RUNDE 1</span><b id="roundIntroIcon">⭐</b><strong id="roundIntroLabel">MAGIE</strong><i></i></div></div>
   <button id="rulesBtn" class="rules-floating" type="button">📖 Spielregeln</button>
@@ -267,7 +277,7 @@
   </dialog>
 
   <div id="ytAudioPlayer" class="yt-audio-player" aria-hidden="true"></div>
-  <div class="music-credit">Musik im Hintergrund via YouTube.</div>
+  <div class="music-credit">Ausgewählte Lobby- und Battle-Musik läuft unsichtbar im Hintergrund via YouTube.</div>
   <script src="https://www.youtube.com/iframe_api"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/client.js"></script>

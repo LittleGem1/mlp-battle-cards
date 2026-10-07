@@ -80,12 +80,23 @@ localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));
 let pendingGift=false, lastReveal=[];
 let musicEnabled=localStorage.getItem('mlp_music')!=='off', musicMode='home';
 let musicVolume=Math.max(0,Math.min(100,Number(localStorage.getItem('mlp_music_volume')||30)));
-const YT_TRACKS={lobby:'pWAP7fIwGnI',game:'9gBTKiVqprE'};
+const YT_TRACKS={home:'pWAP7fIwGnI',lobby:'pWAP7fIwGnI',game:'9gBTKiVqprE'};
 let ytPlayer=null,ytReady=false,userInteracted=false;
 const diceAnimations=new Map();
 const playerName=$('#playerName'); playerName.value=localStorage.getItem('cc_name')||'';
 
-function show(name){Object.values(screens).forEach(x=>x.classList.remove('active'));screens[name].classList.add('active');document.body.classList.remove('scene-home','scene-lobby','scene-game');document.body.classList.add('scene-'+name);setMusicMode(name)}
+let currentScreen='home';
+function show(name){
+  Object.values(screens).forEach(x=>x.classList.remove('active'));
+  screens[name].classList.add('active');
+  document.body.classList.remove('scene-home','scene-lobby','scene-game');
+  document.body.classList.add('scene-'+name);
+  if(name==='home'||name==='lobby'){
+    if(currentScreen!==name||!document.body.dataset.lobbyScene) buildLobbyScene();
+  }
+  currentScreen=name;
+  setMusicMode(name);
+}
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2600)}
 function remember(){const n=playerName.value.trim();if(n)localStorage.setItem('cc_name',n)}
 function ensureStarter(){ return true; }
@@ -100,6 +111,51 @@ function buildCrystalDrift(){
   }
 }
 buildCrystalDrift();
+const LOBBY_SCENES=['dojo','crystal_cave','cosmic'];
+let lastLobbyScene='';
+function chooseLobbyScene(){
+  const choices=LOBBY_SCENES.filter(x=>x!==lastLobbyScene);
+  const scene=choices[Math.floor(Math.random()*choices.length)]||LOBBY_SCENES[0];
+  lastLobbyScene=scene;return scene;
+}
+function makeEl(cls,styles={}){const e=document.createElement('i');e.className=cls;for(const [k,v] of Object.entries(styles))e.style.setProperty(k,v);return e}
+function buildLobbyScene(scene=chooseLobbyScene()){
+  const root=$('#lobbySceneVfx');if(!root)return;
+  document.body.classList.remove('lobby-scene-dojo','lobby-scene-crystal_cave','lobby-scene-cosmic');
+  document.body.classList.add('lobby-scene-'+scene);document.body.dataset.lobbyScene=scene;
+  root.className='lobby-scene-vfx scene-'+scene;root.innerHTML='';
+  if(scene==='dojo'){
+    for(let i=0;i<5;i++)root.append(makeEl('dojo-lantern',{ '--x':`${8+i*21}%`,'--delay':`${-i*.8}s`,'--scale':`${.7+(i%2)*.2}` }));
+    for(let i=0;i<18;i++)root.append(makeEl('dojo-petal',{ '--x':`${(i*19)%104}%`,'--delay':`${-(i%9)*.8}s`,'--dur':`${7+(i%6)}s`,'--drift':`${-90+(i*27)%180}px` }));
+    for(let i=0;i<10;i++)root.append(makeEl('dojo-spark',{ '--x':`${(i*31)%100}%`,'--y':`${15+(i*17)%70}%`,'--delay':`${-i*.35}s` }));
+  }else if(scene==='crystal_cave'){
+    for(let i=0;i<13;i++)root.append(makeEl('cave-crystal',{ '--x':`${(i*23)%101}%`,'--h':`${70+(i*31)%150}px`,'--delay':`${-i*.3}s`,'--rot':`${-18+(i*13)%36}deg` }));
+    for(let i=0;i<26;i++)root.append(makeEl('cave-mote',{ '--x':`${(i*37)%103}%`,'--delay':`${-(i%11)*.55}s`,'--dur':`${6+(i%7)}s`,'--size':`${3+(i%4)}px` }));
+    for(let i=0;i<12;i++)root.append(makeEl('cave-drop',{ '--x':`${5+(i*47)%92}%`,'--delay':`${-(i%6)*.7}s` }));
+  }else{
+    root.append(makeEl('cosmic-planet'));
+    root.append(makeEl('cosmic-ring'));
+    for(let i=0;i<42;i++)root.append(makeEl('cosmic-star',{ '--x':`${(i*53)%101}%`,'--y':`${(i*29)%92}%`,'--delay':`${-(i%10)*.4}s`,'--size':`${1+(i%4)}px` }));
+    for(let i=0;i<8;i++)root.append(makeEl('cosmic-meteor',{ '--x':`${-20+(i*19)%90}%`,'--y':`${5+(i*11)%55}%`,'--delay':`${-i*1.4}s` }));
+  }
+}
+buildLobbyScene();
+function buildArenaVfx(id){
+  const root=$('#arenaVfx');if(!root)return;root.innerHTML='';root.className='arena-vfx vfx-'+id;
+  if(id==='crystal_colosseum'){
+    for(let i=0;i<18;i++)root.append(makeEl('arena-crystal-shard',{ '--x':`${(i*31)%101}%`,'--y':`${8+(i*23)%82}%`,'--delay':`${-(i%9)*.45}s`,'--scale':`${.45+(i%5)*.16}` }));
+    for(let i=0;i<3;i++)root.append(makeEl('arena-rune-ring',{ '--ring':`${i}`,'--delay':`${-i*2.1}s` }));
+    for(let i=0;i<5;i++)root.append(makeEl('arena-light-beam',{ '--x':`${8+i*21}%`,'--delay':`${-i*.9}s` }));
+  }else if(id==='storm_temple'){
+    for(let i=0;i<42;i++)root.append(makeEl('arena-rain',{ '--x':`${(i*17)%105}%`,'--delay':`${-(i%12)*.12}s`,'--dur':`${.55+(i%5)*.08}s` }));
+    for(let i=0;i<5;i++)root.append(makeEl('arena-cloud',{ '--x':`${-5+i*24}%`,'--y':`${3+(i%2)*9}%`,'--delay':`${-i*1.4}s` }));
+    for(let i=0;i<4;i++)root.append(makeEl('arena-lightning',{ '--x':`${13+i*23}%`,'--delay':`${-i*2.2}s` }));
+  }else{
+    for(let i=0;i<34;i++)root.append(makeEl('forge-spark',{ '--x':`${(i*29)%102}%`,'--delay':`${-(i%13)*.22}s`,'--dur':`${2.8+(i%6)*.35}s` }));
+    for(let i=0;i<9;i++)root.append(makeEl('forge-rune',{ '--x':`${8+(i*11)%84}%`,'--y':`${12+(i*17)%72}%`,'--delay':`${-i*.7}s` }));
+    for(let i=0;i<3;i++)root.append(makeEl('forge-orbit',{ '--ring':`${i}`,'--delay':`${-i*2.7}s` }));
+  }
+}
 const CATEGORY_UI={strength:['🏋️','STÄRKE'],speed:['⚡','SCHNELLIGKEIT'],energy:['🔋','ENERGIE'],magic:['⭐','MAGIE']};
 
 function accessoryDecor(key){const a=ITEMS[key]||ITEMS.changeling;return `<span class="decor decor-${key}" aria-hidden="true"><img src="${a.image}" alt=""></span>`;}
@@ -185,7 +241,7 @@ function renderLobby(){
 function renderGame(){
   if(!state)return;
   const me=state.players.find(p=>p.id===myId);if(!me)return;
-  const arena=document.querySelector('.arena');if(arena){arena.classList.remove('arena-crystal_colosseum','arena-storm_temple','arena-celestial_forge');arena.classList.add('arena-'+(state.arenaId||'crystal_colosseum'));}
+  const arena=document.querySelector('.arena');if(arena){const arenaId=state.arenaId||'crystal_colosseum';arena.classList.remove('arena-crystal_colosseum','arena-storm_temple','arena-celestial_forge');arena.classList.add('arena-'+arenaId);if(arena.dataset.vfx!==arenaId){arena.dataset.vfx=arenaId;buildArenaVfx(arenaId);}}
   $('#abortBtn').style.display=myId===state.hostId&&state.phase!=='gameover'?'inline-block':'none';
   $('#selfName').textContent=me.name;
   $('#selfCount').textContent=`${me.handCount} Karten`;
@@ -254,11 +310,62 @@ function diceRollSound(){for(let i=0;i<8;i++)tone(180+i*33,.045,.035,i%2?'square
 function diceLandSound(v){tone(420+v*70,.12,.07,'triangle');tone(210+v*25,.18,.045,'sine',.07)}
 function specialSound(){tone(440,.12,.055,'sine');tone(660,.18,.05,'triangle',.08);tone(990,.28,.045,'sine',.18)}
 function setMusicMode(mode){musicMode=mode;syncMusic()}
-window.onYouTubeIframeAPIReady=()=>{try{ytPlayer=new YT.Player('ytAudioPlayer',{width:'1',height:'1',videoId:YT_TRACKS.lobby,playerVars:{controls:0,rel:0,playsinline:1,enablejsapi:1,loop:1,playlist:YT_TRACKS.lobby},events:{onReady:()=>{ytReady=true;updateMusicUI();syncMusic()},onError:e=>console.warn('Musik konnte nicht geladen werden',e)}})}catch(e){console.warn('YouTube-Player nicht verfügbar',e)}};
-function syncMusic(){updateMusicUI();if(!ytReady||!ytPlayer)return;try{if(!musicEnabled||musicMode==='home'){ytPlayer.mute();ytPlayer.pauseVideo();return;}ytPlayer.setVolume(musicVolume);ytPlayer.unMute();const id=YT_TRACKS[musicMode];if(!id)return;const current=ytPlayer.getVideoData?.().video_id;if(current!==id)ytPlayer.loadVideoById({videoId:id,startSeconds:0});else if(userInteracted)ytPlayer.playVideo();}catch(e){console.warn('Musiksteuerung:',e)}}
-function toggleMusic(){userInteracted=true;musicEnabled=!musicEnabled;localStorage.setItem('mlp_music',musicEnabled?'on':'off');syncMusic()}
-function setMusicVolume(v){userInteracted=true;musicVolume=Math.max(0,Math.min(100,Number(v)||0));localStorage.setItem('mlp_music_volume',String(musicVolume));if(ytReady&&ytPlayer){try{ytPlayer.setVolume(musicVolume)}catch(e){}}updateMusicUI()}
-function updateMusicUI(){document.querySelectorAll('.music-toggle').forEach(b=>b.textContent=musicEnabled?'🔇 Musik stumm':'🔊 Musik an');document.querySelectorAll('.music-volume').forEach(s=>s.value=String(musicVolume))}
+let musicInitAttempts=0,musicPendingStart=false;
+function initYouTubeMusic(){
+  if(ytPlayer||!window.YT?.Player)return !!ytPlayer;
+  try{
+    ytPlayer=new YT.Player('ytAudioPlayer',{
+      width:'1',height:'1',videoId:YT_TRACKS.lobby,
+      playerVars:{controls:0,rel:0,playsinline:1,enablejsapi:1,loop:1,playlist:YT_TRACKS.lobby,autoplay:0,fs:0,iv_load_policy:3},
+      events:{
+        onReady:()=>{ytReady=true;try{ytPlayer.setVolume(musicVolume)}catch(e){};updateMusicUI();if(userInteracted||musicPendingStart)syncMusic()},
+        onStateChange:()=>updateMusicUI(),
+        onError:e=>{console.warn('Musik konnte nicht geladen werden',e);toast('Die Musikquelle wurde von YouTube blockiert. Klicke Musik an, um es erneut zu versuchen.')}
+      }
+    });
+    return true;
+  }catch(e){console.warn('YouTube-Player nicht verfügbar',e);return false}
+}
+window.onYouTubeIframeAPIReady=()=>initYouTubeMusic();
+function requestMusicActivation(){
+  userInteracted=true;musicPendingStart=true;
+  try{const A=window.AudioContext||window.webkitAudioContext;if(A&&ensureAudio.ctx?.state==='suspended')ensureAudio.ctx.resume()}catch(e){}
+  if(!initYouTubeMusic()&&musicInitAttempts<20){musicInitAttempts++;setTimeout(requestMusicActivation,250);return}
+  syncMusic();
+}
+function syncMusic(){
+  updateMusicUI();
+  const id=YT_TRACKS[musicMode]||YT_TRACKS.lobby;
+  if(!id){return}
+  if(!ytReady||!ytPlayer){musicPendingStart=musicEnabled;initYouTubeMusic();return}
+  try{
+    ytPlayer.setVolume(musicVolume);
+    if(!musicEnabled){ytPlayer.mute();ytPlayer.pauseVideo();return}
+    if(!userInteracted){musicPendingStart=true;return}
+    ytPlayer.unMute();
+    const current=ytPlayer.getVideoData?.().video_id;
+    if(current!==id){ytPlayer.loadVideoById({videoId:id,startSeconds:0})}
+    else{ytPlayer.playVideo()}
+    musicPendingStart=false;
+  }catch(e){console.warn('Musiksteuerung:',e)}
+}
+function toggleMusic(){
+  userInteracted=true;musicEnabled=!musicEnabled;localStorage.setItem('mlp_music',musicEnabled?'on':'off');
+  if(musicEnabled)musicPendingStart=true;
+  syncMusic();
+}
+function setMusicVolume(v){
+  userInteracted=true;musicVolume=Math.max(0,Math.min(100,Number(v)||0));localStorage.setItem('mlp_music_volume',String(musicVolume));
+  if(ytReady&&ytPlayer){try{ytPlayer.setVolume(musicVolume)}catch(e){}}
+  updateMusicUI();
+}
+function updateMusicUI(){
+  document.querySelectorAll('.music-toggle').forEach(b=>b.textContent=musicEnabled?'🔇 Musik stumm':'🔊 Musik an');
+  document.querySelectorAll('.music-volume').forEach(s=>s.value=String(musicVolume));
+}
+document.addEventListener('pointerdown',()=>{if(!userInteracted)requestMusicActivation()},{once:true,capture:true});
+document.addEventListener('keydown',()=>{if(!userInteracted)requestMusicActivation()},{once:true,capture:true});
+setTimeout(()=>{if(window.YT?.Player)initYouTubeMusic()},500);
 
 function clearTable(){lastReveal=[];$('#tableCards').innerHTML=''}
 function addCommitGhost(e){const t=$('#tableCards');if(t.querySelector(`[data-player-id="${e.playerId}"]`))return;const d=document.createElement('div');d.className='played-card ghost-card card-commit';d.dataset.playerId=e.playerId;d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-back-face"><img src="/assets/card_back.webp" alt="verdeckte Karte"></div></div><div class="who">${escapeHtml(e.name)}</div>`;t.append(d);const source=e.playerId===myId?document.querySelector('.hand-card[data-pending-play="1"]'):document.querySelector(`.opponent[data-player-id="${e.playerId}"] .back-fan`);if(source){const sr=source.getBoundingClientRect(),tr=d.getBoundingClientRect();const clone=document.createElement('img');clone.src='/assets/card_back.webp';clone.className='flying-card';clone.style.left=`${sr.left+sr.width/2-40}px`;clone.style.top=`${sr.top+sr.height/2-56}px`;document.body.append(clone);d.style.opacity='0';requestAnimationFrame(()=>{clone.style.transform=`translate(${tr.left+tr.width/2-(sr.left+sr.width/2)}px,${tr.top+tr.height/2-(sr.top+sr.height/2)}px) rotate(${e.playerId===myId?-10:10}deg) scale(.9)`;clone.style.opacity='.25'});setTimeout(()=>{clone.remove();d.style.opacity='1'},560)}beep(340,.06)}
@@ -335,22 +442,29 @@ function countdownTickSound(n){
 function selectionTickSound(n){if(n<=5&&n>0)tone(180+n*12,.035,.018,'square')}
 function stopCountdown(){
   if(countdownUiTimer){clearTimeout(countdownUiTimer);countdownUiTimer=null}
-  const e=$('#countdown');if(e){e.innerHTML='';e.className='countdown';}
+  const e=$('#countdown');if(e){e.innerHTML='';e.className='countdown global-countdown';}
+  document.body.classList.remove('countdown-active');
 }
 function runCountdown(until){
   stopCountdown();const e=$('#countdown');if(!e)return;
+  document.body.classList.add('countdown-active');
   let previous=null;
   const tick=()=>{
     const left=Math.ceil((until-Date.now())/1000);
-    if(left<=0){stopCountdown();return}
+    if(left<=0){
+      e.className='countdown global-countdown countdown-visible count-go';
+      e.innerHTML='<span class="countdown-label">⚔️ LOS!</span><span class="countdown-sub">Der Kampf beginnt</span>';
+      tone(780,.12,.06,'triangle');tone(1040,.24,.05,'sine',.08);
+      countdownUiTimer=setTimeout(stopCountdown,650);return;
+    }
     if(left!==previous){
       previous=left;
-      e.className=`countdown countdown-visible count-${Math.max(1,Math.min(5,left))}`;
-      e.innerHTML=`<span class="countdown-label">⚔️ KAMPF STARTET IN</span><span class="countdown-number">${left}</span><span class="countdown-sub">Mach dich bereit!</span>`;
+      e.className=`countdown global-countdown countdown-visible count-${Math.max(1,Math.min(5,left))}`;
+      e.innerHTML=`<span class="countdown-label">⚔️ KAMPF STARTET IN</span><span class="countdown-number">${left}</span><span class="countdown-sub">Alle Spieler sehen denselben Countdown</span>`;
       countdownTickSound(left);
-      e.animate([{transform:'translate(-50%,-50%) scale(.88)'},{transform:'translate(-50%,-50%) scale(1.05)'},{transform:'translate(-50%,-50%) scale(1)'}],{duration:360,easing:'cubic-bezier(.2,.8,.2,1)'});
+      e.animate([{transform:'translate(-50%,-50%) scale(.9)'},{transform:'translate(-50%,-50%) scale(1.04)'},{transform:'translate(-50%,-50%) scale(1)'}],{duration:420,easing:'cubic-bezier(.2,.8,.2,1)'});
     }
-    countdownUiTimer=setTimeout(tick,120);
+    countdownUiTimer=setTimeout(tick,100);
   };
   tick();
 }
@@ -375,41 +489,73 @@ function noiseBurst(duration=.15,gain=.06,when=0){
 }
 function finisherSound(type){
   ensureAudio();
-  if(type==='dragonfire'){tone(88,.55,.055,'sawtooth');noiseBurst(.8,.05,.35);tone(55,.7,.05,'triangle',.3)}
-  else if(type==='dissolve'){for(let i=0;i<8;i++)tone(1050-i*85,.13,.02,'sine',i*.12)}
-  else if(type==='starbarrage'){for(let i=0;i<7;i++)tone(700+i*95,.07,.028,'triangle',i*.13)}
-  else if(type==='gunshots'){[0,.34,.68].forEach((t,i)=>{noiseBurst(.07,.11,t);tone(120-i*12,.08,.05,'square',t)})}
-  else if(type==='flowerdevour'){[420,520,620,760].forEach((f,i)=>tone(f,.26,.026,'sine',i*.18))}
-  else if(type==='cakebites'){[0,.42,.86,1.28].forEach(t=>{tone(105,.08,.06,'triangle',t);noiseBurst(.045,.025,t+.02)})}
-  else if(type==='loserplank'){[0,.48,.96].forEach(t=>{tone(145,.08,.075,'square',t);noiseBurst(.06,.055,t)})}
-  else if(type==='freeze'){for(let i=0;i<6;i++)tone(800+i*120,.1,.024,'sine',i*.16);noiseBurst(.18,.04,1.25)}
-  else if(type==='lightningstorm'){[0,.24,.55,.92].forEach(t=>{noiseBurst(.08,.07,t);tone(1800,.05,.03,'square',t)})}
-  else if(type==='portalvoid'){for(let i=0;i<9;i++)tone(360-i*27,.16,.02,'sine',i*.11)}
-  else if(type==='crystalburst'){[880,1040,1260,1480].forEach((f,i)=>tone(f,.16,.025,'triangle',i*.17));noiseBurst(.12,.04,.78)}
-  else if(type==='shadowchains'){[120,95,72].forEach((f,i)=>tone(f,.4,.04,'sawtooth',i*.25));noiseBurst(.12,.025,.8)}
+  const hit=(when=0,pitch=95,gain=.075)=>{noiseBurst(.085,gain,when);tone(pitch,.09,gain*.7,'square',when)};
+  if(type==='dragonfire'){tone(72,.7,.075,'sawtooth');tone(48,.9,.06,'triangle',.18);noiseBurst(1.05,.075,.45);[180,140,105].forEach((f,i)=>tone(f,.28,.045,'sawtooth',1.1+i*.18))}
+  else if(type==='dissolve'){for(let i=0;i<12;i++)tone(1250-i*72,.16,.025,'sine',i*.105);noiseBurst(.32,.035,1.2)}
+  else if(type==='starbarrage'){for(let i=0;i<9;i++){tone(760+i*82,.065,.04,'triangle',i*.14);if(i%3===2)hit(i*.14+.05,170,.035)}tone(1450,.25,.045,'sine',1.45)}
+  else if(type==='gunshots'){[0,.34,.69,1.05].forEach((t,i)=>{hit(t,145-i*11,.105);tone(62,.16,.04,'triangle',t+.03)});noiseBurst(.28,.045,1.45)}
+  else if(type==='flowerdevour'){[330,440,550,660,820].forEach((f,i)=>tone(f,.34,.035,'sine',i*.23));noiseBurst(.22,.025,1.2);tone(240,.45,.05,'triangle',1.45)}
+  else if(type==='cakebites'){[0,.42,.84,1.26,1.68].forEach((t,i)=>{tone(92+i*7,.09,.075,'triangle',t);noiseBurst(.05,.04,t+.015)});tone(520,.18,.035,'sine',2.05)}
+  else if(type==='loserplank'){[0,.54,1.08].forEach(t=>{hit(t,115,.11);tone(58,.22,.05,'triangle',t+.03)});tone(180,.32,.04,'sawtooth',1.55)}
+  else if(type==='freeze'){for(let i=0;i<10;i++)tone(720+i*105,.11,.026,'sine',i*.13);noiseBurst(.24,.055,1.38);tone(220,.5,.05,'triangle',1.5)}
+  else if(type==='lightningstorm'){[0,.28,.6,1.02,1.35].forEach((t,i)=>{noiseBurst(.11,.09,t);tone(1550+i*90,.055,.038,'square',t)});tone(70,.75,.055,'sawtooth',1.55)}
+  else if(type==='portalvoid'){for(let i=0;i<13;i++)tone(460-i*25,.18,.026,'sine',i*.1);noiseBurst(.35,.04,1.1);tone(52,.8,.06,'sawtooth',1.35)}
+  else if(type==='crystalburst'){[720,900,1120,1360,1640].forEach((f,i)=>tone(f,.2,.035,'triangle',i*.18));noiseBurst(.2,.075,.92);tone(1820,.2,.04,'sine',1.05)}
+  else if(type==='shadowchains'){[140,112,88,70].forEach((f,i)=>tone(f,.48,.055,'sawtooth',i*.26));[.38,.76,1.12].forEach(t=>hit(t,85,.045));noiseBurst(.25,.04,1.45)}
+  else if(type==='paintbomb'){[0,.32,.64,.96,1.28].forEach((t,i)=>{tone(180+i*55,.08,.045,'triangle',t);noiseBurst(.09,.075,t+.03)});tone(620,.22,.04,'sine',1.55)}
+  else if(type==='stickerstorm'){[420,540,670,820,980,1160].forEach((f,i)=>tone(f,.12,.028,'sine',i*.18));[.5,1.05,1.55].forEach(t=>hit(t,200,.03))}
+  else if(type==='cometcrash'){for(let i=0;i<10;i++)tone(260+i*72,.08,.025,'sawtooth',i*.07);hit(.8,72,.13);noiseBurst(.42,.09,.82);tone(58,.7,.055,'triangle',.9)}
+  else if(type==='magicseal'){[260,390,520,780,1040].forEach((f,i)=>tone(f,.24,.032,'sine',i*.22));tone(90,.55,.055,'triangle',1.35);noiseBurst(.18,.04,1.45)}
 }
+function finisherLabel(type){return ({dragonfire:'DRACHENFEUER',dissolve:'MAGISCHE AUFLÖSUNG',starbarrage:'STERNENREGEN',gunshots:'VOLLTREFFER',flowerdevour:'BLUMENFALLE',cakebites:'KUCHENHUNGER',loserplank:'LOSER-BRETT',freeze:'EISGEFÄNGNIS',lightningstorm:'BLITZSTURM',portalvoid:'PORTAL-SOG',crystalburst:'KRISTALL-BURST',shadowchains:'SCHATTENKETTEN',paintbomb:'FARB-BOMBE',stickerstorm:'STICKER-STURM',cometcrash:'KOMETEN-CRASH',magicseal:'MAGISCHES SIEGEL'})[type]||'FINISHER'}
 function finisherMarkup(type){
   const map={
-    dragonfire:'<span class="dragon-head">🐉</span><span class="fire-wave"></span>',
-    dissolve:'<span class="dissolve-cloud">✦ ✧ ✦ ✧ ✦</span>',
-    starbarrage:'<span class="star-shot s1">★</span><span class="star-shot s2">★</span><span class="star-shot s3">★</span><span class="star-shot s4">★</span>',
-    gunshots:'<span class="muzzle m1"></span><span class="muzzle m2"></span><span class="muzzle m3"></span><span class="bullet-hole h1"></span><span class="bullet-hole h2"></span><span class="bullet-hole h3"></span>',
-    flowerdevour:'<span class="vine v1">🌿</span><span class="vine v2">🌺</span><span class="vine v3">🌿</span><span class="vine v4">🌸</span>',
-    cakebites:'<span class="cake-bite b1">🍰</span><span class="cake-bite b2">😋</span><span class="cake-bite b3">🍰</span>',
-    loserplank:'<span class="loser-plank">LOSER</span><span class="hammer">🔨</span><span class="nail n1">•</span><span class="nail n2">•</span>',
-    freeze:'<span class="ice-spread"></span><span class="ice-spark">❄</span>',
-    lightningstorm:'<span class="bolt b1">ϟ</span><span class="bolt b2">ϟ</span><span class="bolt b3">ϟ</span>',
-    portalvoid:'<span class="portal-ring"></span><span class="portal-core"></span>',
-    crystalburst:'<span class="crys c1">◆</span><span class="crys c2">◆</span><span class="crys c3">◆</span><span class="crys c4">◆</span>',
-    shadowchains:'<span class="shadow-arm a1"></span><span class="shadow-arm a2"></span><span class="shadow-chain">⛓</span>'
+    dragonfire:'<span class="dragon-head">🐉</span><span class="dragon-eye"></span><span class="fire-wave"></span><span class="ember-cloud"></span>',
+    dissolve:'<span class="dissolve-orb o1"></span><span class="dissolve-orb o2"></span><span class="dissolve-orb o3"></span><span class="dissolve-cloud">✦ ✧ ✦ ✧ ✦ ✧</span>',
+    starbarrage:'<span class="star-shot s1">★</span><span class="star-shot s2">✦</span><span class="star-shot s3">★</span><span class="star-shot s4">✦</span><span class="star-shot s5">★</span><span class="star-explosion"></span>',
+    gunshots:'<span class="muzzle m1"></span><span class="muzzle m2"></span><span class="muzzle m3"></span><span class="muzzle m4"></span><span class="bullet-hole h1"></span><span class="bullet-hole h2"></span><span class="bullet-hole h3"></span><span class="bullet-hole h4"></span><span class="smoke-puff"></span>',
+    flowerdevour:'<span class="vine v1">🌿</span><span class="vine v2">🌺</span><span class="vine v3">🌿</span><span class="vine v4">🌸</span><span class="flower-maw">🌹</span><span class="petal-burst"></span>',
+    cakebites:'<span class="cake-bite b1">🍰</span><span class="cake-bite b2">🧁</span><span class="cake-bite b3">🍰</span><span class="cake-bite b4">🧁</span><span class="crumb-cloud"></span>',
+    loserplank:'<span class="loser-plank">LOSER</span><span class="hammer">🔨</span><span class="nail n1">●</span><span class="nail n2">●</span><span class="wood-splinter"></span>',
+    freeze:'<span class="ice-spread"></span><span class="ice-crack c1"></span><span class="ice-crack c2"></span><span class="ice-crack c3"></span><span class="ice-spark">❄</span>',
+    lightningstorm:'<span class="bolt b1">ϟ</span><span class="bolt b2">ϟ</span><span class="bolt b3">ϟ</span><span class="bolt b4">ϟ</span><span class="electric-ring"></span>',
+    portalvoid:'<span class="portal-ring"></span><span class="portal-ring inner"></span><span class="portal-core"></span><span class="portal-dust"></span>',
+    crystalburst:'<span class="crys c1">◆</span><span class="crys c2">◆</span><span class="crys c3">◆</span><span class="crys c4">◆</span><span class="crys c5">◆</span><span class="crystal-flash"></span>',
+    shadowchains:'<span class="shadow-arm a1"></span><span class="shadow-arm a2"></span><span class="shadow-arm a3"></span><span class="shadow-chain">⛓</span><span class="shadow-eye">◉</span>',
+    paintbomb:'<span class="paint-ball p1"></span><span class="paint-ball p2"></span><span class="paint-ball p3"></span><span class="paint-ball p4"></span><span class="paint-splat ps1"></span><span class="paint-splat ps2"></span><span class="paint-splat ps3"></span>',
+    stickerstorm:'<span class="sticker st1">★</span><span class="sticker st2">♥</span><span class="sticker st3">✦</span><span class="sticker st4">☁</span><span class="sticker st5">⚡</span><span class="sticker st6">◆</span><span class="tape-strip t1"></span><span class="tape-strip t2"></span>',
+    cometcrash:'<span class="comet"></span><span class="comet-tail"></span><span class="crater-ring"></span><span class="comet-shard cs1"></span><span class="comet-shard cs2"></span><span class="comet-shard cs3"></span>',
+    magicseal:'<span class="seal-ring sr1"></span><span class="seal-ring sr2"></span><span class="seal-rune r1">✦</span><span class="seal-rune r2">◇</span><span class="seal-rune r3">☾</span><span class="seal-stamp">DEFEATED</span>'
   };return map[type]||map.dissolve;
+}
+function finisherTargetRect(winnerId){
+  const target=winnerId===myId?$('#hand'):document.querySelector(`.opponent[data-player-id="${winnerId}"]`);
+  if(!target)return {left:innerWidth/2,top:innerHeight-80,width:1,height:1};
+  return target.getBoundingClientRect();
+}
+function flyFinisherCardsToWinner(winnerId){
+  const tr=finisherTargetRect(winnerId),tx=tr.left+tr.width/2,ty=tr.top+tr.height/2;
+  document.querySelectorAll('#finisherOverlay .finisher-card-shell').forEach((el,i)=>{
+    const r=el.getBoundingClientRect(),dx=tx-(r.left+r.width/2),dy=ty-(r.top+r.height/2);
+    const from=getComputedStyle(el).transform==='none'?'translate(0,0) scale(1)':getComputedStyle(el).transform;el.animate([{transform:from,opacity:1},{transform:`translate(${dx}px,${dy}px) scale(.12) rotate(${i%2?26:-26}deg)`,opacity:.06}],{duration:850,delay:i*55,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
+  });
+  tone(780,.12,.04,'triangle');tone(1040,.18,.035,'sine',.09);
 }
 function playFinisher(e){
   finisherSound(e.finisher);
-  const winner=document.querySelector(`#tableCards .played-card[data-player-id="${e.winnerId}"]`);if(winner)winner.classList.add('winner-charging','winner-'+e.finisher);
-  const losers=[...document.querySelectorAll('#tableCards .played-card')].filter(x=>x.dataset.playerId!==e.winnerId);
-  losers.forEach((el,i)=>{el.classList.add('finisher-target','finisher-'+e.finisher);const fx=document.createElement('div');fx.className='finisher-fx';fx.innerHTML=finisherMarkup(e.finisher);fx.style.setProperty('--stagger',`${i*.12}s`);el.append(fx)});
-  setTimeout(()=>animateCapture(e.winnerId),Math.max(2800,(e.duration||3300)-250));
+  const overlay=$('#finisherOverlay'),winnerBox=$('#finisherWinner'),loserBox=$('#finisherLosers'),headline=$('#finisherHeadline'),impact=$('#finisherImpact');
+  if(!overlay||!winnerBox||!loserBox)return animateCapture(e.winnerId);
+  const winnerEntry=lastReveal.find(x=>x.pid===e.winnerId),losers=lastReveal.filter(x=>x.pid!==e.winnerId);
+  headline.textContent=`${finisherLabel(e.finisher)}!`;
+  winnerBox.innerHTML=winnerEntry?`<div class="finisher-card-shell winner-card"><span class="finisher-tag">🏆 ${escapeHtml(winnerEntry.name)}</span><img src="${winnerEntry.card.image}" alt="${escapeHtml(winnerEntry.card.name)}"></div>`:'';
+  loserBox.innerHTML=losers.map((x,i)=>`<div class="finisher-card-shell loser-card finisher-${e.finisher}" style="--loser-index:${i}"><span class="finisher-tag">${escapeHtml(x.name)}</span><img src="${x.card.image}" alt="${escapeHtml(x.card.name)}"><div class="finisher-fx">${finisherMarkup(e.finisher)}</div></div>`).join('');
+  impact.className='finisher-impact impact-'+e.finisher;
+  overlay.className=`finisher-overlay active stage-${e.finisher}`;overlay.setAttribute('aria-hidden','false');document.body.classList.add('finisher-running');
+  requestAnimationFrame(()=>overlay.classList.add('play'));
+  const duration=Math.max(4100,e.duration||4600);
+  setTimeout(()=>impact.classList.add('boom'),900);
+  setTimeout(()=>flyFinisherCardsToWinner(e.winnerId),duration-950);
+  setTimeout(()=>{overlay.className='finisher-overlay';overlay.setAttribute('aria-hidden','true');winnerBox.innerHTML='';loserBox.innerHTML='';impact.className='finisher-impact';document.body.classList.remove('finisher-running');$('#tableCards').innerHTML='';},duration+80);
 }
 
 socket.on('roundWinner',e=>{stopSelectionTimer();$('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;beep(1040,.22);playFinisher(e)});
