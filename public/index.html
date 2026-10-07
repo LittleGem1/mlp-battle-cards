@@ -34,6 +34,7 @@
         <p id="lobbyHint">Warte auf Mitspieler …</p>
         <div id="lobbyPlayers" class="lobby-players"></div>
         <div class="lobby-actions">
+          <button id="startBtn" class="primary-btn" type="button">⚔️ Match vorbereiten</button>
           <button id="lobbyAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
           <button id="leaveLobbyBtn" class="soft-btn" type="button">← Hauptmenü</button>
           <div class="music-controls"><button id="musicLobbyBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
@@ -56,19 +57,19 @@
             <p>Alle Spieler müssen in der Arena bereit sein.</p>
             <div id="arenaReadyPlayers" class="arena-ready-players"></div>
             <div class="arena-ready-music">
-              <strong>🎵 Lobby-Musik</strong>
+              <strong>🎵 Battle-Musik</strong>
               <div class="music-controls lobby-ready-music-controls">
                 <button class="soft-btn music-toggle" type="button">🔇 Musik stumm</button>
                 <label class="ready-volume-wrap">
                   <span>🔈</span>
-                  <input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Lobby-Musiklautstärke">
+                  <input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Battle-Musiklautstärke">
                   <span>🔊</span>
                   <b class="music-volume-readout">30%</b>
                 </label>
               </div>
             </div>
             <div class="arena-ready-actions">
-              <button id="startBtn" class="primary-btn ready-btn" type="button">✅ Bereit</button>
+              <button id="arenaReadyBtn" class="primary-btn ready-btn" type="button">✅ Bereit</button>
               <button id="arenaAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
               <button id="arenaReadyLeaveBtn" class="soft-btn" type="button">← Hauptmenü</button>
             </div>
@@ -91,6 +92,15 @@
   </main>
 
   <div id="countdown" class="countdown global-countdown" aria-live="assertive"></div>
+  <div id="tieOverlay" class="tie-alert-overlay" aria-hidden="true">
+    <div class="tie-alert-card">
+      <span class="tie-kicker">⚔️ GLEICHSTAND ⚔️</span>
+      <div class="tie-dice-visual"><span>🎲</span><b>VS</b><span>🎲</span></div>
+      <h2 id="tieAlertTitle">Würfelduell!</h2>
+      <p id="tieAlertText">Gleiche Werte – jetzt entscheidet das Glück.</p>
+      <button id="tieRollBtn" class="primary-btn tie-roll-big" type="button">🎲 JETZT WÜRFELN</button>
+    </div>
+  </div>
   <div id="finisherOverlay" class="finisher-overlay" aria-hidden="true">
     <div class="finisher-stage">
       <div id="finisherHeadline" class="finisher-headline"></div>
@@ -104,10 +114,10 @@
     <div class="category-crystal-scene">
       <span id="roundIntroRound" class="category-crystal-round">RUNDE 1</span>
       <div id="roundCategoryCrystal" class="category-crystal" aria-label="Vierseitiger Kategorie-Kristall">
-        <div class="category-crystal-face crystal-face-strength"><span>🏋️</span><small>STÄRKE</small></div>
-        <div class="category-crystal-face crystal-face-speed"><span>⚡</span><small>SCHNELLIGKEIT</small></div>
-        <div class="category-crystal-face crystal-face-energy"><span>🔋</span><small>ENERGIE</small></div>
-        <div class="category-crystal-face crystal-face-magic"><span>⭐</span><small>MAGIE</small></div>
+        <div class="category-crystal-face crystal-face-strength" aria-label="Stärke"><span>🏋️</span></div>
+        <div class="category-crystal-face crystal-face-speed" aria-label="Schnelligkeit"><span>⚡</span></div>
+        <div class="category-crystal-face crystal-face-energy" aria-label="Energie"><span>🔋</span></div>
+        <div class="category-crystal-face crystal-face-magic" aria-label="Magie"><span>⭐</span></div>
         <i class="category-crystal-core" aria-hidden="true"></i>
         <i class="category-crystal-glint" aria-hidden="true"></i>
       </div>

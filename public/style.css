@@ -1321,3 +1321,104 @@ body.scene-game #arenaVfx{display:block!important}
   .ready-volume-wrap{width:100%;justify-content:center}
   .ready-volume-wrap .music-volume{width:min(240px,52vw)}
 }
+
+
+/* =========================================================
+   V6 – Langer 4-Flächen-Kristall + Ready erst in Arena + Tie Alert
+   ========================================================= */
+
+/* Referenzform: langer, facettierter Kristall/Obelisk statt Würfel/Münze. */
+.category-crystal{
+  --crystal-land-y:1170deg;
+  width:min(210px,44vw)!important;
+  height:min(390px,74vw)!important;
+  transform-style:preserve-3d!important;
+  filter:drop-shadow(0 28px 34px rgba(0,0,0,.62)) drop-shadow(0 0 34px rgba(185,145,255,.48))!important;
+}
+.category-crystal-face{
+  left:50%!important;top:50%!important;
+  width:142px!important;height:338px!important;
+  margin-left:-71px!important;margin-top:-169px!important;
+  display:grid!important;place-items:center!important;
+  backface-visibility:visible!important;-webkit-backface-visibility:visible!important;
+  clip-path:polygon(30% 0,70% 0,93% 28%,66% 100%,34% 100%,7% 28%)!important;
+  border:1px solid rgba(246,238,255,.8)!important;
+  background:
+    linear-gradient(90deg,rgba(89,53,154,.22),rgba(219,186,255,.58) 28%,rgba(174,135,235,.44) 55%,rgba(102,67,177,.26)),
+    linear-gradient(180deg,rgba(255,255,255,.42),rgba(177,137,235,.34) 30%,rgba(91,59,166,.26) 75%,rgba(220,196,255,.3))!important;
+  box-shadow:inset 17px 0 24px rgba(255,255,255,.2),inset -20px 0 28px rgba(72,43,129,.28),inset 0 0 18px rgba(255,255,255,.2)!important;
+  opacity:.78;
+}
+.category-crystal-face::before{
+  inset:4px!important;
+  clip-path:polygon(30% 0,70% 0,93% 28%,66% 100%,34% 100%,7% 28%)!important;
+  background:linear-gradient(105deg,transparent 0 18%,rgba(255,255,255,.5) 19% 24%,transparent 25% 54%,rgba(255,225,255,.22) 55% 61%,transparent 62%)!important;
+}
+.category-crystal-face::after{
+  clip-path:polygon(30% 0,70% 0,93% 28%,66% 100%,34% 100%,7% 28%)!important;
+  background:linear-gradient(165deg,rgba(255,255,255,.42),transparent 22% 68%,rgba(122,75,198,.2))!important;
+}
+.category-crystal-face>span{
+  font-size:clamp(48px,11vw,78px)!important;
+  line-height:1!important;
+  position:relative;z-index:5!important;
+  filter:drop-shadow(0 0 6px #fff) drop-shadow(0 0 20px currentColor)!important;
+  opacity:.96;
+}
+.crystal-face-strength{transform:rotateY(0deg) translateZ(62px)!important;color:#ff626d!important}
+.crystal-face-speed{transform:rotateY(90deg) translateZ(62px)!important;color:#ffe163!important}
+.crystal-face-energy{transform:rotateY(180deg) translateZ(62px)!important;color:#65ffb1!important}
+.crystal-face-magic{transform:rotateY(270deg) translateZ(62px)!important;color:#d98cff!important}
+.category-crystal-core{
+  width:74px!important;height:320px!important;margin-left:-37px!important;margin-top:-160px!important;
+  clip-path:polygon(28% 0,72% 0,96% 28%,66% 100%,34% 100%,4% 28%)!important;
+  background:linear-gradient(180deg,rgba(242,224,255,.66),rgba(190,146,239,.38) 36%,rgba(125,86,202,.35) 72%,rgba(213,185,255,.52))!important;
+  filter:drop-shadow(0 0 24px rgba(202,159,255,.72))!important;
+}
+.category-crystal-glint{left:29%!important;top:5%!important;width:13%!important;height:76%!important;transform:translateZ(70px) rotate(8deg)!important}
+
+/* Weil der Kristall transparent ist, sind ALLE vier Symbole während der Drehung
+   durch die Facetten sichtbar. Die gewählte Seite wird beim Ergebnis kräftiger. */
+.category-crystal-overlay.category-strength .crystal-face-strength,
+.category-crystal-overlay.category-speed .crystal-face-speed,
+.category-crystal-overlay.category-energy .crystal-face-energy,
+.category-crystal-overlay.category-magic .crystal-face-magic{opacity:1!important;filter:brightness(1.18)}
+
+/* Lobby bleibt echte Lobby. Ready erscheint nur nach "In die Arena". */
+body.scene-lobby #arenaReadyPanel{display:none!important}
+body.scene-game #arenaReadyPanel:not([hidden]){display:grid!important}
+.arena-ready-music>strong{color:#ffd987!important}
+
+/* Deutliche Gleichstand-Anzeige */
+.tie-alert-overlay{
+  position:fixed;inset:0;z-index:4500000;display:grid;place-items:center;
+  pointer-events:none;opacity:0;visibility:hidden;
+  background:radial-gradient(circle at 50% 45%,rgba(255,80,211,.18),rgba(8,5,34,.72) 60%,rgba(2,3,14,.92));
+  backdrop-filter:blur(5px);transition:opacity .18s ease;
+}
+.tie-alert-overlay.active{opacity:1;visibility:visible}
+.tie-alert-card{
+  width:min(620px,92vw);padding:30px 24px;border-radius:28px;text-align:center;color:#fff;
+  border:2px solid rgba(255,223,111,.72);
+  background:linear-gradient(145deg,rgba(36,17,83,.96),rgba(12,16,61,.97));
+  box-shadow:0 0 55px rgba(252,103,233,.3),inset 0 0 35px rgba(104,219,255,.12);
+  transform:scale(.72) rotate(-2deg);animation:tieCardPop .65s cubic-bezier(.15,.85,.15,1.2) forwards;
+  pointer-events:auto;
+}
+.tie-kicker{display:block;font-size:clamp(18px,4vw,28px);font-weight:1000;letter-spacing:.15em;color:#ffe978;text-shadow:0 0 16px #ff7edb}
+.tie-dice-visual{display:flex;align-items:center;justify-content:center;gap:22px;margin:18px 0 10px}
+.tie-dice-visual span{font-size:clamp(70px,16vw,120px);filter:drop-shadow(0 0 18px #8be8ff);animation:tieDiceBounce .72s ease-in-out infinite alternate}
+.tie-dice-visual span:last-child{animation-delay:-.35s;filter:drop-shadow(0 0 18px #ff91dd)}
+.tie-dice-visual b{font-size:clamp(30px,7vw,54px);color:#fff;text-shadow:0 0 14px #ff70cf}
+.tie-alert-card h2{font-size:clamp(38px,8vw,66px);margin:4px 0 6px;color:#fff;text-shadow:0 0 18px #d56cff}
+.tie-alert-card p{font-size:clamp(15px,3vw,20px);font-weight:800;color:#e5e8ff}
+.tie-roll-big{margin-top:13px;font-size:clamp(17px,3vw,22px);padding:14px 24px;box-shadow:0 0 28px rgba(255,214,83,.25)}
+@keyframes tieCardPop{0%{transform:scale(.55) rotate(-7deg);opacity:0}70%{transform:scale(1.06) rotate(1deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+@keyframes tieDiceBounce{from{transform:translateY(-7px) rotate(-12deg)}to{transform:translateY(8px) rotate(12deg)}}
+
+@media(max-width:720px){
+  .category-crystal{width:min(170px,44vw)!important;height:min(325px,75vw)!important}
+  .category-crystal-face{width:116px!important;height:282px!important;margin-left:-58px!important;margin-top:-141px!important}
+  .crystal-face-strength{transform:rotateY(0deg) translateZ(50px)!important}.crystal-face-speed{transform:rotateY(90deg) translateZ(50px)!important}.crystal-face-energy{transform:rotateY(180deg) translateZ(50px)!important}.crystal-face-magic{transform:rotateY(270deg) translateZ(50px)!important}
+  .category-crystal-core{height:266px!important;margin-top:-133px!important}
+}

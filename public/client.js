@@ -92,11 +92,9 @@ function show(name){
   screens[name].classList.add('active');
   document.body.classList.remove('scene-home','scene-lobby','scene-game');
   document.body.classList.add('scene-'+name);
-  if(name==='home'||name==='lobby'){
-    buildLobbyScene('crystal_cave');
-  }
+  if(name==='home'||name==='lobby')buildLobbyScene('crystal_cave');
   currentScreen=name;
-  setMusicMode(name);
+  setMusicMode(name==='game'?'game':'lobby');
 }
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2600)}
 function remember(){const n=playerName.value.trim();if(n)localStorage.setItem('cc_name',n)}
@@ -193,10 +191,10 @@ function renderAccessoryGrid(){
   $('#accessoryPreview').innerHTML=nameplateHTML(playerName.value.trim()||'Little Gem',selectedAccessory,false,selectedFrame);
   $('#itemsTabBtn')?.classList.toggle('active',cosmeticTab==='items');$('#framesTabBtn')?.classList.toggle('active',cosmeticTab==='frames');
   if(cosmeticTab==='items'){
-    for(const key of ITEM_KEYS){const a=ITEMS[key],unlocked=unlocks.includes(key);const b=document.createElement('button');b.type='button';b.className=`accessory-card ${unlocked?'unlocked':'locked'} ${key===selectedAccessory?'selected':''}`;b.innerHTML=unlocked?`<span class="item-art"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${key===selectedAccessory?'Ausgewählt':'Freigeschaltet'}</span>`:`<span class="mystery-art">?</span><strong>Unentdecktes Item</strong><span class="status">🔒 Durch einen Sieg entdecken</span>`;b.disabled=!unlocked;if(unlocked)b.addEventListener('click',()=>{selectedAccessory=key;localStorage.setItem('cc_accessory',key);renderAccessoryGrid();updateHomePreview();if(state?.phase==='lobby')socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame});if(state&&state.phase!=='lobby')renderGame()});g.append(b)}
+    for(const key of ITEM_KEYS){const a=ITEMS[key],unlocked=unlocks.includes(key);const b=document.createElement('button');b.type='button';b.className=`accessory-card ${unlocked?'unlocked':'locked'} ${key===selectedAccessory?'selected':''}`;b.innerHTML=unlocked?`<span class="item-art"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${key===selectedAccessory?'Ausgewählt':'Freigeschaltet'}</span>`:`<span class="mystery-art">?</span><strong>Unentdecktes Item</strong><span class="status">🔒 Durch einen Sieg entdecken</span>`;b.disabled=!unlocked;if(unlocked)b.addEventListener('click',()=>{selectedAccessory=key;localStorage.setItem('cc_accessory',key);renderAccessoryGrid();updateHomePreview();if(['lobby','ready'].includes(state?.phase))socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame});if(state&&state.phase!=='lobby')renderGame()});g.append(b)}
   }else{
-    const none=document.createElement('button');none.type='button';none.className=`accessory-card unlocked ${!selectedFrame?'selected':''}`;none.innerHTML='<span class="mystery-art">∅</span><strong>Kein Rahmen</strong><span class="status">Immer verfügbar</span>';none.addEventListener('click',()=>{selectedFrame='';localStorage.setItem('cc_frame','');renderAccessoryGrid();updateHomePreview();if(state?.phase==='lobby')socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame})});g.append(none);
-    for(const key of FRAME_KEYS){const a=FRAMES[key],unlocked=frameUnlocks.includes(key);const b=document.createElement('button');b.type='button';b.className=`accessory-card frame-card ${unlocked?'unlocked':'locked'} ${key===selectedFrame?'selected':''}`;b.innerHTML=unlocked?`<span class="frame-thumb"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${key===selectedFrame?'Ausgewählt':'Freigeschaltet'}</span>`:`<span class="mystery-art">?</span><strong>Unentdeckter Rahmen</strong><span class="status">🔒 Durch einen Sieg entdecken</span>`;b.disabled=!unlocked;if(unlocked)b.addEventListener('click',()=>{selectedFrame=key;localStorage.setItem('cc_frame',key);renderAccessoryGrid();updateHomePreview();if(state?.phase==='lobby')socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame});if(state&&state.phase!=='lobby')renderGame()});g.append(b)}
+    const none=document.createElement('button');none.type='button';none.className=`accessory-card unlocked ${!selectedFrame?'selected':''}`;none.innerHTML='<span class="mystery-art">∅</span><strong>Kein Rahmen</strong><span class="status">Immer verfügbar</span>';none.addEventListener('click',()=>{selectedFrame='';localStorage.setItem('cc_frame','');renderAccessoryGrid();updateHomePreview();if(['lobby','ready'].includes(state?.phase))socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame})});g.append(none);
+    for(const key of FRAME_KEYS){const a=FRAMES[key],unlocked=frameUnlocks.includes(key);const b=document.createElement('button');b.type='button';b.className=`accessory-card frame-card ${unlocked?'unlocked':'locked'} ${key===selectedFrame?'selected':''}`;b.innerHTML=unlocked?`<span class="frame-thumb"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${key===selectedFrame?'Ausgewählt':'Freigeschaltet'}</span>`:`<span class="mystery-art">?</span><strong>Unentdeckter Rahmen</strong><span class="status">🔒 Durch einen Sieg entdecken</span>`;b.disabled=!unlocked;if(unlocked)b.addEventListener('click',()=>{selectedFrame=key;localStorage.setItem('cc_frame',key);renderAccessoryGrid();updateHomePreview();if(['lobby','ready'].includes(state?.phase))socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame});if(state&&state.phase!=='lobby')renderGame()});g.append(b)}
   }
 }
 $('#itemsTabBtn')?.addEventListener('click',()=>{cosmeticTab='items';renderAccessoryGrid()});
@@ -206,7 +204,8 @@ $('#lobbyAccessoryBtn')?.addEventListener('click',()=>{renderAccessoryGrid();$('
 
 $('#createBtn').addEventListener('click',()=>{directMusicGesture('lobby');ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim();if(!name)return toast('Bitte zuerst einen Namen eingeben.');remember();socket.emit('createRoom',{name,accessory:selectedAccessory,frame:selectedFrame})});
 $('#joinBtn').addEventListener('click',()=>{directMusicGesture('lobby');ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim(),code=$('#roomCode').value.trim();if(!name||!code)return toast('Name und Raumcode eingeben.');remember();socket.emit('joinRoom',{name,code,accessory:selectedAccessory,frame:selectedFrame})});
-$('#startBtn').addEventListener('click',()=>{directMusicGesture('lobby');ensureAudio();socket.emit('toggleReady')});
+$('#startBtn').addEventListener('click',()=>{directMusicGesture('lobby');ensureAudio();socket.emit('startGame')});
+$('#arenaReadyBtn')?.addEventListener('click',()=>{directMusicGesture('game');ensureAudio();socket.emit('toggleReady')});
 $('#arenaAccessoryBtn')?.addEventListener('click',()=>{renderAccessoryGrid();$('#accessoryDialog').showModal()});
 $('#arenaReadyLeaveBtn')?.addEventListener('click',()=>leaveRoomNow());
 
@@ -214,33 +213,38 @@ socket.on('connect',()=>{myId=socket.id;updateHomePreview();});
 socket.on('errorMsg',toast); socket.on('notice',toast); socket.on('specialDone',e=>toast(e.text));
 socket.on('roomState',s=>{
   state=s;
-  // Der Bereit-Bildschirm bleibt im Game-Screen, bekommt vor Matchbeginn aber
-  // bewusst die Kristallhöhlen-Lobby statt einer Kampf-Arena.
-  show('game');
 
   if(s.phase==='lobby'){
+    show('lobby');
     document.body.classList.remove('scene-game','scene-home');
     document.body.classList.add('scene-lobby');
     currentScreen='lobby';
     buildLobbyScene('crystal_cave');
     setMusicMode('lobby');
+    hideArenaReady();
     stopCountdown();
     stopSelectionTimer();
-    renderGame();
+    renderLobby();
+    return;
+  }
+
+  // Bereit wird erst IN der zufällig ausgewählten Arena angezeigt.
+  show('game');
+  document.body.classList.remove('scene-lobby','scene-home');
+  document.body.classList.add('scene-game');
+  currentScreen='game';
+  setMusicMode('game');
+  renderGame();
+
+  if(s.phase==='ready'){
+    stopCountdown();
+    stopSelectionTimer();
     renderArenaReady();
     return;
   }
 
-  document.body.classList.remove('scene-lobby','scene-home');
-  document.body.classList.add('scene-game');
-  currentScreen='game';
   hideArenaReady();
-  setMusicMode('game');
-
-  // Countdown zuerst starten. Selbst wenn später beim Rendern etwas schiefgeht,
-  // liegt die globale Countdown-Ebene bereits über dem Browserfenster.
-  if(s.phase==='countdown') runCountdown(s.countdownUntil||Date.now()+5000);
-  renderGame();
+  if(s.phase==='countdown')runCountdown(s.countdownUntil||Date.now()+5000);
   if(s.phase==='roundintro')showRoundIntro({round:s.round,category:s.category,until:s.roundIntroUntil});
   else if(s.phase==='select')startSelectionTimer(s.selectionDeadline);
 });
@@ -259,26 +263,24 @@ function renderArenaReady(){
   const readyCount=state.players.filter(p=>p.ready).length;
   $('#arenaRoomCode').textContent=state.code;
   $('#arenaReadyPlayers').innerHTML=state.players.map(p=>`<div class="arena-ready-player ${p.ready?'is-ready':''}">${nameplateHTML(p.name,p.accessory,true,p.frame)}<span>${p.id===state.hostId?'👑 HOST · ':''}${p.ready?'✅ BEREIT':'⏳ WARTET'}</span></div>`).join('');
-  const btn=$('#startBtn');
+  const btn=$('#arenaReadyBtn');
   btn.disabled=state.players.length<2;
   btn.textContent=me?.ready?`↩ Nicht bereit (${readyCount}/${state.players.length})`:`✅ Bereit (${readyCount}/${state.players.length})`;
   btn.classList.toggle('ready-active',!!me?.ready);
   $('#categoryIcon').textContent='⚔️';
   $('#categoryText').textContent=state.players.length<2?'Warte auf Mitspieler':'Bereit machen!';
-  $('#roundMessage').textContent=state.players.length<2?`Raumcode: ${state.code}`:'Sobald alle bereit sind, startet der Countdown für alle.';
+  $('#roundMessage').textContent=state.players.length<2?`Raumcode: ${state.code}`:'Sobald alle bereit sind, startet der Countdown für alle – direkt hier in der Arena.';
   updateMusicUI();
 }
 
 function renderLobby(){
   $('#lobbyCode').textContent=state.code;
-  const me=state.players.find(p=>p.id===myId);
-  const readyCount=state.players.filter(p=>p.ready).length;
-  $('#lobbyHint').textContent=state.players.length<2?'Schick den Code an deine Mitspieler.':'Jeder Spieler klickt auf „Bereit“. Dann startet der Countdown automatisch.';
-  $('#lobbyPlayers').innerHTML=state.players.map(p=>`<div class="lobby-player ${p.ready?'player-ready':''}">${nameplateHTML(p.name,p.accessory,true,p.frame)}<div>${p.id===state.hostId?'Host 👑':'Mitspieler'} · ${p.ready?'✅ BEREIT':'⏳ Noch nicht bereit'}</div></div>`).join('');
-  $('#startBtn').style.display='inline-block';
-  $('#startBtn').disabled=state.players.length<2;
-  $('#startBtn').textContent=me?.ready?'↩ Nicht bereit':`✅ Bereit (${readyCount}/${state.players.length})`;
-  $('#startBtn').classList.toggle('ready-active',!!me?.ready);
+  $('#lobbyHint').textContent=state.players.length<2?'Schick den Code an deine Mitspieler.':'Der Host startet die Kampf-Vorbereitung. Bereit wird erst in der Arena geklickt.';
+  $('#lobbyPlayers').innerHTML=state.players.map(p=>`<div class="lobby-player">${nameplateHTML(p.name,p.accessory,true,p.frame)}<div>${p.id===state.hostId?'Host 👑':'Mitspieler'}</div></div>`).join('');
+  const start=$('#startBtn');
+  start.style.display=myId===state.hostId?'inline-block':'none';
+  start.disabled=state.players.length<2;
+  start.textContent='⚔️ In die Arena';
   updateMusicUI();
 }
 
@@ -288,15 +290,9 @@ function renderGame(){
   const arena=document.querySelector('.arena');
   if(arena){
     arena.classList.remove('arena-crystal_colosseum','arena-storm_temple','arena-celestial_forge');
-    if(state.phase==='lobby'){
-      arena.dataset.vfx='lobby';
-      const vfx=$('#arenaVfx');if(vfx){vfx.innerHTML='';vfx.className='arena-vfx';}
-      buildLobbyScene('crystal_cave');
-    }else{
-      const arenaId=state.arenaId||'crystal_colosseum';
-      arena.classList.add('arena-'+arenaId);
-      if(arena.dataset.vfx!==arenaId){arena.dataset.vfx=arenaId;buildArenaVfx(arenaId);}
-    }
+    const arenaId=state.arenaId||'crystal_colosseum';
+    arena.classList.add('arena-'+arenaId);
+    if(arena.dataset.vfx!==arenaId){arena.dataset.vfx=arenaId;buildArenaVfx(arenaId);}
   }
   $('#abortBtn').style.display=myId===state.hostId&&state.phase!=='gameover'?'inline-block':'none';
   $('#selfName').textContent=me.name;
@@ -507,7 +503,7 @@ function updateMusicUI(){
 function startMusicWatchdog(){
   if(musicWatchdog)clearInterval(musicWatchdog);
   musicWatchdog=setInterval(()=>{
-    if(!musicEnabled||!userInteracted||!ytReady||!ytPlayer||musicMode==='home'&&currentScreen==='home')return;
+    if(!musicEnabled||!userInteracted||!ytReady||!ytPlayer)return;
     try{
       const stateNow=ytPlayer.getPlayerState?.();
       if(stateNow!==YT.PlayerState.PLAYING&&stateNow!==YT.PlayerState.BUFFERING){
@@ -546,20 +542,44 @@ function animateCapture(winnerId){
   });
   setTimeout(()=>{$('#tableCards').innerHTML=''},980);
 }
+function tieAlertSound(){
+  tone(210,.18,.07,'sawtooth');
+  tone(315,.22,.06,'triangle',.08);
+  tone(520,.28,.055,'sine',.18);
+  setTimeout(()=>diceRollSound(),320);
+}
+function hideTieAlert(){
+  const o=$('#tieOverlay');if(!o)return;
+  o.classList.remove('active');o.setAttribute('aria-hidden','true');
+}
 function setupDice(e,msg){
-  $('#roundMessage').textContent=msg;const z=$('#diceZone');z.innerHTML='<div id="diceSpectacle" class="dice-spectacle"></div>';
-  if(e.playerIds.includes(myId)){
+  $('#roundMessage').textContent=msg;
+  const z=$('#diceZone');z.innerHTML='<div id="diceSpectacle" class="dice-spectacle"></div>';
+  const involved=e.playerIds.includes(myId);
+  const overlay=$('#tieOverlay'),btn=$('#tieRollBtn');
+  if(overlay){
+    $('#tieAlertTitle').textContent=msg.includes('nochmal')?'NOCHMAL GLEICHSTAND!':'GLEICHSTAND!';
+    $('#tieAlertText').textContent=involved?'Deine Karte ist gleichauf – jetzt musst DU würfeln!':'Die stärksten Karten sind gleichauf. Das Würfelduell entscheidet.';
+    btn.hidden=!involved;
+    btn.disabled=false;
+    btn.textContent='🎲 JETZT WÜRFELN';
+    btn.onclick=involved?()=>{btn.disabled=true;btn.textContent='🎲 Würfelt …';socket.emit('rollDice');setTimeout(hideTieAlert,450)}:null;
+    overlay.classList.add('active');overlay.setAttribute('aria-hidden','false');
+    tieAlertSound();
+    if(!involved)setTimeout(hideTieAlert,2600);
+  }
+  if(involved){
     const b=document.createElement('button');b.type='button';b.className='dice-btn roll-trigger';b.textContent='🎲 Würfeln';
-    b.addEventListener('click',()=>{b.disabled=true;socket.emit('rollDice')});z.append(b)
+    b.addEventListener('click',()=>{b.disabled=true;hideTieAlert();socket.emit('rollDice')});z.append(b);
   }else{
-    const w=document.createElement('div');w.className='dice-wait';w.textContent='Die betroffenen Spieler würfeln …';z.append(w)
+    const w=document.createElement('div');w.className='dice-wait';w.textContent='Die betroffenen Spieler würfeln …';z.append(w);
   }
 }
 function diceTile(id,name){
   let d=document.querySelector(`.dice-result[data-player-id="${id}"]`);if(d)return d;
   const z=$('#diceSpectacle')||$('#diceZone');d=document.createElement('div');d.className='dice-result';d.dataset.playerId=id;d.innerHTML=`<strong>${escapeHtml(name||'Spieler')}</strong><span class="dice-face">⚄</span>`;z.prepend(d);return d;
 }
-function startDiceAnimation(e){
+function startDiceAnimation(e){hideTieAlert();
   const d=diceTile(e.playerId,e.name),face=d.querySelector('.dice-face');d.classList.add('rolling-live');
   let n=0;const faces=['⚀','⚁','⚂','⚃','⚄','⚅'];const timer=setInterval(()=>{face.textContent=faces[n++%6]},70);diceAnimations.set(e.playerId,timer);diceRollSound()
 }
@@ -613,7 +633,7 @@ function showRoundIntro(e){
   const result=$('#categoryCrystalResult');
   // Jede Seitenfläche hat eine feste Position um die Y-Achse. Der Endwinkel
   // wird so gesetzt, dass exakt die serverseitig gewählte Kategorie vorne landet.
-  const landY={strength:'1440deg',speed:'1710deg',energy:'1620deg',magic:'1530deg'}[e.category]||'1530deg';
+  const landY={strength:'1440deg',speed:'1350deg',energy:'1260deg',magic:'1170deg'}[e.category]||'1170deg';
   crystal?.style.setProperty('--crystal-land-y',landY);
   crystal?.classList.remove('crystal-running');
   result?.classList.remove('show');
@@ -871,6 +891,7 @@ socket.on('postGameWaiting',e=>{
   try{$('#gameOverDialog').close()}catch{}
   try{$('#giftDialog').close()}catch{}
   show('lobby');
+  setMusicMode('lobby');
   $('#startBtn').style.display='none';
   $('#lobbyHint').textContent=`Du bist fertig (${e.ready}/${e.total}). Warte, bis die anderen Spieler ebenfalls „Zur Lobby“ wählen.`;
   toast('Du bist bereit für die Lobby. Die anderen können ihr Geschenk in Ruhe öffnen.');
@@ -881,8 +902,8 @@ socket.on('postGameReadyState',e=>{
     if(hint)hint.textContent=`Bereit: ${e.ready.length}/${e.total} Spieler`;
   }
 });
-socket.on('backToLobby',()=>{stopCountdown();stopSelectionTimer();try{$('#gameOverDialog').close()}catch{};try{$('#giftDialog').close()}catch{};clearTable();show('lobby');toast('Zurück in der Lobby.')});
-socket.on('roomLeft',()=>{stopCountdown();stopSelectionTimer();state=null;hand=[];clearTable();renderHand();show('home');toast('Du hast den Raum verlassen.')});
+socket.on('backToLobby',()=>{stopCountdown();stopSelectionTimer();hideTieAlert();try{$('#gameOverDialog').close()}catch{};try{$('#giftDialog').close()}catch{};clearTable();show('lobby');setMusicMode('lobby');toast('Zurück in der Lobby.')});
+socket.on('roomLeft',()=>{stopCountdown();stopSelectionTimer();hideTieAlert();state=null;hand=[];clearTable();renderHand();show('home');setMusicMode('lobby');toast('Du hast den Raum verlassen.')});
 socket.on('flutterChoices',e=>showChoices('Fluttershy: Welche Karte möchtest du behalten?',e.cards,c=>socket.emit('flutterKeep',{cardId:c.id})));
 socket.on('rarityChoose',e=>showChoices('Rarity: Welche Karte möchtest du austauschen?',e.cards,c=>socket.emit('raritySwap',{cardId:c.id})));
 function showChoices(title,cards,cb){$('#choiceTitle').textContent=title;const g=$('#choiceCards');g.innerHTML='';cards.forEach(c=>{const b=document.createElement('button');b.type='button';b.innerHTML=`<img src="${c.image}" alt="${escapeHtml(c.name)}">`;b.addEventListener('click',()=>{$('#choiceDialog').close();cb(c)});g.append(b)});$('#choiceDialog').showModal()}

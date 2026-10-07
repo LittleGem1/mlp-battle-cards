@@ -31,7 +31,7 @@ function clearTimers(r){
 function publicState(r){
   return {
     code:r.code,hostId:r.hostId,phase:r.phase,category:r.category,round:r.round,
-    countdownUntil:r.countdownUntil||null,selectionDeadline:r.selectionDeadline||null,roundIntroUntil:r.roundIntroUntil||null,arenaId:r.arenaId||'crystal_colosseum',postGameReady:[...(r.postGameReady||new Set())],
+    countdownUntil:r.countdownUntil||null,selectionDeadline:r.selectionDeadline||null,roundIntroUntil:r.roundIntroUntil||null,arenaId:r.arenaId||null,postGameReady:[...(r.postGameReady||new Set())],
     players:roomPlayers(r).map(p=>({
       id:p.id,name:p.name,accessory:p.accessory,frame:p.frame||'',handCount:p.hand.length,
       selected:!!p.selected,ready:!!p.ready,eliminated:p.hand.length===0,lastPlayedCardId:p.lastPlayedCardId||null
@@ -62,6 +62,7 @@ function removePlayerFromRoom(socket,notify=true){
   if(notify)io.to(r.code).emit('notice','Ein Spieler hat den Raum verlassen.');
   sendState(r);
   if(r.phase==='select')maybeEvaluate(r);
+  if(r.phase==='ready')maybeStartWhenReady(r);
   if(r.phase==='gameover'&&r.postGameReady&&roomPlayers(r).length&&roomPlayers(r).every(p=>r.postGameReady.has(p.id))){
     setTimeout(()=>{if(rooms.has(r.code)&&r.phase==='gameover')resetToLobby(r)},250);
   }
@@ -191,10 +192,9 @@ function completeDiceRoll(r,pid){
 }
 
 function beginMatch(r){
-  if(!r||r.phase!=='lobby'||r.players.size<2)return;
+  if(!r||r.phase!=='ready'||r.players.size<2)return;
   clearTimers(r);
-  const arenas=['crystal_colosseum','storm_temple','celestial_forge'];
-  r.arenaId=arenas[Math.floor(Math.random()*arenas.length)];
+  if(!r.arenaId){const arenas=['crystal_colosseum','storm_temple','celestial_forge'];r.arenaId=arenas[Math.floor(Math.random()*arenas.length)];}
   const pool=freshPool(),ps=roomPlayers(r);
   for(const p of ps){p.hand=[];p.selected=null;p.lastPlayedCardId=null;p.ready=false;}
   for(let k=0;k<7;k++)for(const p of ps){const id=pool.shift();if(id)p.hand.push(id);}
@@ -203,8 +203,20 @@ function beginMatch(r){
   io.to(r.code).emit('countdown',{seconds:5,until:r.countdownUntil,arenaId:r.arenaId});
   r.countdownTimer=setTimeout(()=>{r.countdownTimer=null;r.countdownUntil=null;startRound(r,0);},5100);
 }
+function enterArenaReady(r){
+  if(!r||r.phase!=='lobby'||r.players.size<2)return false;
+  clearTimers(r);
+  const arenas=['crystal_colosseum','storm_temple','celestial_forge'];
+  r.arenaId=arenas[Math.floor(Math.random()*arenas.length)];
+  r.phase='ready';
+  r.readyLock=false;
+  for(const p of roomPlayers(r)){p.ready=false;p.selected=null;}
+  io.to(r.code).emit('arenaReadyPhase',{arenaId:r.arenaId});
+  sendState(r);
+  return true;
+}
 function maybeStartWhenReady(r){
-  if(!r||r.phase!=='lobby'||r.readyLock||r.players.size<2)return;
+  if(!r||r.phase!=='ready'||r.readyLock||r.players.size<2)return;
   if(roomPlayers(r).every(p=>p.ready)){
     r.readyLock=true;
     io.to(r.code).emit('allReady',{message:'Alle sind bereit! Der Kampf beginnt.'});
@@ -230,19 +242,21 @@ io.on('connection',socket=>{
     for(const p of roomPlayers(r))p.ready=false;
     socket.join(c);socket.data.room=c;sendState(r);
   });
-  socket.on('setAccessory',({accessory})=>{const r=getRoom(socket),p=r?.players.get(socket.id);if(!r||r.phase!=='lobby'||!p)return;p.accessory=String(accessory||'changeling');sendState(r);});
-  socket.on('setCosmetics',({accessory,frame})=>{const r=getRoom(socket),p=r?.players.get(socket.id);if(!r||r.phase!=='lobby'||!p)return;p.accessory=String(accessory||'changeling');p.frame=String(frame||'');sendState(r);});
+  socket.on('setAccessory',({accessory})=>{const r=getRoom(socket),p=r?.players.get(socket.id);if(!r||!['lobby','ready'].includes(r.phase)||!p)return;p.accessory=String(accessory||'changeling');sendState(r);});
+  socket.on('setCosmetics',({accessory,frame})=>{const r=getRoom(socket),p=r?.players.get(socket.id);if(!r||!['lobby','ready'].includes(r.phase)||!p)return;p.accessory=String(accessory||'changeling');p.frame=String(frame||'');sendState(r);});
   socket.on('toggleReady',()=>{
     const r=getRoom(socket),p=r?.players.get(socket.id);
-    if(!r||r.phase!=='lobby'||!p||r.readyLock)return;
+    if(!r||r.phase!=='ready'||!p||r.readyLock)return;
     p.ready=!p.ready;
     sendState(r);
     maybeStartWhenReady(r);
   });
   socket.on('startGame',()=>{
-    const r=getRoom(socket);if(!r||r.phase!=='lobby')return;
-    if(roomPlayers(r).every(p=>p.ready)&&r.players.size>=2)beginMatch(r);
-    else socket.emit('errorMsg','Alle Spieler müssen zuerst auf „Bereit“ klicken.');
+    const r=getRoom(socket);
+    if(!r||r.phase!=='lobby')return;
+    if(r.hostId!==socket.id)return socket.emit('errorMsg','Nur der Host kann das Match vorbereiten.');
+    if(r.players.size<2)return socket.emit('errorMsg','Mindestens 2 Spieler werden benötigt.');
+    enterArenaReady(r);
   });
   socket.on('playCard',({cardId})=>{
     const r=getRoom(socket);if(!r||r.phase!=='select')return socket.emit('errorMsg','Gerade kann keine Karte gespielt werden.');
