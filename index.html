@@ -6,7 +6,9 @@
   <title>MLP Battle Cards – Sammle die meisten Karten</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body>
+<body class="scene-home">
+  <div id="crystalDrift" class="crystal-drift" aria-hidden="true"></div>
+  <div id="lobbySceneVfx" class="lobby-scene-vfx" aria-hidden="true"></div>
   <main id="app">
     <section id="home" class="screen active">
       <div class="hero crystal-panel">
@@ -15,7 +17,7 @@
         <p>Sammle die meisten Karten, um zu gewinnen.</p>
         <div class="profile-row">
           <label>Dein Name <input id="playerName" maxlength="24" placeholder="Spielername" /></label>
-          <button id="accessoryBtn" class="soft-btn" type="button">Namens-Accessoire ändern</button>
+          <button id="accessoryBtn" class="soft-btn" type="button">Items & Rahmen</button>
         </div>
         <div id="homeNamePreview" class="nameplate-preview"></div>
         <div class="menu-grid">
@@ -31,18 +33,53 @@
         <h2>Raum <span id="lobbyCode"></span></h2>
         <p id="lobbyHint">Warte auf Mitspieler …</p>
         <div id="lobbyPlayers" class="lobby-players"></div>
-        <button id="startBtn" class="primary-btn" type="button">Spiel starten</button>
+        <div class="lobby-actions">
+          <button id="lobbyAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
+          <button id="leaveLobbyBtn" class="soft-btn" type="button">← Hauptmenü</button>
+          <div class="music-controls"><button id="musicLobbyBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
+        </div>
       </div>
     </section>
 
     <section id="game" class="screen">
       <div class="arena">
-        <div class="crystal c1"></div><div class="crystal c2"></div><div class="crystal c3"></div><div class="crystal c4"></div>
+        <div class="game-actions">
+          <button id="abortBtn" class="danger-btn" type="button">⏹ Spiel abbrechen</button>
+          <button id="leaveGameBtn" class="soft-btn" type="button">← Hauptmenü</button>
+          <div class="music-controls"><button id="musicGameBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
+        </div>
+        <div id="arenaVfx" class="arena-vfx" aria-hidden="true"><span class="arena-particle p1"></span><span class="arena-particle p2"></span><span class="arena-particle p3"></span><span class="arena-particle p4"></span><span class="arena-particle p5"></span><span class="arena-particle p6"></span><span class="arena-particle p7"></span><span class="arena-particle p8"></span><span class="arena-particle p9"></span><span class="arena-particle p10"></span><span class="arena-particle p11"></span><span class="arena-particle p12"></span><span class="arena-particle p13"></span><span class="arena-particle p14"></span></div>
+        <div id="arenaReadyPanel" class="arena-ready-panel" hidden>
+          <div class="arena-ready-card">
+            <span class="arena-ready-kicker">⚔️ KAMPF-VORBEREITUNG</span>
+            <h2>Raum <span id="arenaRoomCode"></span></h2>
+            <p>Alle Spieler müssen in der Arena bereit sein.</p>
+            <div id="arenaReadyPlayers" class="arena-ready-players"></div>
+            <div class="arena-ready-music">
+              <strong>🎵 Lobby-Musik</strong>
+              <div class="music-controls lobby-ready-music-controls">
+                <button class="soft-btn music-toggle" type="button">🔇 Musik stumm</button>
+                <label class="ready-volume-wrap">
+                  <span>🔈</span>
+                  <input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Lobby-Musiklautstärke">
+                  <span>🔊</span>
+                  <b class="music-volume-readout">30%</b>
+                </label>
+              </div>
+            </div>
+            <div class="arena-ready-actions">
+              <button id="startBtn" class="primary-btn ready-btn" type="button">✅ Bereit</button>
+              <button id="arenaAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
+              <button id="arenaReadyLeaveBtn" class="soft-btn" type="button">← Hauptmenü</button>
+            </div>
+          </div>
+        </div>
         <div id="opponents" class="opponents"></div>
         <div class="center-stage">
           <div id="category" class="category"><span id="categoryIcon">✦</span><strong id="categoryText">Bereit?</strong></div>
-          <div id="countdown" class="countdown" aria-live="assertive"></div>
+          <div id="countdownAnchor" class="countdown-anchor" aria-hidden="true"></div>
           <div id="tableCards" class="table-cards"></div>
+          <div id="selectionTimer" class="selection-timer" aria-live="polite"></div>
           <div id="roundMessage" class="round-message" aria-live="polite"></div>
           <div id="diceZone" class="dice-zone"></div>
         </div>
@@ -53,21 +90,162 @@
     </section>
   </main>
 
+  <div id="countdown" class="countdown global-countdown" aria-live="assertive"></div>
+  <div id="finisherOverlay" class="finisher-overlay" aria-hidden="true">
+    <div class="finisher-stage">
+      <div id="finisherHeadline" class="finisher-headline"></div>
+      <div id="finisherWinner" class="finisher-winner"></div>
+      <div id="finisherLosers" class="finisher-losers"></div>
+      <div id="finisherImpact" class="finisher-impact" aria-hidden="true"></div>
+    </div>
+  </div>
   <div id="toast" class="toast" role="status"></div>
+  <div id="roundIntroOverlay" class="round-intro-overlay category-coin-overlay" aria-hidden="true">
+    <div class="category-coin-scene">
+      <span id="roundIntroRound" class="category-coin-round">RUNDE 1</span>
+      <div id="roundCategoryCoin" class="category-coin">
+        <div class="category-coin-face category-coin-front"><span>?</span><small>NEUE KATEGORIE</small></div>
+        <div class="category-coin-face category-coin-back"><b id="roundIntroIcon">⭐</b><strong id="roundIntroLabel">MAGIE</strong></div>
+      </div>
+      <span class="category-coin-hint">Die Münze entscheidet …</span>
+    </div>
+  </div>
+  <button id="rulesBtn" class="rules-floating" type="button">📖 Spielregeln</button>
 
   <dialog id="accessoryDialog" class="modal accessory-modal">
     <form method="dialog">
       <div class="modal-head">
         <div>
-          <h3>Accessoires auswählen</h3>
-          <p>Durch Siege freischalten und deinen Namen einzigartig machen.</p>
+          <h3>Namens-Deko</h3>
+          <p>Items und Rahmen durch Siege freischalten.</p>
         </div>
         <div id="collectionCount" class="collection-count">0 / 24</div>
       </div>
       <div id="accessoryPreview" class="accessory-preview"></div>
+      <div class="cosmetic-tabs">
+        <button id="itemsTabBtn" class="cosmetic-tab active" type="button">✨ Items</button>
+        <button id="framesTabBtn" class="cosmetic-tab" type="button">🖼 Rahmen</button>
+      </div>
       <div id="accessoryGrid" class="accessory-grid"></div>
       <button class="soft-btn">Schließen</button>
     </form>
+  </dialog>
+
+
+  <dialog id="rulesDialog" class="modal tutorial-modal">
+    <div class="tutorial-shell">
+      <div class="tutorial-topbar">
+        <div>
+          <span class="tutorial-kicker">📖 SPIELANLEITUNG</span>
+          <h3 id="tutorialTitle">So funktioniert MLP Battle Cards</h3>
+        </div>
+        <button id="tutorialSkipBtn" class="tutorial-skip" type="button">Tutorial überspringen ✕</button>
+      </div>
+
+      <div class="tutorial-progress-wrap">
+        <span id="tutorialStepCount">1 / 6</span>
+        <div class="tutorial-progress"><i id="tutorialProgressBar"></i></div>
+      </div>
+
+      <div id="tutorialSlides" class="tutorial-slides">
+        <article class="tutorial-step active" data-step="0">
+          <div class="tutorial-copy">
+            <h4>1. Dein Ziel</h4>
+            <p>Du startest mit <strong>7 zufälligen Karten</strong>. Gewinne Runden, sammle die ausgespielten Karten und versuche als letzter Spieler noch Karten zu besitzen.</p>
+          </div>
+          <div class="tutorial-picture tutorial-hand-picture">
+            <img src="/assets/cards/01_Applejack.webp" alt="Applejack Karte">
+            <img src="/assets/cards/02_Rainbow_Dash.webp" alt="Rainbow Dash Karte">
+            <img src="/assets/cards/03_Twilight_Sparkle.webp" alt="Twilight Sparkle Karte">
+            <span class="tutorial-callout">7 Karten auf deiner Hand</span>
+          </div>
+        </article>
+
+        <article class="tutorial-step" data-step="1">
+          <div class="tutorial-copy">
+            <h4>2. Kategorie beachten</h4>
+            <p>Zu Beginn erscheint eine Kategorie. Nur dieser Wert zählt in der Runde. Der große Countdown zeigt dir vorher gut sichtbar, wann es losgeht.</p>
+          </div>
+          <div class="tutorial-picture category-picture">
+            <div class="tutorial-countdown-demo">3</div>
+            <div class="tutorial-categories"><span>🏋️ Stärke</span><span>⚡ Schnelligkeit</span><span>🔋 Energie</span><span>⭐ Magie</span></div>
+          </div>
+        </article>
+
+        <article class="tutorial-step" data-step="2">
+          <div class="tutorial-copy">
+            <h4>3. Eine Karte wählen</h4>
+            <p>Vergleiche den passenden Wert und klicke deine beste Karte. Beim Darüberfahren hebt sie sich an. <strong>Gedrückt halten</strong> öffnet später die große Kartenansicht.</p>
+          </div>
+          <div class="tutorial-picture choose-picture">
+            <div class="tutorial-card-choice good"><img src="/assets/cards/01_Applejack.webp" alt="Applejack"><b>🏋️ 9</b><small>Gute Wahl</small></div>
+            <div class="tutorial-versus">VS</div>
+            <div class="tutorial-card-choice"><img src="/assets/cards/02_Rainbow_Dash.webp" alt="Rainbow Dash"><b>🏋️ 6</b><small>Schwächer bei Stärke</small></div>
+          </div>
+        </article>
+
+        <article class="tutorial-step" data-step="3">
+          <div class="tutorial-copy">
+            <h4>4. Ablegen, aufdecken, gewinnen</h4>
+            <p>Alle gewählten Karten fliegen verdeckt in die Mitte. Sobald alle gewählt haben, drehen sie sich gleichzeitig um. Der höchste Wert gewinnt alle ausgespielten Karten.</p>
+          </div>
+          <div class="tutorial-picture reveal-picture">
+            <div class="tutorial-back"><img src="/assets/card_back.webp" alt="Kartenrückseite"></div>
+            <span class="tutorial-arrow">➜</span>
+            <div class="tutorial-front"><img src="/assets/cards/01_Applejack.webp" alt="Applejack Karte"></div>
+            <span class="tutorial-win">🏆 Karten gehen zum Gewinner</span>
+          </div>
+        </article>
+
+        <article class="tutorial-step" data-step="4">
+          <div class="tutorial-copy">
+            <h4>5. Gleichstand & Zeitlimit</h4>
+            <p>Bei Gleichstand würfeln nur die beteiligten Spieler. Hast du nach <strong>30 Sekunden</strong> nichts gelegt, verlierst du eine zufällige Strafkarte und eine neue Kategorie wird gezogen.</p>
+          </div>
+          <div class="tutorial-picture tie-picture">
+            <div class="tutorial-die">⚄</div><div class="tutorial-die second">⚂</div>
+            <div class="tutorial-timeout">⏱ 30 → 0<br><small>Keine Karte = Strafkarte</small></div>
+          </div>
+        </article>
+
+        <article class="tutorial-step" data-step="5">
+          <div class="tutorial-copy">
+            <h4>6. Spezialkarten & Belohnungen</h4>
+            <p>Spezialkarten zeigen deutlich, wann sie eingesetzt werden können. Ein Sieg kann dir ein neues <strong>Item oder einen Rahmen</strong> freischalten. Unentdecktes bleibt als <strong>?</strong> verborgen.</p>
+          </div>
+          <div class="tutorial-picture special-picture">
+            <img class="tutorial-special" src="/assets/specials/64_Spezial_Pinkie_Pie.webp" alt="Pinkie Pie Spezialkarte">
+            <span class="magic-spark">✨</span>
+            <div class="tutorial-reward-preview">
+              <img src="/assets/frames/sakura.webp" alt="Sakura Rahmen">
+              <span>oder</span>
+              <div class="tutorial-mystery">?</div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <section id="trainingArea" class="training-area" hidden>
+        <div class="training-header">
+          <div><span class="tutorial-kicker">🎓 MINI-TRAINING</span><h4 id="trainingTitle">Proberunde 1 von 2</h4></div>
+          <button id="trainingSkipBtn" class="soft-btn" type="button">Training beenden</button>
+        </div>
+        <p id="trainingText">Wähle für die angezeigte Kategorie die bessere Karte.</p>
+        <div id="trainingCategory" class="training-category">🏋️ Stärke</div>
+        <div class="training-board">
+          <div class="training-opponent"><span>Trainingsgegner</span><img src="/assets/card_back.webp" alt="Verdeckte Gegnerkarte"></div>
+          <div id="trainingTable" class="training-table"></div>
+        </div>
+        <div id="trainingChoices" class="training-choices"></div>
+        <div id="trainingResult" class="training-result"></div>
+      </section>
+
+      <div id="tutorialNav" class="tutorial-nav">
+        <button id="tutorialPrevBtn" class="soft-btn" type="button">← Zurück</button>
+        <button id="tutorialNextBtn" class="primary-btn" type="button">Weiter →</button>
+        <button id="tutorialTrainingBtn" class="primary-btn" type="button" hidden>🎓 Training starten</button>
+      </div>
+    </div>
   </dialog>
 
   <dialog id="starterDialog" class="modal starter-modal">
@@ -82,9 +260,58 @@
     </form>
   </dialog>
 
-  <dialog id="choiceDialog" class="modal"><form method="dialog"><h3 id="choiceTitle">Wähle eine Karte</h3><div id="choiceCards" class="choice-cards"></div></form></dialog>
-  <dialog id="giftDialog" class="modal gift-modal"><div class="gift-wrap"><h3>Du hast gewonnen! ✨</h3><button id="giftBox" class="gift-box" type="button">🎁</button><div id="giftResult"></div></div></dialog>
+  <dialog id="starterFrameDialog" class="modal starter-frame-modal">
+    <div class="starter-frame-wrap">
+      <h3>🖼 Dein erster Namensrahmen</h3>
+      <p>Beide Rahmen gehören dir von Anfang an. Such dir aus, welchen du zuerst tragen möchtest.</p>
+      <div class="starter-frame-grid">
+        <button type="button" data-starter-frame="sakura"><span class="starter-frame-art"><img src="/assets/frames/sakura.webp" alt="Rosa Blumenrahmen"></span><strong>Rosa Blümchen</strong></button>
+        <button type="button" data-starter-frame="candy"><span class="starter-frame-art"><img src="/assets/frames/candy.webp" alt="Süßigkeitenrahmen"></span><strong>Süßigkeiten</strong></button>
+      </div>
+    </div>
+  </dialog>
 
+  <div id="cardInspectOverlay" class="card-inspect-overlay" aria-hidden="true">
+    <button id="cardInspectClose" class="card-inspect-close" type="button" aria-label="Großansicht schließen">×</button>
+    <div class="card-inspect-copy">
+      <strong id="cardInspectName">Karte</strong>
+      <span>Rechte Maustaste halten & ziehen → Karte frei drehen</span>
+    </div>
+    <div id="cardInspectStage" class="card-inspect-stage">
+      <div id="cardInspectCard" class="card-inspect-card">
+        <div class="card-inspect-face card-inspect-front"><img id="cardInspectFront" src="" alt="Kartenvorderseite"></div>
+        <div class="card-inspect-face card-inspect-back"><img src="/assets/card_back.webp" alt="Kartenrückseite"></div>
+      </div>
+    </div>
+    <div class="inspect-hint">Gedrückt halten öffnet diese Ansicht · Rechtsklick ziehen = 360° drehen · ESC = schließen</div>
+  </div>
+
+  <dialog id="choiceDialog" class="modal"><form method="dialog"><h3 id="choiceTitle">Wähle eine Karte</h3><div id="choiceCards" class="choice-cards"></div></form></dialog>
+  <dialog id="gameOverDialog" class="modal gameover-modal">
+    <div class="gameover-wrap">
+      <h3 id="gameOverTitle">Spiel beendet</h3>
+      <p id="gameOverText"></p>
+      <div class="gameover-actions">
+        <button id="rewardBtn" class="primary-btn" type="button">🎁 Belohnung öffnen</button>
+        <button id="returnLobbyBtn" class="primary-btn" type="button">↩ Zurück in die Lobby</button>
+        <button id="gameOverHomeBtn" class="soft-btn" type="button">⌂ Hauptmenü</button>
+        <button id="closeGameOverBtn" class="soft-btn" type="button">Schließen</button>
+      </div>
+    </div>
+  </dialog>
+  <dialog id="giftDialog" class="modal gift-modal">
+    <div class="gift-wrap">
+      <button id="closeGiftBtn" class="dialog-x" type="button" aria-label="Schließen">×</button>
+      <h3>Deine Gewinn-Belohnung ✨</h3>
+      <button id="giftBox" class="gift-box" type="button">🎁</button>
+      <div id="giftResult"></div>
+      <button id="giftDoneBtn" class="soft-btn" type="button">Schließen</button>
+    </div>
+  </dialog>
+
+  <div id="ytAudioPlayer" class="yt-audio-player" aria-hidden="true"></div>
+  <div class="music-credit">Ausgewählte Lobby- und Battle-Musik läuft unsichtbar im Hintergrund via YouTube.</div>
+  <script src="https://www.youtube.com/iframe_api"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/client.js"></script>
 </body>
