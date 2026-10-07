@@ -33,7 +33,7 @@ function publicState(r){
     code:r.code,hostId:r.hostId,phase:r.phase,category:r.category,round:r.round,
     countdownUntil:r.countdownUntil||null,selectionDeadline:r.selectionDeadline||null,
     players:roomPlayers(r).map(p=>({
-      id:p.id,name:p.name,accessory:p.accessory,handCount:p.hand.length,
+      id:p.id,name:p.name,accessory:p.accessory,frame:p.frame||'',handCount:p.hand.length,
       selected:!!p.selected,eliminated:p.hand.length===0,lastPlayedCardId:p.lastPlayedCardId||null
     }))
   };
@@ -156,9 +156,10 @@ function evaluate(r){
   if(tied.length===1)setTimeout(()=>settleRound(r,tied[0].pid),2100);
   else setTimeout(()=>{r.phase='tie';r.tieIds=tied.map(x=>x.pid);r.dice={};io.to(r.code).emit('tieStart',{playerIds:r.tieIds,names:r.tieIds.map(id=>r.players.get(id)?.name)});sendState(r);},1700);
 }
-function drawFromPool(r,count,exclude=[]){
+function drawFromPool(r,count,exclude=[],kind='any'){
   const used=new Set(roomPlayers(r).flatMap(p=>p.hand).concat(Object.values(r.played||{}).map(x=>x.cardId)).concat(exclude));
-  return shuffle([...normal,...specials].map(c=>c.id).filter(id=>!used.has(id))).slice(0,count);
+  const source=kind==='normal'?normal:(kind==='special'?specials:[...normal,...specials]);
+  return shuffle(source.map(c=>c.id).filter(id=>!used.has(id))).slice(0,count);
 }
 function completeDiceRoll(r,pid){
   if(!r||r.phase!=='tie'||r.dice[pid]!=='rolling'||!r.tieIds.includes(pid))return;
@@ -172,21 +173,22 @@ function completeDiceRoll(r,pid){
 }
 
 io.on('connection',socket=>{
-  socket.on('createRoom',({name,accessory})=>{
+  socket.on('createRoom',({name,accessory,frame})=>{
     let c;do c=code();while(rooms.has(c));
     const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null};
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',hand:[],selected:null,lastPlayedCardId:null});
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],selected:null,lastPlayedCardId:null});
     rooms.set(c,r);socket.join(c);socket.data.room=c;sendState(r);
   });
-  socket.on('joinRoom',({code:rc,name,accessory})=>{
+  socket.on('joinRoom',({code:rc,name,accessory,frame})=>{
     const c=String(rc||'').trim().toUpperCase(),r=rooms.get(c);
     if(!r)return socket.emit('errorMsg','Raum nicht gefunden.');
     if(r.phase!=='lobby')return socket.emit('errorMsg','Die Partie läuft bereits.');
     if(r.players.size>=8)return socket.emit('errorMsg','Der Raum ist voll.');
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',hand:[],selected:null,lastPlayedCardId:null});
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],selected:null,lastPlayedCardId:null});
     socket.join(c);socket.data.room=c;sendState(r);
   });
   socket.on('setAccessory',({accessory})=>{const r=getRoom(socket),p=r?.players.get(socket.id);if(!r||r.phase!=='lobby'||!p)return;p.accessory=String(accessory||'changeling');sendState(r);});
+  socket.on('setCosmetics',({accessory,frame})=>{const r=getRoom(socket),p=r?.players.get(socket.id);if(!r||r.phase!=='lobby'||!p)return;p.accessory=String(accessory||'changeling');p.frame=String(frame||'');sendState(r);});
   socket.on('startGame',()=>{
     const r=getRoom(socket);if(!r||r.hostId!==socket.id||r.phase!=='lobby')return;
     if(r.players.size<2)return socket.emit('errorMsg','Mindestens 2 Spieler werden benötigt.');
@@ -217,16 +219,17 @@ io.on('connection',socket=>{
     const p=r.players.get(socket.id),c=byId[cardId];if(!p||!c||c.type!=='special'||!p.hand.includes(cardId))return;
     if(p.selected)return socket.emit('errorMsg','Du hast schon eine normale Karte gelegt.');
     const consume=()=>p.hand.splice(p.hand.indexOf(cardId),1);
+    io.to(r.code).emit('specialPlayed',{playerId:p.id,name:p.name,card:c});
     if(c.effect==='rainbow'){if(r.category!=='speed')return socket.emit('errorMsg','Nur bei Schnelligkeit.');consume();r.roundBuff[p.id]={...(r.roundBuff[p.id]||{}),speed:2};socket.emit('specialDone',{text:'+2 Schnelligkeit.'});}
     else if(c.effect==='applejack'){if(r.category!=='strength')return socket.emit('errorMsg','Nur bei Stärke.');consume();r.roundBuff[p.id]={...(r.roundBuff[p.id]||{}),strength:1};socket.emit('specialDone',{text:'+1 Stärke.'});}
-    else if(c.effect==='pinkie'){consume();const d=drawFromPool(r,1);p.hand.push(...d);socket.emit('specialDone',{text:d.length?'1 neue Karte gezogen.':'Keine freie Karte.'});}
-    else if(c.effect==='twilight'){consume();const d=drawFromPool(r,2);p.hand.push(...d);socket.emit('specialDone',{text:`${d.length} neue Karten gezogen.`});}
-    else if(c.effect==='fluttershy'){const d=drawFromPool(r,2);if(!d.length)return socket.emit('errorMsg','Keine freie Karte.');consume();socket.data.pendingFlutter={room:r.code,choices:d};socket.emit('flutterChoices',{cards:d.map(id=>byId[id])});}
+    else if(c.effect==='pinkie'){consume();const d=drawFromPool(r,1,[],'normal');p.hand.push(...d);socket.emit('specialDone',{text:d.length?'1 neue Karte gezogen.':'Keine freie Karte.'});}
+    else if(c.effect==='twilight'){consume();const d=drawFromPool(r,2,[],'normal');p.hand.push(...d);socket.emit('specialDone',{text:`${d.length} neue Karten gezogen.`});}
+    else if(c.effect==='fluttershy'){const d=drawFromPool(r,2,[],'normal');if(!d.length)return socket.emit('errorMsg','Keine freie Karte.');consume();socket.data.pendingFlutter={room:r.code,choices:d};socket.emit('flutterChoices',{cards:d.map(id=>byId[id])});}
     else if(c.effect==='rarity'){const candidates=p.hand.filter(id=>id!==cardId);if(!candidates.length)return socket.emit('errorMsg','Du brauchst eine weitere Karte.');consume();socket.data.pendingRarity={room:r.code};socket.emit('rarityChoose',{cards:p.hand.map(id=>byId[id])});}
     sendState(r);
   });
   socket.on('flutterKeep',({cardId})=>{const x=socket.data.pendingFlutter,r=getRoom(socket);if(!x||!r||x.room!==r.code||!x.choices.includes(cardId))return;const p=r.players.get(socket.id);p.hand.push(cardId);socket.data.pendingFlutter=null;socket.emit('specialDone',{text:`${byId[cardId].name} behalten.`});sendState(r);});
-  socket.on('raritySwap',({cardId})=>{const x=socket.data.pendingRarity,r=getRoom(socket);if(!x||!r||x.room!==r.code)return;const p=r.players.get(socket.id);if(!p.hand.includes(cardId))return;p.hand.splice(p.hand.indexOf(cardId),1);const d=drawFromPool(r,1,[cardId]);if(d.length)p.hand.push(d[0]);socket.data.pendingRarity=null;socket.emit('specialDone',{text:d.length?`${byId[cardId].name} getauscht.`:'Keine freie Karte.'});sendState(r);});
+  socket.on('raritySwap',({cardId})=>{const x=socket.data.pendingRarity,r=getRoom(socket);if(!x||!r||x.room!==r.code)return;const p=r.players.get(socket.id);if(!p.hand.includes(cardId))return;p.hand.splice(p.hand.indexOf(cardId),1);const d=drawFromPool(r,1,[cardId],'normal');if(d.length)p.hand.push(d[0]);socket.data.pendingRarity=null;socket.emit('specialDone',{text:d.length?`${byId[cardId].name} getauscht.`:'Keine freie Karte.'});sendState(r);});
   socket.on('rollDice',()=>{const r=getRoom(socket);if(!r||r.phase!=='tie'||!r.tieIds.includes(socket.id)||r.dice[socket.id]!==undefined)return;r.dice[socket.id]='rolling';io.to(r.code).emit('diceRolling',{playerId:socket.id,name:r.players.get(socket.id)?.name});setTimeout(()=>completeDiceRoll(r,socket.id),900);});
   socket.on('returnToLobby',()=>{const r=getRoom(socket);if(!r)return socket.emit('errorMsg','Du bist in keinem Raum.');if(r.phase!=='gameover'&&r.hostId!==socket.id)return socket.emit('errorMsg','Während des Spiels kann nur der Host zurück zur Lobby.');resetToLobby(r);});
   socket.on('abortGame',()=>{const r=getRoom(socket);if(!r)return socket.emit('errorMsg','Du bist in keinem Raum.');if(r.hostId!==socket.id)return socket.emit('errorMsg','Nur der Host kann abbrechen.');if(r.phase==='lobby')return;io.to(r.code).emit('notice','Die Partie wurde abgebrochen.');resetToLobby(r);});

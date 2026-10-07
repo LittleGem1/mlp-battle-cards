@@ -15,7 +15,7 @@
         <p>Sammle die meisten Karten, um zu gewinnen.</p>
         <div class="profile-row">
           <label>Dein Name <input id="playerName" maxlength="24" placeholder="Spielername" /></label>
-          <button id="accessoryBtn" class="soft-btn" type="button">Namens-Accessoire ändern</button>
+          <button id="accessoryBtn" class="soft-btn" type="button">Items & Rahmen</button>
         </div>
         <div id="homeNamePreview" class="nameplate-preview"></div>
         <div class="menu-grid">
@@ -33,7 +33,7 @@
         <div id="lobbyPlayers" class="lobby-players"></div>
         <div class="lobby-actions">
           <button id="startBtn" class="primary-btn" type="button">Spiel starten</button>
-          <button id="lobbyAccessoryBtn" class="soft-btn" type="button">✨ Accessoire wählen</button>
+          <button id="lobbyAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
           <button id="leaveLobbyBtn" class="soft-btn" type="button">← Hauptmenü</button>
           <div class="music-controls"><button id="musicLobbyBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
         </div>
@@ -65,19 +65,41 @@
   </main>
 
   <div id="toast" class="toast" role="status"></div>
+  <button id="rulesBtn" class="rules-floating" type="button">📖 Spielregeln</button>
 
   <dialog id="accessoryDialog" class="modal accessory-modal">
     <form method="dialog">
       <div class="modal-head">
         <div>
-          <h3>Accessoires auswählen</h3>
-          <p>Durch Siege freischalten und deinen Namen einzigartig machen.</p>
+          <h3>Namens-Deko</h3>
+          <p>Items und Rahmen durch Siege freischalten.</p>
         </div>
         <div id="collectionCount" class="collection-count">0 / 24</div>
       </div>
       <div id="accessoryPreview" class="accessory-preview"></div>
+      <div class="cosmetic-tabs">
+        <button id="itemsTabBtn" class="cosmetic-tab active" type="button">✨ Items</button>
+        <button id="framesTabBtn" class="cosmetic-tab" type="button">🖼 Rahmen</button>
+      </div>
       <div id="accessoryGrid" class="accessory-grid"></div>
       <button class="soft-btn">Schließen</button>
+    </form>
+  </dialog>
+
+
+  <dialog id="rulesDialog" class="modal rules-modal">
+    <form method="dialog">
+      <div class="modal-head"><div><h3>📖 Spielregeln</h3><p>MLP Battle Cards – Kurz erklärt</p></div><button class="dialog-x" value="cancel" aria-label="Schließen">×</button></div>
+      <div class="rules-content">
+        <section><h4>🎯 Ziel</h4><p>Sammle die Karten deiner Mitspieler. Wer am Ende als letzter Spieler Karten besitzt, gewinnt.</p></section>
+        <section><h4>🃏 Rundenablauf</h4><p>Jeder startet mit 7 einzigartigen Karten. Nach dem Countdown wird Stärke 🏋️, Schnelligkeit ⚡, Energie 🔋 oder Magie ⭐ gezogen.</p></section>
+        <section><h4>⏱ 10 Sekunden</h4><p>Pro Runde hast du 10 Sekunden. Wer nichts legt, verliert eine zufällige Strafkarte; danach wird eine neue Kategorie gezogen.</p></section>
+        <section><h4>🏆 Runden</h4><p>Der höchste Wert gewinnt alle ausgespielten Karten. Bei Gleichstand würfeln nur die beteiligten Spieler.</p></section>
+        <section><h4>🔁 Kartenregel</h4><p>Eine gerade gespielte und zurückgewonnene Karte darf in der nächsten Runde nicht erneut gespielt werden, solange eine andere normale Karte verfügbar ist.</p></section>
+        <section><h4>✨ Spezialkarten</h4><p>Spezialkarten zeigen ihre Kategorie direkt an und lösen eine magische Animation aus. Pinkie Pie zieht eine neue normale Karte.</p></section>
+        <section><h4>🎁 Belohnungen</h4><p>Der Sieger erhält zufällig ein noch unbekanntes Item oder einen Rahmen. Unentdecktes bleibt als Fragezeichen verborgen.</p></section>
+      </div>
+      <button class="primary-btn" value="cancel">Verstanden</button>
     </form>
   </dialog>
 
@@ -116,6 +138,9 @@
     </div>
   </dialog>
 
+  <div id="ytAudioPlayer" class="yt-audio-player" aria-hidden="true"></div>
+  <div class="music-credit">Musik im Hintergrund via YouTube.</div>
+  <script src="https://www.youtube.com/iframe_api"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/client.js"></script>
 </body>

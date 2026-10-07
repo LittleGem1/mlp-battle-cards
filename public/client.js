@@ -28,7 +28,27 @@ const ACCESSORIES={
   techwings:{image:'/assets/accessories/23_tech-wings.png',name:'Tech-Flügel',desc:'Mechanische Kristallflügel.'},
   moon:{image:'/assets/accessories/24_moon.png',name:'Mond',desc:'Ein schwebender Mond mit Kristallanhängern.'}
 };
-const ACCESSORY_KEYS=Object.keys(ACCESSORIES);
+
+const NEW_ITEMS={
+  apple:{image:'/assets/name_items/apple.webp',name:'Glanzapfel',desc:'Ein funkelnder roter Apfel.'},
+  hourglass:{image:'/assets/name_items/hourglass.webp',name:'Zeitsanduhr',desc:'Eine goldene magische Sanduhr.'},
+  rainbow_potion:{image:'/assets/name_items/rainbow_potion.webp',name:'Regenbogen-Elixier',desc:'Ein schimmernder Regenbogentrank.'},
+  speed_potion:{image:'/assets/name_items/speed_potion.webp',name:'Blitz-Elixier',desc:'Ein blaues Elixier mit Blitzmagie.'},
+  moon_potion:{image:'/assets/name_items/moon_potion.webp',name:'Mondschein-Trank',desc:'Ein violetter Trank mit Mondsichel.'},
+  sun_potion:{image:'/assets/name_items/sun_potion.webp',name:'Sonnen-Elixier',desc:'Ein goldenes Sonnen-Elixier.'},
+  mirror:{image:'/assets/name_items/mirror.webp',name:'Kristallspiegel',desc:'Ein verzierter magischer Spiegel.'},
+  storm:{image:'/assets/name_items/storm.webp',name:'Gewitterwolke',desc:'Eine kleine Gewitterwolke mit Blitzen.'},
+  grimoire:{image:'/assets/name_items/grimoire.webp',name:'Magisches Grimoire',desc:'Ein leuchtendes Zauberbuch.'},
+  friendship_crown:{image:'/assets/name_items/friendship_crown.webp',name:'Freundschaftskrone',desc:'Eine goldene Krone mit Kristall.'}
+};
+const ITEMS={...ACCESSORIES,...Object.fromEntries(Object.entries(NEW_ITEMS).map(([k,v])=>['item_'+k,v]))};
+const ITEM_KEYS=Object.keys(ITEMS);
+const FRAMES={
+  crystal_heart:{image:'/assets/frames/crystal_heart.webp',name:'Kristallherz'},night_star:{image:'/assets/frames/night_star.webp',name:'Nachtstern'},candy:{image:'/assets/frames/candy.webp',name:'Candy'},butterfly:{image:'/assets/frames/butterfly.webp',name:'Schmetterling'},steampunk:{image:'/assets/frames/steampunk.webp',name:'Steampunk'},royal_crown:{image:'/assets/frames/royal_crown.webp',name:'Königskrone'},changeling:{image:'/assets/frames/changeling.webp',name:'Changeling'},rainbow_cloud:{image:'/assets/frames/rainbow_cloud.webp',name:'Regenbogenwolke'},star_book:{image:'/assets/frames/star_book.webp',name:'Sternenbuch'},rose_gold:{image:'/assets/frames/rose_gold.webp',name:'Rosengold'},iridescent:{image:'/assets/frames/iridescent.webp',name:'Irisierend'},honey:{image:'/assets/frames/honey.webp',name:'Honig'},pearl_sea:{image:'/assets/frames/pearl_sea.webp',name:'Perlmutt'},sakura:{image:'/assets/frames/sakura.webp',name:'Sakura'},alchemy:{image:'/assets/frames/alchemy.webp',name:'Alchemie'},ice:{image:'/assets/frames/ice.webp',name:'Eiskristall'},forest:{image:'/assets/frames/forest.webp',name:'Zauberwald'},neon:{image:'/assets/frames/neon.webp',name:'Neonkristall'},velvet:{image:'/assets/frames/velvet.webp',name:'Roter Samt'},moon:{image:'/assets/frames/moon.webp',name:'Mondhimmel'}
+};
+const FRAME_KEYS=Object.keys(FRAMES);
+
+const ACCESSORY_KEYS=ITEM_KEYS;
 const STARTER_KEYS=['changeling','balloon','candy'];
 
 let state=null, hand=[], myId=null;
@@ -36,7 +56,10 @@ let state=null, hand=[], myId=null;
 /* Die drei Start-Accessoires sind IMMER sofort verfügbar.
    Das repariert auch alte Browser-Spielstände, in denen nur eins freigeschaltet war. */
 let selectedAccessory=localStorage.getItem('cc_accessory')||'changeling';
-let unlocks=JSON.parse(localStorage.getItem('cc_unlocks')||'[]').filter(x=>ACCESSORIES[x]);
+let selectedFrame=localStorage.getItem('cc_frame')||'';
+let frameUnlocks=JSON.parse(localStorage.getItem('cc_frame_unlocks')||'[]').filter(x=>FRAMES[x]);
+let cosmeticTab='items';
+let unlocks=JSON.parse(localStorage.getItem('cc_unlocks')||'[]').filter(x=>ITEMS[x]);
 
 for(const starter of STARTER_KEYS){
   if(!unlocks.includes(starter)) unlocks.push(starter);
@@ -47,13 +70,15 @@ if(!STARTER_KEYS.includes(selectedAccessory) && !unlocks.includes(selectedAccess
 
 localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));
 localStorage.setItem('cc_accessory',selectedAccessory);
+if(selectedFrame&&!frameUnlocks.includes(selectedFrame))selectedFrame='';
+localStorage.setItem('cc_frame',selectedFrame);
+localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));
 
 let pendingGift=false, lastReveal=[];
 let musicEnabled=localStorage.getItem('mlp_music')!=='off', musicMode='home';
 let musicVolume=Math.max(0,Math.min(100,Number(localStorage.getItem('mlp_music_volume')||30)));
-const lobbyMusic=new Audio('/assets/music/lobby_waiting_theme.mp3');
-const battleMusic=new Audio('/assets/music/epic_battle_theme.mp3');
-[lobbyMusic,battleMusic].forEach(a=>{a.loop=true;a.preload='auto';a.volume=musicVolume/100;});
+const YT_TRACKS={lobby:'pWAP7fIwGnI',game:'9gBTKiVqprE'};
+let ytPlayer=null,ytReady=false,userInteracted=false;
 const diceAnimations=new Map();
 const playerName=$('#playerName'); playerName.value=localStorage.getItem('cc_name')||'';
 
@@ -63,16 +88,10 @@ function remember(){const n=playerName.value.trim();if(n)localStorage.setItem('c
 function ensureStarter(){ return true; }
 function escapeHtml(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 
-function accessoryDecor(key){
-  const a=ACCESSORIES[key]||ACCESSORIES.changeling;
-  return `<span class="decor decor-${key}" aria-hidden="true"><img src="${a.image}" alt=""></span>`;
-}
-function nameplateHTML(name,key,small=false){
-  const safe=escapeHtml(name||'Spieler');
-  const k=ACCESSORIES[key]?key:'changeling';
-  return `<div class="nameplate ${small?'nameplate-small':''} ${k}">${accessoryDecor(k)}<span class="nameplate-text">${safe}</span></div>`;
-}
-function updateHomePreview(){ $('#homeNamePreview').innerHTML=selectedAccessory?nameplateHTML(playerName.value.trim()||'Little Gem',selectedAccessory):''; }
+function accessoryDecor(key){const a=ITEMS[key]||ITEMS.changeling;return `<span class="decor decor-${key}" aria-hidden="true"><img src="${a.image}" alt=""></span>`;}
+function frameDecor(key){if(!key||!FRAMES[key])return '';return `<img class="name-frame" src="${FRAMES[key].image}" alt="" aria-hidden="true">`;}
+function nameplateHTML(name,key,small=false,frame=selectedFrame){const safe=escapeHtml(name||'Spieler');const k=ITEMS[key]?key:'changeling';const f=FRAMES[frame]?frame:'';return `<div class="nameplate ${small?'nameplate-small':''} ${k} ${f?'has-frame frame-'+f:''}">${f?frameDecor(f):''}${accessoryDecor(k)}<span class="nameplate-text">${safe}</span></div>`;}
+function updateHomePreview(){ $('#homeNamePreview').innerHTML=selectedAccessory?nameplateHTML(playerName.value.trim()||'Little Gem',selectedAccessory,false,selectedFrame):''; }
 playerName.addEventListener('input',updateHomePreview);
 
 $$('.starter-grid button').forEach(b=>b.addEventListener('click',()=>{
@@ -85,29 +104,24 @@ $$('.starter-grid button').forEach(b=>b.addEventListener('click',()=>{
 }));
 
 function renderAccessoryGrid(){
-  const g=$('#accessoryGrid'); g.innerHTML='';
-  $('#collectionCount').textContent=`${unlocks.length} / ${ACCESSORY_KEYS.length}`;
-  $('#accessoryPreview').innerHTML=nameplateHTML(playerName.value.trim()||'Little Gem',selectedAccessory||unlocks[0]||'changeling');
-  for(const key of ACCESSORY_KEYS){
-    const a=ACCESSORIES[key], unlocked=unlocks.includes(key);
-    const b=document.createElement('button'); b.type='button'; b.className=`accessory-card ${unlocked?'unlocked':'locked'} ${key===selectedAccessory?'selected':''}`;
-    b.innerHTML=unlocked
-      ? `<span class="item-art item-${key}"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${key===selectedAccessory?'Ausgewählt':'Freigeschaltet'}</span>`
-      : `<span class="mystery-art">?</span><strong>Geheimes Accessoire</strong><span class="status">🔒 Durch einen Sieg freischalten</span>`;
-    b.disabled=!unlocked;
-    if(unlocked)b.addEventListener('click',()=>{
-  selectedAccessory=key;localStorage.setItem('cc_accessory',key);renderAccessoryGrid();updateHomePreview();
-  if(state?.phase==='lobby')socket.emit('setAccessory',{accessory:key});
-  if(state&&state.phase!=='lobby')renderGame();
-});
-    g.append(b);
+  const g=$('#accessoryGrid');g.innerHTML='';
+  $('#collectionCount').textContent=`Items ${unlocks.length}/${ITEM_KEYS.length} · Rahmen ${frameUnlocks.length}/${FRAME_KEYS.length}`;
+  $('#accessoryPreview').innerHTML=nameplateHTML(playerName.value.trim()||'Little Gem',selectedAccessory,false,selectedFrame);
+  $('#itemsTabBtn')?.classList.toggle('active',cosmeticTab==='items');$('#framesTabBtn')?.classList.toggle('active',cosmeticTab==='frames');
+  if(cosmeticTab==='items'){
+    for(const key of ITEM_KEYS){const a=ITEMS[key],unlocked=unlocks.includes(key);const b=document.createElement('button');b.type='button';b.className=`accessory-card ${unlocked?'unlocked':'locked'} ${key===selectedAccessory?'selected':''}`;b.innerHTML=unlocked?`<span class="item-art"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${key===selectedAccessory?'Ausgewählt':'Freigeschaltet'}</span>`:`<span class="mystery-art">?</span><strong>Unentdecktes Item</strong><span class="status">🔒 Durch einen Sieg entdecken</span>`;b.disabled=!unlocked;if(unlocked)b.addEventListener('click',()=>{selectedAccessory=key;localStorage.setItem('cc_accessory',key);renderAccessoryGrid();updateHomePreview();if(state?.phase==='lobby')socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame});if(state&&state.phase!=='lobby')renderGame()});g.append(b)}
+  }else{
+    const none=document.createElement('button');none.type='button';none.className=`accessory-card unlocked ${!selectedFrame?'selected':''}`;none.innerHTML='<span class="mystery-art">∅</span><strong>Kein Rahmen</strong><span class="status">Immer verfügbar</span>';none.addEventListener('click',()=>{selectedFrame='';localStorage.setItem('cc_frame','');renderAccessoryGrid();updateHomePreview();if(state?.phase==='lobby')socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame})});g.append(none);
+    for(const key of FRAME_KEYS){const a=FRAMES[key],unlocked=frameUnlocks.includes(key);const b=document.createElement('button');b.type='button';b.className=`accessory-card frame-card ${unlocked?'unlocked':'locked'} ${key===selectedFrame?'selected':''}`;b.innerHTML=unlocked?`<span class="frame-thumb"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${key===selectedFrame?'Ausgewählt':'Freigeschaltet'}</span>`:`<span class="mystery-art">?</span><strong>Unentdeckter Rahmen</strong><span class="status">🔒 Durch einen Sieg entdecken</span>`;b.disabled=!unlocked;if(unlocked)b.addEventListener('click',()=>{selectedFrame=key;localStorage.setItem('cc_frame',key);renderAccessoryGrid();updateHomePreview();if(state?.phase==='lobby')socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame});if(state&&state.phase!=='lobby')renderGame()});g.append(b)}
   }
 }
+$('#itemsTabBtn')?.addEventListener('click',()=>{cosmeticTab='items';renderAccessoryGrid()});
+$('#framesTabBtn')?.addEventListener('click',()=>{cosmeticTab='frames';renderAccessoryGrid()});
 $('#accessoryBtn').addEventListener('click',()=>{renderAccessoryGrid();$('#accessoryDialog').showModal()});
 $('#lobbyAccessoryBtn')?.addEventListener('click',()=>{renderAccessoryGrid();$('#accessoryDialog').showModal()});
 
-$('#createBtn').addEventListener('click',()=>{ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim();if(!name)return toast('Bitte zuerst einen Namen eingeben.');remember();socket.emit('createRoom',{name,accessory:selectedAccessory})});
-$('#joinBtn').addEventListener('click',()=>{ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim(),code=$('#roomCode').value.trim();if(!name||!code)return toast('Name und Raumcode eingeben.');remember();socket.emit('joinRoom',{name,code,accessory:selectedAccessory})});
+$('#createBtn').addEventListener('click',()=>{ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim();if(!name)return toast('Bitte zuerst einen Namen eingeben.');remember();socket.emit('createRoom',{name,accessory:selectedAccessory,frame:selectedFrame})});
+$('#joinBtn').addEventListener('click',()=>{ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim(),code=$('#roomCode').value.trim();if(!name||!code)return toast('Name und Raumcode eingeben.');remember();socket.emit('joinRoom',{name,code,accessory:selectedAccessory,frame:selectedFrame})});
 $('#startBtn').addEventListener('click',()=>{ensureAudio();socket.emit('startGame')});
 
 socket.on('connect',()=>{myId=socket.id;updateHomePreview();});
@@ -121,12 +135,13 @@ socket.on('roomState',s=>{
     else if(s.phase==='select')startSelectionTimer(s.selectionDeadline);
   }
 });
-socket.on('hand',h=>{hand=h;renderHand();if(state)renderGame()});
+let newlyDrawn=new Set();
+socket.on('hand',h=>{const before=new Set(hand.map(c=>c.id));newlyDrawn=new Set(h.filter(c=>!before.has(c.id)).map(c=>c.id));hand=h;renderHand();if(state)renderGame();if(newlyDrawn.size)setTimeout(()=>newlyDrawn.clear(),1000)});
 
 function renderLobby(){
   $('#lobbyCode').textContent=state.code;
   $('#lobbyHint').textContent=state.players.length<2?'Schick den Code an deine Mitspieler.':'Bereit zum Start!';
-  $('#lobbyPlayers').innerHTML=state.players.map(p=>`<div class="lobby-player">${nameplateHTML(p.name,p.accessory,true)}<div>${p.id===state.hostId?'Host 👑':'Mitspieler'} · ${p.handCount} Karten</div></div>`).join('');
+  $('#lobbyPlayers').innerHTML=state.players.map(p=>`<div class="lobby-player">${nameplateHTML(p.name,p.accessory,true,p.frame)}<div>${p.id===state.hostId?'Host 👑':'Mitspieler'} · ${p.handCount} Karten</div></div>`).join('');
   $('#startBtn').style.display=myId===state.hostId?'inline-block':'none';
   $('#startBtn').disabled=state.players.length<2;
   updateMusicUI();
@@ -138,9 +153,9 @@ function renderGame(){
   $('#abortBtn').style.display=myId===state.hostId&&state.phase!=='gameover'?'inline-block':'none';
   $('#selfName').textContent=me.name;
   $('#selfCount').textContent=`${me.handCount} Karten`;
-  $('#selfNameplate').innerHTML=nameplateHTML(me.name,me.accessory,true);
+  $('#selfNameplate').innerHTML=nameplateHTML(me.name,me.accessory,true,me.frame);
   const others=state.players.filter(p=>p.id!==myId);
-  $('#opponents').innerHTML=others.length?others.map(p=>`<div class="opponent ${p.selected?'has-selected':''}" data-player-id="${p.id}">${nameplateHTML(p.name,p.accessory,true)}<div class="opponent-meta"><span>${p.handCount} Karten</span>${p.selected?'<span class="selected-mark">✓ Karte liegt</span>':'<span>wartet …</span>'}</div><div class="back-fan">${Array.from({length:Math.min(p.handCount,7)},(_,i)=>`<img src="/assets/card_back.webp" alt="verdeckte Karte" style="transform:rotate(${(i-3)*5}deg)">`).join('')}</div></div>`).join(''):'<div class="opponent-empty">Warte auf Mitspieler …</div>';
+  $('#opponents').innerHTML=others.length?others.map(p=>`<div class="opponent ${p.selected?'has-selected':''}" data-player-id="${p.id}">${nameplateHTML(p.name,p.accessory,true,p.frame)}<div class="opponent-meta"><span>${p.handCount} Karten</span>${p.selected?'<span class="selected-mark">✓ Karte liegt</span>':'<span>wartet …</span>'}</div><div class="back-fan">${Array.from({length:Math.min(p.handCount,7)},(_,i)=>`<img src="/assets/card_back.webp" alt="verdeckte Karte" style="transform:rotate(${(i-3)*5}deg)">`).join('')}</div></div>`).join(''):'<div class="opponent-empty">Warte auf Mitspieler …</div>';
   renderHand();updateMusicUI();
 }
 
@@ -158,13 +173,13 @@ function renderHand(){
   const normals=hand.filter(c=>c.type==='normal');
   for(const c of hand){
     const blocked=c.type==='normal'&&c.id===blockedId&&normals.some(x=>x.id!==blockedId);
-    const el=document.createElement('div');el.className=`hand-card ${c.type==='special'?'special':''} ${blocked?'recently-played disabled':''}`;
+    const el=document.createElement('div');el.className=`hand-card ${c.type==='special'?'special':''} ${blocked?'recently-played disabled':''} ${newlyDrawn.has(c.id)?'drawing-in':''}`;
     const img=document.createElement('img');img.src=c.image;img.alt=c.name;el.append(img);
     if(c.type==='normal')el.insertAdjacentHTML('beforeend',statOverlayHTML(c));
     if(c.type==='normal'){
       if(blocked){const lock=document.createElement('div');lock.className='recent-lock';lock.textContent='⏳ Gerade gespielt';el.append(lock)}
       el.tabIndex=blocked?-1:0;
-      const play=()=>{ensureAudio();if(blocked)return toast('Diese Karte hast du gerade gespielt – nimm eine andere.');if(state?.phase!=='select')return toast('Warte auf die nächste Auswahl.');if(me?.selected)return toast('Du hast schon eine Karte gelegt.');socket.emit('playCard',{cardId:c.id})};
+      const play=()=>{ensureAudio();if(blocked)return toast('Diese Karte hast du gerade gespielt – nimm eine andere.');if(state?.phase!=='select')return toast('Warte auf die nächste Auswahl.');if(me?.selected)return toast('Du hast schon eine Karte gelegt.');el.dataset.pendingPlay='1';socket.emit('playCard',{cardId:c.id})};
       el.addEventListener('click',play);
       el.addEventListener('keydown',e=>{if(!blocked&&(e.key==='Enter'||e.key===' ')){e.preventDefault();play()}});
     }else{
@@ -177,40 +192,21 @@ function renderHand(){
   }
 }
 
-function ensureAudio(){
-  try{
-    const A=window.AudioContext||window.webkitAudioContext;
-    if(A){if(!ensureAudio.ctx)ensureAudio.ctx=new A();if(ensureAudio.ctx.state==='suspended')ensureAudio.ctx.resume();}
-  }catch(e){}
-  syncMusic();return ensureAudio.ctx||null;
-}
-function tone(freq=620,dur=.1,gain=.045,type='sine',when=0){
-  const ctx=ensureAudio.ctx;if(!ctx)return;
-  const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.value=freq;
-  const t=ctx.currentTime+when;g.gain.setValueAtTime(gain,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
-  o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+dur);
-}
+function ensureAudio(){userInteracted=true;try{const A=window.AudioContext||window.webkitAudioContext;if(A){if(!ensureAudio.ctx)ensureAudio.ctx=new A();if(ensureAudio.ctx.state==='suspended')ensureAudio.ctx.resume();}}catch(e){}syncMusic();return ensureAudio.ctx||null;}
+function tone(freq=620,dur=.1,gain=.045,type='sine',when=0){const ctx=ensureAudio.ctx;if(!ctx)return;const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.value=freq;const t=ctx.currentTime+when;g.gain.setValueAtTime(gain,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+dur);}
 function beep(freq=620,dur=.1){tone(freq,dur,.05,'sine')}
+function diceRollSound(){for(let i=0;i<8;i++)tone(180+i*33,.045,.035,i%2?'square':'triangle',i*.065)}
+function diceLandSound(v){tone(420+v*70,.12,.07,'triangle');tone(210+v*25,.18,.045,'sine',.07)}
+function specialSound(){tone(440,.12,.055,'sine');tone(660,.18,.05,'triangle',.08);tone(990,.28,.045,'sine',.18)}
 function setMusicMode(mode){musicMode=mode;syncMusic()}
-function activeMusic(){return musicMode==='game'?battleMusic:musicMode==='lobby'?lobbyMusic:null}
-function syncMusic(){
-  lobbyMusic.volume=musicVolume/100;battleMusic.volume=musicVolume/100;
-  const wanted=activeMusic();
-  [lobbyMusic,battleMusic].forEach(a=>{if(a!==wanted||!musicEnabled){if(!a.paused)a.pause();}});
-  if(musicEnabled&&wanted){const p=wanted.play();if(p&&p.catch)p.catch(()=>{});}
-  updateMusicUI();
-}
-function toggleMusic(){musicEnabled=!musicEnabled;localStorage.setItem('mlp_music',musicEnabled?'on':'off');syncMusic()}
-function setMusicVolume(v){musicVolume=Math.max(0,Math.min(100,Number(v)||0));localStorage.setItem('mlp_music_volume',String(musicVolume));lobbyMusic.volume=musicVolume/100;battleMusic.volume=musicVolume/100;updateMusicUI()}
+window.onYouTubeIframeAPIReady=()=>{try{ytPlayer=new YT.Player('ytAudioPlayer',{width:'1',height:'1',videoId:YT_TRACKS.lobby,playerVars:{controls:0,rel:0,playsinline:1,enablejsapi:1,loop:1,playlist:YT_TRACKS.lobby},events:{onReady:()=>{ytReady=true;updateMusicUI();syncMusic()},onError:e=>console.warn('Musik konnte nicht geladen werden',e)}})}catch(e){console.warn('YouTube-Player nicht verfügbar',e)}};
+function syncMusic(){updateMusicUI();if(!ytReady||!ytPlayer)return;try{if(!musicEnabled||musicMode==='home'){ytPlayer.mute();ytPlayer.pauseVideo();return;}ytPlayer.setVolume(musicVolume);ytPlayer.unMute();const id=YT_TRACKS[musicMode];if(!id)return;const current=ytPlayer.getVideoData?.().video_id;if(current!==id)ytPlayer.loadVideoById({videoId:id,startSeconds:0});else if(userInteracted)ytPlayer.playVideo();}catch(e){console.warn('Musiksteuerung:',e)}}
+function toggleMusic(){userInteracted=true;musicEnabled=!musicEnabled;localStorage.setItem('mlp_music',musicEnabled?'on':'off');syncMusic()}
+function setMusicVolume(v){userInteracted=true;musicVolume=Math.max(0,Math.min(100,Number(v)||0));localStorage.setItem('mlp_music_volume',String(musicVolume));if(ytReady&&ytPlayer){try{ytPlayer.setVolume(musicVolume)}catch(e){}}updateMusicUI()}
 function updateMusicUI(){document.querySelectorAll('.music-toggle').forEach(b=>b.textContent=musicEnabled?'🔇 Musik stumm':'🔊 Musik an');document.querySelectorAll('.music-volume').forEach(s=>s.value=String(musicVolume))}
 
 function clearTable(){lastReveal=[];$('#tableCards').innerHTML=''}
-function addCommitGhost(e){
-  const t=$('#tableCards'); if(t.querySelector(`[data-player-id="${e.playerId}"]`))return;
-  const d=document.createElement('div');d.className='played-card ghost-card card-commit';d.dataset.playerId=e.playerId;
-  d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-back-face"><img src="/assets/card_back.webp" alt="verdeckte Karte"></div></div><div class="who">${escapeHtml(e.name)}</div>`;
-  t.append(d); beep(340,.06);
-}
+function addCommitGhost(e){const t=$('#tableCards');if(t.querySelector(`[data-player-id="${e.playerId}"]`))return;const d=document.createElement('div');d.className='played-card ghost-card card-commit';d.dataset.playerId=e.playerId;d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-back-face"><img src="/assets/card_back.webp" alt="verdeckte Karte"></div></div><div class="who">${escapeHtml(e.name)}</div>`;t.append(d);const source=e.playerId===myId?document.querySelector('.hand-card[data-pending-play="1"]'):document.querySelector(`.opponent[data-player-id="${e.playerId}"] .back-fan`);if(source){const sr=source.getBoundingClientRect(),tr=d.getBoundingClientRect();const clone=document.createElement('img');clone.src='/assets/card_back.webp';clone.className='flying-card';clone.style.left=`${sr.left+sr.width/2-40}px`;clone.style.top=`${sr.top+sr.height/2-56}px`;document.body.append(clone);d.style.opacity='0';requestAnimationFrame(()=>{clone.style.transform=`translate(${tr.left+tr.width/2-(sr.left+sr.width/2)}px,${tr.top+tr.height/2-(sr.top+sr.height/2)}px) rotate(${e.playerId===myId?-10:10}deg) scale(.9)`;clone.style.opacity='.25'});setTimeout(()=>{clone.remove();d.style.opacity='1'},560)}beep(340,.06)}
 function revealCards(e){
   lastReveal=e.entries;const t=$('#tableCards');
   e.entries.forEach((x,i)=>{
@@ -246,12 +242,15 @@ function diceTile(id,name){
 }
 function startDiceAnimation(e){
   const d=diceTile(e.playerId,e.name),face=d.querySelector('.dice-face');d.classList.add('rolling-live');
-  let n=0;const faces=['⚀','⚁','⚂','⚃','⚄','⚅'];const timer=setInterval(()=>{face.textContent=faces[n++%6]},70);diceAnimations.set(e.playerId,timer);beep(250,.22)
+  let n=0;const faces=['⚀','⚁','⚂','⚃','⚄','⚅'];const timer=setInterval(()=>{face.textContent=faces[n++%6]},70);diceAnimations.set(e.playerId,timer);diceRollSound()
 }
 function stopDiceAnimation(e){
   const timer=diceAnimations.get(e.playerId);if(timer){clearInterval(timer);diceAnimations.delete(e.playerId)}
-  const d=diceTile(e.playerId,e.name),face=d.querySelector('.dice-face');d.classList.remove('rolling-live');face.textContent=['⚀','⚁','⚂','⚃','⚄','⚅'][e.value-1];d.classList.add('dice-landed');toast(`${e.name} würfelt ${e.value}`);beep(520+e.value*70,.1)
+  const d=diceTile(e.playerId,e.name),face=d.querySelector('.dice-face');d.classList.remove('rolling-live');face.textContent=['⚀','⚁','⚂','⚃','⚄','⚅'][e.value-1];d.classList.add('dice-landed');toast(`${e.name} würfelt ${e.value}`);diceLandSound(e.value)
 }
+
+function showSpecialBurst(e){specialSound();const overlay=document.createElement('div');overlay.className='special-burst';overlay.innerHTML=`<div class="special-burst-card"><div class="magic-ring"></div><img src="${e.card.image}" alt=""><strong>${escapeHtml(e.name)}</strong><span>${e.card.useIcon||'✦'} ${escapeHtml(e.card.useLabel||'Spezialkarte')}</span></div>`;document.body.append(overlay);setTimeout(()=>overlay.classList.add('active'),20);setTimeout(()=>overlay.classList.add('fade'),1150);setTimeout(()=>overlay.remove(),1650)}
+socket.on('specialPlayed',showSpecialBurst);
 
 let countdownUiTimer=null,selectionUiTimer=null;
 function stopCountdown(){if(countdownUiTimer){clearTimeout(countdownUiTimer);countdownUiTimer=null}const e=$('#countdown');if(e)e.textContent=''}
@@ -287,15 +286,7 @@ socket.on('flutterChoices',e=>showChoices('Fluttershy: Welche Karte möchtest du
 socket.on('rarityChoose',e=>showChoices('Rarity: Welche Karte möchtest du austauschen?',e.cards,c=>socket.emit('raritySwap',{cardId:c.id})));
 function showChoices(title,cards,cb){$('#choiceTitle').textContent=title;const g=$('#choiceCards');g.innerHTML='';cards.forEach(c=>{const b=document.createElement('button');b.type='button';b.innerHTML=`<img src="${c.image}" alt="${escapeHtml(c.name)}">`;b.addEventListener('click',()=>{$('#choiceDialog').close();cb(c)});g.append(b)});$('#choiceDialog').showModal()}
 
-$('#giftBox').addEventListener('click',()=>{
-  if(!pendingGift)return; pendingGift=false;
-  const locked=ACCESSORY_KEYS.filter(x=>!STARTER_KEYS.includes(x)&&!unlocks.includes(x));
-  const key=locked.length?locked[Math.floor(Math.random()*locked.length)]:ACCESSORY_KEYS[Math.floor(Math.random()*ACCESSORY_KEYS.length)];
-  if(!unlocks.includes(key)){unlocks.push(key);localStorage.setItem('cc_unlocks',JSON.stringify(unlocks))}
-  const a=ACCESSORIES[key]; $('#giftBox').style.display='none';
-  $('#giftResult').innerHTML=`<div class="gift-item"><span class="item-art item-${key}"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><small>${a.desc}</small></div>`;
-  renderAccessoryGrid(); beep(1200,.35);
-});
+$('#giftBox').addEventListener('click',()=>{if(!pendingGift)return;pendingGift=false;const lockedItems=ITEM_KEYS.filter(x=>!STARTER_KEYS.includes(x)&&!unlocks.includes(x));const lockedFrames=FRAME_KEYS.filter(x=>!frameUnlocks.includes(x));const kinds=[];if(lockedItems.length)kinds.push('item');if(lockedFrames.length)kinds.push('frame');$('#giftBox').style.display='none';if(!kinds.length){$('#giftResult').innerHTML='<div class="gift-item"><strong>Sammlung vollständig! ✨</strong><small>Du hast alle Items und Rahmen entdeckt.</small></div>';return;}const kind=kinds[Math.floor(Math.random()*kinds.length)];if(kind==='item'){const key=lockedItems[Math.floor(Math.random()*lockedItems.length)];unlocks.push(key);localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));const a=ITEMS[key];$('#giftResult').innerHTML=`<div class="gift-item"><span class="reward-type">✨ NEUES ITEM</span><span class="item-art"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><small>${a.desc||'Neues Namens-Item freigeschaltet.'}</small></div>`;}else{const key=lockedFrames[Math.floor(Math.random()*lockedFrames.length)];frameUnlocks.push(key);localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));const a=FRAMES[key];$('#giftResult').innerHTML=`<div class="gift-item"><span class="reward-type">🖼 NEUER RAHMEN</span><span class="reward-frame"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><small>Neuer Namensrahmen freigeschaltet.</small></div>`;}renderAccessoryGrid();specialSound();});
 
 
 function leaveRoomNow(){ if(confirm('Raum wirklich verlassen und zum Hauptmenü zurück?')) socket.emit('leaveRoom') }
@@ -312,3 +303,5 @@ document.querySelectorAll('.music-toggle').forEach(b=>b.addEventListener('click'
 document.querySelectorAll('.music-volume').forEach(s=>s.addEventListener('input',e=>setMusicVolume(e.target.value)));
 updateMusicUI();
 updateHomePreview();
+
+$('#rulesBtn')?.addEventListener('click',()=>$('#rulesDialog').showModal());

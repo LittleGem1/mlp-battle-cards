@@ -1,43 +1,33 @@
-MLP BATTLE CARDS – STABLE REBUILD
+MLP BATTLE CARDS – ITEMS, RAHMEN, ANIMATIONEN & MUSIK
 
-Diese Version baut die Spiellogik bewusst wieder auf der letzten stabilen Multiplayer-Version auf.
-Der kaputte YouTube-IFrame-Code ist komplett entfernt.
-
-ERSETZEN:
+Enthalten:
 - server.js
 - cards.js
 - public/index.html
 - public/client.js
 - public/style.css
-- public/assets/music/
+- public/assets/name_items/ (10 neue Namens-Items)
+- public/assets/frames/ (20 Rahmen)
 
-REPARIERT:
-- 5-Sekunden-Countdown 5–1 vor dem ersten Zug.
-- 10-Sekunden-Timer in jeder Kartenrunde.
-- Wer nicht rechtzeitig legt, verliert eine zufällige Strafkarte.
-- Danach wird die Runde verworfen und eine neue Kategorie gezogen.
-- Beide Spieler sind sichtbar.
-- Sobald jemand legt, fliegt eine verdeckte Karte in die Mitte.
-- Wenn alle gelegt haben, drehen die Karten gleichzeitig auf.
-- Danach fliegen die Karten sichtbar zum Gewinner.
-- Würfelanimation ist wieder für beide Seiten sichtbar.
-- Kartenwahl wertet wieder aus und hängt nicht mehr.
-- Spiel abbrechen (Host) -> zurück in Lobby.
-- Nach Spielende: Lobby / Hauptmenü / Schließen.
-- Lobby-Accessoire-Auswahl funktioniert.
-- Spezialkarten zeigen Kategorie + Effekt groß lesbar.
-- Karten sind größer.
-- alle normalen Werte maximal 9.
+Änderungen:
+- Würfeln hat Roll- und Landegeräusche.
+- Lobby/Wartezeit nutzt deinen ausgewählten YouTube-Track pWAP7fIwGnI.
+- Kampf nutzt deinen ausgewählten YouTube-Track 9gBTKiVqprE.
+- Die YouTube-Videos selbst sind unsichtbar/offscreen; nur die Musik wird als Hintergrund genutzt.
+- Lautstärke und Mute bleiben steuerbar.
+- Karten ziehen mit Ziehanimation.
+- Karten heben sich beim Mouseover deutlich an.
+- Karten fliegen beim Ablegen sichtbar in die Mitte.
+- Reveal/Gewinn-Animationen bleiben erhalten.
+- Spezialkarten lösen eine magische Animation plus Sound aus.
+- Pinkie Pie zieht jetzt zuverlässig eine neue NORMALE Karte.
+- Extra Menü für Spielregeln.
+- Gewinn ist zufällig ein noch unbekanntes Item oder ein noch unbekannter Rahmen.
+- 20 Rahmen passen um das Namensfeld.
+- 10 neue Items sitzen als Namens-Deko am Feld.
+- Unentdecktes bleibt als Fragezeichen verborgen.
+- Item + Rahmen können gleichzeitig getragen werden.
 
-MUSIK:
-- lokale Hintergrundmusik ohne Video / iframe.
-- Mute bleibt aus und wird durch Soundeffekte NICHT wieder eingeschaltet.
-- Lautstärkeregler ist in Lobby und Spiel vorhanden.
-- Lobby- und Kampfmusik sind getrennt.
+Hinweis Musik: Browser erlauben Ton erst nach einer Benutzerinteraktion. Raum erstellen, Beitreten, Spiel starten oder Musik anklicken aktiviert die Wiedergabe. Falls YouTube die Einbettung eines Songs blockiert, bleibt das Spiel selbst funktionsfähig.
 
-Die exakten YouTube-Songs sind in dieser stabilen Version absichtlich nicht eingebettet,
-weil genau der unsichtbare YouTube-Player mehrfach die Musiksteuerung und Teile des Clients kaputt gemacht hat.
-Wenn du die Audiodateien selbst legal besitzt und hochlädst, können sie später 1:1 ausgetauscht werden.
-
-Installation:
-ZIP entpacken -> Dateien ersetzen -> GitHub committen -> Render neu deployen -> Strg+F5.
+Installation: ZIP entpacken -> Inhalt ins Projekt kopieren -> Ersetzen/Zusammenführen -> GitHub Commit -> Render Deploy latest commit -> Strg+F5.
