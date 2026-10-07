@@ -71,42 +71,12 @@ const normal = [
 }));
 
 const specials = [
-  {
-    id:'s61',type:'special',name:'Twilight Sparkle – Spezialkarte',
-    effect:'twilight',text:'Nimm 2 neue Karten.',
-    useIcon:'✦',useLabel:'Jede Kategorie',
-    image:'/assets/specials/61_Spezial_Twilight_Sparkle.webp'
-  },
-  {
-    id:'s62',type:'special',name:'Rainbow Dash – Sonic Rainboom',
-    effect:'rainbow',text:'+2 Schnelligkeit für deine gewählte Karte.',
-    useIcon:'⚡',useLabel:'Nur Schnelligkeit',
-    image:'/assets/specials/62_Spezial_Rainbow_Dash_Sonic_Rainboom.webp'
-  },
-  {
-    id:'s63',type:'special',name:'Applejack – Ehrliche Arbeit',
-    effect:'applejack',text:'+1 Stärke für deine gewählte Karte.',
-    useIcon:'🏋️',useLabel:'Nur Stärke',
-    image:'/assets/specials/63_Spezial_Applejack.webp'
-  },
-  {
-    id:'s64',type:'special',name:'Pinkie Pie – Überraschungsparty',
-    effect:'pinkie',text:'Ziehe 1 neue Karte.',
-    useIcon:'✦',useLabel:'Jede Kategorie',
-    image:'/assets/specials/64_Spezial_Pinkie_Pie.webp'
-  },
-  {
-    id:'s65',type:'special',name:'Fluttershy – Sanfte Hilfe',
-    effect:'fluttershy',text:'Sieh dir 2 Karten an und behalte 1.',
-    useIcon:'✦',useLabel:'Jede Kategorie',
-    image:'/assets/specials/65_Spezial_Fluttershy.webp'
-  },
-  {
-    id:'s66',type:'special',name:'Rarity – Perfekte Auswahl',
-    effect:'rarity',text:'Tausche 1 Handkarte gegen eine neue.',
-    useIcon:'✦',useLabel:'Jede Kategorie',
-    image:'/assets/specials/66_Spezial_Rarity.webp'
-  }
+  {id:'s61',type:'special',name:'Twilight Sparkle – Spezialkarte',effect:'twilight',text:'Nimm 2 neue Karten.',useIcon:'✦',useLabel:'Jede Kategorie',image:'/assets/specials/61_Spezial_Twilight_Sparkle.webp'},
+  {id:'s62',type:'special',name:'Rainbow Dash – Sonic Rainboom',effect:'rainbow',text:'+2 Schnelligkeit für deine gewählte Karte.',useIcon:'⚡',useLabel:'Nur Schnelligkeit',image:'/assets/specials/62_Spezial_Rainbow_Dash_Sonic_Rainboom.webp'},
+  {id:'s63',type:'special',name:'Applejack – Ehrliche Arbeit',effect:'applejack',text:'+1 Stärke für deine gewählte Karte.',useIcon:'🏋️',useLabel:'Nur Stärke',image:'/assets/specials/63_Spezial_Applejack.webp'},
+  {id:'s64',type:'special',name:'Pinkie Pie – Überraschungsparty',effect:'pinkie',text:'Ziehe 1 neue Karte.',useIcon:'✦',useLabel:'Jede Kategorie',image:'/assets/specials/64_Spezial_Pinkie_Pie.webp'},
+  {id:'s65',type:'special',name:'Fluttershy – Sanfte Hilfe',effect:'fluttershy',text:'Sieh dir 2 Karten an und behalte 1.',useIcon:'✦',useLabel:'Jede Kategorie',image:'/assets/specials/65_Spezial_Fluttershy.webp'},
+  {id:'s66',type:'special',name:'Rarity – Perfekte Auswahl',effect:'rarity',text:'Tausche 1 Handkarte gegen eine neue.',useIcon:'✦',useLabel:'Jede Kategorie',image:'/assets/specials/66_Spezial_Rarity.webp'}
 ];
 const byId = Object.fromEntries([...normal,...specials].map(c=>[c.id,c]));
 module.exports={normal,specials,byId};

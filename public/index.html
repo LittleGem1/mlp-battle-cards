@@ -35,7 +35,7 @@
           <button id="startBtn" class="primary-btn" type="button">Spiel starten</button>
           <button id="lobbyAccessoryBtn" class="soft-btn" type="button">✨ Accessoire wählen</button>
           <button id="leaveLobbyBtn" class="soft-btn" type="button">← Hauptmenü</button>
-          <button id="musicLobbyBtn" class="soft-btn music-toggle" type="button">🔊 Musik an</button>
+          <div class="music-controls"><button id="musicLobbyBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
         </div>
       </div>
     </section>
@@ -45,7 +45,7 @@
         <div class="game-actions">
           <button id="abortBtn" class="danger-btn" type="button">⏹ Spiel abbrechen</button>
           <button id="leaveGameBtn" class="soft-btn" type="button">← Hauptmenü</button>
-          <button id="musicGameBtn" class="soft-btn music-toggle" type="button">🔊 Musik an</button>
+          <div class="music-controls"><button id="musicGameBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
         </div>
         <div class="crystal c1"></div><div class="crystal c2"></div><div class="crystal c3"></div><div class="crystal c4"></div>
         <div id="opponents" class="opponents"></div>
@@ -53,6 +53,7 @@
           <div id="category" class="category"><span id="categoryIcon">✦</span><strong id="categoryText">Bereit?</strong></div>
           <div id="countdown" class="countdown" aria-live="assertive"></div>
           <div id="tableCards" class="table-cards"></div>
+          <div id="selectionTimer" class="selection-timer" aria-live="polite"></div>
           <div id="roundMessage" class="round-message" aria-live="polite"></div>
           <div id="diceZone" class="dice-zone"></div>
         </div>
@@ -65,16 +66,7 @@
 
   <div id="toast" class="toast" role="status"></div>
 
-  <div id="musicPanel" class="music-panel">
-    <button id="musicPanelMute" class="music-toggle" type="button">🔇 Musik stumm</button>
-    <label class="volume-control" for="musicVolume">
-      <span>🔊</span>
-      <input id="musicVolume" type="range" min="0" max="100" value="30" step="1" aria-label="Musiklautstärke">
-      <span id="musicVolumeValue">30%</span>
-    </label>
-    <div id="ytMusicPlayer" class="yt-audio-source" aria-hidden="true"></div>
-  </div>
-<dialog id="accessoryDialog" class="modal accessory-modal">
+  <dialog id="accessoryDialog" class="modal accessory-modal">
     <form method="dialog">
       <div class="modal-head">
         <div>
@@ -124,7 +116,6 @@
     </div>
   </dialog>
 
-  <script src="https://www.youtube.com/iframe_api"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/client.js"></script>
 </body>
