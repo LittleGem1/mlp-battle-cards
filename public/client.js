@@ -602,10 +602,50 @@ function bindCardInspector(el,card){
   el.addEventListener('pointerup',cancel);el.addEventListener('pointercancel',cancel);el.addEventListener('pointerleave',cancel);
 }
 
+
+function ensureSpecialChoiceDialog(){
+  let d=$('#specialChoiceDialog');
+  if(d)return d;
+  d=document.createElement('dialog');d.id='specialChoiceDialog';d.className='modal special-choice-dialog';
+  d.innerHTML=`<div class="special-choice-wrap">
+    <h3 id="specialChoiceTitle">Spezialkarte</h3>
+    <p id="specialChoiceHint"></p>
+    <div id="specialChoiceGrid" class="special-choice-grid"></div>
+    <button id="specialChoiceClose" class="soft-btn" type="button">Schließen</button>
+  </div>`;
+  document.body.append(d);
+  $('#specialChoiceClose').addEventListener('click',()=>d.close());
+  return d;
+}
+function showPlayerChoices(title,targets,onChoose){
+  const d=ensureSpecialChoiceDialog(),g=$('#specialChoiceGrid');
+  $('#specialChoiceTitle').textContent=title;$('#specialChoiceHint').textContent='Wähle einen Mitspieler.';
+  g.innerHTML='';
+  (targets||[]).forEach(t=>{
+    const b=document.createElement('button');b.type='button';b.className='special-player-choice';
+    b.innerHTML=`<strong>${escapeHtml(t.name)}</strong><small>${t.selected?'✓ Karte liegt':'wartet'} · ${t.handCount} Handkarten</small>`;
+    b.addEventListener('click',()=>{d.close();onChoose(t.id)});
+    g.append(b);
+  });
+  d.showModal();
+}
+function showCategoryChoices(title,categories,onChoose){
+  const d=ensureSpecialChoiceDialog(),g=$('#specialChoiceGrid');
+  $('#specialChoiceTitle').textContent=title;$('#specialChoiceHint').textContent='Diese Kategorie gilt sofort für die laufende Runde.';
+  g.innerHTML='';
+  (categories||[]).forEach(c=>{
+    const b=document.createElement('button');b.type='button';b.className='special-category-choice';
+    b.innerHTML=`<span>${c.icon}</span><strong>${escapeHtml(c.label)}</strong>`;
+    b.addEventListener('click',()=>{d.close();onChoose(c.id)});
+    g.append(b);
+  });
+  d.showModal();
+}
+
 function buildHandCard(c,me,normals,blockedId){
   const blocked=c.type==='normal'&&c.id===blockedId&&normals.some(x=>x.id!==blockedId);
   const el=document.createElement('div');
-  el.className=`hand-card ${c.type==='special'?'special':''} ${blocked?'recently-played disabled':''} ${newlyDrawn.has(c.id)?'drawing-in':''}`;
+  el.className=`hand-card ${c.type==='special'?`special effect-${c.effect||'generic'}`:''} ${blocked?'recently-played disabled':''} ${newlyDrawn.has(c.id)?'drawing-in':''}`;
   el.dataset.cardId=c.id;
   const img=document.createElement('img');img.src=c.image;img.alt=c.name;el.append(img);bindCardInspector(el,c);
 
@@ -625,7 +665,11 @@ function buildHandCard(c,me,normals,blockedId){
   }else{
     el.insertAdjacentHTML('beforeend',specialUseInfo(c));
     const b=document.createElement('button');b.className='special-use';b.type='button';b.textContent='✨ Spezial einsetzen';
-    b.addEventListener('click',e=>{e.stopPropagation();ensureAudio();if(state?.phase!=='select')return toast('Spezialkarten nur während der Auswahl.');socket.emit('useSpecial',{cardId:c.id})});
+    b.addEventListener('click',e=>{
+      e.stopPropagation();ensureAudio();
+      if(state?.phase!=='select')return toast('Spezialkarten nur während der Auswahl.');
+      socket.emit('useSpecial',{cardId:c.id});
+    });
     el.append(b);
   }
   return el;
@@ -690,6 +734,26 @@ function beep(freq=620,dur=.1){tone(freq,dur,.05,'sine')}
 function diceRollSound(){for(let i=0;i<8;i++)tone(180+i*33,.045,.035,i%2?'square':'triangle',i*.065)}
 function diceLandSound(v){tone(420+v*70,.12,.07,'triangle');tone(210+v*25,.18,.045,'sine',.07)}
 function specialSound(){tone(440,.12,.055,'sine');tone(660,.18,.05,'triangle',.08);tone(990,.28,.045,'sine',.18)}
+function specialTheme(effect=''){
+  if(['windigos'].includes(effect))return 'ice';
+  if(['daybreaker','sunset'].includes(effect))return 'fire';
+  if(['stormking','lightningdust','rainbow'].includes(effect))return 'storm';
+  if(['nightmare','sombra','ponyshadows','tirek'].includes(effect))return 'shadow';
+  if(['maneiac','starlight','chrysalis','changeling','grogar','trixie'].includes(effect))return 'magic';
+  if(['bugbear','hydra','manticore','timberwolves','sludge','gilda'].includes(effect))return 'impact';
+  if(['pinkie','twilight','fluttershy','rarity','diamonddogs','flimflam','cozy'].includes(effect))return 'sparkle';
+  return 'magic';
+}
+function specialFxSound(effect=''){
+  const theme=specialTheme(effect);
+  if(theme==='ice'){[820,660,520,390].forEach((f,i)=>tone(f,.2,.035,'sine',i*.07));return}
+  if(theme==='fire'){[260,390,620,930].forEach((f,i)=>tone(f,.22,.045,'sawtooth',i*.065));return}
+  if(theme==='storm'){for(let i=0;i<7;i++)tone(180+i*105,.05,.035,i%2?'square':'sawtooth',i*.045);return}
+  if(theme==='shadow'){tone(120,.55,.045,'sawtooth');tone(180,.38,.03,'triangle',.08);tone(90,.7,.025,'sine',.1);return}
+  if(theme==='impact'){tone(120,.16,.07,'square');tone(75,.28,.06,'sine',.08);return}
+  if(theme==='sparkle'){[520,720,920,1180].forEach((f,i)=>tone(f,.15,.032,'triangle',i*.06));return}
+  specialSound();
+}
 function setMusicMode(mode){
   musicMode=mode;
   syncMusic();
@@ -917,7 +981,24 @@ function stopDiceAnimation(e){
   const d=diceTile(e.playerId,e.name),face=d.querySelector('.dice-face');d.classList.remove('rolling-live');face.textContent=['⚀','⚁','⚂','⚃','⚄','⚅'][e.value-1];d.classList.add('dice-landed');toast(`${e.name} würfelt ${e.value}`);diceLandSound(e.value)
 }
 
-function showSpecialBurst(e){specialSound();const overlay=document.createElement('div');overlay.className='special-burst';overlay.innerHTML=`<div class="special-burst-card"><div class="magic-ring"></div><img src="${e.card.image}" alt=""><strong>${escapeHtml(e.name)}</strong><span>${e.card.useIcon||'✦'} ${escapeHtml(e.card.useLabel||'Spezialkarte')}</span></div>`;document.body.append(overlay);setTimeout(()=>overlay.classList.add('active'),20);setTimeout(()=>overlay.classList.add('fade'),1150);setTimeout(()=>overlay.remove(),1650)}
+function showSpecialBurst(e){
+  const effect=e.card?.effect||'',theme=specialTheme(effect);
+  specialFxSound(effect);
+  const icons={ice:'❄',fire:'☀',storm:'⚡',shadow:'☾',magic:'✦',impact:'✹',sparkle:'✨'};
+  const overlay=document.createElement('div');
+  overlay.className=`special-burst special-theme-${theme}`;
+  overlay.innerHTML=`<div class="special-burst-card">
+    <div class="magic-ring"></div><div class="special-fx-glyph">${icons[theme]||'✦'}</div>
+    <img src="${e.card.image}" alt="">
+    <strong>${escapeHtml(e.name)}</strong>
+    <span>${e.card.useIcon||'✦'} ${escapeHtml(e.card.useLabel||'Spezialkarte')}</span>
+    <small>${escapeHtml(e.card.text||'')}</small>
+  </div>`;
+  document.body.append(overlay);
+  setTimeout(()=>overlay.classList.add('active'),20);
+  setTimeout(()=>overlay.classList.add('fade'),1450);
+  setTimeout(()=>overlay.remove(),2050);
+}
 socket.on('specialPlayed',showSpecialBurst);
 
 let roundIntroTimer=null;
@@ -1283,6 +1364,32 @@ socket.on('postGameReadyState',e=>{
 });
 socket.on('backToLobby',()=>{waitingForLobbyReset=false;stopCountdown();stopSelectionTimer();hideTieAlert();try{$('#gameOverDialog').close()}catch{};try{$('#giftDialog').close()}catch{};clearTable();show('lobby');setMusicMode('lobby');if(state?.phase==='lobby')renderLobby();toast('Lobby ist bereit für die nächste Runde.')});
 socket.on('roomLeft',()=>{waitingForLobbyReset=false;stopCountdown();stopSelectionTimer();hideTieAlert();state=null;hand=[];clearTable();renderHand();show('home');setMusicMode('lobby');toast('Du hast den Raum verlassen.')});
+socket.on('specialTargetRequest',e=>showPlayerChoices(e.title,e.targets,id=>socket.emit('specialTargetChoice',{targetId:id})));
+socket.on('specialCategoryRequest',e=>showCategoryChoices(e.title,e.categories,id=>socket.emit('specialCategoryChoice',{category:id})));
+socket.on('specialCardRequest',e=>showChoices(e.title,e.cards,c=>socket.emit('specialCardChoice',{cardId:c.id})));
+socket.on('forcedDiscardRequest',e=>showChoices(e.title,e.cards,c=>socket.emit('forcedDiscardChoice',{cardId:c.id})));
+socket.on('extraNormalNeeded',e=>toast(`🌲 ${e.source}: Lege noch ${e.remaining} normale Karte${e.remaining===1?'':'n'}.`));
+socket.on('bonusDraw',e=>{cardShuffleSound();toast(`🐲 ${e.source}: Du erhältst 1 zusätzliche normale Karte.`)});
+socket.on('categoryOverride',e=>{
+  toast(`🔔 ${e.source} bestimmt: ${e.icon} ${e.label}`);
+  const cat=$('#category');if(cat)cat.innerHTML=`${e.icon} <strong>${escapeHtml(e.label)}</strong>`;
+  specialFxSound('grogar');
+});
+socket.on('specialCopied',e=>toast(`♟ ${e.name} kopiert ${e.copied?.name||'eine Spezialkarte'}.`));
+socket.on('playerSkipped',e=>toast(`⏸ ${e.name} setzt durch ${e.sourceName} diese Runde aus.`));
+socket.on('specialBlocked',e=>{toast(`🛡 ${e.targetName} ist vor ${e.sourceName} geschützt.`);specialFxSound('sombra')});
+socket.on('specialCleansed',e=>{toast(`🎩 ${e.name} hebt negative Spezialeffekte auf.`);specialFxSound('trixie')});
+socket.on('specialImpact',e=>{
+  (e.targetIds||[]).forEach(id=>{
+    const target=document.querySelector(`.opponent[data-player-id="${id}"]`) || (id===myId?document.querySelector('.self-bar'):null);
+    if(target){
+      target.classList.remove('special-impact-hit');void target.offsetWidth;target.classList.add('special-impact-hit');
+      setTimeout(()=>target.classList.remove('special-impact-hit'),900);
+    }
+  });
+  if(e.text)toast(e.text);
+});
+
 socket.on('flutterChoices',e=>showChoices('Fluttershy: Welche Karte möchtest du behalten?',e.cards,c=>socket.emit('flutterKeep',{cardId:c.id})));
 socket.on('rarityChoose',e=>showChoices('Rarity: Welche Karte möchtest du austauschen?',e.cards,c=>socket.emit('raritySwap',{cardId:c.id})));
 function showChoices(title,cards,cb){$('#choiceTitle').textContent=title;const g=$('#choiceCards');g.innerHTML='';cards.forEach(c=>{const b=document.createElement('button');b.type='button';b.innerHTML=`<img src="${c.image}" alt="${escapeHtml(c.name)}">`;b.addEventListener('click',()=>{$('#choiceDialog').close();cb(c)});g.append(b)});$('#choiceDialog').showModal()}

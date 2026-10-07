@@ -2311,3 +2311,73 @@ body:has(#game .hand:not(.large-hand)) .arena{padding-bottom:230px!important;}
   .artifact-slot img{width:24px;height:32px}
   .artifact-slot small{font-size:7px}
 }
+
+
+/* =========================================================
+   RELIKT-SYSTEM – PHASE 2 / NEUE SPEZIALKARTEN
+   ========================================================= */
+.special-choice-dialog{max-width:min(640px,92vw)!important}
+.special-choice-wrap{display:grid;gap:12px;min-width:min(520px,82vw)}
+.special-choice-wrap h3,.special-choice-wrap p{margin:0}
+.special-choice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;max-height:55vh;overflow:auto;padding:3px}
+.special-player-choice,.special-category-choice{
+  border:1px solid rgba(174,212,255,.22);border-radius:14px;padding:12px;
+  background:linear-gradient(145deg,rgba(41,30,89,.96),rgba(8,27,61,.96));
+  color:#fff;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.25);
+  transition:.18s ease;
+}
+.special-player-choice:hover,.special-category-choice:hover{transform:translateY(-3px);border-color:rgba(255,219,103,.7);box-shadow:0 0 24px rgba(173,109,255,.25)}
+.special-player-choice{display:grid;gap:4px;text-align:left}
+.special-player-choice small{opacity:.74}
+.special-category-choice{display:flex;align-items:center;justify-content:center;gap:9px;font-size:16px;font-weight:900}
+.special-category-choice span{font-size:25px}
+
+.special-burst-card small{
+  display:block;max-width:300px;margin:5px auto 0;padding:6px 9px;border-radius:9px;
+  background:rgba(2,4,18,.68);font-size:11px;line-height:1.2
+}
+.special-fx-glyph{
+  position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);
+  font-size:120px;opacity:.13;filter:blur(.2px);pointer-events:none;
+  animation:specialGlyph 1.35s ease both;
+}
+@keyframes specialGlyph{
+  0%{scale:.25;rotate:-45deg;opacity:0}
+  35%{scale:1.25;opacity:.3}
+  100%{scale:1.7;rotate:25deg;opacity:0}
+}
+.special-theme-ice{background:radial-gradient(circle,rgba(96,220,255,.27),rgba(0,9,35,.76))}
+.special-theme-ice .magic-ring{box-shadow:0 0 55px #7eeeff,inset 0 0 35px #bff8ff}
+.special-theme-fire{background:radial-gradient(circle,rgba(255,103,30,.3),rgba(35,0,8,.78))}
+.special-theme-fire .magic-ring{box-shadow:0 0 60px #ff812f,inset 0 0 38px #ffd34d}
+.special-theme-storm{background:radial-gradient(circle,rgba(255,232,52,.24),rgba(0,14,55,.8))}
+.special-theme-storm .special-burst-card{animation:specialStormJolt .12s steps(2) 5}
+@keyframes specialStormJolt{0%{translate:-4px 0}100%{translate:4px 0}}
+.special-theme-shadow{background:radial-gradient(circle,rgba(109,36,155,.32),rgba(0,0,0,.88))}
+.special-theme-shadow .magic-ring{box-shadow:0 0 58px #9e46e8,inset 0 0 35px #24002f}
+.special-theme-magic{background:radial-gradient(circle,rgba(218,86,255,.27),rgba(13,6,48,.8))}
+.special-theme-impact{background:radial-gradient(circle,rgba(255,173,54,.2),rgba(14,5,6,.82))}
+.special-theme-impact .special-burst-card{animation:specialImpactPop .42s cubic-bezier(.1,.9,.1,1)}
+@keyframes specialImpactPop{0%{scale:.45;rotate:-4deg}70%{scale:1.08;rotate:2deg}100%{scale:1}}
+.special-theme-sparkle{background:radial-gradient(circle,rgba(255,119,222,.22),rgba(7,20,52,.76))}
+
+.special-impact-hit{animation:specialTargetHit .82s ease!important}
+@keyframes specialTargetHit{
+  0%,100%{filter:none;transform:translate(-50%,-50%) scale(1)}
+  30%{filter:brightness(1.8) saturate(1.8);box-shadow:0 0 35px rgba(255,87,222,.75);transform:translate(-50%,-50%) scale(1.08)}
+  55%{filter:brightness(.75);transform:translate(-50%,-50%) scale(.97)}
+}
+.self-bar.special-impact-hit{animation:selfTargetHit .82s ease!important}
+@keyframes selfTargetHit{
+  0%,100%{filter:none;scale:1}
+  35%{filter:brightness(1.8) saturate(1.8);scale:1.05}
+}
+
+.hand-card.special.effect-windigos,.hand-card.special.effect-nightmare{box-shadow:0 0 20px rgba(117,191,255,.2)}
+.hand-card.special.effect-daybreaker,.hand-card.special.effect-sunset{box-shadow:0 0 20px rgba(255,112,50,.2)}
+.hand-card.special.effect-lightningdust,.hand-card.special.effect-stormking{box-shadow:0 0 20px rgba(255,225,51,.2)}
+.hand-card.special.effect-sombra,.hand-card.special.effect-ponyshadows,.hand-card.special.effect-tirek{box-shadow:0 0 20px rgba(128,45,184,.22)}
+.tutorial-special-note{
+  margin-top:10px;padding:10px 12px;border-radius:12px;
+  border:1px solid rgba(255,218,105,.25);background:rgba(255,210,76,.06);font-size:12px;line-height:1.45
+}
