@@ -1,0 +1,38 @@
+MLP BATTLE CARDS – KOMBINIERTER FIX
+
+Diese ZIP ist dafür gedacht, direkt in deinen Projektordner kopiert zu werden.
+Windows: "Dateien im Ziel ersetzen/zusammenführen" -> bestätigen.
+
+ENTHALTEN:
+- cards.js
+- server.js
+- public/index.html
+- public/client.js
+- public/style.css
+- public/assets/accessories/ (alle 24 Accessoires als eigenständige Grafiken)
+- korrigierte Photo Finish + Sapphire Shores
+
+GEFIXT:
+- Lobby lässt sich wieder erstellen/beitreten (fehlende Audio-Funktion repariert)
+- In der Lobby kann das Namens-Accessoire gewechselt werden
+- 3 Start-Items bleiben von Anfang an frei
+- gesperrte Items bleiben geheim, bis sie gewonnen werden
+- Namens-Accessoires sind passend um/neben dem Namensfeld angeordnet
+- Kartenwerte sind spielintern maximal 9
+- auch Spezialboni gehen nicht über 9
+- gerade gespielte Karte kann in der direkt folgenden Runde nicht erneut gespielt werden,
+  sofern eine andere normale Karte verfügbar ist
+- Würfelanimation / Kartenablege- / Karten-Gewinnanimation aus dem Gameplay-Patch bleiben drin
+- Hauptmenü-, Lobby-zurück-, Abbrechen- und Schließen-Buttons bleiben drin
+- Battle-Musik bleibt drin
+- Lobby-Hintergrund bleibt aufgewertet
+
+Danach:
+1. Nur den Inhalt dieser ZIP in deinen lokalen Projektordner kopieren.
+2. Zu GitHub hochladen/committen.
+3. Render -> Manual Deploy -> Deploy latest commit.
+4. Browser -> Strg + F5.
+
+HINWEIS ZU ALTEN KARTENBILDERN:
+Die Spiellogik ist auf max. 9 begrenzt. Einige ältere Karten-Artworks tragen optisch
+noch eine gedruckte "10". Das ist nur die Grafik; spielintern zählt höchstens 9.

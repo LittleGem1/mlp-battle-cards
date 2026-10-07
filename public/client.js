@@ -133,9 +133,10 @@ function renderHand(){
   wrap.innerHTML='';
   const me=state?.players?.find(p=>p.id===myId);
   const blockedId=me?.lastPlayedCardId||null;
+  const normalCards=hand.filter(c=>c.type==='normal');
 
   for(const c of hand){
-    const blocked=c.type==='normal' && c.id===blockedId;
+    const blocked=c.type==='normal' && c.id===blockedId && normalCards.some(x=>x.id!==blockedId);
     const el=document.createElement('div');
     el.className=`hand-card ${c.type==='special'?'special':''} ${blocked?'recently-played disabled':''}`;
     const img=document.createElement('img'); img.src=c.image; img.alt=c.name; el.append(img);
@@ -164,6 +165,20 @@ function renderHand(){
     wrap.append(el);
   }
 }
+function ensureAudio(){
+  try{
+    const A=window.AudioContext||window.webkitAudioContext;
+    if(!A) return null;
+    if(!ensureAudio.ctx) ensureAudio.ctx=new A();
+    if(ensureAudio.ctx.state==='suspended') ensureAudio.ctx.resume();
+    restartMusic();
+    return ensureAudio.ctx;
+  }catch(e){
+    console.warn('Audio konnte nicht gestartet werden:',e);
+    return null;
+  }
+}
+
 function tone(freq=620,dur=.1,gain=.045,type='sine',when=0){
   if(!musicEnabled)return;
   const ctx=ensureAudio.ctx||ensureAudio(); if(!ctx)return;

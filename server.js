@@ -170,7 +170,10 @@ io.on('connection', socket=>{
     const p=r.players.get(socket.id); const c=byId[cardId];
     if(!p||!c||c.type!=='normal'||p.selected||!p.hand.includes(cardId)) return;
     if(p.lastPlayedCardId===cardId){
-      return socket.emit('errorMsg','Diese Karte hast du gerade erst gespielt. Wähle in dieser Runde eine andere Karte.');
+      const hasAlternative=p.hand.some(id=>id!==cardId && byId[id]?.type==='normal');
+      if(hasAlternative){
+        return socket.emit('errorMsg','Diese Karte hast du gerade erst gespielt. Wähle in dieser Runde eine andere Karte.');
+      }
     }
     p.selected=cardId;
     p.lastPlayedCardId=cardId;
