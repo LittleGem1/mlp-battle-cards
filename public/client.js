@@ -93,7 +93,7 @@ function show(name){
   document.body.classList.remove('scene-home','scene-lobby','scene-game');
   document.body.classList.add('scene-'+name);
   if(name==='home'||name==='lobby'){
-    if(currentScreen!==name||!document.body.dataset.lobbyScene) buildLobbyScene();
+    buildLobbyScene('crystal_cave');
   }
   currentScreen=name;
   setMusicMode(name);
@@ -112,15 +112,12 @@ function buildCrystalDrift(){
   }
 }
 buildCrystalDrift();
-const LOBBY_SCENES=['dojo','crystal_cave','cosmic'];
+const LOBBY_SCENES=['crystal_cave'];
 let lastLobbyScene='';
-function chooseLobbyScene(){
-  const choices=LOBBY_SCENES.filter(x=>x!==lastLobbyScene);
-  const scene=choices[Math.floor(Math.random()*choices.length)]||LOBBY_SCENES[0];
-  lastLobbyScene=scene;return scene;
-}
+function chooseLobbyScene(){return 'crystal_cave';}
 function makeEl(cls,styles={}){const e=document.createElement('i');e.className=cls;for(const [k,v] of Object.entries(styles))e.style.setProperty(k,v);return e}
-function buildLobbyScene(scene=chooseLobbyScene()){
+function buildLobbyScene(scene='crystal_cave'){
+  scene='crystal_cave';
   const root=$('#lobbySceneVfx');if(!root)return;
   document.body.classList.remove('lobby-scene-dojo','lobby-scene-crystal_cave','lobby-scene-cosmic');
   document.body.classList.add('lobby-scene-'+scene);document.body.dataset.lobbyScene=scene;
@@ -217,11 +214,15 @@ socket.on('connect',()=>{myId=socket.id;updateHomePreview();});
 socket.on('errorMsg',toast); socket.on('notice',toast); socket.on('specialDone',e=>toast(e.text));
 socket.on('roomState',s=>{
   state=s;
-  // Sobald man einen Raum betreten hat, wartet man bereits IN DER ARENA.
-  // So sieht jeder seinen Bereit-Knopf am tatsächlichen Spielfeld.
+  // Der Bereit-Bildschirm bleibt im Game-Screen, bekommt vor Matchbeginn aber
+  // bewusst die Kristallhöhlen-Lobby statt einer Kampf-Arena.
   show('game');
 
   if(s.phase==='lobby'){
+    document.body.classList.remove('scene-game','scene-home');
+    document.body.classList.add('scene-lobby');
+    currentScreen='lobby';
+    buildLobbyScene('crystal_cave');
     setMusicMode('lobby');
     stopCountdown();
     stopSelectionTimer();
@@ -230,6 +231,9 @@ socket.on('roomState',s=>{
     return;
   }
 
+  document.body.classList.remove('scene-lobby','scene-home');
+  document.body.classList.add('scene-game');
+  currentScreen='game';
   hideArenaReady();
   setMusicMode('game');
 
@@ -281,7 +285,19 @@ function renderLobby(){
 function renderGame(){
   if(!state)return;
   const me=state.players.find(p=>p.id===myId);if(!me)return;
-  const arena=document.querySelector('.arena');if(arena){const arenaId=state.arenaId||'crystal_colosseum';arena.classList.remove('arena-crystal_colosseum','arena-storm_temple','arena-celestial_forge');arena.classList.add('arena-'+arenaId);if(arena.dataset.vfx!==arenaId){arena.dataset.vfx=arenaId;buildArenaVfx(arenaId);}}
+  const arena=document.querySelector('.arena');
+  if(arena){
+    arena.classList.remove('arena-crystal_colosseum','arena-storm_temple','arena-celestial_forge');
+    if(state.phase==='lobby'){
+      arena.dataset.vfx='lobby';
+      const vfx=$('#arenaVfx');if(vfx){vfx.innerHTML='';vfx.className='arena-vfx';}
+      buildLobbyScene('crystal_cave');
+    }else{
+      const arenaId=state.arenaId||'crystal_colosseum';
+      arena.classList.add('arena-'+arenaId);
+      if(arena.dataset.vfx!==arenaId){arena.dataset.vfx=arenaId;buildArenaVfx(arenaId);}
+    }
+  }
   $('#abortBtn').style.display=myId===state.hostId&&state.phase!=='gameover'?'inline-block':'none';
   $('#selfName').textContent=me.name;
   $('#selfCount').textContent=`${me.handCount} Karten`;
@@ -485,6 +501,7 @@ function updateMusicUI(){
     b.title=musicEnabled?'Hintergrundmusik ausschalten':'Hintergrundmusik einschalten';
   });
   document.querySelectorAll('.music-volume').forEach(s=>s.value=String(musicVolume));
+  document.querySelectorAll('.music-volume-readout').forEach(x=>x.textContent=`${Math.round(musicVolume)}%`);
 }
 
 function startMusicWatchdog(){

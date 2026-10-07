@@ -1224,3 +1224,90 @@ body.scene-home .crystal-panel,body.scene-lobby .crystal-panel{background:linear
 .round-intro-card{display:none!important}
 @media(max-width:720px){.arena-ready-panel{padding:72px 10px 170px}.arena-ready-card{padding:20px 14px}.arena-ready-actions>*{width:100%}.category-coin{width:min(280px,72vw)}}
 @media(prefers-reduced-motion:reduce){.category-coin.coin-running{animation-duration:.01ms!important}.absolute-countdown-core::before,.absolute-countdown-core::after{animation:none!important}}
+
+
+/* =========================================================
+   V5 – NUR KRISTALLHÖHLE IN LOBBY + SICHTBARE MUSIKSTEUERUNG
+   ========================================================= */
+
+/* Home, Namensauswahl und die Bereit-Lobby verwenden ausschließlich
+   die Kristallhöhle. Dojo/Cosmic bleiben im Code ungenutzt. */
+body.scene-home .lobby-scene-vfx,
+body.scene-lobby .lobby-scene-vfx{
+  opacity:1!important;
+  visibility:visible!important;
+}
+body.scene-lobby #game .arena{
+  background:transparent!important;
+}
+body.scene-lobby #game .arena::before,
+body.scene-lobby #game .arena::after,
+body.scene-lobby #arenaVfx{
+  display:none!important;
+}
+body.scene-lobby .arena-ready-panel{
+  background:radial-gradient(circle at 50% 42%,rgba(16,31,82,.08),rgba(4,5,24,.40) 72%)!important;
+  backdrop-filter:blur(1.5px);
+}
+
+/* Musik ist jetzt direkt IM Bereit-Panel sichtbar und klickbar. */
+.arena-ready-music{
+  margin:16px auto 20px;
+  width:min(620px,100%);
+  padding:13px 16px;
+  border-radius:18px;
+  border:1px solid rgba(122,232,255,.34);
+  background:linear-gradient(135deg,rgba(8,18,55,.80),rgba(38,15,75,.72));
+  box-shadow:inset 0 0 24px rgba(83,224,255,.07),0 8px 24px rgba(0,0,0,.22);
+}
+.arena-ready-music>strong{
+  display:block;
+  margin-bottom:9px;
+  color:#e9fbff;
+  font-size:13px;
+  letter-spacing:.08em;
+}
+.lobby-ready-music-controls{
+  display:flex!important;
+  justify-content:center;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.ready-volume-wrap{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-height:44px;
+  padding:5px 10px;
+  border-radius:13px;
+  background:rgba(255,255,255,.07);
+  color:#eefaff;
+}
+.ready-volume-wrap .music-volume{
+  width:min(220px,34vw);
+  min-width:110px;
+  accent-color:#79ebff;
+  cursor:pointer;
+}
+.music-volume-readout{
+  min-width:42px;
+  font-variant-numeric:tabular-nums;
+  color:#bff7ff;
+  text-align:right;
+}
+
+/* Match: ausschließlich die drei serverseitig zufällig gewählten Arenen. */
+body.scene-game .lobby-scene-vfx{
+  opacity:0!important;
+  visibility:hidden!important;
+}
+body.scene-game #arenaVfx{display:block!important}
+
+@media(max-width:720px){
+  .arena-ready-music{padding:11px 10px}
+  .lobby-ready-music-controls{align-items:stretch}
+  .lobby-ready-music-controls>.music-toggle{width:100%}
+  .ready-volume-wrap{width:100%;justify-content:center}
+  .ready-volume-wrap .music-volume{width:min(240px,52vw)}
+}

@@ -55,6 +55,18 @@
             <h2>Raum <span id="arenaRoomCode"></span></h2>
             <p>Alle Spieler müssen in der Arena bereit sein.</p>
             <div id="arenaReadyPlayers" class="arena-ready-players"></div>
+            <div class="arena-ready-music">
+              <strong>🎵 Lobby-Musik</strong>
+              <div class="music-controls lobby-ready-music-controls">
+                <button class="soft-btn music-toggle" type="button">🔇 Musik stumm</button>
+                <label class="ready-volume-wrap">
+                  <span>🔈</span>
+                  <input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Lobby-Musiklautstärke">
+                  <span>🔊</span>
+                  <b class="music-volume-readout">30%</b>
+                </label>
+              </div>
+            </div>
             <div class="arena-ready-actions">
               <button id="startBtn" class="primary-btn ready-btn" type="button">✅ Bereit</button>
               <button id="arenaAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
