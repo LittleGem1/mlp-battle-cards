@@ -25,10 +25,25 @@ function getRoom(socket){ return socket.data.room ? rooms.get(socket.data.room) 
 function hasNormalCard(p){ return p.hand.some(id=>byId[id]?.type==='normal'); }
 function activePlayers(r){ return roomPlayers(r).filter(p=>!p.surrendered); }
 
+function clearBotTimers(r){
+  for(const t of (r.botTimers||[]))clearTimeout(t);
+  r.botTimers=[];
+}
+function botLater(r,fn,delay=650){
+  if(!r)return null;
+  const t=setTimeout(()=>{
+    r.botTimers=(r.botTimers||[]).filter(x=>x!==t);
+    if(rooms.has(r.code))fn();
+  },delay);
+  if(!Array.isArray(r.botTimers))r.botTimers=[];
+  r.botTimers.push(t);
+  return t;
+}
 function clearTimers(r){
   for(const key of ['roundTimer','selectionTimer','countdownTimer','readyTimer']){
     if(r[key]){clearTimeout(r[key]);r[key]=null;}
   }
+  clearBotTimers(r);
   r.selectionDeadline=null;
   r.countdownUntil=null;
 }
@@ -44,14 +59,16 @@ function publicState(r){
       specialCount:p.hand.filter(id=>byId[id]?.type==='special').length,
       artifacts:(p.artifacts||[]).map(id=>byId[id]).filter(Boolean),
       artifactCount:new Set(p.artifacts||[]).size,
-      selected:!!p.selected,ready:!!p.ready,surrendered:!!p.surrendered,
+      selected:!!p.selected,ready:!!p.ready,surrendered:!!p.surrendered,isBot:!!p.isBot,
       eliminated:!!p.surrendered,lastPlayedCardId:p.lastPlayedCardId||null
     }))
   };
 }
 function sendState(r){
   io.to(r.code).emit('roomState',publicState(r));
-  for(const p of roomPlayers(r))io.to(p.id).emit('hand',p.hand.map(id=>byId[id]).filter(Boolean));
+  for(const p of roomPlayers(r)){
+    if(!p.isBot)io.to(p.id).emit('hand',p.hand.map(id=>byId[id]).filter(Boolean));
+  }
 }
 function buildNormalDeck(){
   const deck=[];
@@ -222,16 +239,239 @@ function forceDiscardChoice(r,target,sourceName){
   const token=`${Date.now()}-${Math.random()}`;
   const auto=()=>{
     if(!target.pendingForcedDiscard||target.pendingForcedDiscard.token!==token||!target.hand.length)return;
-    const id=target.hand[Math.floor(Math.random()*target.hand.length)];
+    const normals=target.hand.filter(id=>byId[id]?.type==='normal');
+    const pool=normals.length?normals:target.hand;
+    const id=target.isBot
+      ? [...pool].sort((a,b)=>(byId[a]?.[r.category]||0)-(byId[b]?.[r.category]||0))[0]
+      : pool[Math.floor(Math.random()*pool.length)];
     target.hand.splice(target.hand.indexOf(id),1);discardCard(r,id);
     target.pendingForcedDiscard=null;
-    io.to(target.id).emit('specialDone',{text:`${sourceName}: Eine Karte wurde automatisch abgelegt.`});
+    if(!target.isBot)io.to(target.id).emit('specialDone',{text:`${sourceName}: Eine Karte wurde automatisch abgelegt.`});
     emitImpact(r,'discard',target.id,`${target.name} legt 1 Karte ab.`);
-    sendState(r);
+    sendState(r);maybeEvaluate(r);
   };
-  const timer=setTimeout(auto,8000);
+  const delay=target.isBot?550:8000;
+  const timer=setTimeout(auto,delay);
   target.pendingForcedDiscard={token,sourceName,timer};
-  io.to(target.id).emit('forcedDiscardRequest',{title:`${sourceName}: Lege 1 Handkarte ab`,cards:target.hand.map(id=>byId[id]).filter(Boolean)});
+  if(!target.isBot)io.to(target.id).emit('forcedDiscardRequest',{title:`${sourceName}: Lege 1 Handkarte ab`,cards:target.hand.map(id=>byId[id]).filter(Boolean)});
+}
+
+
+function botTargets(r,p,mode='any'){
+  return availableTargets(r,p,mode).filter(t=>!t.surrendered);
+}
+function botTarget(r,p,mode='any'){
+  const pool=botTargets(r,p,mode);
+  if(!pool.length)return null;
+  // Bots bevorzugen Spieler, die dem Artefaktsieg näher sind, bleiben aber nicht perfekt.
+  pool.sort((a,b)=>(new Set(b.artifacts||[]).size-new Set(a.artifacts||[]).size)||((b.hand?.length||0)-(a.hand?.length||0)));
+  return Math.random()<.68?pool[0]:pool[Math.floor(Math.random()*pool.length)];
+}
+function botNormalCards(p,category){
+  return p.hand.map(id=>byId[id]).filter(c=>c?.type==='normal').sort((a,b)=>(b[category]||0)-(a[category]||0));
+}
+function botChooseNormalIds(r,p,count=1){
+  let cards=botNormalCards(p,r.category);
+  if(cards.length>1&&p.lastPlayedCardId){
+    const without=cards.filter(c=>c.id!==p.lastPlayedCardId);
+    if(without.length)cards=without;
+  }
+  const chosen=[];
+  while(cards.length&&chosen.length<count){
+    const top=cards.slice(0,Math.min(3,cards.length));
+    const pick=Math.random()<.74?top[0]:top[Math.floor(Math.random()*top.length)];
+    chosen.push(pick.id);
+    cards=cards.filter(c=>c.id!==pick.id);
+  }
+  return chosen;
+}
+function botDiscardWorst(r,p){
+  if(!p?.hand?.length)return null;
+  const normals=p.hand.filter(id=>byId[id]?.type==='normal');
+  let id;
+  if(normals.length){
+    id=[...normals].sort((a,b)=>(byId[a]?.[r.category]||0)-(byId[b]?.[r.category]||0))[0];
+  }else id=p.hand[Math.floor(Math.random()*p.hand.length)];
+  p.hand.splice(p.hand.indexOf(id),1);discardCard(r,id);return id;
+}
+function botKeepBestNormal(ids,category){
+  return [...ids].sort((a,b)=>(byId[b]?.[category]||0)-(byId[a]?.[category]||0))[0]||null;
+}
+function botHasNegative(r,p){
+  return fxHas(r,'skipped',p.id)||fxHas(r,'forcedLose',p.id)||!!r.roundFX?.debuff?.[p.id]||!!r.roundFX?.strengthDebuff?.[p.id];
+}
+function botApplySpecial(r,p,c){
+  const effect=c.effect;
+  const targetAny=()=>botTarget(r,p,'any');
+  const targetHand=()=>botTarget(r,p,'hand');
+  if(effect==='rainbow'){
+    r.roundBuff[p.id]={...(r.roundBuff[p.id]||{}),speed:(r.roundBuff[p.id]?.speed||0)+2};
+  }else if(effect==='applejack'){
+    r.roundBuff[p.id]={...(r.roundBuff[p.id]||{}),strength:(r.roundBuff[p.id]?.strength||0)+1};
+  }else if(effect==='pinkie'){
+    p.hand.push(...drawNormal(r,1));
+  }else if(effect==='twilight'){
+    p.hand.push(...drawNormal(r,2));
+  }else if(effect==='fluttershy'){
+    const d=drawNormal(r,2),keep=botKeepBestNormal(d,r.category);
+    if(keep)p.hand.push(keep);
+    r.normalDiscard.push(...d.filter(id=>id!==keep));
+  }else if(effect==='rarity'){
+    botDiscardWorst(r,p);p.hand.push(...drawNormal(r,1));
+  }else if(effect==='tirek'){
+    const t=targetAny();if(t)addDebuff(r,t.id,-2,p.id,'Tirek');
+  }else if(effect==='stormking'){
+    fxAdd(r,'stormKing',p.id);
+  }else if(effect==='flimflam'){
+    p.hand.push(...drawNormal(r,1));botDiscardWorst(r,p);
+  }else if(effect==='cozy'){
+    const t=targetHand();if(t&&t.hand.length){
+      const id=t.hand[Math.floor(Math.random()*t.hand.length)];t.hand.splice(t.hand.indexOf(id),1);discardCard(r,id);t.hand.push(...drawNormal(r,1));
+      emitImpact(r,'cozy',t.id,`${t.name} verliert zufällig 1 Handkarte und zieht 1 normale Karte.`);
+    }
+  }else if(effect==='sludge'||effect==='maneiac'){
+    const t=targetHand();if(t&&t.hand.length){
+      const normals=t.hand.filter(id=>byId[id]?.type==='normal');
+      const pool=normals.length?normals:t.hand;
+      const id=effect==='sludge'
+        ? [...pool].sort((a,b)=>(byId[b]?.[r.category]||0)-(byId[a]?.[r.category]||0))[0]
+        : pool[Math.floor(Math.random()*pool.length)];
+      t.hand.splice(t.hand.indexOf(id),1);discardCard(r,id);emitImpact(r,effect,t.id,`${t.name} muss ${byId[id]?.name||'eine Karte'} ablegen.`);
+    }
+  }else if(effect==='diamonddogs'){
+    const d=drawNormal(r,2),keep=botKeepBestNormal(d,r.category);if(keep)p.hand.push(keep);r.normalDiscard.push(...d.filter(id=>id!==keep));
+  }else if(effect==='changeling'){
+    p.specialExtra=(p.specialExtra||0)+1;
+  }else if(effect==='nightmare'){
+    r.forcedNextCategory='magic';io.to(r.code).emit('specialImpact',{effect:'nightmare',targetIds:[],text:'Die nächste Runde wird automatisch Magie.'});
+  }else if(effect==='hydra'){
+    fxAdd(r,'hydra',p.id);
+  }else if(effect==='bugbear'){
+    const t=targetAny();if(t)skipPlayerThisRound(r,t.id,p.id,'Bugbear');
+  }else if(effect==='manticore'){
+    let id=null,zone=null;
+    if(r.normalDiscard.length){id=botKeepBestNormal(r.normalDiscard,r.category);zone='normal';}
+    else if(r.rewardDiscard.length){id=r.rewardDiscard[r.rewardDiscard.length-1];zone='reward';}
+    if(id){const pile=zone==='normal'?r.normalDiscard:r.rewardDiscard;const i=pile.indexOf(id);if(i>=0)pile.splice(i,1);p.hand.push(id);}
+  }else if(effect==='timberwolves'){
+    fxAdd(r,'doubleNormal',p.id);
+  }else if(effect==='grogar'){
+    let best='strength',bestVal=-1;
+    for(const cat of CATEGORIES){const v=Math.max(0,...botNormalCards(p,cat).map(x=>x[cat]||0));if(v>bestVal){bestVal=v;best=cat;}}
+    r.category=best;if(Array.isArray(r.categoryHistory)&&r.categoryHistory.length)r.categoryHistory[r.categoryHistory.length-1]=best;
+    io.to(r.code).emit('categoryOverride',{category:best,label:CATEGORY_LABEL[best],icon:CATEGORY_ICON[best],source:'Grogar'});
+  }else if(effect==='sombra'){
+    fxAdd(r,'protected',p.id);const t=targetAny();if(t)addDebuff(r,t.id,-2,p.id,'King Sombra','strength');
+  }else if(effect==='daybreaker'){
+    fxAdd(r,'autoWinner',p.id);
+  }else if(effect==='ironwill'){
+    r.roundFX.artifactBlocked=true;io.to(r.code).emit('specialImpact',{effect:'ironwill',targetIds:[],text:'Artefaktziehungen sind für diese Runde blockiert.'});
+  }else if(effect==='ponyshadows'){
+    const t=targetAny();if(t)markForcedLose(r,t.id,p.id,'Pony of Shadows','shadow');
+  }else if(effect==='windigos'){
+    for(const t of roomPlayers(r))if(t.id!==p.id&&!t.surrendered)skipPlayerThisRound(r,t.id,p.id,'Windigos');
+  }else if(effect==='sunset'){
+    const d=drawNormal(r,3),keep=botKeepBestNormal(d,r.category);if(keep)p.hand.push(keep);r.normalDeck.unshift(...d.filter(id=>id!==keep));
+  }else if(effect==='starlight'){
+    for(const t of roomPlayers(r)){
+      if(t.id===p.id||t.surrendered)continue;
+      if(isProtectedFrom(r,t.id,p.id)){io.to(r.code).emit('specialBlocked',{targetId:t.id,targetName:t.name,sourceName:'Starlight Glimmer'});continue;}
+      forceDiscardChoice(r,t,'Starlight Glimmer');
+    }
+  }else if(effect==='trixie'){
+    clearNegativeEffects(r,p.id);io.to(r.code).emit('specialCleansed',{playerId:p.id,name:p.name});
+  }else if(effect==='ahuizotl'){
+    const t=botTarget(r,p,'played');if(t)addDebuff(r,t.id,-2,p.id,'Ahuizotl');
+  }else if(effect==='lightningdust'){
+    const t=targetAny();if(t)markForcedLose(r,t.id,p.id,'Lightning Dust','lightning');
+  }else if(effect==='gilda'){
+    const t=targetHand();if(t&&t.hand.length){const id=t.hand[Math.floor(Math.random()*t.hand.length)];t.hand.splice(t.hand.indexOf(id),1);p.hand.push(id);emitImpact(r,'steal',[t.id,p.id],`${p.name} nimmt eine zufällige Karte von ${t.name}.`);}
+  }
+}
+function botUsableSpecials(r,p){
+  const history=(r.specialHistory||[]).some(x=>x.playerId!==p.id&&x.effect!=='chrysalis');
+  return p.hand.map(id=>byId[id]).filter(c=>c?.type==='special').filter(c=>{
+    if(c.effect==='rainbow'||c.effect==='stormking')return r.category==='speed';
+    if(c.effect==='applejack')return r.category==='strength';
+    if(c.effect==='chrysalis')return history;
+    if(c.effect==='ahuizotl')return botTargets(r,p,'played').length>0;
+    if(['cozy','sludge','maneiac','gilda'].includes(c.effect))return botTargets(r,p,'hand').length>0;
+    if(['tirek','bugbear','sombra','ponyshadows','lightningdust'].includes(c.effect))return botTargets(r,p,'any').length>0;
+    if(c.effect==='timberwolves')return botNormalCards(p,r.category).length>=2;
+    if(c.effect==='manticore')return r.normalDiscard.length+r.rewardDiscard.length>0;
+    if(c.effect==='trixie')return botHasNegative(r,p);
+    if(c.effect==='ironwill')return roomPlayers(r).some(x=>x.id!==p.id&&new Set(x.artifacts||[]).size>=2);
+    return true;
+  });
+}
+function botMaybeUseSpecial(r,p,forced=false){
+  if(!r||r.phase!=='select'||!p?.isBot||p.selected||!r.roundPlayerIds.includes(p.id)||!mayUseSpecial(p))return false;
+  const usable=botUsableSpecials(r,p);if(!usable.length)return false;
+  let chance=forced?.86:.42;
+  if(new Set(p.artifacts||[]).size>=2)chance+=.08;
+  if(Math.random()>chance)return false;
+  const priority=['daybreaker','windigos','lightningdust','grogar','bugbear','sombra'];
+  usable.sort((a,b)=>priority.indexOf(b.effect)-priority.indexOf(a.effect));
+  let source=Math.random()<.55?usable[0]:usable[Math.floor(Math.random()*usable.length)];
+  if(!source)return false;
+  let effective=source;
+  if(source.effect==='chrysalis'){
+    const last=[...(r.specialHistory||[])].reverse().find(x=>x.playerId!==p.id&&x.effect!=='chrysalis');
+    if(last&&byId[last.cardId])effective=byId[last.cardId];
+  }
+  if(!consumeSpecial(r,p,source))return false;
+  if(source.effect==='chrysalis')io.to(r.code).emit('specialCopied',{playerId:p.id,name:p.name,copied:effective});
+  botApplySpecial(r,p,effective);
+  sendState(r);
+  if(source.effect==='changeling'&&mayUseSpecial(p))botLater(r,()=>botMaybeUseSpecial(r,p,true),260);
+  return true;
+}
+function botCommitNormal(r,p){
+  if(!r||r.phase!=='select'||!p?.isBot||p.selected||p.surrendered||!r.roundPlayerIds.includes(p.id))return;
+  const needed=fxHas(r,'doubleNormal',p.id)?2:1;
+  const ids=botChooseNormalIds(r,p,needed);
+  if(!ids.length)return;
+  const entry=r.played[p.id]||{cardIds:[]};
+  for(const id of ids){
+    if(!p.hand.includes(id))continue;
+    p.hand.splice(p.hand.indexOf(id),1);entry.cardIds.push(id);io.to(r.code).emit('cardCommitted',{playerId:p.id,name:p.name});
+  }
+  if(!entry.cardIds.length)return;
+  entry.cardId=entry.cardIds[0];r.played[p.id]=entry;
+  if(entry.cardIds.length>=needed){p.selected=true;p.lastPlayedCardId=entry.cardIds[entry.cardIds.length-1];io.to(r.code).emit('playerSelected',{playerId:p.id,name:p.name});}
+  sendState(r);maybeEvaluate(r);
+}
+function scheduleBotsForSelect(r){
+  for(const id of (r.roundPlayerIds||[])){
+    const p=r.players.get(id);if(!p?.isBot||p.surrendered)continue;
+    botLater(r,()=>botMaybeUseSpecial(r,p,false),650+Math.floor(Math.random()*550));
+    botLater(r,()=>botCommitNormal(r,p),1550+Math.floor(Math.random()*1000));
+  }
+}
+function scheduleBotDice(r){
+  if(!r||r.phase!=='tie')return;
+  for(const id of (r.tieIds||[])){
+    const p=r.players.get(id);if(!p?.isBot||r.dice[id]!==undefined)continue;
+    botLater(r,()=>{
+      if(r.phase!=='tie'||!r.tieIds.includes(id)||r.dice[id]!==undefined)return;
+      r.dice[id]='rolling';io.to(r.code).emit('diceRolling',{playerId:id,name:p.name});
+      botLater(r,()=>completeDiceRoll(r,id),850);
+    },600+Math.floor(Math.random()*500));
+  }
+}
+function makeBotPlayer(r){
+  const id=`bot:${r.code}:1`;
+  return {id,name:'PonyBot',isBot:true,accessory:'changeling',frame:'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null};
+}
+function addBotToRoom(r){
+  if(!r||r.phase!=='lobby'||roomPlayers(r).some(p=>p.isBot)||r.players.size>=8)return false;
+  const bot=makeBotPlayer(r);r.players.set(bot.id,bot);return true;
+}
+function removeBotFromRoom(r){
+  if(!r||r.phase!=='lobby')return false;
+  const bot=roomPlayers(r).find(p=>p.isBot);if(!bot)return false;
+  if(bot.pendingForcedDiscard?.timer)clearTimeout(bot.pendingForcedDiscard.timer);
+  r.players.delete(bot.id);return true;
 }
 
 function refillNormalHands(r){
@@ -328,7 +568,7 @@ function resetToLobby(r){
   r.postGameReady=new Set();r.forceNextCategoryDifferent=false;r.forcedNextCategory=null;resetRoundFX(r);
   r.normalDeck=[];r.normalDiscard=[];r.rewardDeck=[];r.rewardDiscard=[];
   for(const p of roomPlayers(r)){
-    p.hand=[];p.artifacts=[];p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.pendingForcedDiscard=null;p.specialUsed=0;p.specialExtra=0;p.pendingForcedDiscard=null;
+    p.hand=[];p.artifacts=[];p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.pendingForcedDiscard=null;
   }
   sendState(r);
   io.to(r.code).emit('backToLobby');
@@ -337,20 +577,24 @@ function removePlayerFromRoom(socket,notify=true){
   const r=getRoom(socket);if(!r)return;
   const leaving=r.players.get(socket.id);if(leaving?.pendingForcedDiscard?.timer)clearTimeout(leaving.pendingForcedDiscard.timer);
   r.players.delete(socket.id);socket.leave(r.code);socket.data.room=null;socket.emit('roomLeft');
-  if(!r.players.size){clearTimers(r);rooms.delete(r.code);return;}
-  if(r.hostId===socket.id)r.hostId=roomPlayers(r)[0].id;
+  const humans=roomPlayers(r).filter(p=>!p.isBot);
+  if(!humans.length){clearTimers(r);rooms.delete(r.code);return;}
+  if(r.hostId===socket.id)r.hostId=humans[0].id;
   r.roundPlayerIds=(r.roundPlayerIds||[]).filter(id=>id!==socket.id);
   if(notify)io.to(r.code).emit('notice','Ein Spieler hat den Raum verlassen.');
   sendState(r);
   if(r.phase==='select')maybeEvaluate(r);
   if(r.phase==='ready')maybeStartWhenReady(r);
-  if(r.phase==='gameover'&&r.postGameReady&&roomPlayers(r).length&&roomPlayers(r).every(p=>r.postGameReady.has(p.id))){
+  if(r.phase==='gameover'&&r.postGameReady&&roomPlayers(r).length&&roomPlayers(r).every(p=>p.isBot||r.postGameReady.has(p.id))){
     setTimeout(()=>{if(rooms.has(r.code)&&r.phase==='gameover')resetToLobby(r)},250);
   }
 }
 function maybeEvaluate(r){
   if(!r||r.phase!=='select')return;
   const req=requiredPlayers(r);
+  // Effekte wie Starlight / Flim & Flam müssen erst vollständig abgearbeitet
+  // sein, bevor die Karten aufgedeckt werden.
+  if(req.some(p=>p.pendingForcedDiscard))return;
   if(req.length&&req.every(p=>p.selected)){
     if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
     r.selectionDeadline=null;
@@ -359,7 +603,7 @@ function maybeEvaluate(r){
 }
 function endGame(r,champion,reason='artifacts'){
   if(!r||r.phase==='gameover'||!champion)return true;
-  clearTimers(r);r.phase='gameover';r.postGameReady=new Set();
+  clearTimers(r);r.phase='gameover';r.postGameReady=new Set(roomPlayers(r).filter(p=>p.isBot).map(p=>p.id));
   io.to(r.code).emit('gameOver',{
     winnerId:champion.id,winnerName:champion.name,reason,
     artifacts:(champion.artifacts||[]).map(id=>byId[id]).filter(Boolean),
@@ -423,6 +667,7 @@ function startRound(r,delay=900){
       r.selectionDeadline=Date.now()+30000;
       io.to(r.code).emit('roundStart',{round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],deadline:r.selectionDeadline});
       sendState(r);
+      scheduleBotsForSelect(r);
       r.selectionTimer=setTimeout(()=>handleSelectionTimeout(r),30050);
     },3000);
   },delay);
@@ -539,7 +784,7 @@ function evaluate(r){
   else setTimeout(()=>{
     r.phase='tie';r.tieIds=tied.map(x=>x.pid);r.dice={};
     io.to(r.code).emit('tieStart',{playerIds:r.tieIds,names:r.tieIds.map(id=>r.players.get(id)?.name)});
-    sendState(r);
+    sendState(r);scheduleBotDice(r);
   },1700);
 }
 function drawFromPool(r,count,exclude=[],kind='any'){
@@ -561,7 +806,7 @@ function completeDiceRoll(r,pid){
       r.forceNextCategoryDifferent=true;
       setTimeout(()=>settleRound(r,top[0]),1300);
     }
-    else setTimeout(()=>{r.tieIds=top;r.dice={};io.to(r.code).emit('tieAgain',{playerIds:top,names:top.map(id=>r.players.get(id)?.name)});sendState(r);},1300);
+    else setTimeout(()=>{r.tieIds=top;r.dice={};io.to(r.code).emit('tieAgain',{playerIds:top,names:top.map(id=>r.players.get(id)?.name)});sendState(r);scheduleBotDice(r);},1300);
   }
 }
 
@@ -576,7 +821,7 @@ function beginMatch(r){
   initDecks(r);
 
   for(const p of ps){
-    p.hand=[];p.artifacts=[];p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;
+    p.hand=[];p.artifacts=[];p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.pendingForcedDiscard=null;
     p.hand.push(...drawNormal(r,NORMAL_HAND_TARGET));
     const starterSpecial=drawSpecialOnly(r);
     if(starterSpecial)p.hand.push(starterSpecial);
@@ -599,7 +844,7 @@ function enterArenaReady(r){
   r.arenaId=arenas[Math.floor(Math.random()*arenas.length)];
   r.phase='ready';
   r.readyLock=false;
-  for(const p of roomPlayers(r)){p.ready=false;p.selected=null;}
+  for(const p of roomPlayers(r)){p.ready=!!p.isBot;p.selected=null;}
   io.to(r.code).emit('arenaReadyPhase',{arenaId:r.arenaId});
   sendState(r);
   return true;
@@ -617,9 +862,25 @@ function maybeStartWhenReady(r){
 io.on('connection',socket=>{
   socket.on('createRoom',({name,accessory,frame})=>{
     let c;do c=code();while(rooms.has(c));
-    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[]};
+    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[]};
     r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     rooms.set(c,r);socket.join(c);socket.data.room=c;sendState(r);
+  });
+  socket.on('createBotRoom',({name,accessory,frame})=>{
+    let c;do c=code();while(rooms.has(c));
+    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[]};
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
+    rooms.set(c,r);socket.join(c);socket.data.room=c;addBotToRoom(r);sendState(r);
+    socket.emit('notice','🤖 PonyBot wurde als Testgegner hinzugefügt.');
+  });
+  socket.on('toggleBot',()=>{
+    const r=getRoom(socket);if(!r||r.phase!=='lobby')return socket.emit('errorMsg','Bots können nur in der Lobby geändert werden.');
+    if(r.hostId!==socket.id)return socket.emit('errorMsg','Nur der Host kann den Test-Bot ändern.');
+    const hasBot=roomPlayers(r).some(p=>p.isBot);
+    if(hasBot){removeBotFromRoom(r);io.to(r.code).emit('notice','🤖 Test-Bot entfernt.');}
+    else if(addBotToRoom(r)){io.to(r.code).emit('notice','🤖 PonyBot ist dem Raum beigetreten.');}
+    else return socket.emit('errorMsg','Es kann gerade kein Bot hinzugefügt werden.');
+    sendState(r);
   });
   socket.on('joinRoom',({code:rc,name,accessory,frame})=>{
     const c=String(rc||'').trim().toUpperCase(),r=rooms.get(c);
@@ -921,7 +1182,7 @@ io.on('connection',socket=>{
     p.hand.splice(p.hand.indexOf(cardId),1);discardCard(r,cardId);
     socket.emit('specialDone',{text:`${sourceName}: ${byId[cardId]?.name||'Eine Karte'} abgelegt.`});
     emitImpact(r,'discard',p.id,`${p.name} legt 1 Karte ab.`);
-    sendState(r);
+    sendState(r);maybeEvaluate(r);
   });
 
   socket.on('flutterKeep',({cardId})=>{const x=socket.data.pendingFlutter,r=getRoom(socket);if(!x||!r||x.room!==r.code||!x.choices.includes(cardId))return;const p=r.players.get(socket.id);
@@ -969,7 +1230,7 @@ io.on('connection',socket=>{
     socket.emit('postGameWaiting',{ready:r.postGameReady.size,total:r.players.size});
     io.to(r.code).emit('postGameReadyState',{ready:[...r.postGameReady],total:r.players.size});
     // Erst wenn wirklich ALLE selbst fertig sind, geht der gemeinsame Raum zurück in die Lobby.
-    if(roomPlayers(r).every(p=>r.postGameReady.has(p.id))){
+    if(roomPlayers(r).every(p=>p.isBot||r.postGameReady.has(p.id))){
       if(rooms.has(r.code)&&r.phase==='gameover') resetToLobby(r);
     }
   });

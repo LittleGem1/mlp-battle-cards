@@ -200,10 +200,19 @@ function renderAccessoryGrid(){
 $('#itemsTabBtn')?.addEventListener('click',()=>{cosmeticTab='items';renderAccessoryGrid()});
 $('#framesTabBtn')?.addEventListener('click',()=>{cosmeticTab='frames';renderAccessoryGrid()});
 $('#accessoryBtn').addEventListener('click',()=>{renderAccessoryGrid();$('#accessoryDialog').showModal()});
-$('#lobbyAccessoryBtn')?.addEventListener('click',()=>{renderAccessoryGrid();$('#accessoryDialog').showModal()});
+$('#lobbyAccessoryBtn')?.addEventListener('click',()=>{renderAccessoryGrid();
+$('#botLobbyBtn')?.addEventListener('click',()=>socket.emit('toggleBot'));$('#accessoryDialog').showModal()});
 
 $('#createBtn').addEventListener('click',()=>{directMusicGesture('lobby');ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim();if(!name)return toast('Bitte zuerst einen Namen eingeben.');remember();socket.emit('createRoom',{name,accessory:selectedAccessory,frame:selectedFrame})});
 $('#joinBtn').addEventListener('click',()=>{directMusicGesture('lobby');ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim(),code=$('#roomCode').value.trim();if(!name||!code)return toast('Name und Raumcode eingeben.');remember();socket.emit('joinRoom',{name,code,accessory:selectedAccessory,frame:selectedFrame})});
+function startBotTestRoom(){
+  directMusicGesture('lobby');ensureAudio();if(!ensureStarter())return;
+  const name=playerName.value.trim();if(!name)return toast('Bitte zuerst deinen Namen eingeben.');
+  remember();try{$('#rulesDialog').close()}catch{};resetTraining?.();
+  socket.emit('createBotRoom',{name,accessory:selectedAccessory,frame:selectedFrame});
+  toast('🤖 PonyBot wird vorbereitet …');
+}
+$('#botTestBtn')?.addEventListener('click',startBotTestRoom);
 $('#startBtn').addEventListener('click',()=>{directMusicGesture('lobby');ensureAudio();socket.emit('startGame')});
 $('#arenaReadyBtn')?.addEventListener('click',()=>{directMusicGesture('game');ensureAudio();socket.emit('toggleReady')});
 $('#arenaAccessoryBtn')?.addEventListener('click',()=>{renderAccessoryGrid();$('#accessoryDialog').showModal()});
@@ -233,6 +242,7 @@ function renderPostGameLobby(){
   }).join('');
 
   $('#startBtn').style.display='none';
+  $('#botLobbyBtn')?.style.setProperty('display','none');
   $('#lobbyAccessoryBtn')?.style.setProperty('display','inline-block');
 }
 
@@ -316,7 +326,7 @@ function renderArenaReady(){
   const readyCount=state.players.filter(p=>p.ready).length;
   $('#arenaRoomCode').textContent=state.code;
   ensureRoomCodeCopyControl($('#arenaRoomCode'),state.code);
-  $('#arenaReadyPlayers').innerHTML=state.players.map(p=>`<div class="arena-ready-player ${p.ready?'is-ready':''}">${nameplateHTML(p.name,p.accessory,true,p.frame)}<span>${p.id===state.hostId?'👑 HOST · ':''}${p.ready?'✅ BEREIT':'⏳ WARTET'}</span></div>`).join('');
+  $('#arenaReadyPlayers').innerHTML=state.players.map(p=>`<div class="arena-ready-player ${p.ready?'is-ready':''} ${p.isBot?'bot-player':''}">${nameplateHTML(p.name,p.accessory,true,p.frame)}<span>${p.isBot?'🤖 BOT · ':p.id===state.hostId?'👑 HOST · ':''}${p.ready?'✅ BEREIT':'⏳ WARTET'}</span></div>`).join('');
   const btn=$('#arenaReadyBtn');
   btn.disabled=state.players.length<2;
   btn.textContent=me?.ready?`↩ Nicht bereit (${readyCount}/${state.players.length})`:`✅ Bereit (${readyCount}/${state.players.length})`;
@@ -395,11 +405,18 @@ function renderLobby(){
   $('#lobbyCode').textContent=state.code;
   ensureRoomCodeCopyControl($('#lobbyCode'),state.code);
   $('#lobbyHint').textContent=state.players.length<2?'Schick den Code an deine Mitspieler.':'Der Host startet die Kampf-Vorbereitung. Bereit wird erst in der Arena geklickt.';
-  $('#lobbyPlayers').innerHTML=state.players.map(p=>`<div class="lobby-player">${nameplateHTML(p.name,p.accessory,true,p.frame)}<div>${p.id===state.hostId?'Host 👑':'Mitspieler'}</div></div>`).join('');
+  $('#lobbyPlayers').innerHTML=state.players.map(p=>`<div class="lobby-player ${p.isBot?'bot-player':''}">${nameplateHTML(p.name,p.accessory,true,p.frame)}<div>${p.isBot?'🤖 COMPUTER':(p.id===state.hostId?'Host 👑':'Mitspieler')}</div></div>`).join('');
   const start=$('#startBtn');
   start.style.display=myId===state.hostId?'inline-block':'none';
   start.disabled=state.players.length<2;
   start.textContent='⚔️ In die Arena';
+  const botBtn=$('#botLobbyBtn');
+  if(botBtn){
+    const hasBot=state.players.some(p=>p.isBot);
+    botBtn.style.display=myId===state.hostId?'inline-block':'none';
+    botBtn.textContent=hasBot?'🤖 Test-Bot entfernen':'🤖 Test-Bot hinzufügen';
+    botBtn.disabled=!hasBot&&state.players.length>=8;
+  }
   updateMusicUI();
 }
 
@@ -562,11 +579,11 @@ function renderGame(){
   $('#opponents').innerHTML=others.length?others.map((p,i)=>{
     const status=p.surrendered
       ? '<span class="surrendered-mark">🏳 Aufgegeben</span>'
-      : (p.selected?'<span class="selected-mark">✓ Karte liegt</span>':'<span>wartet …</span>');
+      : (p.selected?'<span class="selected-mark">✓ Karte liegt</span>':`<span>${p.isBot?'🤖 überlegt …':'wartet …'}</span>`);
     const fan=p.surrendered?'':`<div class="back-fan">${Array.from({length:Math.min(p.handCount,7)},(_,j)=>`<img src="/assets/card_back.webp" alt="verdeckte Karte" style="transform:rotate(${(j-3)*5}deg)">`).join('')}</div>`;
     return `<div class="opponent ${p.selected?'has-selected':''} ${p.surrendered?'is-surrendered':''}" style="${arenaSeatStyle(i,others.length)}" data-player-id="${p.id}">
       ${nameplateHTML(p.name,p.accessory,true,p.frame)}
-      <div class="opponent-meta"><span>${p.surrendered?'Zuschauer':`${p.handCount} Karten`}</span>${status}</div>${artifactSlotsHTML(p.artifacts)}
+      ${p.isBot?'<div class="bot-badge">🤖 BOT</div>':''}<div class="opponent-meta"><span>${p.surrendered?'Zuschauer':`${p.handCount} Karten`}</span>${status}</div>${artifactSlotsHTML(p.artifacts)}
       ${fan}
     </div>`;
   }).join(''):'<div class="opponent-empty">Warte auf Mitspieler …</div>';
@@ -1424,6 +1441,7 @@ function renderTutorialStep(){
   const last=tutorialStep===tutorialSteps.length-1;
   $('#tutorialNextBtn').hidden=last;
   $('#tutorialTrainingBtn').hidden=!last;
+  $('#tutorialBotBtn').hidden=!last;
   if(last){tutorialComplete=true;localStorage.setItem('cc_tutorial_complete','1')}
 }
 function openTutorial(){
@@ -1437,39 +1455,76 @@ $('#tutorialSkipBtn')?.addEventListener('click',closeTutorial);
 $('#tutorialPrevBtn')?.addEventListener('click',()=>{tutorialStep=Math.max(0,tutorialStep-1);renderTutorialStep()});
 $('#tutorialNextBtn')?.addEventListener('click',()=>{tutorialStep=Math.min(tutorialSteps.length-1,tutorialStep+1);renderTutorialStep()});
 $('#tutorialTrainingBtn')?.addEventListener('click',()=>{if(tutorialComplete)startTraining()});
+$('#tutorialBotBtn')?.addEventListener('click',startBotTestRoom);
 $('#trainingSkipBtn')?.addEventListener('click',()=>{resetTraining();closeTutorial()});
 
-const TRAINING_ROUNDS=[
-  {category:'🏋️ Stärke',text:'Welche Karte ist bei Stärke besser?',correct:'applejack',opponent:'/assets/cards/43_Photo_Finish.webp',choices:[
+const TRAINING_STAGES=[
+  {type:'normal',category:'🏋️ Stärke',text:'Welche normale Karte ist bei Stärke besser?',correct:'applejack',opponent:'/assets/cards/43_Photo_Finish.webp',choices:[
     {id:'applejack',name:'Applejack',image:'/assets/cards/01_Applejack.webp',value:9},
     {id:'rainbow',name:'Rainbow Dash',image:'/assets/cards/02_Rainbow_Dash.webp',value:6}
   ]},
-  {category:'⚡ Schnelligkeit',text:'Jetzt zählt Schnelligkeit. Welche Karte nimmst du?',correct:'rainbow',opponent:'/assets/cards/44_Sapphire_Shores.webp',choices:[
+  {type:'normal',category:'⚡ Schnelligkeit',text:'Jetzt zählt Schnelligkeit. Welche Karte würdest du legen?',correct:'rainbow',opponent:'/assets/cards/44_Sapphire_Shores.webp',choices:[
     {id:'applejack',name:'Applejack',image:'/assets/cards/01_Applejack.webp',value:6},
     {id:'rainbow',name:'Rainbow Dash',image:'/assets/cards/02_Rainbow_Dash.webp',value:9}
-  ]}
+  ]},
+  {type:'special',category:'✨ Spezialkarte',text:'Der Gegner hat eine extrem starke Karte gelegt. Welche Spezialkarte lässt einen gewählten Gegner diese Runde automatisch verlieren?',correct:'lightning',choices:[
+    {id:'lightning',name:'Lightning Dust',image:'/assets/specials_new/91_Lightning_Dust.png',note:'Gegner verliert automatisch'},
+    {id:'hydra',name:'Hydra',image:'/assets/specials_new/76_Hydra.png',note:'Bonuskarte bei Niederlage'}
+  ]},
+  {type:'reward',category:'🏆 Rundensieg',text:'Du hast die Runde gewonnen. Klicke auf den goldenen Stapel und ziehe deine Belohnung.'}
 ];
 let trainingRound=0,trainingBusy=false;
 function startTraining(){
   trainingRound=0;trainingBusy=false;$('#tutorialSlides').hidden=true;$('#tutorialNav').hidden=true;$('#trainingArea').hidden=false;renderTrainingRound();
 }
 function resetTraining(){trainingRound=0;trainingBusy=false;const a=$('#trainingArea');if(a)a.hidden=true}
+function trainingAdvance(delay=1700){setTimeout(()=>{trainingRound++;trainingBusy=false;if(trainingRound<TRAINING_STAGES.length)renderTrainingRound();else finishTraining()},delay)}
 function renderTrainingRound(){
-  const r=TRAINING_ROUNDS[trainingRound];if(!r)return;
-  $('#trainingTitle').textContent=`Proberunde ${trainingRound+1} von ${TRAINING_ROUNDS.length}`;
+  const r=TRAINING_STAGES[trainingRound];if(!r)return;
+  $('#trainingTitle').textContent=`Übung ${trainingRound+1} von ${TRAINING_STAGES.length}`;
   $('#trainingText').textContent=r.text;$('#trainingCategory').textContent=r.category;$('#trainingResult').textContent='';$('#trainingTable').innerHTML='';
   const g=$('#trainingChoices');g.innerHTML='';
-  r.choices.forEach(c=>{const b=document.createElement('button');b.type='button';b.className='training-card';b.innerHTML=`<img src="${c.image}" alt="${c.name}"><strong>${c.name}</strong><span>${r.category.split(' ')[0]} ${c.value}</span>`;b.addEventListener('click',()=>chooseTrainingCard(c,b));bindCardInspector(b,{name:c.name,image:c.image});g.append(b)});
+  const opp=document.querySelector('.training-opponent');if(opp)opp.style.opacity=r.type==='reward'?'.35':'1';
+  if(r.type==='normal'){
+    r.choices.forEach(card=>{const b=document.createElement('button');b.type='button';b.className='training-card';b.innerHTML=`<img src="${card.image}" alt="${card.name}"><strong>${card.name}</strong><span>${r.category.split(' ')[0]} ${card.value}</span>`;b.addEventListener('click',()=>chooseTrainingNormal(card,b));bindCardInspector(b,{name:card.name,image:card.image,type:'normal'});g.append(b)});
+  }else if(r.type==='special'){
+    r.choices.forEach(card=>{const b=document.createElement('button');b.type='button';b.className='training-card training-special-card';b.innerHTML=`<img src="${card.image}" alt="${card.name}"><strong>${card.name}</strong><span>${card.note}</span>`;b.addEventListener('click',()=>chooseTrainingSpecial(card,b));bindCardInspector(b,{name:card.name,image:card.image,type:'special'});g.append(b)});
+  }else if(r.type==='reward'){
+    const b=document.createElement('button');b.type='button';b.className='training-gold-deck';b.innerHTML=`<img src="/assets/special_back_gold.png" alt="Goldstapel"><strong>Goldstapel ziehen</strong><small>Spezialkarte oder Artefakt</small>`;b.addEventListener('click',drawTrainingReward);g.append(b);
+    $('#trainingTable').innerHTML=`<div class="training-artifact-mini"><span>?</span><span>?</span><span>?</span><small>Deine Artefakte: 0 / 3</small></div>`;
+  }
 }
-function chooseTrainingCard(c,button){
-  if(trainingBusy)return;
-  const r=TRAINING_ROUNDS[trainingRound];
-  if(c.id!==r.correct){$('#trainingResult').textContent='Fast! Schau nochmal auf den Wert der aktuellen Kategorie.';button.animate([{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:260});beep(170,.12);return}
-  trainingBusy=true;$('#trainingResult').textContent='Richtig! Karten werden abgelegt …';
+function chooseTrainingNormal(card,button){
+  if(trainingBusy)return;const r=TRAINING_STAGES[trainingRound];
+  if(card.id!==r.correct){$('#trainingResult').textContent='Fast! Schau nochmal auf den Wert der aktuellen Kategorie.';button.animate([{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:260});beep(170,.12);return}
+  trainingBusy=true;$('#trainingResult').textContent='Richtig! Beide Karten fliegen verdeckt in die Mitte …';
   const table=$('#trainingTable');table.innerHTML=`<div class="training-played back"><img src="/assets/card_back.webp" alt="verdeckte Karte"></div><div class="training-played back"><img src="/assets/card_back.webp" alt="verdeckte Gegnerkarte"></div>`;
   [...table.children].forEach((el,i)=>el.animate([{transform:`translate(${i?180:-180}px,120px) scale(.45)`,opacity:0},{transform:'translate(0,0) scale(1)',opacity:1}],{duration:620,easing:'cubic-bezier(.2,.8,.2,1)',fill:'both'}));
-  setTimeout(()=>{table.innerHTML=`<div class="training-played flip"><img src="${c.image}" alt="${c.name}"></div><div class="training-played flip"><img src="${r.opponent}" alt="Gegnerkarte"></div>`;specialSound();$('#trainingResult').textContent='🏆 Sehr gut – du hast die passende Karte gewählt!';},900);
-  setTimeout(()=>{trainingRound++;trainingBusy=false;if(trainingRound<TRAINING_ROUNDS.length)renderTrainingRound();else{$('#trainingTitle').textContent='Training geschafft! 🎉';$('#trainingText').textContent='Du bist bereit für eine echte Partie.';$('#trainingCategory').textContent='';$('#trainingChoices').innerHTML='';$('#trainingTable').innerHTML='';$('#trainingResult').innerHTML='<button id="trainingDoneBtn" class="primary-btn" type="button">Fertig</button>';$('#trainingDoneBtn').addEventListener('click',closeTutorial)}},2300);
+  setTimeout(()=>{table.innerHTML=`<div class="training-played flip"><img src="${card.image}" alt="${card.name}"></div><div class="training-played flip"><img src="${r.opponent}" alt="Gegnerkarte"></div>`;specialSound();$('#trainingResult').textContent='🏆 Genau! Nach der Auswertung werden normale Karten später wieder aufgefüllt.';},850);
+  trainingAdvance(2100);
+}
+function chooseTrainingSpecial(card,button){
+  if(trainingBusy)return;const r=TRAINING_STAGES[trainingRound];
+  if(card.id!==r.correct){$('#trainingResult').textContent='Diese Karte hat einen anderen Effekt. Lies den Fähigkeitstext nochmal.';button.animate([{transform:'scale(1)'},{transform:'scale(.95)'},{transform:'scale(1)'}],{duration:260});beep(170,.12);return}
+  trainingBusy=true;specialFxSound('lightningdust');
+  $('#trainingTable').innerHTML=`<div class="training-special-demo"><img src="${card.image}" alt="Lightning Dust"><span>⚡ Gegner verliert diese Runde automatisch</span></div>`;
+  $('#trainingResult').textContent='⚡ Richtig! Spezialkarten können die normale Rundenwertung verändern.';
+  trainingAdvance(2000);
+}
+function drawTrainingReward(){
+  if(trainingBusy)return;trainingBusy=true;rewardChime();
+  const g=$('#trainingChoices');g.innerHTML='';
+  const table=$('#trainingTable');table.innerHTML=`<div class="training-reward-flip"><div class="training-reward-inner"><img class="training-reward-back" src="/assets/special_back_gold.png" alt="Goldene Rückseite"><img class="training-reward-front" src="/assets/artifacts/02_Kristall_Herz.png" alt="Kristall Herz"></div></div>`;
+  setTimeout(()=>table.querySelector('.training-reward-flip')?.classList.add('flipped'),280);
+  setTimeout(()=>{artifactFanfare();$('#trainingResult').innerHTML='<strong>💎 Kristall Herz gefunden!</strong><br>Artefakte werden nicht auf die Hand gelegt, sondern gesammelt. Alle 3 verschiedenen Artefakte = Sieg.';table.insertAdjacentHTML('beforeend',`<div class="training-artifact-row"><img src="/assets/artifacts/01_Elemente_der_Harmonie.png" alt="Elemente der Harmonie"><img class="found" src="/assets/artifacts/02_Kristall_Herz.png" alt="Kristall Herz"><img src="/assets/artifacts/03_Star_Swirls_Tagebuch.png" alt="Star Swirls Tagebuch"><small>1 / 3 gefunden</small></div>`);},1000);
+  trainingAdvance(2700);
+}
+function finishTraining(){
+  $('#trainingTitle').textContent='Training geschafft! 🎉';
+  $('#trainingText').textContent='Du kennst jetzt Kartenwahl, Spezialkarten und das Artefakt-Ziel. Du kannst schließen oder direkt eine echte Partie gegen PonyBot testen.';
+  $('#trainingCategory').textContent='🤖 Bereit für ein echtes Testspiel?';$('#trainingChoices').innerHTML='';$('#trainingTable').innerHTML='';
+  $('#trainingResult').innerHTML='<div class="training-finish-actions"><button id="trainingBotBtn" class="primary-btn" type="button">🤖 Gegen PonyBot spielen</button><button id="trainingDoneBtn" class="soft-btn" type="button">Tutorial schließen</button></div>';
+  $('#trainingDoneBtn').addEventListener('click',closeTutorial);$('#trainingBotBtn').addEventListener('click',startBotTestRoom);
 }
 
 $('#cardInspectClose')?.addEventListener('click',closeCardInspect);

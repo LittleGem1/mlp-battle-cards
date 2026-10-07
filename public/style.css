@@ -2381,3 +2381,51 @@ body:has(#game .hand:not(.large-hand)) .arena{padding-bottom:230px!important;}
   margin-top:10px;padding:10px 12px;border-radius:12px;
   border:1px solid rgba(255,218,105,.25);background:rgba(255,210,76,.06);font-size:12px;line-height:1.45
 }
+
+
+/* =========================================================
+   TUTORIAL + PONYBOT TESTMODUS
+   ========================================================= */
+.bot-test-home{grid-column:1/-1;border-color:rgba(115,232,255,.32)!important;background:linear-gradient(135deg,rgba(37,71,127,.55),rgba(73,36,120,.52))!important}
+.bot-player{position:relative;border-color:rgba(100,224,255,.42)!important;box-shadow:0 0 24px rgba(69,204,255,.12)!important}
+.bot-player::after{content:'BOT';position:absolute;right:8px;top:7px;padding:2px 6px;border-radius:999px;background:#103a59;color:#9cecff;font-size:8px;font-weight:950;letter-spacing:.1em}
+.bot-badge{position:absolute;right:7px;top:7px;padding:2px 6px;border-radius:999px;background:rgba(13,66,89,.9);border:1px solid rgba(105,224,255,.35);color:#a9f1ff;font-size:8px;font-weight:950;z-index:5}
+
+.artifact-goal-picture{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px!important;align-items:end!important;padding:22px!important}
+.artifact-goal-card{display:grid;gap:5px;justify-items:center;min-width:0}
+.artifact-goal-card img{width:min(150px,100%);aspect-ratio:3/4;object-fit:cover;border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.42),0 0 22px rgba(216,117,255,.18);transition:.2s ease}
+.artifact-goal-card:nth-child(2) img{transform:translateY(-12px) scale(1.04)}
+.artifact-goal-card span{font-size:10px;font-weight:900;text-align:center}
+.artifact-goal-label{grid-column:1/-1;margin-top:4px;color:#ffe68d;text-align:center;font-size:15px;text-shadow:0 0 14px rgba(255,217,92,.35)}
+
+.tutorial-decks-picture{display:flex!important;align-items:center!important;justify-content:center!important;gap:18px!important;padding:22px!important}
+.tutorial-deck-card{display:grid;justify-items:center;gap:6px;width:150px;text-align:center}
+.tutorial-deck-card img{width:92px;aspect-ratio:2/3;object-fit:cover;border-radius:9px;box-shadow:0 12px 24px rgba(0,0,0,.35)}
+.tutorial-deck-card.gold img{box-shadow:0 0 30px rgba(255,208,67,.35),0 12px 24px rgba(0,0,0,.35)}
+.tutorial-deck-card strong{font-size:13px}.tutorial-deck-card small{font-size:10px;line-height:1.25;opacity:.78}.tutorial-deck-plus{font-size:28px;font-weight:950;color:#d9bbff}
+
+.tutorial-special-fan{position:relative!important;min-height:260px!important;overflow:hidden!important}
+.tutorial-special-fan .tutorial-special{position:absolute!important;width:126px!important;aspect-ratio:3/4;object-fit:cover;border-radius:8px;box-shadow:0 12px 26px rgba(0,0,0,.4)}
+.tutorial-special-fan .special-one{left:12%;top:25px;transform:rotate(-11deg)}
+.tutorial-special-fan .special-two{left:50%;top:8px;transform:translateX(-50%)}
+.tutorial-special-fan .special-three{right:12%;top:25px;transform:rotate(11deg)}
+.tutorial-special-rule{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);width:82%;padding:8px 12px;border-radius:12px;background:rgba(7,12,44,.82);border:1px solid rgba(211,166,255,.3);font-weight:900;text-align:center;font-size:11px}
+.tutorial-special-rule small{opacity:.75}
+.tutorial-bot-btn{margin-left:auto}
+
+.training-special-card span{font-size:10px;line-height:1.2;min-height:25px}
+.training-gold-deck{display:grid;justify-items:center;gap:7px;border:1px solid rgba(255,217,83,.45);border-radius:16px;padding:12px 18px;background:linear-gradient(145deg,rgba(66,42,15,.8),rgba(55,31,83,.9));color:#fff;cursor:pointer;box-shadow:0 0 28px rgba(255,208,68,.16)}
+.training-gold-deck img{width:115px;border-radius:9px;box-shadow:0 0 28px rgba(255,205,55,.35)}
+.training-gold-deck strong{font-size:14px}.training-gold-deck small{font-size:10px;opacity:.75}
+.training-artifact-mini{display:grid;grid-template-columns:repeat(3,44px);gap:8px;place-content:center;align-items:center}
+.training-artifact-mini span{width:42px;height:58px;border:1px dashed rgba(255,255,255,.3);border-radius:7px;display:grid;place-items:center;font-size:25px;opacity:.6}.training-artifact-mini small{grid-column:1/-1;text-align:center}
+.training-special-demo{display:grid;justify-items:center;gap:8px}.training-special-demo img{width:125px;border-radius:8px;box-shadow:0 0 28px rgba(255,214,56,.25)}.training-special-demo span{font-weight:900;color:#ffe777}
+.training-reward-flip{width:132px;height:184px;perspective:900px;margin:auto}.training-reward-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .75s cubic-bezier(.2,.8,.2,1)}.training-reward-flip.flipped .training-reward-inner{transform:rotateY(180deg)}.training-reward-inner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:9px;backface-visibility:hidden;box-shadow:0 0 28px rgba(255,210,68,.32)}.training-reward-front{transform:rotateY(180deg)}
+.training-artifact-row{display:grid;grid-template-columns:repeat(3,68px);gap:8px;justify-content:center;margin-top:10px}.training-artifact-row img{width:68px;aspect-ratio:3/4;object-fit:cover;border-radius:6px;opacity:.32;filter:grayscale(.45)}.training-artifact-row img.found{opacity:1;filter:none;box-shadow:0 0 22px rgba(120,231,255,.42)}.training-artifact-row small{grid-column:1/-1;text-align:center;font-weight:900;color:#baf5ff}
+.training-finish-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+@media(max-width:760px){
+  .artifact-goal-picture{gap:6px!important;padding:12px!important}.artifact-goal-card span{display:none}.artifact-goal-card:nth-child(2) img{transform:translateY(-6px) scale(1.03)}
+  .tutorial-decks-picture{gap:8px!important;padding:12px!important}.tutorial-deck-card{width:110px}.tutorial-deck-card img{width:70px}.tutorial-deck-card small{display:none}
+  .tutorial-special-fan .tutorial-special{width:92px!important}.tutorial-special-rule{font-size:9px}
+}

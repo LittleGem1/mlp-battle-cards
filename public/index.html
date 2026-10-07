@@ -23,6 +23,7 @@
         <div class="menu-grid">
           <button id="createBtn" class="primary-btn" type="button">✨ Raum erstellen</button>
           <div class="join-box"><input id="roomCode" maxlength="5" placeholder="RAUMCODE" /><button id="joinBtn" class="primary-btn" type="button">Beitreten</button></div>
+          <button id="botTestBtn" class="soft-btn bot-test-home" type="button">🤖 Testspiel gegen PonyBot</button>
         </div>
         <p class="hint">2–8 Spieler · Start: 6 normale Karten + 1 Spezialkarte · doppelte Karten sind möglich</p>
       </div>
@@ -36,6 +37,7 @@
         <div class="lobby-actions">
           <button id="startBtn" class="primary-btn ready-btn" type="button">✅ Bereit</button>
           <button id="lobbyAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
+          <button id="botLobbyBtn" class="soft-btn" type="button">🤖 Test-Bot hinzufügen</button>
           <button id="leaveLobbyBtn" class="soft-btn" type="button">← Hauptmenü</button>
           <div class="music-controls"><button id="musicLobbyBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
         </div>
@@ -142,11 +144,11 @@
             <h4>1. Dein neues Ziel</h4>
             <p>Finde als Erster alle drei Artefakte: <strong>Elemente der Harmonie</strong>, <strong>Kristall Herz</strong> und <strong>Star Swirls Tagebuch</strong>. Wer alle drei besitzt, gewinnt.</p>
           </div>
-          <div class="tutorial-picture tutorial-hand-picture">
-            <img src="/assets/cards/01_Applejack.webp" alt="Applejack Karte">
-            <img src="/assets/cards/02_Rainbow_Dash.webp" alt="Rainbow Dash Karte">
-            <img src="/assets/cards/03_Twilight_Sparkle.webp" alt="Twilight Sparkle Karte">
-            <span class="tutorial-callout">6 Normal + 1 Spezial</span>
+          <div class="tutorial-picture artifact-goal-picture">
+            <div class="artifact-goal-card"><img src="/assets/artifacts/01_Elemente_der_Harmonie.png" alt="Elemente der Harmonie"><span>Elemente der Harmonie</span></div>
+            <div class="artifact-goal-card"><img src="/assets/artifacts/02_Kristall_Herz.png" alt="Kristall Herz"><span>Kristall Herz</span></div>
+            <div class="artifact-goal-card"><img src="/assets/artifacts/03_Star_Swirls_Tagebuch.png" alt="Star Swirls Tagebuch"><span>Star Swirls Tagebuch</span></div>
+            <strong class="artifact-goal-label">✨ Sammle alle 3 und gewinne!</strong>
           </div>
         </article>
 
@@ -155,9 +157,10 @@
             <h4>2. Zwei Ziehstapel</h4>
             <p>Du startest mit <strong>6 normalen Karten + 1 Spezialkarte</strong>. Der normale Stapel füllt deine Charakterkarten auf. Im <strong>goldenen Stapel</strong> liegen Spezialkarten und Artefakte.</p>
           </div>
-          <div class="tutorial-picture category-picture">
-            <div class="tutorial-countdown-demo">3</div>
-            <div class="tutorial-categories"><span>🏋️ Stärke</span><span>⚡ Schnelligkeit</span><span>🔋 Energie</span><span>⭐ Magie</span></div>
+          <div class="tutorial-picture tutorial-decks-picture">
+            <div class="tutorial-deck-card normal"><img src="/assets/card_back.webp" alt="Normaler Kartenstapel"><strong>Normaler Stapel</strong><small>Charakterkarten · automatische Auffüllung</small></div>
+            <span class="tutorial-deck-plus">+</span>
+            <div class="tutorial-deck-card gold"><img src="/assets/special_back_gold.png" alt="Goldener Kartenstapel"><strong>Goldstapel</strong><small>Spezialkarten + Artefakte · nur Rundensieger zieht</small></div>
           </div>
         </article>
 
@@ -203,21 +206,18 @@
             <p>Normalerweise darfst du <strong>1 Spezialkarte pro Runde</strong> einsetzen – Changeling erlaubt dir eine zweite. Manche Spezialkarten lassen dich einen Gegner, eine Handkarte oder sogar die Kategorie auswählen. Verlorene normale Karten werden erst <strong>nach Abschluss der Runde</strong> beim automatischen Auffüllen ersetzt; verlorene Spezialkarten nicht. Bei Gleichstand wird gewürfelt. Sobald ein Spieler <strong>alle drei verschiedenen Artefakte</strong> besitzt, gewinnt er das Match.</p>
             <div class="tutorial-special-note"><strong>Wichtig:</strong> Iron Will kann eine Artefaktziehung für die gesamte Runde verhindern. Grogar bestimmt die aktuelle Kategorie selbst. Windigos lassen alle anderen aussetzen. Daybreaker gewinnt die Runde automatisch, sobald eine normale Karte gelegt wurde.</div>
           </div>
-          <div class="tutorial-picture special-picture">
-            <img class="tutorial-special" src="/assets/specials/64_Spezial_Pinkie_Pie.webp" alt="Pinkie Pie Spezialkarte">
-            <span class="magic-spark">✨</span>
-            <div class="tutorial-reward-preview artifact-preview">
-              <img src="/assets/special_back_gold.png" alt="Goldener Ziehstapel">
-              <span>→</span>
-              <img src="/assets/artifacts/02_Kristall_Herz.png" alt="Kristall Herz">
-            </div>
+          <div class="tutorial-picture special-picture tutorial-special-fan">
+            <img class="tutorial-special special-one" src="/assets/specials/64_Spezial_Pinkie_Pie.webp" alt="Pinkie Pie Spezialkarte">
+            <img class="tutorial-special special-two" src="/assets/specials_new/80_Grogar.png" alt="Grogar Spezialkarte">
+            <img class="tutorial-special special-three" src="/assets/specials_new/91_Lightning_Dust.png" alt="Lightning Dust Spezialkarte">
+            <span class="tutorial-special-rule">Normal: 1 Spezialkarte pro Runde<br><small>Changeling erlaubt eine zweite.</small></span>
           </div>
         </article>
       </div>
 
       <section id="trainingArea" class="training-area" hidden>
         <div class="training-header">
-          <div><span class="tutorial-kicker">🎓 MINI-TRAINING</span><h4 id="trainingTitle">Proberunde 1 von 2</h4></div>
+          <div><span class="tutorial-kicker">🎓 MINI-TRAINING</span><h4 id="trainingTitle">Proberunde 1 von 4</h4></div>
           <button id="trainingSkipBtn" class="soft-btn" type="button">Training beenden</button>
         </div>
         <p id="trainingText">Wähle für die angezeigte Kategorie die bessere Karte.</p>
@@ -233,7 +233,8 @@
       <div id="tutorialNav" class="tutorial-nav">
         <button id="tutorialPrevBtn" class="soft-btn" type="button">← Zurück</button>
         <button id="tutorialNextBtn" class="primary-btn" type="button">Weiter →</button>
-        <button id="tutorialTrainingBtn" class="primary-btn" type="button" hidden>🎓 Training starten</button>
+        <button id="tutorialTrainingBtn" class="primary-btn" type="button" hidden>🎓 Karten-Training starten</button>
+        <button id="tutorialBotBtn" class="soft-btn tutorial-bot-btn" type="button" hidden>🤖 Echtes Testspiel gegen PonyBot</button>
       </div>
     </div>
   </dialog>
