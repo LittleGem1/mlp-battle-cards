@@ -1970,3 +1970,66 @@ body:has(.hand.large-hand) .arena{padding-bottom:min(48vh,430px)!important}
     animation:none!important;
   }
 }
+
+
+/* =========================================================
+   Kategorie-Limit + Kartenwerte + große Hand: Lesbarkeits-Fix
+   ========================================================= */
+
+/* Die Werte stehen fest im Karten-Artwork. Keine zweite Zahlenebene mehr. */
+.card-stat-number{display:none!important}
+
+/* Mehr Abstand zwischen dem Top-Karten-Banner und der Kartenreihe.
+   Dadurch bleiben die oberen beiden Werte auch beim Hover vollständig sichtbar. */
+.hand.large-hand{
+  max-height:min(56vh,520px)!important;
+  gap:12px!important;
+  padding-top:12px!important;
+}
+.hand.large-hand .hand-tier{
+  display:grid!important;
+  grid-template-rows:auto auto!important;
+  gap:10px!important;
+  overflow:visible!important;
+}
+.hand.large-hand .hand-tier-title{
+  position:relative!important;
+  z-index:4!important;
+  margin:0 auto!important;
+  min-height:30px!important;
+  padding:6px 11px!important;
+}
+.hand.large-hand .hand-tier-row{
+  position:relative!important;
+  z-index:5!important;
+  min-height:145px!important;
+  padding:24px 44px 13px!important;
+  overflow-x:auto!important;
+  overflow-y:visible!important;
+  align-items:flex-end!important;
+}
+.hand.large-hand .hand-tier-priority .hand-tier-row{
+  min-height:158px!important;
+  padding-top:30px!important;
+}
+.hand.large-hand .hand-card{
+  transform-origin:bottom center!important;
+}
+.hand.large-hand .hand-card:not(.disabled):hover,
+.hand.large-hand .hand-card:not(.disabled):focus-within{
+  transform:translateY(-14px) scale(1.10)!important;
+  z-index:90!important;
+}
+body:has(.hand.large-hand) .arena{
+  padding-bottom:min(56vh,520px)!important;
+}
+
+@media(max-width:720px){
+  .hand.large-hand{max-height:58vh!important;gap:8px!important}
+  .hand.large-hand .hand-tier{gap:7px!important}
+  .hand.large-hand .hand-tier-row{min-height:116px!important;padding:18px 18px 10px!important}
+  .hand.large-hand .hand-tier-priority .hand-tier-row{min-height:126px!important;padding-top:22px!important}
+  .hand.large-hand .hand-card:not(.disabled):hover,
+  .hand.large-hand .hand-card:not(.disabled):focus-within{transform:translateY(-9px) scale(1.07)!important}
+  body:has(.hand.large-hand) .arena{padding-bottom:58vh!important}
+}

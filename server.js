@@ -43,15 +43,23 @@ function sendState(r){
   for(const p of roomPlayers(r))io.to(p.id).emit('hand',p.hand.map(id=>byId[id]).filter(Boolean));
 }
 function freshPool(){ return shuffle([...normal,...specials].map(c=>c.id)); }
-function nextCategory(r){ r.category=CATEGORIES[Math.floor(Math.random()*CATEGORIES.length)]; }
+function nextCategory(r){
+  if(!Array.isArray(r.categoryHistory)) r.categoryHistory=[];
+  const last3=r.categoryHistory.slice(-3);
+  const blocked=last3.length===3 && last3.every(c=>c===last3[0]) ? last3[0] : null;
+  const choices=blocked ? CATEGORIES.filter(c=>c!==blocked) : CATEGORIES;
+  r.category=choices[Math.floor(Math.random()*choices.length)];
+  r.categoryHistory.push(r.category);
+  if(r.categoryHistory.length>3) r.categoryHistory=r.categoryHistory.slice(-3);
+}
 function requiredPlayers(r){ return (r.roundPlayerIds||[]).map(id=>r.players.get(id)).filter(Boolean); }
 
 function resetToLobby(r){
   clearTimers(r);
-  r.phase='lobby';r.category=null;r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;r.round=0;r.played={};r.dice={};r.tieIds=[];r.roundBuff={};r.roundPlayerIds=[];r.postGameReady=new Set();
+  r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;r.round=0;r.played={};r.dice={};r.tieIds=[];r.roundBuff={};r.roundPlayerIds=[];r.postGameReady=new Set();
   for(const p of roomPlayers(r)){p.hand=[];p.selected=null;p.lastPlayedCardId=null;p.ready=false;}
-  io.to(r.code).emit('backToLobby');
   sendState(r);
+  io.to(r.code).emit('backToLobby');
 }
 function removePlayerFromRoom(socket,notify=true){
   const r=getRoom(socket);if(!r)return;
@@ -198,7 +206,7 @@ function beginMatch(r){
   const pool=freshPool(),ps=roomPlayers(r);
   for(const p of ps){p.hand=[];p.selected=null;p.lastPlayedCardId=null;p.ready=false;}
   for(let k=0;k<7;k++)for(const p of ps){const id=pool.shift();if(id)p.hand.push(id);}
-  r.phase='countdown';r.round=0;r.countdownUntil=Date.now()+5000;
+  r.categoryHistory=[];r.phase='countdown';r.round=0;r.countdownUntil=Date.now()+5000;
   sendState(r);
   io.to(r.code).emit('countdown',{seconds:5,until:r.countdownUntil,arenaId:r.arenaId});
   r.countdownTimer=setTimeout(()=>{r.countdownTimer=null;r.countdownUntil=null;startRound(r,0);},5100);
@@ -228,7 +236,7 @@ function maybeStartWhenReady(r){
 io.on('connection',socket=>{
   socket.on('createRoom',({name,accessory,frame})=>{
     let c;do c=code();while(rooms.has(c));
-    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set()};
+    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set()};
     r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],selected:null,lastPlayedCardId:null,ready:false});
     rooms.set(c,r);socket.join(c);socket.data.room=c;sendState(r);
   });
@@ -300,7 +308,7 @@ io.on('connection',socket=>{
     io.to(r.code).emit('postGameReadyState',{ready:[...r.postGameReady],total:r.players.size});
     // Erst wenn wirklich ALLE selbst fertig sind, geht der gemeinsame Raum zurück in die Lobby.
     if(roomPlayers(r).every(p=>r.postGameReady.has(p.id))){
-      setTimeout(()=>{ if(rooms.has(r.code)&&r.phase==='gameover') resetToLobby(r); },350);
+      if(rooms.has(r.code)&&r.phase==='gameover') resetToLobby(r);
     }
   });
   socket.on('abortGame',()=>{const r=getRoom(socket);if(!r)return socket.emit('errorMsg','Du bist in keinem Raum.');if(r.hostId!==socket.id)return socket.emit('errorMsg','Nur der Host kann abbrechen.');if(r.phase==='lobby')return;io.to(r.code).emit('notice','Die Partie wurde abgebrochen.');resetToLobby(r);});
