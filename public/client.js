@@ -44,9 +44,10 @@ const NEW_ITEMS={
 const ITEMS={...ACCESSORIES,...Object.fromEntries(Object.entries(NEW_ITEMS).map(([k,v])=>['item_'+k,v]))};
 const ITEM_KEYS=Object.keys(ITEMS);
 const FRAMES={
-  crystal_heart:{image:'/assets/frames/crystal_heart.webp',name:'Kristallherz'},night_star:{image:'/assets/frames/night_star.webp',name:'Nachtstern'},candy:{image:'/assets/frames/candy.webp',name:'Candy'},butterfly:{image:'/assets/frames/butterfly.webp',name:'Schmetterling'},steampunk:{image:'/assets/frames/steampunk.webp',name:'Steampunk'},royal_crown:{image:'/assets/frames/royal_crown.webp',name:'Königskrone'},changeling:{image:'/assets/frames/changeling.webp',name:'Changeling'},rainbow_cloud:{image:'/assets/frames/rainbow_cloud.webp',name:'Regenbogenwolke'},star_book:{image:'/assets/frames/star_book.webp',name:'Sternenbuch'},rose_gold:{image:'/assets/frames/rose_gold.webp',name:'Rosengold'},iridescent:{image:'/assets/frames/iridescent.webp',name:'Irisierend'},honey:{image:'/assets/frames/honey.webp',name:'Honig'},pearl_sea:{image:'/assets/frames/pearl_sea.webp',name:'Perlmutt'},sakura:{image:'/assets/frames/sakura.webp',name:'Sakura'},alchemy:{image:'/assets/frames/alchemy.webp',name:'Alchemie'},ice:{image:'/assets/frames/ice.webp',name:'Eiskristall'},forest:{image:'/assets/frames/forest.webp',name:'Zauberwald'},neon:{image:'/assets/frames/neon.webp',name:'Neonkristall'},velvet:{image:'/assets/frames/velvet.webp',name:'Roter Samt'},moon:{image:'/assets/frames/moon.webp',name:'Mondhimmel'}
+  crystal_heart:{image:'/assets/frames/crystal_heart.webp',name:'Kristallherz'},night_star:{image:'/assets/frames/night_star.webp',name:'Nachtstern'},candy:{image:'/assets/frames/candy.webp',name:'Süßigkeiten'},butterfly:{image:'/assets/frames/butterfly.webp',name:'Schmetterling'},steampunk:{image:'/assets/frames/steampunk.webp',name:'Steampunk'},royal_crown:{image:'/assets/frames/royal_crown.webp',name:'Königskrone'},changeling:{image:'/assets/frames/changeling.webp',name:'Changeling'},rainbow_cloud:{image:'/assets/frames/rainbow_cloud.webp',name:'Regenbogenwolke'},star_book:{image:'/assets/frames/star_book.webp',name:'Sternenbuch'},rose_gold:{image:'/assets/frames/rose_gold.webp',name:'Rosengold'},iridescent:{image:'/assets/frames/iridescent.webp',name:'Irisierend'},honey:{image:'/assets/frames/honey.webp',name:'Honig'},pearl_sea:{image:'/assets/frames/pearl_sea.webp',name:'Perlmutt'},sakura:{image:'/assets/frames/sakura.webp',name:'Rosa Blümchen'},alchemy:{image:'/assets/frames/alchemy.webp',name:'Alchemie'},ice:{image:'/assets/frames/ice.webp',name:'Eiskristall'},forest:{image:'/assets/frames/forest.webp',name:'Zauberwald'},neon:{image:'/assets/frames/neon.webp',name:'Neonkristall'},velvet:{image:'/assets/frames/velvet.webp',name:'Roter Samt'},moon:{image:'/assets/frames/moon.webp',name:'Mondhimmel'}
 };
 const FRAME_KEYS=Object.keys(FRAMES);
+const STARTER_FRAME_KEYS=['sakura','candy'];
 
 const ACCESSORY_KEYS=ITEM_KEYS;
 const STARTER_KEYS=['changeling','balloon','candy'];
@@ -56,8 +57,10 @@ let state=null, hand=[], myId=null;
 /* Die drei Start-Accessoires sind IMMER sofort verfügbar.
    Das repariert auch alte Browser-Spielstände, in denen nur eins freigeschaltet war. */
 let selectedAccessory=localStorage.getItem('cc_accessory')||'changeling';
-let selectedFrame=localStorage.getItem('cc_frame')||'';
+let selectedFrame=localStorage.getItem('cc_frame')||'sakura';
 let frameUnlocks=JSON.parse(localStorage.getItem('cc_frame_unlocks')||'[]').filter(x=>FRAMES[x]);
+for(const f of STARTER_FRAME_KEYS){if(!frameUnlocks.includes(f))frameUnlocks.push(f);}
+let starterFrameChosen=localStorage.getItem('cc_starter_frame_chosen')==='1';
 let cosmeticTab='items';
 let unlocks=JSON.parse(localStorage.getItem('cc_unlocks')||'[]').filter(x=>ITEMS[x]);
 
@@ -70,7 +73,7 @@ if(!STARTER_KEYS.includes(selectedAccessory) && !unlocks.includes(selectedAccess
 
 localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));
 localStorage.setItem('cc_accessory',selectedAccessory);
-if(selectedFrame&&!frameUnlocks.includes(selectedFrame))selectedFrame='';
+if(!FRAMES[selectedFrame]||!frameUnlocks.includes(selectedFrame))selectedFrame='sakura';
 localStorage.setItem('cc_frame',selectedFrame);
 localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));
 
@@ -102,6 +105,22 @@ $$('.starter-grid button').forEach(b=>b.addEventListener('click',()=>{
   $('#starterDialog').close();
   renderAccessoryGrid(); updateHomePreview();
 }));
+
+$$('[data-starter-frame]').forEach(b=>b.addEventListener('click',()=>{
+  selectedFrame=b.dataset.starterFrame;
+  starterFrameChosen=true;
+  localStorage.setItem('cc_frame',selectedFrame);
+  localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));
+  localStorage.setItem('cc_starter_frame_chosen','1');
+  try{$('#starterFrameDialog').close()}catch{}
+  renderAccessoryGrid();updateHomePreview();
+}));
+
+function maybeShowStarterFrame(){
+  if(starterFrameChosen)return;
+  const d=$('#starterFrameDialog');
+  if(d&&!d.open)setTimeout(()=>{if(!starterFrameChosen&&!d.open)d.showModal()},350);
+}
 
 function renderAccessoryGrid(){
   const g=$('#accessoryGrid');g.innerHTML='';
@@ -166,6 +185,28 @@ function statOverlayHTML(c){
   if(!c||c.type!=='normal')return '';
   return `<span class="card-stat-number stat-strength">${c.strength}</span><span class="card-stat-number stat-speed">${c.speed}</span><span class="card-stat-number stat-magic">${c.magic}</span><span class="card-stat-number stat-energy">${c.energy}</span>`;
 }
+let inspectRotationY=0,inspectRotationX=0,inspectDragging=false,inspectLastX=0,inspectLastY=0;
+function openCardInspect(card){
+  if(!card)return;
+  const overlay=$('#cardInspectOverlay'),front=$('#cardInspectFront'),name=$('#cardInspectName');
+  front.src=card.image;front.alt=card.name||'Karte';name.textContent=card.name||'Karte';
+  inspectRotationY=0;inspectRotationX=0;applyInspectRotation();
+  overlay.classList.add('open');overlay.setAttribute('aria-hidden','false');
+}
+function closeCardInspect(){const o=$('#cardInspectOverlay');o?.classList.remove('open');o?.setAttribute('aria-hidden','true');inspectDragging=false}
+function applyInspectRotation(){const c=$('#cardInspectCard');if(c)c.style.transform=`rotateX(${inspectRotationX}deg) rotateY(${inspectRotationY}deg)`}
+function bindCardInspector(el,card){
+  let timer=null,startX=0,startY=0;
+  const cancel=()=>{if(timer){clearTimeout(timer);timer=null}};
+  el.addEventListener('pointerdown',e=>{
+    if(e.button!==0)return;
+    startX=e.clientX;startY=e.clientY;
+    timer=setTimeout(()=>{el.dataset.inspectConsumed='1';openCardInspect(card);timer=null},850);
+  });
+  el.addEventListener('pointermove',e=>{if(timer&&Math.hypot(e.clientX-startX,e.clientY-startY)>9)cancel()});
+  el.addEventListener('pointerup',cancel);el.addEventListener('pointercancel',cancel);el.addEventListener('pointerleave',cancel);
+}
+
 function renderHand(){
   const wrap=$('#hand');if(!wrap)return;wrap.innerHTML='';
   const me=state?.players?.find(p=>p.id===myId);
@@ -174,12 +215,12 @@ function renderHand(){
   for(const c of hand){
     const blocked=c.type==='normal'&&c.id===blockedId&&normals.some(x=>x.id!==blockedId);
     const el=document.createElement('div');el.className=`hand-card ${c.type==='special'?'special':''} ${blocked?'recently-played disabled':''} ${newlyDrawn.has(c.id)?'drawing-in':''}`;
-    const img=document.createElement('img');img.src=c.image;img.alt=c.name;el.append(img);
+    const img=document.createElement('img');img.src=c.image;img.alt=c.name;el.append(img);bindCardInspector(el,c);
     if(c.type==='normal')el.insertAdjacentHTML('beforeend',statOverlayHTML(c));
     if(c.type==='normal'){
       if(blocked){const lock=document.createElement('div');lock.className='recent-lock';lock.textContent='⏳ Gerade gespielt';el.append(lock)}
       el.tabIndex=blocked?-1:0;
-      const play=()=>{ensureAudio();if(blocked)return toast('Diese Karte hast du gerade gespielt – nimm eine andere.');if(state?.phase!=='select')return toast('Warte auf die nächste Auswahl.');if(me?.selected)return toast('Du hast schon eine Karte gelegt.');el.dataset.pendingPlay='1';socket.emit('playCard',{cardId:c.id})};
+      const play=()=>{if(el.dataset.inspectConsumed==='1'){delete el.dataset.inspectConsumed;return;}ensureAudio();if(blocked)return toast('Diese Karte hast du gerade gespielt – nimm eine andere.');if(state?.phase!=='select')return toast('Warte auf die nächste Auswahl.');if(me?.selected)return toast('Du hast schon eine Karte gelegt.');el.dataset.pendingPlay='1';socket.emit('playCard',{cardId:c.id})};
       el.addEventListener('click',play);
       el.addEventListener('keydown',e=>{if(!blocked&&(e.key==='Enter'||e.key===' ')){e.preventDefault();play()}});
     }else{
@@ -213,7 +254,7 @@ function revealCards(e){
     let d=t.querySelector(`[data-player-id="${x.pid}"]`);
     if(!d){d=document.createElement('div');t.append(d)}
     d.className='played-card reveal-flip';d.dataset.playerId=x.pid;d.style.animationDelay=`${i*.07}s`;
-    d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-front-face"><img src="${x.card.image}" alt="${escapeHtml(x.card.name)}">${statOverlayHTML(x.card)}<span class="value">${x.value}${x.bonus?` (+${x.bonus})`:''}</span></div></div><div class="who">${escapeHtml(x.name)}</div>`;
+    d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-front-face"><img src="${x.card.image}" alt="${escapeHtml(x.card.name)}">${statOverlayHTML(x.card)}<span class="value">${x.value}${x.bonus?` (+${x.bonus})`:''}</span></div></div><div class="who">${escapeHtml(x.name)}</div>`;bindCardInspector(d,x.card);
   });
   $('#roundMessage').textContent='Karten werden verglichen …';beep(920,.12);
 }
@@ -253,13 +294,40 @@ function showSpecialBurst(e){specialSound();const overlay=document.createElement
 socket.on('specialPlayed',showSpecialBurst);
 
 let countdownUiTimer=null,selectionUiTimer=null;
-function stopCountdown(){if(countdownUiTimer){clearTimeout(countdownUiTimer);countdownUiTimer=null}const e=$('#countdown');if(e)e.textContent=''}
+function countdownTickSound(n){
+  const base=n===1?520:250+n*32;
+  tone(base,.055,n===1?.075:.035,'square');
+  if(n===1)tone(780,.16,.045,'triangle',.05);
+}
+function selectionTickSound(n){if(n<=5&&n>0)tone(180+n*12,.035,.018,'square')}
+function stopCountdown(){
+  if(countdownUiTimer){clearTimeout(countdownUiTimer);countdownUiTimer=null}
+  const e=$('#countdown');if(e){e.innerHTML='';e.className='countdown';}
+}
 function runCountdown(until){
   stopCountdown();const e=$('#countdown');if(!e)return;
-  const tick=()=>{const left=Math.ceil((until-Date.now())/1000);if(left<=0){e.textContent='';countdownUiTimer=null;return}e.textContent=left;e.style.animation='none';void e.offsetWidth;e.style.animation='countfade .9s ease both';beep(430+left*70,.10);countdownUiTimer=setTimeout(tick,250)};tick();
+  let previous=null;
+  const tick=()=>{
+    const left=Math.ceil((until-Date.now())/1000);
+    if(left<=0){stopCountdown();return}
+    if(left!==previous){
+      previous=left;
+      e.className=`countdown countdown-visible count-${Math.max(1,Math.min(5,left))}`;
+      e.innerHTML=`<span class="countdown-label">RUNDE STARTET</span><span class="countdown-number">${left}</span>`;
+      countdownTickSound(left);
+      e.animate([{transform:'translate(-50%,-50%) scale(.88)'},{transform:'translate(-50%,-50%) scale(1.05)'},{transform:'translate(-50%,-50%) scale(1)'}],{duration:360,easing:'cubic-bezier(.2,.8,.2,1)'});
+    }
+    countdownUiTimer=setTimeout(tick,120);
+  };
+  tick();
 }
 function stopSelectionTimer(){if(selectionUiTimer){clearInterval(selectionUiTimer);selectionUiTimer=null}const e=$('#selectionTimer');if(e)e.textContent=''}
-function startSelectionTimer(deadline){stopSelectionTimer();if(!deadline)return;const e=$('#selectionTimer');if(!e)return;const tick=()=>{const left=Math.max(0,Math.ceil((deadline-Date.now())/1000));e.textContent=left?`⏱ ${left} Sek.`:'';if(!left)stopSelectionTimer()};tick();selectionUiTimer=setInterval(tick,200)}
+function startSelectionTimer(deadline){
+  stopSelectionTimer();if(!deadline)return;const e=$('#selectionTimer');if(!e)return;
+  let previous=null;
+  const tick=()=>{const left=Math.max(0,Math.ceil((deadline-Date.now())/1000));e.textContent=left?`⏱ ${left} Sek.`:'';if(left!==previous){previous=left;selectionTickSound(left)}if(!left)stopSelectionTimer()};
+  tick();selectionUiTimer=setInterval(tick,180)
+}
 
 socket.on('countdown',({seconds,until})=>{show('game');ensureAudio();runCountdown(until||Date.now()+(seconds||5)*1000)});
 socket.on('roundStart',e=>{stopCountdown();clearTable();$('#categoryIcon').textContent=e.icon;$('#categoryText').textContent=e.label;$('#roundMessage').textContent='Wähle deine beste Karte.';$('#diceZone').innerHTML='';startSelectionTimer(e.deadline);beep(760,.15)});
@@ -286,7 +354,7 @@ socket.on('flutterChoices',e=>showChoices('Fluttershy: Welche Karte möchtest du
 socket.on('rarityChoose',e=>showChoices('Rarity: Welche Karte möchtest du austauschen?',e.cards,c=>socket.emit('raritySwap',{cardId:c.id})));
 function showChoices(title,cards,cb){$('#choiceTitle').textContent=title;const g=$('#choiceCards');g.innerHTML='';cards.forEach(c=>{const b=document.createElement('button');b.type='button';b.innerHTML=`<img src="${c.image}" alt="${escapeHtml(c.name)}">`;b.addEventListener('click',()=>{$('#choiceDialog').close();cb(c)});g.append(b)});$('#choiceDialog').showModal()}
 
-$('#giftBox').addEventListener('click',()=>{if(!pendingGift)return;pendingGift=false;const lockedItems=ITEM_KEYS.filter(x=>!STARTER_KEYS.includes(x)&&!unlocks.includes(x));const lockedFrames=FRAME_KEYS.filter(x=>!frameUnlocks.includes(x));const kinds=[];if(lockedItems.length)kinds.push('item');if(lockedFrames.length)kinds.push('frame');$('#giftBox').style.display='none';if(!kinds.length){$('#giftResult').innerHTML='<div class="gift-item"><strong>Sammlung vollständig! ✨</strong><small>Du hast alle Items und Rahmen entdeckt.</small></div>';return;}const kind=kinds[Math.floor(Math.random()*kinds.length)];if(kind==='item'){const key=lockedItems[Math.floor(Math.random()*lockedItems.length)];unlocks.push(key);localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));const a=ITEMS[key];$('#giftResult').innerHTML=`<div class="gift-item"><span class="reward-type">✨ NEUES ITEM</span><span class="item-art"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><small>${a.desc||'Neues Namens-Item freigeschaltet.'}</small></div>`;}else{const key=lockedFrames[Math.floor(Math.random()*lockedFrames.length)];frameUnlocks.push(key);localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));const a=FRAMES[key];$('#giftResult').innerHTML=`<div class="gift-item"><span class="reward-type">🖼 NEUER RAHMEN</span><span class="reward-frame"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><small>Neuer Namensrahmen freigeschaltet.</small></div>`;}renderAccessoryGrid();specialSound();});
+$('#giftBox').addEventListener('click',()=>{if(!pendingGift)return;pendingGift=false;const lockedItems=ITEM_KEYS.filter(x=>!STARTER_KEYS.includes(x)&&!unlocks.includes(x));const lockedFrames=FRAME_KEYS.filter(x=>!STARTER_FRAME_KEYS.includes(x)&&!frameUnlocks.includes(x));const kinds=[];if(lockedItems.length)kinds.push('item');if(lockedFrames.length)kinds.push('frame');$('#giftBox').style.display='none';if(!kinds.length){$('#giftResult').innerHTML='<div class="gift-item"><strong>Sammlung vollständig! ✨</strong><small>Du hast alle Items und Rahmen entdeckt.</small></div>';return;}const kind=kinds[Math.floor(Math.random()*kinds.length)];if(kind==='item'){const key=lockedItems[Math.floor(Math.random()*lockedItems.length)];unlocks.push(key);localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));const a=ITEMS[key];$('#giftResult').innerHTML=`<div class="gift-item"><span class="reward-type">✨ NEUES ITEM</span><span class="item-art"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><small>${a.desc||'Neues Namens-Item freigeschaltet.'}</small></div>`;}else{const key=lockedFrames[Math.floor(Math.random()*lockedFrames.length)];frameUnlocks.push(key);localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));const a=FRAMES[key];$('#giftResult').innerHTML=`<div class="gift-item"><span class="reward-type">🖼 NEUER RAHMEN</span><span class="reward-frame"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><small>Neuer Namensrahmen freigeschaltet.</small></div>`;}renderAccessoryGrid();specialSound();});
 
 
 function leaveRoomNow(){ if(confirm('Raum wirklich verlassen und zum Hauptmenü zurück?')) socket.emit('leaveRoom') }
@@ -303,5 +371,72 @@ document.querySelectorAll('.music-toggle').forEach(b=>b.addEventListener('click'
 document.querySelectorAll('.music-volume').forEach(s=>s.addEventListener('input',e=>setMusicVolume(e.target.value)));
 updateMusicUI();
 updateHomePreview();
+maybeShowStarterFrame();
 
-$('#rulesBtn')?.addEventListener('click',()=>$('#rulesDialog').showModal());
+let tutorialStep=0;
+const tutorialSteps=[...document.querySelectorAll('.tutorial-step')];
+let tutorialComplete=localStorage.getItem('cc_tutorial_complete')==='1';
+function renderTutorialStep(){
+  tutorialSteps.forEach((s,i)=>s.classList.toggle('active',i===tutorialStep));
+  $('#tutorialStepCount').textContent=`${tutorialStep+1} / ${tutorialSteps.length}`;
+  $('#tutorialProgressBar').style.width=`${((tutorialStep+1)/tutorialSteps.length)*100}%`;
+  $('#tutorialPrevBtn').disabled=tutorialStep===0;
+  const last=tutorialStep===tutorialSteps.length-1;
+  $('#tutorialNextBtn').hidden=last;
+  $('#tutorialTrainingBtn').hidden=!last;
+  if(last){tutorialComplete=true;localStorage.setItem('cc_tutorial_complete','1')}
+}
+function openTutorial(){
+  $('#trainingArea').hidden=true;$('#tutorialSlides').hidden=false;$('#tutorialNav').hidden=false;
+  tutorialStep=0;renderTutorialStep();
+  if(!$('#rulesDialog').open)$('#rulesDialog').showModal();
+}
+function closeTutorial(){try{$('#rulesDialog').close()}catch{} resetTraining()}
+$('#rulesBtn')?.addEventListener('click',openTutorial);
+$('#tutorialSkipBtn')?.addEventListener('click',closeTutorial);
+$('#tutorialPrevBtn')?.addEventListener('click',()=>{tutorialStep=Math.max(0,tutorialStep-1);renderTutorialStep()});
+$('#tutorialNextBtn')?.addEventListener('click',()=>{tutorialStep=Math.min(tutorialSteps.length-1,tutorialStep+1);renderTutorialStep()});
+$('#tutorialTrainingBtn')?.addEventListener('click',()=>{if(tutorialComplete)startTraining()});
+$('#trainingSkipBtn')?.addEventListener('click',()=>{resetTraining();closeTutorial()});
+
+const TRAINING_ROUNDS=[
+  {category:'🏋️ Stärke',text:'Welche Karte ist bei Stärke besser?',correct:'applejack',opponent:'/assets/cards/43_Photo_Finish.webp',choices:[
+    {id:'applejack',name:'Applejack',image:'/assets/cards/01_Applejack.webp',value:9},
+    {id:'rainbow',name:'Rainbow Dash',image:'/assets/cards/02_Rainbow_Dash.webp',value:6}
+  ]},
+  {category:'⚡ Schnelligkeit',text:'Jetzt zählt Schnelligkeit. Welche Karte nimmst du?',correct:'rainbow',opponent:'/assets/cards/44_Sapphire_Shores.webp',choices:[
+    {id:'applejack',name:'Applejack',image:'/assets/cards/01_Applejack.webp',value:6},
+    {id:'rainbow',name:'Rainbow Dash',image:'/assets/cards/02_Rainbow_Dash.webp',value:9}
+  ]}
+];
+let trainingRound=0,trainingBusy=false;
+function startTraining(){
+  trainingRound=0;trainingBusy=false;$('#tutorialSlides').hidden=true;$('#tutorialNav').hidden=true;$('#trainingArea').hidden=false;renderTrainingRound();
+}
+function resetTraining(){trainingRound=0;trainingBusy=false;const a=$('#trainingArea');if(a)a.hidden=true}
+function renderTrainingRound(){
+  const r=TRAINING_ROUNDS[trainingRound];if(!r)return;
+  $('#trainingTitle').textContent=`Proberunde ${trainingRound+1} von ${TRAINING_ROUNDS.length}`;
+  $('#trainingText').textContent=r.text;$('#trainingCategory').textContent=r.category;$('#trainingResult').textContent='';$('#trainingTable').innerHTML='';
+  const g=$('#trainingChoices');g.innerHTML='';
+  r.choices.forEach(c=>{const b=document.createElement('button');b.type='button';b.className='training-card';b.innerHTML=`<img src="${c.image}" alt="${c.name}"><strong>${c.name}</strong><span>${r.category.split(' ')[0]} ${c.value}</span>`;b.addEventListener('click',()=>chooseTrainingCard(c,b));bindCardInspector(b,{name:c.name,image:c.image});g.append(b)});
+}
+function chooseTrainingCard(c,button){
+  if(trainingBusy)return;
+  const r=TRAINING_ROUNDS[trainingRound];
+  if(c.id!==r.correct){$('#trainingResult').textContent='Fast! Schau nochmal auf den Wert der aktuellen Kategorie.';button.animate([{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}],{duration:260});beep(170,.12);return}
+  trainingBusy=true;$('#trainingResult').textContent='Richtig! Karten werden abgelegt …';
+  const table=$('#trainingTable');table.innerHTML=`<div class="training-played back"><img src="/assets/card_back.webp" alt="verdeckte Karte"></div><div class="training-played back"><img src="/assets/card_back.webp" alt="verdeckte Gegnerkarte"></div>`;
+  [...table.children].forEach((el,i)=>el.animate([{transform:`translate(${i?180:-180}px,120px) scale(.45)`,opacity:0},{transform:'translate(0,0) scale(1)',opacity:1}],{duration:620,easing:'cubic-bezier(.2,.8,.2,1)',fill:'both'}));
+  setTimeout(()=>{table.innerHTML=`<div class="training-played flip"><img src="${c.image}" alt="${c.name}"></div><div class="training-played flip"><img src="${r.opponent}" alt="Gegnerkarte"></div>`;specialSound();$('#trainingResult').textContent='🏆 Sehr gut – du hast die passende Karte gewählt!';},900);
+  setTimeout(()=>{trainingRound++;trainingBusy=false;if(trainingRound<TRAINING_ROUNDS.length)renderTrainingRound();else{$('#trainingTitle').textContent='Training geschafft! 🎉';$('#trainingText').textContent='Du bist bereit für eine echte Partie.';$('#trainingCategory').textContent='';$('#trainingChoices').innerHTML='';$('#trainingTable').innerHTML='';$('#trainingResult').innerHTML='<button id="trainingDoneBtn" class="primary-btn" type="button">Fertig</button>';$('#trainingDoneBtn').addEventListener('click',closeTutorial)}},2300);
+}
+
+$('#cardInspectClose')?.addEventListener('click',closeCardInspect);
+$('#cardInspectOverlay')?.addEventListener('click',e=>{if(e.target.id==='cardInspectOverlay')closeCardInspect()});
+$('#cardInspectStage')?.addEventListener('contextmenu',e=>e.preventDefault());
+$('#cardInspectStage')?.addEventListener('mousedown',e=>{if(e.button!==2)return;e.preventDefault();inspectDragging=true;inspectLastX=e.clientX;inspectLastY=e.clientY;document.body.classList.add('inspecting-card')});
+window.addEventListener('mousemove',e=>{if(!inspectDragging)return;inspectRotationY+=(e.clientX-inspectLastX)*.75;inspectRotationX=Math.max(-55,Math.min(55,inspectRotationX-(e.clientY-inspectLastY)*.45));inspectLastX=e.clientX;inspectLastY=e.clientY;applyInspectRotation()});
+window.addEventListener('mouseup',e=>{if(e.button===2){inspectDragging=false;document.body.classList.remove('inspecting-card')}});
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#cardInspectOverlay')?.classList.contains('open'))closeCardInspect()});
+

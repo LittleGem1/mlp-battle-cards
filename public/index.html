@@ -87,20 +87,120 @@
   </dialog>
 
 
-  <dialog id="rulesDialog" class="modal rules-modal">
-    <form method="dialog">
-      <div class="modal-head"><div><h3>📖 Spielregeln</h3><p>MLP Battle Cards – Kurz erklärt</p></div><button class="dialog-x" value="cancel" aria-label="Schließen">×</button></div>
-      <div class="rules-content">
-        <section><h4>🎯 Ziel</h4><p>Sammle die Karten deiner Mitspieler. Wer am Ende als letzter Spieler Karten besitzt, gewinnt.</p></section>
-        <section><h4>🃏 Rundenablauf</h4><p>Jeder startet mit 7 einzigartigen Karten. Nach dem Countdown wird Stärke 🏋️, Schnelligkeit ⚡, Energie 🔋 oder Magie ⭐ gezogen.</p></section>
-        <section><h4>⏱ 10 Sekunden</h4><p>Pro Runde hast du 10 Sekunden. Wer nichts legt, verliert eine zufällige Strafkarte; danach wird eine neue Kategorie gezogen.</p></section>
-        <section><h4>🏆 Runden</h4><p>Der höchste Wert gewinnt alle ausgespielten Karten. Bei Gleichstand würfeln nur die beteiligten Spieler.</p></section>
-        <section><h4>🔁 Kartenregel</h4><p>Eine gerade gespielte und zurückgewonnene Karte darf in der nächsten Runde nicht erneut gespielt werden, solange eine andere normale Karte verfügbar ist.</p></section>
-        <section><h4>✨ Spezialkarten</h4><p>Spezialkarten zeigen ihre Kategorie direkt an und lösen eine magische Animation aus. Pinkie Pie zieht eine neue normale Karte.</p></section>
-        <section><h4>🎁 Belohnungen</h4><p>Der Sieger erhält zufällig ein noch unbekanntes Item oder einen Rahmen. Unentdecktes bleibt als Fragezeichen verborgen.</p></section>
+  <dialog id="rulesDialog" class="modal tutorial-modal">
+    <div class="tutorial-shell">
+      <div class="tutorial-topbar">
+        <div>
+          <span class="tutorial-kicker">📖 SPIELANLEITUNG</span>
+          <h3 id="tutorialTitle">So funktioniert MLP Battle Cards</h3>
+        </div>
+        <button id="tutorialSkipBtn" class="tutorial-skip" type="button">Tutorial überspringen ✕</button>
       </div>
-      <button class="primary-btn" value="cancel">Verstanden</button>
-    </form>
+
+      <div class="tutorial-progress-wrap">
+        <span id="tutorialStepCount">1 / 6</span>
+        <div class="tutorial-progress"><i id="tutorialProgressBar"></i></div>
+      </div>
+
+      <div id="tutorialSlides" class="tutorial-slides">
+        <article class="tutorial-step active" data-step="0">
+          <div class="tutorial-copy">
+            <h4>1. Dein Ziel</h4>
+            <p>Du startest mit <strong>7 zufälligen Karten</strong>. Gewinne Runden, sammle die ausgespielten Karten und versuche als letzter Spieler noch Karten zu besitzen.</p>
+          </div>
+          <div class="tutorial-picture tutorial-hand-picture">
+            <img src="/assets/cards/01_Applejack.webp" alt="Applejack Karte">
+            <img src="/assets/cards/02_Rainbow_Dash.webp" alt="Rainbow Dash Karte">
+            <img src="/assets/cards/03_Twilight_Sparkle.webp" alt="Twilight Sparkle Karte">
+            <span class="tutorial-callout">7 Karten auf deiner Hand</span>
+          </div>
+        </article>
+
+        <article class="tutorial-step" data-step="1">
+          <div class="tutorial-copy">
+            <h4>2. Kategorie beachten</h4>
+            <p>Zu Beginn erscheint eine Kategorie. Nur dieser Wert zählt in der Runde. Der große Countdown zeigt dir vorher gut sichtbar, wann es losgeht.</p>
+          </div>
+          <div class="tutorial-picture category-picture">
+            <div class="tutorial-countdown-demo">3</div>
+            <div class="tutorial-categories"><span>🏋️ Stärke</span><span>⚡ Schnelligkeit</span><span>🔋 Energie</span><span>⭐ Magie</span></div>
+          </div>
+        </article>
+
+        <article class="tutorial-step" data-step="2">
+          <div class="tutorial-copy">
+            <h4>3. Eine Karte wählen</h4>
+            <p>Vergleiche den passenden Wert und klicke deine beste Karte. Beim Darüberfahren hebt sie sich an. <strong>Gedrückt halten</strong> öffnet später die große Kartenansicht.</p>
+          </div>
+          <div class="tutorial-picture choose-picture">
+            <div class="tutorial-card-choice good"><img src="/assets/cards/01_Applejack.webp" alt="Applejack"><b>🏋️ 9</b><small>Gute Wahl</small></div>
+            <div class="tutorial-versus">VS</div>
+            <div class="tutorial-card-choice"><img src="/assets/cards/02_Rainbow_Dash.webp" alt="Rainbow Dash"><b>🏋️ 6</b><small>Schwächer bei Stärke</small></div>
+          </div>
+        </article>
+
+        <article class="tutorial-step" data-step="3">
+          <div class="tutorial-copy">
+            <h4>4. Ablegen, aufdecken, gewinnen</h4>
+            <p>Alle gewählten Karten fliegen verdeckt in die Mitte. Sobald alle gewählt haben, drehen sie sich gleichzeitig um. Der höchste Wert gewinnt alle ausgespielten Karten.</p>
+          </div>
+          <div class="tutorial-picture reveal-picture">
+            <div class="tutorial-back"><img src="/assets/card_back.webp" alt="Kartenrückseite"></div>
+            <span class="tutorial-arrow">➜</span>
+            <div class="tutorial-front"><img src="/assets/cards/01_Applejack.webp" alt="Applejack Karte"></div>
+            <span class="tutorial-win">🏆 Karten gehen zum Gewinner</span>
+          </div>
+        </article>
+
+        <article class="tutorial-step" data-step="4">
+          <div class="tutorial-copy">
+            <h4>5. Gleichstand & Zeitlimit</h4>
+            <p>Bei Gleichstand würfeln nur die beteiligten Spieler. Hast du nach <strong>10 Sekunden</strong> nichts gelegt, verlierst du eine zufällige Strafkarte und eine neue Kategorie wird gezogen.</p>
+          </div>
+          <div class="tutorial-picture tie-picture">
+            <div class="tutorial-die">⚄</div><div class="tutorial-die second">⚂</div>
+            <div class="tutorial-timeout">⏱ 10 → 0<br><small>Keine Karte = Strafkarte</small></div>
+          </div>
+        </article>
+
+        <article class="tutorial-step" data-step="5">
+          <div class="tutorial-copy">
+            <h4>6. Spezialkarten & Belohnungen</h4>
+            <p>Spezialkarten zeigen deutlich, wann sie eingesetzt werden können. Ein Sieg kann dir ein neues <strong>Item oder einen Rahmen</strong> freischalten. Unentdecktes bleibt als <strong>?</strong> verborgen.</p>
+          </div>
+          <div class="tutorial-picture special-picture">
+            <img class="tutorial-special" src="/assets/specials/64_Spezial_Pinkie_Pie.webp" alt="Pinkie Pie Spezialkarte">
+            <span class="magic-spark">✨</span>
+            <div class="tutorial-reward-preview">
+              <img src="/assets/frames/sakura.webp" alt="Sakura Rahmen">
+              <span>oder</span>
+              <div class="tutorial-mystery">?</div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <section id="trainingArea" class="training-area" hidden>
+        <div class="training-header">
+          <div><span class="tutorial-kicker">🎓 MINI-TRAINING</span><h4 id="trainingTitle">Proberunde 1 von 2</h4></div>
+          <button id="trainingSkipBtn" class="soft-btn" type="button">Training beenden</button>
+        </div>
+        <p id="trainingText">Wähle für die angezeigte Kategorie die bessere Karte.</p>
+        <div id="trainingCategory" class="training-category">🏋️ Stärke</div>
+        <div class="training-board">
+          <div class="training-opponent"><span>Trainingsgegner</span><img src="/assets/card_back.webp" alt="Verdeckte Gegnerkarte"></div>
+          <div id="trainingTable" class="training-table"></div>
+        </div>
+        <div id="trainingChoices" class="training-choices"></div>
+        <div id="trainingResult" class="training-result"></div>
+      </section>
+
+      <div id="tutorialNav" class="tutorial-nav">
+        <button id="tutorialPrevBtn" class="soft-btn" type="button">← Zurück</button>
+        <button id="tutorialNextBtn" class="primary-btn" type="button">Weiter →</button>
+        <button id="tutorialTrainingBtn" class="primary-btn" type="button" hidden>🎓 Training starten</button>
+      </div>
+    </div>
   </dialog>
 
   <dialog id="starterDialog" class="modal starter-modal">
@@ -114,6 +214,32 @@
       </div>
     </form>
   </dialog>
+
+  <dialog id="starterFrameDialog" class="modal starter-frame-modal">
+    <div class="starter-frame-wrap">
+      <h3>🖼 Dein erster Namensrahmen</h3>
+      <p>Beide Rahmen gehören dir von Anfang an. Such dir aus, welchen du zuerst tragen möchtest.</p>
+      <div class="starter-frame-grid">
+        <button type="button" data-starter-frame="sakura"><span class="starter-frame-art"><img src="/assets/frames/sakura.webp" alt="Rosa Blumenrahmen"></span><strong>Rosa Blümchen</strong></button>
+        <button type="button" data-starter-frame="candy"><span class="starter-frame-art"><img src="/assets/frames/candy.webp" alt="Süßigkeitenrahmen"></span><strong>Süßigkeiten</strong></button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="cardInspectOverlay" class="card-inspect-overlay" aria-hidden="true">
+    <button id="cardInspectClose" class="card-inspect-close" type="button" aria-label="Großansicht schließen">×</button>
+    <div class="card-inspect-copy">
+      <strong id="cardInspectName">Karte</strong>
+      <span>Rechte Maustaste halten & ziehen → Karte frei drehen</span>
+    </div>
+    <div id="cardInspectStage" class="card-inspect-stage">
+      <div id="cardInspectCard" class="card-inspect-card">
+        <div class="card-inspect-face card-inspect-front"><img id="cardInspectFront" src="" alt="Kartenvorderseite"></div>
+        <div class="card-inspect-face card-inspect-back"><img src="/assets/card_back.webp" alt="Kartenrückseite"></div>
+      </div>
+    </div>
+    <div class="inspect-hint">Gedrückt halten öffnet diese Ansicht · Rechtsklick ziehen = 360° drehen · ESC = schließen</div>
+  </div>
 
   <dialog id="choiceDialog" class="modal"><form method="dialog"><h3 id="choiceTitle">Wähle eine Karte</h3><div id="choiceCards" class="choice-cards"></div></form></dialog>
   <dialog id="gameOverDialog" class="modal gameover-modal">
