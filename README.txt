@@ -1,34 +1,34 @@
-MLP BATTLE CARDS – EPIC BATTLE MUSIC + KARTENBALANCE
+MLP BATTLE CARDS – YOUTUBE MUSIK PATCH
 
-Nur diese Dateien/Ordner ersetzen:
-- cards.js
-- server.js
+Enthalten:
 - public/index.html
 - public/client.js
 - public/style.css
-- public/assets/music/
 
-NEU:
-1. Echte neue Battle-Musik:
-   - eigenständig erzeugte Kampfmusik als Audiodatei
-   - schneller 150-BPM-Rhythmus
-   - Drums, Bass, Brass-artige Stabs, Arpeggios und Kampfmelodie
-   - läuft nur während des Kartenduells als Loop
-   - Lobby bleibt ruhiger
+Musik:
+LOBBY / WARTEN:
+Sappheiros - Dawn
+YouTube: https://www.youtube.com/watch?v=pWAP7fIwGnI
+Lizenz: Creative Commons BY 3.0
+Credit muss sichtbar bleiben.
 
-2. Alle 60 normalen Karten neu balanciert:
-   - KEIN Wert ist höher als 9
-   - es gibt bewusst mehrere starke 9er:
-     Stärke: 6 Karten mit 9
-     Schnelligkeit: 8 Karten mit 9
-     Magie: 8 Karten mit 9
-     Energie: 11 Karten mit 9
-   - trotzdem hat keine einzelne Karte überall 9
+SPIEL / KARTENKAMPF:
+Makai Symphony - Dragon Castle
+YouTube: https://www.youtube.com/watch?v=9gBTKiVqprE
+Lizenz: Creative Commons BY-NC 3.0
+Credit muss sichtbar bleiben.
+WICHTIG: BY-NC = nur nicht-kommerzielle Nutzung.
 
-3. Sichtbare Zahlen:
-   - Das Spiel legt die Werte aus cards.js direkt über die Zahlen auf dem Kartenbild.
-   - Dadurch kann im Spiel auch dann keine alte gedruckte 10 mehr sichtbar/maßgeblich sein.
+Technik:
+- Die Musik wird über den offiziellen YouTube-IFrame-Player gestreamt.
+- Kein YouTube-Audio wird heruntergeladen oder als MP3 kopiert.
+- Ein kleiner sichtbarer Player bleibt unten rechts, inklusive Credits.
+- Lobby lädt Dawn.
+- Beim eigentlichen Spiel wird automatisch auf Dragon Castle gewechselt.
+- Der vorhandene Musik-an/aus-Button steuert den YouTube-Player.
+- Der Player kann eingeklappt werden.
 
-INSTALLATION:
-ZIP-Inhalt in deinen Projektordner kopieren -> ersetzen.
-Dann GitHub committen -> Render Manual Deploy -> Strg+F5.
+Hinweis:
+Browser können Autoplay mit Ton blockieren. Nach einem Klick auf Raum erstellen / Beitreten /
+Musik an sollte die Wiedergabe starten. YouTube kann je nach Region/Video Werbung oder
+Einbettungsbeschränkungen anzeigen.

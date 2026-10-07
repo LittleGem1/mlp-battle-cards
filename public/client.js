@@ -50,10 +50,21 @@ localStorage.setItem('cc_accessory',selectedAccessory);
 
 let pendingGift=false, lastReveal=[];
 let musicEnabled=localStorage.getItem('mlp_music')!=='off', musicMode='home', musicTimer=null, musicStep=0;
-const battleMusic=new Audio('/assets/music/epic_battle_theme.mp3');
-battleMusic.loop=true;
-battleMusic.volume=.33;
-battleMusic.preload='auto';
+
+const YT_TRACKS={
+  lobby:{
+    id:'pWAP7fIwGnI',
+    title:'Dawn — Sappheiros',
+    credit:'Sappheiros - Dawn · CC BY 3.0 · Musik via BreakingCopyright / YouTube'
+  },
+  game:{
+    id:'9gBTKiVqprE',
+    title:'Dragon Castle — Makai Symphony',
+    credit:'Makai Symphony - Dragon Castle · CC BY-NC 3.0 · Musik via BreakingCopyright / YouTube'
+  }
+};
+let ytPlayer=null, ytReady=false, ytWantedMode='home';
+
 const diceAnimations=new Map();
 const playerName=$('#playerName'); playerName.value=localStorage.getItem('cc_name')||'';
 
@@ -200,44 +211,96 @@ function tone(freq=620,dur=.1,gain=.045,type='sine',when=0){
   o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+dur);
 }
 function beep(freq=620,dur=.1){tone(freq,dur,.055,'sine')}
-function setMusicMode(mode){musicMode=mode;restartMusic()}
-function restartMusic(){
-  if(musicTimer){clearInterval(musicTimer);musicTimer=null}
-  battleMusic.pause();
+function setMusicMode(mode){
+  musicMode=mode;
+  ytWantedMode=mode;
+  restartMusic();
+}
 
-  if(!musicEnabled || musicMode==='home') return;
+function updateMusicDock(){
+  const dock=$('#ytMusicDock');
+  const title=$('#ytMusicTitle');
+  const credit=$('#ytMusicCredit');
+  if(!dock||!title||!credit)return;
 
-  if(musicMode==='game'){
-    battleMusic.currentTime=0;
-    const p=battleMusic.play();
-    if(p&&p.catch)p.catch(()=>{});
+  if(musicMode==='home'){
+    dock.classList.add('hidden');
+    title.textContent='Musik';
+    credit.textContent='';
     return;
   }
 
-  // Lobby: bewusst ruhiger als der eigentliche Kampf.
-  if(!ensureAudio.ctx)return;
-  musicStep=0;
-  const lobby=[261.63,329.63,392,523.25,392,329.63];
-  const play=()=>{
-    if(!musicEnabled || musicMode!=='lobby')return;
-    const f=lobby[musicStep++%lobby.length];
-    tone(f,.62,.011,'triangle');
-    if(musicStep%3===0)tone(f*2,.16,.006,'sine',.10);
-  };
-  play();
-  musicTimer=setInterval(play,820);
+  dock.classList.remove('hidden');
+  const track=YT_TRACKS[musicMode];
+  if(track){
+    title.textContent=track.title;
+    credit.textContent=track.credit;
+  }
 }
+
+window.onYouTubeIframeAPIReady=()=>{
+  ytPlayer=new YT.Player('ytMusicPlayer',{
+    width:'220',
+    height:'124',
+    videoId:YT_TRACKS.lobby.id,
+    playerVars:{
+      controls:0,
+      rel:0,
+      modestbranding:1,
+      playsinline:1,
+      loop:1,
+      playlist:YT_TRACKS.lobby.id
+    },
+    events:{
+      onReady:()=>{
+        ytReady=true;
+        updateMusicDock();
+        restartMusic();
+      },
+      onError:(e)=>console.warn('YouTube-Musik konnte nicht geladen werden:',e)
+    }
+  });
+};
+
+function restartMusic(){
+  if(musicTimer){clearInterval(musicTimer);musicTimer=null}
+  updateMusicDock();
+
+  if(!ytReady || !ytPlayer)return;
+
+  if(!musicEnabled || musicMode==='home'){
+    try{ytPlayer.pauseVideo()}catch(e){}
+    return;
+  }
+
+  const track=YT_TRACKS[musicMode];
+  if(!track)return;
+
+  try{
+    const current=ytPlayer.getVideoData?.().video_id;
+    if(current!==track.id){
+      ytPlayer.loadVideoById({videoId:track.id,startSeconds:0});
+    }else{
+      ytPlayer.playVideo();
+    }
+    ytPlayer.setVolume(musicMode==='game'?38:24);
+  }catch(e){
+    console.warn('Musik konnte nicht gestartet werden:',e);
+  }
+}
+
 function toggleMusic(){
   musicEnabled=!musicEnabled;
   localStorage.setItem('mlp_music',musicEnabled?'on':'off');
-  if(!musicEnabled){
-    if(musicTimer){clearInterval(musicTimer);musicTimer=null}
-    battleMusic.pause();
-  }else{
-    ensureAudio();
-  }
   updateMusicButtons();
-  restartMusic();
+
+  if(!ytReady||!ytPlayer)return;
+
+  if(musicEnabled){
+    restartMusic();
+  }else{
+    try{ytPlayer.pauseVideo()}catch(e){}
+  }
 }
 function revealCards(e){
   lastReveal=e.entries;const t=$('#tableCards');
@@ -328,3 +391,7 @@ $('#giftDoneBtn').addEventListener('click',()=>$('#giftDialog').close());
 document.querySelectorAll('.music-toggle').forEach(b=>b.addEventListener('click',toggleMusic));
 updateMusicButtons();
 updateHomePreview();
+
+$('#ytMusicDockToggle')?.addEventListener('click',()=>{
+  $('#ytMusicDock')?.classList.toggle('collapsed');
+});

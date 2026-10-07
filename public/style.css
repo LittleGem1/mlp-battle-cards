@@ -707,3 +707,67 @@
 .played-card .card-stat-number{font-size:12px}
 
 /* Die neue Kampfmusik ist eine echte Audiodatei und nicht mehr nur ein paar Pieptöne. */
+
+
+/* ===== YouTube-Musikplayer ===== */
+.yt-music-dock{
+  position:fixed;
+  right:14px;
+  bottom:14px;
+  z-index:35;
+  width:236px;
+  padding:8px;
+  border-radius:16px;
+  border:1px solid rgba(140,226,255,.35);
+  background:linear-gradient(145deg,rgba(19,17,62,.94),rgba(11,18,52,.95));
+  box-shadow:0 12px 34px rgba(0,0,0,.4),0 0 24px rgba(103,202,255,.14);
+  backdrop-filter:blur(8px);
+}
+.yt-music-dock.hidden{display:none}
+.yt-music-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:2px 4px 7px;
+  font-size:12px;
+}
+.yt-dock-toggle{
+  border:0;
+  background:transparent;
+  color:#fff;
+  cursor:pointer;
+  font-size:16px;
+}
+#ytMusicPlayer{
+  width:220px;
+  height:124px;
+  overflow:hidden;
+  border-radius:11px;
+  background:#050716;
+}
+.yt-music-credit{
+  margin-top:6px;
+  font-size:9px;
+  line-height:1.25;
+  color:#cfd9ff;
+  opacity:.86;
+}
+.yt-music-dock.collapsed{
+  width:210px;
+}
+.yt-music-dock.collapsed #ytMusicPlayer,
+.yt-music-dock.collapsed .yt-music-credit{
+  display:none;
+}
+.yt-music-dock.collapsed .yt-dock-toggle{
+  transform:rotate(180deg);
+}
+@media (max-width:700px){
+  .yt-music-dock{
+    right:8px;
+    bottom:8px;
+    transform:scale(.86);
+    transform-origin:bottom right;
+  }
+}

@@ -65,6 +65,16 @@
 
   <div id="toast" class="toast" role="status"></div>
 
+  <aside id="ytMusicDock" class="yt-music-dock" aria-label="Musikplayer">
+    <div class="yt-music-head">
+      <strong id="ytMusicTitle">Musik</strong>
+      <button id="ytMusicDockToggle" class="yt-dock-toggle" type="button" aria-label="Player ein-/ausklappen">▾</button>
+    </div>
+    <div id="ytMusicPlayer"></div>
+    <div id="ytMusicCredit" class="yt-music-credit"></div>
+  </aside>
+
+
   <dialog id="accessoryDialog" class="modal accessory-modal">
     <form method="dialog">
       <div class="modal-head">
@@ -115,6 +125,7 @@
     </div>
   </dialog>
 
+  <script src="https://www.youtube.com/iframe_api"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/client.js"></script>
 </body>
