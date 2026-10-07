@@ -1422,3 +1422,192 @@ body.scene-game #arenaReadyPanel:not([hidden]){display:grid!important}
   .crystal-face-strength{transform:rotateY(0deg) translateZ(50px)!important}.crystal-face-speed{transform:rotateY(90deg) translateZ(50px)!important}.crystal-face-energy{transform:rotateY(180deg) translateZ(50px)!important}.crystal-face-magic{transform:rotateY(270deg) translateZ(50px)!important}
   .category-crystal-core{height:266px!important;margin-top:-133px!important}
 }
+
+
+/* Direct lobby return */
+#abortBtn{font-weight:900}
+.gameover-actions #returnLobbyBtn{box-shadow:0 0 18px rgba(131,220,255,.16)}
+
+
+/* =========================================================
+   Große Hand: Top-10 der aktiven Kategorie + alle Karten erreichbar
+   ========================================================= */
+.hand.large-hand{
+  position:fixed!important;
+  left:0!important;right:0!important;bottom:0!important;
+  z-index:80!important;
+  height:auto!important;
+  max-height:min(48vh,430px)!important;
+  display:grid!important;
+  grid-template-rows:auto auto!important;
+  gap:5px!important;
+  align-content:end!important;
+  justify-items:stretch!important;
+  padding:8px 10px 10px!important;
+  pointer-events:none!important;
+  background:linear-gradient(180deg,transparent,rgba(5,7,27,.76) 18%,rgba(6,7,30,.96));
+  backdrop-filter:blur(5px);
+}
+.hand.large-hand .hand-tier{min-width:0;pointer-events:auto}
+.hand.large-hand .hand-tier-title{
+  width:min(1080px,96vw);margin:0 auto 3px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:4px 9px;border-radius:10px;
+  color:#fff;background:rgba(19,17,62,.86);border:1px solid rgba(147,225,255,.23);
+  font-size:11px;line-height:1.2;box-shadow:0 4px 16px rgba(0,0,0,.2)
+}
+.hand.large-hand .hand-tier-title strong{font-size:12px;color:#fff4b7}
+.hand.large-hand .hand-tier-title span{color:#cbd7ff}
+.hand.large-hand .hand-tier-title.compact{opacity:.88}
+.hand.large-hand .hand-tier-row{
+  width:min(1180px,100%);margin:auto;
+  min-height:112px;
+  display:flex!important;align-items:flex-end;justify-content:flex-start!important;
+  gap:6px!important;
+  overflow-x:auto!important;overflow-y:visible!important;
+  padding:5px 44px 11px!important;
+  scroll-behavior:smooth;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(156,218,255,.65) rgba(255,255,255,.08);
+}
+.hand.large-hand .hand-tier-row::-webkit-scrollbar{height:7px}
+.hand.large-hand .hand-tier-row::-webkit-scrollbar-thumb{background:rgba(156,218,255,.65);border-radius:99px}
+.hand.large-hand .hand-card{
+  width:94px!important;min-width:94px!important;
+  margin-left:0!important;
+  transform-origin:bottom center!important;
+}
+.hand.large-hand .hand-tier-priority .hand-card{width:102px!important;min-width:102px!important}
+.hand.large-hand .hand-card:not(.disabled):hover,
+.hand.large-hand .hand-card:not(.disabled):focus-within{
+  transform:translateY(-26px) scale(1.12)!important;
+  z-index:60!important;
+}
+.hand.large-hand .hand-card.special{width:112px!important;min-width:112px!important}
+body:has(.hand.large-hand) .arena{padding-bottom:min(48vh,430px)!important}
+@media(max-width:720px){
+  .hand.large-hand{max-height:48vh!important;padding-inline:4px!important}
+  .hand.large-hand .hand-tier-row{padding-inline:18px!important;min-height:99px!important}
+  .hand.large-hand .hand-card{width:78px!important;min-width:78px!important}
+  .hand.large-hand .hand-tier-priority .hand-card{width:84px!important;min-width:84px!important}
+  .hand.large-hand .hand-card.special{width:94px!important;min-width:94px!important}
+  .hand.large-hand .hand-tier-title{width:96vw;font-size:10px}
+  .hand.large-hand .hand-tier-title strong{font-size:10px}
+}
+
+/* =========================================================
+   Realistischer 4-Flächen-Kategorie-Kristall – komplett CSS, kein Bild
+   ========================================================= */
+.category-crystal{
+  --crystal-land-y:1170deg;
+  width:min(240px,50vw)!important;
+  height:min(430px,78vw)!important;
+  transform-style:preserve-3d!important;
+  transform-origin:50% 54%!important;
+  filter:
+    drop-shadow(0 34px 35px rgba(0,0,0,.62))
+    drop-shadow(0 0 20px rgba(181,140,255,.28))
+    drop-shadow(0 0 50px rgba(109,218,255,.18))!important;
+  will-change:transform;
+}
+.category-crystal-face{
+  left:50%!important;top:50%!important;
+  width:136px!important;height:358px!important;
+  margin-left:-68px!important;margin-top:-179px!important;
+  display:grid!important;place-items:center!important;
+  backface-visibility:visible!important;-webkit-backface-visibility:visible!important;
+  clip-path:polygon(31% 0,69% 0,94% 30%,66% 100%,34% 100%,6% 30%)!important;
+  border:1px solid rgba(244,242,255,.66)!important;
+  background:
+    linear-gradient(112deg,rgba(255,255,255,.64) 0 7%,rgba(255,255,255,.08) 16% 38%,rgba(207,176,255,.19) 52%,rgba(86,54,152,.15) 73%,rgba(255,255,255,.33) 100%),
+    linear-gradient(180deg,rgba(225,202,255,.58),rgba(170,126,232,.34) 30%,rgba(117,75,198,.31) 67%,rgba(207,176,255,.44))!important;
+  box-shadow:
+    inset 18px 0 30px rgba(255,255,255,.18),
+    inset -20px 0 30px rgba(70,38,127,.25),
+    inset 0 0 26px rgba(245,235,255,.16),
+    0 0 14px rgba(202,166,255,.14)!important;
+  opacity:.72!important;
+  overflow:hidden;
+}
+.category-crystal-face::before{
+  content:""!important;position:absolute!important;inset:1px!important;
+  clip-path:polygon(31% 0,69% 0,94% 30%,66% 100%,34% 100%,6% 30%)!important;
+  background:
+    linear-gradient(106deg,transparent 0 16%,rgba(255,255,255,.52) 17% 21%,transparent 22% 49%,rgba(184,226,255,.19) 50% 54%,transparent 55% 72%,rgba(255,199,249,.16) 73% 76%,transparent 77%),
+    radial-gradient(ellipse at 50% 36%,rgba(255,255,255,.26),transparent 42%)!important;
+  mix-blend-mode:screen!important;opacity:.92!important;
+}
+.category-crystal-face::after{
+  content:""!important;position:absolute!important;inset:0!important;
+  clip-path:polygon(31% 0,69% 0,94% 30%,66% 100%,34% 100%,6% 30%)!important;
+  background:linear-gradient(166deg,rgba(255,255,255,.37),transparent 18% 66%,rgba(76,37,145,.18))!important;
+  opacity:.8!important;
+}
+.category-crystal-face>span{
+  position:relative!important;z-index:5!important;
+  display:grid!important;place-items:center!important;
+  width:84px!important;height:84px!important;border-radius:50%!important;
+  font-size:clamp(44px,10vw,68px)!important;line-height:1!important;
+  background:radial-gradient(circle,rgba(255,255,255,.2),rgba(255,255,255,.035) 62%,transparent 70%)!important;
+  border:1px solid rgba(255,255,255,.24)!important;
+  box-shadow:inset 0 0 20px rgba(255,255,255,.16),0 0 22px currentColor!important;
+  text-shadow:0 0 5px #fff,0 0 15px currentColor!important;
+  filter:saturate(1.1) contrast(1.06)!important;
+  opacity:.94!important;
+}
+.crystal-face-strength{transform:rotateY(0deg) translateZ(58px)!important;color:#ff6470!important}
+.crystal-face-speed{transform:rotateY(90deg) translateZ(58px)!important;color:#ffe45f!important}
+.crystal-face-energy{transform:rotateY(180deg) translateZ(58px)!important;color:#63ffb0!important}
+.crystal-face-magic{transform:rotateY(270deg) translateZ(58px)!important;color:#d98cff!important}
+.category-crystal-core{
+  position:absolute!important;left:50%!important;top:50%!important;
+  width:78px!important;height:344px!important;margin-left:-39px!important;margin-top:-172px!important;
+  transform:translateZ(0)!important;
+  clip-path:polygon(30% 0,70% 0,96% 30%,66% 100%,34% 100%,4% 30%)!important;
+  background:
+    linear-gradient(98deg,rgba(255,255,255,.52),rgba(220,194,255,.26) 24%,rgba(136,90,215,.28) 62%,rgba(255,255,255,.33)),
+    linear-gradient(180deg,rgba(242,231,255,.62),rgba(169,126,234,.24) 44%,rgba(108,67,187,.28))!important;
+  box-shadow:inset 0 0 34px rgba(255,255,255,.28)!important;
+  filter:drop-shadow(0 0 26px rgba(195,151,255,.46))!important;
+  opacity:.72!important;
+}
+.category-crystal-core::before{
+  content:"";position:absolute;left:50%;top:-11px;transform:translateX(-50%) rotateX(66deg);
+  width:78px;height:54px;clip-path:polygon(50% 0,100% 52%,50% 100%,0 52%);
+  background:linear-gradient(135deg,rgba(255,255,255,.72),rgba(181,140,236,.32));
+  border:1px solid rgba(255,255,255,.42);box-shadow:inset 0 0 16px rgba(255,255,255,.3);
+}
+.category-crystal-glint{
+  left:31%!important;top:6%!important;width:11%!important;height:72%!important;
+  transform:translateZ(74px) rotate(7deg)!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.78),rgba(255,255,255,.08) 70%,transparent)!important;
+  filter:blur(1.4px)!important;opacity:.58!important;
+}
+.category-crystal-overlay.category-strength .crystal-face-strength,
+.category-crystal-overlay.category-speed .crystal-face-speed,
+.category-crystal-overlay.category-energy .crystal-face-energy,
+.category-crystal-overlay.category-magic .crystal-face-magic{
+  opacity:1!important;filter:brightness(1.22) saturate(1.18)!important;
+}
+.category-crystal.crystal-running{animation:realCrystalTumble 3.55s cubic-bezier(.15,.73,.13,1) both!important}
+@keyframes realCrystalTumble{
+  0%{transform:translateY(105px) rotateX(-18deg) rotateY(0deg) rotateZ(-7deg) scale(.58);opacity:0}
+  10%{opacity:1}
+  22%{transform:translateY(-72px) rotateX(24deg) rotateY(320deg) rotateZ(7deg) scale(.98)}
+  45%{transform:translateY(-42px) rotateX(-16deg) rotateY(770deg) rotateZ(-5deg) scale(1.06)}
+  67%{transform:translateY(-18px) rotateX(12deg) rotateY(calc(var(--crystal-land-y) - 122deg)) rotateZ(3deg) scale(1.035)}
+  82%{transform:translateY(10px) rotateX(-5deg) rotateY(calc(var(--crystal-land-y) + 26deg)) rotateZ(-1deg) scale(1.01)}
+  91%{transform:translateY(-5px) rotateX(2deg) rotateY(calc(var(--crystal-land-y) - 8deg)) rotateZ(.4deg) scale(1.004)}
+  100%{transform:translateY(0) rotateX(0deg) rotateY(var(--crystal-land-y)) rotateZ(0deg) scale(1);opacity:1}
+}
+@keyframes crystalGlint{
+  from{opacity:.24;transform:translateZ(74px) translateX(-5px) rotate(7deg)}
+  to{opacity:.78;transform:translateZ(74px) translateX(10px) rotate(7deg)}
+}
+@media(max-width:720px){
+  .category-crystal{width:min(186px,47vw)!important;height:min(345px,74vw)!important}
+  .category-crystal-face{width:110px!important;height:286px!important;margin-left:-55px!important;margin-top:-143px!important}
+  .crystal-face-strength{transform:rotateY(0deg) translateZ(47px)!important}.crystal-face-speed{transform:rotateY(90deg) translateZ(47px)!important}.crystal-face-energy{transform:rotateY(180deg) translateZ(47px)!important}.crystal-face-magic{transform:rotateY(270deg) translateZ(47px)!important}
+  .category-crystal-core{width:64px!important;height:276px!important;margin-left:-32px!important;margin-top:-138px!important}
+  .category-crystal-face>span{width:66px!important;height:66px!important;font-size:43px!important}
+}

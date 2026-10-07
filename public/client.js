@@ -329,29 +329,80 @@ function bindCardInspector(el,card){
   el.addEventListener('pointerup',cancel);el.addEventListener('pointercancel',cancel);el.addEventListener('pointerleave',cancel);
 }
 
+function buildHandCard(c,me,normals,blockedId){
+  const blocked=c.type==='normal'&&c.id===blockedId&&normals.some(x=>x.id!==blockedId);
+  const el=document.createElement('div');
+  el.className=`hand-card ${c.type==='special'?'special':''} ${blocked?'recently-played disabled':''} ${newlyDrawn.has(c.id)?'drawing-in':''}`;
+  el.dataset.cardId=c.id;
+  const img=document.createElement('img');img.src=c.image;img.alt=c.name;el.append(img);bindCardInspector(el,c);
+
+  if(c.type==='normal'){
+    if(blocked){const lock=document.createElement('div');lock.className='recent-lock';lock.textContent='⏳ Gerade gespielt';el.append(lock)}
+    el.tabIndex=blocked?-1:0;
+    const play=()=>{
+      if(el.dataset.inspectConsumed==='1'){delete el.dataset.inspectConsumed;return;}
+      ensureAudio();
+      if(blocked)return toast('Diese Karte hast du gerade gespielt – nimm eine andere.');
+      if(state?.phase!=='select')return toast('Warte auf die nächste Auswahl.');
+      if(me?.selected)return toast('Du hast schon eine Karte gelegt.');
+      el.dataset.pendingPlay='1';socket.emit('playCard',{cardId:c.id});
+    };
+    el.addEventListener('click',play);
+    el.addEventListener('keydown',e=>{if(!blocked&&(e.key==='Enter'||e.key===' ')){e.preventDefault();play()}});
+  }else{
+    el.insertAdjacentHTML('beforeend',specialUseInfo(c));
+    const b=document.createElement('button');b.className='special-use';b.type='button';b.textContent='✨ Spezial einsetzen';
+    b.addEventListener('click',e=>{e.stopPropagation();ensureAudio();if(state?.phase!=='select')return toast('Spezialkarten nur während der Auswahl.');socket.emit('useSpecial',{cardId:c.id})});
+    el.append(b);
+  }
+  return el;
+}
+
 function renderHand(){
   const wrap=$('#hand');if(!wrap)return;wrap.innerHTML='';
   const me=state?.players?.find(p=>p.id===myId);
   const blockedId=me?.lastPlayedCardId||null;
   const normals=hand.filter(c=>c.type==='normal');
-  for(const c of hand){
-    const blocked=c.type==='normal'&&c.id===blockedId&&normals.some(x=>x.id!==blockedId);
-    const el=document.createElement('div');el.className=`hand-card ${c.type==='special'?'special':''} ${blocked?'recently-played disabled':''} ${newlyDrawn.has(c.id)?'drawing-in':''}`;
-    const img=document.createElement('img');img.src=c.image;img.alt=c.name;el.append(img);bindCardInspector(el,c);
-    
-    if(c.type==='normal'){
-      if(blocked){const lock=document.createElement('div');lock.className='recent-lock';lock.textContent='⏳ Gerade gespielt';el.append(lock)}
-      el.tabIndex=blocked?-1:0;
-      const play=()=>{if(el.dataset.inspectConsumed==='1'){delete el.dataset.inspectConsumed;return;}ensureAudio();if(blocked)return toast('Diese Karte hast du gerade gespielt – nimm eine andere.');if(state?.phase!=='select')return toast('Warte auf die nächste Auswahl.');if(me?.selected)return toast('Du hast schon eine Karte gelegt.');el.dataset.pendingPlay='1';socket.emit('playCard',{cardId:c.id})};
-      el.addEventListener('click',play);
-      el.addEventListener('keydown',e=>{if(!blocked&&(e.key==='Enter'||e.key===' ')){e.preventDefault();play()}});
-    }else{
-      el.insertAdjacentHTML('beforeend',specialUseInfo(c));
-      const b=document.createElement('button');b.className='special-use';b.type='button';b.textContent='✨ Spezial einsetzen';
-      b.addEventListener('click',e=>{e.stopPropagation();ensureAudio();if(state?.phase!=='select')return toast('Spezialkarten nur während der Auswahl.');socket.emit('useSpecial',{cardId:c.id})});
-      el.append(b);
-    }
-    wrap.append(el);
+  const activeCategory=state?.category;
+  const hasCategory=['strength','speed','energy','magic'].includes(activeCategory);
+
+  // Bis 10 Karten bleibt die gewohnte Handansicht erhalten.
+  if(hand.length<=10){
+    wrap.classList.remove('large-hand');
+    for(const c of hand)wrap.append(buildHandCard(c,me,normals,blockedId));
+    return;
+  }
+
+  // Große Hand: die zehn besten NORMALEN Karten für die aktuelle Kategorie
+  // kommen in eine eigene obere Reihe. Alle anderen Karten bleiben darunter
+  // vollständig erreichbar und auswählbar.
+  wrap.classList.add('large-hand');
+  const normalSorted=[...normals].sort((a,b)=>{
+    if(!hasCategory)return 0;
+    const av=Number(a?.[activeCategory]||0),bv=Number(b?.[activeCategory]||0);
+    return bv-av || String(a.name||'').localeCompare(String(b.name||''),'de');
+  });
+  const topTen=normalSorted.slice(0,10);
+  const topIds=new Set(topTen.map(c=>c.id));
+  const rest=hand.filter(c=>!topIds.has(c.id));
+
+  const top=document.createElement('section');top.className='hand-tier hand-tier-priority';
+  const title=document.createElement('div');title.className='hand-tier-title';
+  const catLabel=({strength:'🏋️ Stärke',speed:'⚡ Schnelligkeit',energy:'🔋 Energie',magic:'⭐ Magie'})[activeCategory]||'aktuelle Kategorie';
+  title.innerHTML=`<strong>Top-Karten für ${catLabel}</strong><span>höchster Wert zuerst</span>`;
+  const row=document.createElement('div');row.className='hand-tier-row';
+  top.append(title,row);
+  for(const c of topTen)row.append(buildHandCard(c,me,normals,blockedId));
+  wrap.append(top);
+
+  if(rest.length){
+    const extra=document.createElement('section');extra.className='hand-tier hand-tier-extra';
+    const extraTitle=document.createElement('div');extraTitle.className='hand-tier-title compact';
+    extraTitle.innerHTML=`<strong>Weitere Karten</strong><span>${rest.length} Karte${rest.length===1?'':'n'} – weiterhin spielbar</span>`;
+    const extraRow=document.createElement('div');extraRow.className='hand-tier-row';
+    extra.append(extraTitle,extraRow);
+    for(const c of rest)extraRow.append(buildHandCard(c,me,normals,blockedId));
+    wrap.append(extra);
   }
 }
 
@@ -882,7 +933,7 @@ socket.on('diceRolled',stopDiceAnimation);
 socket.on('gameOver',e=>{
   $('#roundMessage').textContent=`👑 ${e.winnerName} ist Champion!`;
   $('#gameOverTitle').textContent=`👑 ${e.winnerName} gewinnt!`;
-  $('#gameOverText').textContent='Die Partie ist beendet. Jeder entscheidet selbst, wann er fertig ist. Dein Geschenk bleibt offen, auch wenn der Host bereits fertig ist.';
+  $('#gameOverText').textContent='Die Partie ist beendet. Jeder entscheidet selbst, wann er zurück in die Lobby geht. Es gibt keine zusätzliche Bestätigung. Sobald alle zurück sind, kann der Host direkt die nächste Runde vorbereiten.';
   pendingGift=e.winnerId===myId;$('#rewardBtn').style.display=pendingGift?'inline-block':'none';
   if(!$('#gameOverDialog').open)$('#gameOverDialog').showModal();
 });
@@ -893,8 +944,8 @@ socket.on('postGameWaiting',e=>{
   show('lobby');
   setMusicMode('lobby');
   $('#startBtn').style.display='none';
-  $('#lobbyHint').textContent=`Du bist fertig (${e.ready}/${e.total}). Warte, bis die anderen Spieler ebenfalls „Zur Lobby“ wählen.`;
-  toast('Du bist bereit für die Lobby. Die anderen können ihr Geschenk in Ruhe öffnen.');
+  $('#lobbyHint').textContent=`Du bist zurück in der Lobby (${e.ready}/${e.total}). Sobald alle zurück sind, ist die nächste Runde sofort startbereit.`;
+  toast('Zurück in der Lobby. Die anderen können ihr Geschenk in Ruhe öffnen.');
 });
 socket.on('postGameReadyState',e=>{
   if(state?.phase==='gameover' && !$('#gameOverDialog').open){
@@ -902,7 +953,7 @@ socket.on('postGameReadyState',e=>{
     if(hint)hint.textContent=`Bereit: ${e.ready.length}/${e.total} Spieler`;
   }
 });
-socket.on('backToLobby',()=>{stopCountdown();stopSelectionTimer();hideTieAlert();try{$('#gameOverDialog').close()}catch{};try{$('#giftDialog').close()}catch{};clearTable();show('lobby');setMusicMode('lobby');toast('Zurück in der Lobby.')});
+socket.on('backToLobby',()=>{stopCountdown();stopSelectionTimer();hideTieAlert();try{$('#gameOverDialog').close()}catch{};try{$('#giftDialog').close()}catch{};clearTable();show('lobby');setMusicMode('lobby');if(state?.phase==='lobby')renderLobby();toast('Lobby ist bereit für die nächste Runde.')});
 socket.on('roomLeft',()=>{stopCountdown();stopSelectionTimer();hideTieAlert();state=null;hand=[];clearTable();renderHand();show('home');setMusicMode('lobby');toast('Du hast den Raum verlassen.')});
 socket.on('flutterChoices',e=>showChoices('Fluttershy: Welche Karte möchtest du behalten?',e.cards,c=>socket.emit('flutterKeep',{cardId:c.id})));
 socket.on('rarityChoose',e=>showChoices('Rarity: Welche Karte möchtest du austauschen?',e.cards,c=>socket.emit('raritySwap',{cardId:c.id})));
@@ -911,11 +962,11 @@ function showChoices(title,cards,cb){$('#choiceTitle').textContent=title;const g
 $('#giftBox').addEventListener('click',()=>{if(!pendingGift)return;pendingGift=false;const lockedItems=ITEM_KEYS.filter(x=>!STARTER_KEYS.includes(x)&&!unlocks.includes(x));const lockedFrames=FRAME_KEYS.filter(x=>!STARTER_FRAME_KEYS.includes(x)&&!frameUnlocks.includes(x));const kinds=[];if(lockedItems.length)kinds.push('item');if(lockedFrames.length)kinds.push('frame');$('#giftBox').style.display='none';if(!kinds.length){$('#giftResult').innerHTML='<div class="gift-item"><strong>Sammlung vollständig! ✨</strong><small>Du hast alle Items und Rahmen entdeckt.</small></div>';return;}const kind=kinds[Math.floor(Math.random()*kinds.length)];if(kind==='item'){const key=lockedItems[Math.floor(Math.random()*lockedItems.length)];unlocks.push(key);localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));const a=ITEMS[key];$('#giftResult').innerHTML=`<div class="gift-item"><span class="reward-type">✨ NEUES ITEM</span><span class="item-art"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><small>${a.desc||'Neues Namens-Item freigeschaltet.'}</small></div>`;}else{const key=lockedFrames[Math.floor(Math.random()*lockedFrames.length)];frameUnlocks.push(key);localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));const a=FRAMES[key];$('#giftResult').innerHTML=`<div class="gift-item"><span class="reward-type">🖼 NEUER RAHMEN</span><span class="reward-frame"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><small>Neuer Namensrahmen freigeschaltet.</small></div>`;}renderAccessoryGrid();specialSound();});
 
 
-function leaveRoomNow(){ if(confirm('Raum wirklich verlassen und zum Hauptmenü zurück?')) socket.emit('leaveRoom') }
+function leaveRoomNow(){ socket.emit('leaveRoom'); toast('Zurück zum Hauptmenü …'); }
 $('#leaveLobbyBtn').addEventListener('click',leaveRoomNow);
 $('#leaveGameBtn').addEventListener('click',leaveRoomNow);
-$('#abortBtn').addEventListener('click',()=>{if(confirm('Die laufende Partie für alle abbrechen und zur Lobby zurückkehren?')){socket.emit('abortGame');toast('Spiel wird abgebrochen …')}});
-$('#returnLobbyBtn').addEventListener('click',()=>{socket.emit('returnToLobby');toast('Du bist bereit für die Lobby …')});
+$('#abortBtn').addEventListener('click',()=>{socket.emit('abortGame');toast('Zurück zur Lobby …')});
+$('#returnLobbyBtn').addEventListener('click',()=>{try{$('#gameOverDialog').close()}catch{};socket.emit('returnToLobby');toast('Zurück zur Lobby …')});
 $('#gameOverHomeBtn').addEventListener('click',()=>{try{$('#gameOverDialog').close()}catch{};socket.emit('leaveRoom')});
 $('#closeGameOverBtn').addEventListener('click',()=>$('#gameOverDialog').close());
 $('#rewardBtn').addEventListener('click',()=>{try{$('#gameOverDialog').close()}catch{};$('#giftResult').textContent='';$('#giftBox').style.display='inline-block';$('#giftDialog').showModal()});
