@@ -1455,6 +1455,7 @@ $('#tutorialSkipBtn')?.addEventListener('click',closeTutorial);
 $('#tutorialPrevBtn')?.addEventListener('click',()=>{tutorialStep=Math.max(0,tutorialStep-1);renderTutorialStep()});
 $('#tutorialNextBtn')?.addEventListener('click',()=>{tutorialStep=Math.min(tutorialSteps.length-1,tutorialStep+1);renderTutorialStep()});
 $('#tutorialTrainingBtn')?.addEventListener('click',startTraining);
+$('#tutorialPracticeCtaBtn')?.addEventListener('click',startTraining);
 $('#tutorialBotBtn')?.addEventListener('click',startBotTestRoom);
 $('#trainingSkipBtn')?.addEventListener('click',()=>{resetTraining();closeTutorial()});
 
@@ -1500,6 +1501,8 @@ function startTraining(){
   $('#tutorialSlides').hidden=true;
   $('#tutorialNav').hidden=true;
   $('#trainingArea').hidden=false;
+  const dialog=$('#rulesDialog');
+  if(dialog)dialog.scrollTop=0;
   startPracticeRound();
 }
 function resetTraining(){

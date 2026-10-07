@@ -2634,3 +2634,72 @@ body:has(#game .hand:not(.large-hand)) .arena{padding-bottom:230px!important;}
   .practice-cycle-demo{grid-template-columns:1fr}
   .practice-cycle-demo>span{transform:rotate(90deg)}
 }
+
+
+/* ============================================================
+   TUTORIAL 6/6 -> SICHTBARER START DER PROBERUNDE
+   ============================================================ */
+.tutorial-modal{
+  max-height:calc(100dvh - 20px)!important;
+  overflow:auto!important;
+  overscroll-behavior:contain;
+}
+.tutorial-shell{
+  min-height:0!important;
+}
+.tutorial-step{
+  min-height:min(390px,58vh)!important;
+}
+.tutorial-nav{
+  position:sticky;
+  bottom:-1px;
+  z-index:30;
+  padding:10px 0 2px;
+  background:linear-gradient(180deg,rgba(17,20,67,0),rgba(17,20,67,.97) 30%);
+}
+.tutorial-practice-cta{
+  margin-top:12px;
+  padding:13px 14px;
+  display:grid;
+  gap:7px;
+  border-radius:15px;
+  border:1px solid rgba(255,218,103,.42);
+  background:
+    radial-gradient(circle at 20% 0%,rgba(255,223,94,.13),transparent 48%),
+    linear-gradient(135deg,rgba(54,35,105,.92),rgba(18,47,83,.92));
+  box-shadow:0 10px 28px rgba(0,0,0,.22),inset 0 0 24px rgba(129,216,255,.05);
+}
+.tutorial-practice-cta>strong{
+  font-size:17px;
+  color:#fff2a5;
+}
+.tutorial-practice-cta>span{
+  font-size:12px;
+  line-height:1.4;
+  color:#e7eaff;
+}
+.tutorial-practice-start{
+  margin-top:3px;
+  width:100%;
+  min-height:45px;
+  font-size:15px!important;
+  font-weight:1000!important;
+  animation:tutorialPracticeGlow 1.35s ease-in-out infinite alternate;
+}
+@keyframes tutorialPracticeGlow{
+  from{box-shadow:0 0 8px rgba(119,222,255,.16)}
+  to{box-shadow:0 0 26px rgba(255,208,77,.4),0 0 12px rgba(142,126,255,.28)}
+}
+
+@media(max-height:720px){
+  .tutorial-shell{padding:14px!important}
+  .tutorial-progress-wrap{margin:9px 0 10px!important}
+  .tutorial-step{min-height:0!important;align-items:start!important}
+  .tutorial-picture{min-height:270px!important}
+  .tutorial-copy h4{font-size:23px!important;margin-bottom:7px!important}
+  .tutorial-copy p{font-size:14px!important;line-height:1.43!important;margin:6px 0!important}
+  .tutorial-special-note{font-size:10px!important;padding:8px!important}
+  .tutorial-practice-cta{padding:9px 10px;margin-top:8px}
+  .tutorial-practice-cta>strong{font-size:15px}
+  .tutorial-practice-cta>span{font-size:10px}
+}
