@@ -6,7 +6,8 @@
   <title>MLP Battle Cards – Sammle die meisten Karten</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body>
+<body class="scene-home">
+  <div id="crystalDrift" class="crystal-drift" aria-hidden="true"></div>
   <main id="app">
     <section id="home" class="screen active">
       <div class="hero crystal-panel">
@@ -32,7 +33,7 @@
         <p id="lobbyHint">Warte auf Mitspieler …</p>
         <div id="lobbyPlayers" class="lobby-players"></div>
         <div class="lobby-actions">
-          <button id="startBtn" class="primary-btn" type="button">Spiel starten</button>
+          <button id="startBtn" class="primary-btn ready-btn" type="button">✅ Bereit</button>
           <button id="lobbyAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
           <button id="leaveLobbyBtn" class="soft-btn" type="button">← Hauptmenü</button>
           <div class="music-controls"><button id="musicLobbyBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
@@ -47,7 +48,7 @@
           <button id="leaveGameBtn" class="soft-btn" type="button">← Hauptmenü</button>
           <div class="music-controls"><button id="musicGameBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
         </div>
-        <div class="crystal c1"></div><div class="crystal c2"></div><div class="crystal c3"></div><div class="crystal c4"></div>
+        <div id="arenaVfx" class="arena-vfx" aria-hidden="true"><span class="arena-particle p1"></span><span class="arena-particle p2"></span><span class="arena-particle p3"></span><span class="arena-particle p4"></span><span class="arena-particle p5"></span><span class="arena-particle p6"></span><span class="arena-particle p7"></span><span class="arena-particle p8"></span><span class="arena-particle p9"></span><span class="arena-particle p10"></span><span class="arena-particle p11"></span><span class="arena-particle p12"></span><span class="arena-particle p13"></span><span class="arena-particle p14"></span></div>
         <div id="opponents" class="opponents"></div>
         <div class="center-stage">
           <div id="category" class="category"><span id="categoryIcon">✦</span><strong id="categoryText">Bereit?</strong></div>
@@ -65,6 +66,7 @@
   </main>
 
   <div id="toast" class="toast" role="status"></div>
+  <div id="roundIntroOverlay" class="round-intro-overlay" aria-hidden="true"><div class="round-intro-card"><span id="roundIntroRound">RUNDE 1</span><b id="roundIntroIcon">⭐</b><strong id="roundIntroLabel">MAGIE</strong><i></i></div></div>
   <button id="rulesBtn" class="rules-floating" type="button">📖 Spielregeln</button>
 
   <dialog id="accessoryDialog" class="modal accessory-modal">
@@ -155,11 +157,11 @@
         <article class="tutorial-step" data-step="4">
           <div class="tutorial-copy">
             <h4>5. Gleichstand & Zeitlimit</h4>
-            <p>Bei Gleichstand würfeln nur die beteiligten Spieler. Hast du nach <strong>10 Sekunden</strong> nichts gelegt, verlierst du eine zufällige Strafkarte und eine neue Kategorie wird gezogen.</p>
+            <p>Bei Gleichstand würfeln nur die beteiligten Spieler. Hast du nach <strong>30 Sekunden</strong> nichts gelegt, verlierst du eine zufällige Strafkarte und eine neue Kategorie wird gezogen.</p>
           </div>
           <div class="tutorial-picture tie-picture">
             <div class="tutorial-die">⚄</div><div class="tutorial-die second">⚂</div>
-            <div class="tutorial-timeout">⏱ 10 → 0<br><small>Keine Karte = Strafkarte</small></div>
+            <div class="tutorial-timeout">⏱ 30 → 0<br><small>Keine Karte = Strafkarte</small></div>
           </div>
         </article>
 

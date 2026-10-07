@@ -22,7 +22,7 @@ function hasNormalCard(p){ return p.hand.some(id=>byId[id]?.type==='normal'); }
 function activePlayers(r){ return roomPlayers(r).filter(p=>p.hand.length>0); }
 
 function clearTimers(r){
-  for(const key of ['roundTimer','selectionTimer','countdownTimer']){
+  for(const key of ['roundTimer','selectionTimer','countdownTimer','readyTimer']){
     if(r[key]){clearTimeout(r[key]);r[key]=null;}
   }
   r.selectionDeadline=null;
@@ -31,10 +31,10 @@ function clearTimers(r){
 function publicState(r){
   return {
     code:r.code,hostId:r.hostId,phase:r.phase,category:r.category,round:r.round,
-    countdownUntil:r.countdownUntil||null,selectionDeadline:r.selectionDeadline||null,
+    countdownUntil:r.countdownUntil||null,selectionDeadline:r.selectionDeadline||null,roundIntroUntil:r.roundIntroUntil||null,arenaId:r.arenaId||'crystal_colosseum',postGameReady:[...(r.postGameReady||new Set())],
     players:roomPlayers(r).map(p=>({
       id:p.id,name:p.name,accessory:p.accessory,frame:p.frame||'',handCount:p.hand.length,
-      selected:!!p.selected,eliminated:p.hand.length===0,lastPlayedCardId:p.lastPlayedCardId||null
+      selected:!!p.selected,ready:!!p.ready,eliminated:p.hand.length===0,lastPlayedCardId:p.lastPlayedCardId||null
     }))
   };
 }
@@ -48,8 +48,8 @@ function requiredPlayers(r){ return (r.roundPlayerIds||[]).map(id=>r.players.get
 
 function resetToLobby(r){
   clearTimers(r);
-  r.phase='lobby';r.category=null;r.round=0;r.played={};r.dice={};r.tieIds=[];r.roundBuff={};r.roundPlayerIds=[];
-  for(const p of roomPlayers(r)){p.hand=[];p.selected=null;p.lastPlayedCardId=null;}
+  r.phase='lobby';r.category=null;r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;r.round=0;r.played={};r.dice={};r.tieIds=[];r.roundBuff={};r.roundPlayerIds=[];r.postGameReady=new Set();
+  for(const p of roomPlayers(r)){p.hand=[];p.selected=null;p.lastPlayedCardId=null;p.ready=false;}
   io.to(r.code).emit('backToLobby');
   sendState(r);
 }
@@ -62,6 +62,9 @@ function removePlayerFromRoom(socket,notify=true){
   if(notify)io.to(r.code).emit('notice','Ein Spieler hat den Raum verlassen.');
   sendState(r);
   if(r.phase==='select')maybeEvaluate(r);
+  if(r.phase==='gameover'&&r.postGameReady&&roomPlayers(r).length&&roomPlayers(r).every(p=>r.postGameReady.has(p.id))){
+    setTimeout(()=>{if(rooms.has(r.code)&&r.phase==='gameover')resetToLobby(r)},250);
+  }
 }
 function maybeEvaluate(r){
   if(!r||r.phase!=='select')return;
@@ -75,7 +78,7 @@ function maybeEvaluate(r){
 function gameOverIfNeeded(r){
   const alive=activePlayers(r);
   if(alive.length>1)return false;
-  clearTimers(r);r.phase='gameover';
+  clearTimers(r);r.phase='gameover';r.postGameReady=new Set();
   const champion=alive[0]||roomPlayers(r).sort((a,b)=>b.hand.length-a.hand.length)[0];
   if(champion)io.to(r.code).emit('gameOver',{winnerId:champion.id,winnerName:champion.name,counts:roomPlayers(r).map(p=>({id:p.id,name:p.name,count:p.hand.length}))});
   sendState(r);return true;
@@ -112,15 +115,22 @@ function startRound(r,delay=900){
   if(r.selectionTimer)clearTimeout(r.selectionTimer);
   r.roundTimer=setTimeout(()=>{
     if(!rooms.has(r.code))return;
-    r.roundTimer=null;r.round++;r.phase='select';r.played={};r.dice={};r.tieIds=[];r.roundBuff={};
+    r.roundTimer=null;r.round++;r.phase='roundintro';r.played={};r.dice={};r.tieIds=[];r.roundBuff={};
     for(const p of roomPlayers(r))p.selected=null;
     nextCategory(r);
     r.roundPlayerIds=roomPlayers(r).filter(p=>p.hand.length>0&&hasNormalCard(p)).map(p=>p.id);
     if(!r.roundPlayerIds.length){gameOverIfNeeded(r);return;}
-    r.selectionDeadline=Date.now()+10000;
-    io.to(r.code).emit('roundStart',{round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],deadline:r.selectionDeadline});
+    r.roundIntroUntil=Date.now()+1900;
+    io.to(r.code).emit('roundIntro',{round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],until:r.roundIntroUntil});
     sendState(r);
-    r.selectionTimer=setTimeout(()=>handleSelectionTimeout(r),10050);
+    r.roundTimer=setTimeout(()=>{
+      if(!rooms.has(r.code)||r.phase!=='roundintro')return;
+      r.roundTimer=null;r.roundIntroUntil=null;r.phase='select';
+      r.selectionDeadline=Date.now()+30000;
+      io.to(r.code).emit('roundStart',{round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],deadline:r.selectionDeadline});
+      sendState(r);
+      r.selectionTimer=setTimeout(()=>handleSelectionTimeout(r),30050);
+    },1900);
   },delay);
 }
 function finishAfterCapture(r,winnerId,playedIds){
@@ -129,11 +139,19 @@ function finishAfterCapture(r,winnerId,playedIds){
   if(gameOverIfNeeded(r))return;
   startRound(r,1500);
 }
+const FINISHERS=['dragonfire','dissolve','starbarrage','gunshots','flowerdevour','cakebites','loserplank','freeze','lightningstorm','portalvoid','crystalburst','shadowchains'];
+function pickFinisher(r){
+  const choices=FINISHERS.filter(x=>x!==r.lastFinisher);
+  const f=choices[Math.floor(Math.random()*choices.length)]||FINISHERS[0];
+  r.lastFinisher=f;return f;
+}
 function settleRound(r,winnerId){
   const ids=Object.values(r.played).map(x=>x.cardId),winner=r.players.get(winnerId);if(!winner)return;
   r.phase='result';
-  io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:ids.map(id=>byId[id]).filter(Boolean)});
-  setTimeout(()=>finishAfterCapture(r,winnerId,ids),1050);
+  const finisher=pickFinisher(r),duration=3300;
+  io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:ids.map(id=>byId[id]).filter(Boolean),finisher,duration});
+  sendState(r);
+  setTimeout(()=>finishAfterCapture(r,winnerId,ids),duration+1050);
 }
 function evaluate(r){
   if(r.phase!=='select')return;
@@ -172,11 +190,34 @@ function completeDiceRoll(r,pid){
   }
 }
 
+function beginMatch(r){
+  if(!r||r.phase!=='lobby'||r.players.size<2)return;
+  clearTimers(r);
+  const arenas=['crystal_colosseum','storm_temple','celestial_forge'];
+  r.arenaId=arenas[Math.floor(Math.random()*arenas.length)];
+  const pool=freshPool(),ps=roomPlayers(r);
+  for(const p of ps){p.hand=[];p.selected=null;p.lastPlayedCardId=null;p.ready=false;}
+  for(let k=0;k<7;k++)for(const p of ps){const id=pool.shift();if(id)p.hand.push(id);}
+  r.phase='countdown';r.round=0;r.countdownUntil=Date.now()+5000;
+  sendState(r);
+  io.to(r.code).emit('countdown',{seconds:5,until:r.countdownUntil,arenaId:r.arenaId});
+  r.countdownTimer=setTimeout(()=>{r.countdownTimer=null;r.countdownUntil=null;startRound(r,0);},5100);
+}
+function maybeStartWhenReady(r){
+  if(!r||r.phase!=='lobby'||r.readyLock||r.players.size<2)return;
+  if(roomPlayers(r).every(p=>p.ready)){
+    r.readyLock=true;
+    io.to(r.code).emit('allReady',{message:'Alle sind bereit! Der Kampf beginnt.'});
+    sendState(r);
+    r.readyTimer=setTimeout(()=>{r.readyTimer=null;r.readyLock=false;beginMatch(r)},850);
+  }
+}
+
 io.on('connection',socket=>{
   socket.on('createRoom',({name,accessory,frame})=>{
     let c;do c=code();while(rooms.has(c));
-    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null};
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],selected:null,lastPlayedCardId:null});
+    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set()};
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],selected:null,lastPlayedCardId:null,ready:false});
     rooms.set(c,r);socket.join(c);socket.data.room=c;sendState(r);
   });
   socket.on('joinRoom',({code:rc,name,accessory,frame})=>{
@@ -184,20 +225,24 @@ io.on('connection',socket=>{
     if(!r)return socket.emit('errorMsg','Raum nicht gefunden.');
     if(r.phase!=='lobby')return socket.emit('errorMsg','Die Partie läuft bereits.');
     if(r.players.size>=8)return socket.emit('errorMsg','Der Raum ist voll.');
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],selected:null,lastPlayedCardId:null});
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],selected:null,lastPlayedCardId:null,ready:false});
+    if(r.readyTimer){clearTimeout(r.readyTimer);r.readyTimer=null;r.readyLock=false;}
+    for(const p of roomPlayers(r))p.ready=false;
     socket.join(c);socket.data.room=c;sendState(r);
   });
   socket.on('setAccessory',({accessory})=>{const r=getRoom(socket),p=r?.players.get(socket.id);if(!r||r.phase!=='lobby'||!p)return;p.accessory=String(accessory||'changeling');sendState(r);});
   socket.on('setCosmetics',({accessory,frame})=>{const r=getRoom(socket),p=r?.players.get(socket.id);if(!r||r.phase!=='lobby'||!p)return;p.accessory=String(accessory||'changeling');p.frame=String(frame||'');sendState(r);});
+  socket.on('toggleReady',()=>{
+    const r=getRoom(socket),p=r?.players.get(socket.id);
+    if(!r||r.phase!=='lobby'||!p||r.readyLock)return;
+    p.ready=!p.ready;
+    sendState(r);
+    maybeStartWhenReady(r);
+  });
   socket.on('startGame',()=>{
-    const r=getRoom(socket);if(!r||r.hostId!==socket.id||r.phase!=='lobby')return;
-    if(r.players.size<2)return socket.emit('errorMsg','Mindestens 2 Spieler werden benötigt.');
-    clearTimers(r);const pool=freshPool(),ps=roomPlayers(r);
-    for(const p of ps){p.hand=[];p.selected=null;p.lastPlayedCardId=null;}
-    for(let k=0;k<7;k++)for(const p of ps){const id=pool.shift();if(id)p.hand.push(id);}
-    r.phase='countdown';r.round=0;r.countdownUntil=Date.now()+5000;sendState(r);
-    io.to(r.code).emit('countdown',{seconds:5,until:r.countdownUntil});
-    r.countdownTimer=setTimeout(()=>{r.countdownTimer=null;r.countdownUntil=null;startRound(r,0);},5100);
+    const r=getRoom(socket);if(!r||r.phase!=='lobby')return;
+    if(roomPlayers(r).every(p=>p.ready)&&r.players.size>=2)beginMatch(r);
+    else socket.emit('errorMsg','Alle Spieler müssen zuerst auf „Bereit“ klicken.');
   });
   socket.on('playCard',({cardId})=>{
     const r=getRoom(socket);if(!r||r.phase!=='select')return socket.emit('errorMsg','Gerade kann keine Karte gespielt werden.');
@@ -231,7 +276,19 @@ io.on('connection',socket=>{
   socket.on('flutterKeep',({cardId})=>{const x=socket.data.pendingFlutter,r=getRoom(socket);if(!x||!r||x.room!==r.code||!x.choices.includes(cardId))return;const p=r.players.get(socket.id);p.hand.push(cardId);socket.data.pendingFlutter=null;socket.emit('specialDone',{text:`${byId[cardId].name} behalten.`});sendState(r);});
   socket.on('raritySwap',({cardId})=>{const x=socket.data.pendingRarity,r=getRoom(socket);if(!x||!r||x.room!==r.code)return;const p=r.players.get(socket.id);if(!p.hand.includes(cardId))return;p.hand.splice(p.hand.indexOf(cardId),1);const d=drawFromPool(r,1,[cardId],'normal');if(d.length)p.hand.push(d[0]);socket.data.pendingRarity=null;socket.emit('specialDone',{text:d.length?`${byId[cardId].name} getauscht.`:'Keine freie Karte.'});sendState(r);});
   socket.on('rollDice',()=>{const r=getRoom(socket);if(!r||r.phase!=='tie'||!r.tieIds.includes(socket.id)||r.dice[socket.id]!==undefined)return;r.dice[socket.id]='rolling';io.to(r.code).emit('diceRolling',{playerId:socket.id,name:r.players.get(socket.id)?.name});setTimeout(()=>completeDiceRoll(r,socket.id),900);});
-  socket.on('returnToLobby',()=>{const r=getRoom(socket);if(!r)return socket.emit('errorMsg','Du bist in keinem Raum.');if(r.phase!=='gameover'&&r.hostId!==socket.id)return socket.emit('errorMsg','Während des Spiels kann nur der Host zurück zur Lobby.');resetToLobby(r);});
+  socket.on('returnToLobby',()=>{
+    const r=getRoom(socket);
+    if(!r)return socket.emit('errorMsg','Du bist in keinem Raum.');
+    if(r.phase!=='gameover')return socket.emit('errorMsg','Während einer laufenden Partie nutzt der Host bitte „Spiel abbrechen“.');
+    if(!r.postGameReady)r.postGameReady=new Set();
+    r.postGameReady.add(socket.id);
+    socket.emit('postGameWaiting',{ready:r.postGameReady.size,total:r.players.size});
+    io.to(r.code).emit('postGameReadyState',{ready:[...r.postGameReady],total:r.players.size});
+    // Erst wenn wirklich ALLE selbst fertig sind, geht der gemeinsame Raum zurück in die Lobby.
+    if(roomPlayers(r).every(p=>r.postGameReady.has(p.id))){
+      setTimeout(()=>{ if(rooms.has(r.code)&&r.phase==='gameover') resetToLobby(r); },350);
+    }
+  });
   socket.on('abortGame',()=>{const r=getRoom(socket);if(!r)return socket.emit('errorMsg','Du bist in keinem Raum.');if(r.hostId!==socket.id)return socket.emit('errorMsg','Nur der Host kann abbrechen.');if(r.phase==='lobby')return;io.to(r.code).emit('notice','Die Partie wurde abgebrochen.');resetToLobby(r);});
   socket.on('leaveRoom',()=>removePlayerFromRoom(socket));
   socket.on('disconnect',()=>removePlayerFromRoom(socket,false));

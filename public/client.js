@@ -85,11 +85,22 @@ let ytPlayer=null,ytReady=false,userInteracted=false;
 const diceAnimations=new Map();
 const playerName=$('#playerName'); playerName.value=localStorage.getItem('cc_name')||'';
 
-function show(name){Object.values(screens).forEach(x=>x.classList.remove('active'));screens[name].classList.add('active');setMusicMode(name)}
+function show(name){Object.values(screens).forEach(x=>x.classList.remove('active'));screens[name].classList.add('active');document.body.classList.remove('scene-home','scene-lobby','scene-game');document.body.classList.add('scene-'+name);setMusicMode(name)}
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2600)}
 function remember(){const n=playerName.value.trim();if(n)localStorage.setItem('cc_name',n)}
 function ensureStarter(){ return true; }
 function escapeHtml(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+function buildCrystalDrift(){
+  const root=$('#crystalDrift');if(!root||root.children.length)return;
+  const hues=['cyan','violet','pink','gold','aqua'];
+  for(let i=0;i<26;i++){
+    const d=document.createElement('i');d.className=`float-crystal ${hues[i%hues.length]}`;
+    d.style.setProperty('--x',`${(i*37)%101}%`);d.style.setProperty('--size',`${18+(i*13)%55}px`);d.style.setProperty('--dur',`${11+(i%9)*1.7}s`);d.style.setProperty('--delay',`${-(i%13)*1.25}s`);d.style.setProperty('--drift',`${-120+(i*29)%240}px`);d.style.setProperty('--rot',`${(i*41)%360}deg`);
+    root.append(d);
+  }
+}
+buildCrystalDrift();
+const CATEGORY_UI={strength:['🏋️','STÄRKE'],speed:['⚡','SCHNELLIGKEIT'],energy:['🔋','ENERGIE'],magic:['⭐','MAGIE']};
 
 function accessoryDecor(key){const a=ITEMS[key]||ITEMS.changeling;return `<span class="decor decor-${key}" aria-hidden="true"><img src="${a.image}" alt=""></span>`;}
 function frameDecor(key){if(!key||!FRAMES[key])return '';return `<img class="name-frame" src="${FRAMES[key].image}" alt="" aria-hidden="true">`;}
@@ -141,7 +152,7 @@ $('#lobbyAccessoryBtn')?.addEventListener('click',()=>{renderAccessoryGrid();$('
 
 $('#createBtn').addEventListener('click',()=>{ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim();if(!name)return toast('Bitte zuerst einen Namen eingeben.');remember();socket.emit('createRoom',{name,accessory:selectedAccessory,frame:selectedFrame})});
 $('#joinBtn').addEventListener('click',()=>{ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim(),code=$('#roomCode').value.trim();if(!name||!code)return toast('Name und Raumcode eingeben.');remember();socket.emit('joinRoom',{name,code,accessory:selectedAccessory,frame:selectedFrame})});
-$('#startBtn').addEventListener('click',()=>{ensureAudio();socket.emit('startGame')});
+$('#startBtn').addEventListener('click',()=>{ensureAudio();socket.emit('toggleReady')});
 
 socket.on('connect',()=>{myId=socket.id;updateHomePreview();});
 socket.on('errorMsg',toast); socket.on('notice',toast); socket.on('specialDone',e=>toast(e.text));
@@ -151,6 +162,7 @@ socket.on('roomState',s=>{
   else{
     show('game');renderGame();
     if(s.phase==='countdown')runCountdown(s.countdownUntil||Date.now()+5000);
+    else if(s.phase==='roundintro')showRoundIntro({round:s.round,category:s.category,until:s.roundIntroUntil});
     else if(s.phase==='select')startSelectionTimer(s.selectionDeadline);
   }
 });
@@ -159,16 +171,21 @@ socket.on('hand',h=>{const before=new Set(hand.map(c=>c.id));newlyDrawn=new Set(
 
 function renderLobby(){
   $('#lobbyCode').textContent=state.code;
-  $('#lobbyHint').textContent=state.players.length<2?'Schick den Code an deine Mitspieler.':'Bereit zum Start!';
-  $('#lobbyPlayers').innerHTML=state.players.map(p=>`<div class="lobby-player">${nameplateHTML(p.name,p.accessory,true,p.frame)}<div>${p.id===state.hostId?'Host 👑':'Mitspieler'} · ${p.handCount} Karten</div></div>`).join('');
-  $('#startBtn').style.display=myId===state.hostId?'inline-block':'none';
+  const me=state.players.find(p=>p.id===myId);
+  const readyCount=state.players.filter(p=>p.ready).length;
+  $('#lobbyHint').textContent=state.players.length<2?'Schick den Code an deine Mitspieler.':'Jeder Spieler klickt auf „Bereit“. Dann startet der Countdown automatisch.';
+  $('#lobbyPlayers').innerHTML=state.players.map(p=>`<div class="lobby-player ${p.ready?'player-ready':''}">${nameplateHTML(p.name,p.accessory,true,p.frame)}<div>${p.id===state.hostId?'Host 👑':'Mitspieler'} · ${p.ready?'✅ BEREIT':'⏳ Noch nicht bereit'}</div></div>`).join('');
+  $('#startBtn').style.display='inline-block';
   $('#startBtn').disabled=state.players.length<2;
+  $('#startBtn').textContent=me?.ready?'↩ Nicht bereit':`✅ Bereit (${readyCount}/${state.players.length})`;
+  $('#startBtn').classList.toggle('ready-active',!!me?.ready);
   updateMusicUI();
 }
 
 function renderGame(){
   if(!state)return;
   const me=state.players.find(p=>p.id===myId);if(!me)return;
+  const arena=document.querySelector('.arena');if(arena){arena.classList.remove('arena-crystal_colosseum','arena-storm_temple','arena-celestial_forge');arena.classList.add('arena-'+(state.arenaId||'crystal_colosseum'));}
   $('#abortBtn').style.display=myId===state.hostId&&state.phase!=='gameover'?'inline-block':'none';
   $('#selfName').textContent=me.name;
   $('#selfCount').textContent=`${me.handCount} Karten`;
@@ -181,10 +198,7 @@ function renderGame(){
 function specialUseInfo(c){
   return `<div class="special-category-badge"><span>${c.useIcon||'✦'}</span><strong>${escapeHtml(c.useLabel||'Jede Kategorie')}</strong></div><div class="special-description">${escapeHtml(c.text||'Spezialeffekt')}</div>`;
 }
-function statOverlayHTML(c){
-  if(!c||c.type!=='normal')return '';
-  return `<span class="card-stat-number stat-strength">${c.strength}</span><span class="card-stat-number stat-speed">${c.speed}</span><span class="card-stat-number stat-magic">${c.magic}</span><span class="card-stat-number stat-energy">${c.energy}</span>`;
-}
+function statOverlayHTML(c){return '';}
 let inspectRotationY=0,inspectRotationX=0,inspectDragging=false,inspectLastX=0,inspectLastY=0;
 function openCardInspect(card){
   if(!card)return;
@@ -216,7 +230,7 @@ function renderHand(){
     const blocked=c.type==='normal'&&c.id===blockedId&&normals.some(x=>x.id!==blockedId);
     const el=document.createElement('div');el.className=`hand-card ${c.type==='special'?'special':''} ${blocked?'recently-played disabled':''} ${newlyDrawn.has(c.id)?'drawing-in':''}`;
     const img=document.createElement('img');img.src=c.image;img.alt=c.name;el.append(img);bindCardInspector(el,c);
-    if(c.type==='normal')el.insertAdjacentHTML('beforeend',statOverlayHTML(c));
+    
     if(c.type==='normal'){
       if(blocked){const lock=document.createElement('div');lock.className='recent-lock';lock.textContent='⏳ Gerade gespielt';el.append(lock)}
       el.tabIndex=blocked?-1:0;
@@ -254,7 +268,7 @@ function revealCards(e){
     let d=t.querySelector(`[data-player-id="${x.pid}"]`);
     if(!d){d=document.createElement('div');t.append(d)}
     d.className='played-card reveal-flip';d.dataset.playerId=x.pid;d.style.animationDelay=`${i*.07}s`;
-    d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-front-face"><img src="${x.card.image}" alt="${escapeHtml(x.card.name)}">${statOverlayHTML(x.card)}<span class="value">${x.value}${x.bonus?` (+${x.bonus})`:''}</span></div></div><div class="who">${escapeHtml(x.name)}</div>`;bindCardInspector(d,x.card);
+    d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-front-face"><img src="${x.card.image}" alt="${escapeHtml(x.card.name)}"><span class="value">${x.value}${x.bonus?` (+${x.bonus})`:''}</span></div></div><div class="who">${escapeHtml(x.name)}</div>`;bindCardInspector(d,x.card);
   });
   $('#roundMessage').textContent='Karten werden verglichen …';beep(920,.12);
 }
@@ -293,6 +307,25 @@ function stopDiceAnimation(e){
 function showSpecialBurst(e){specialSound();const overlay=document.createElement('div');overlay.className='special-burst';overlay.innerHTML=`<div class="special-burst-card"><div class="magic-ring"></div><img src="${e.card.image}" alt=""><strong>${escapeHtml(e.name)}</strong><span>${e.card.useIcon||'✦'} ${escapeHtml(e.card.useLabel||'Spezialkarte')}</span></div>`;document.body.append(overlay);setTimeout(()=>overlay.classList.add('active'),20);setTimeout(()=>overlay.classList.add('fade'),1150);setTimeout(()=>overlay.remove(),1650)}
 socket.on('specialPlayed',showSpecialBurst);
 
+let roundIntroTimer=null;
+function categorySound(cat){
+  if(cat==='strength'){tone(120,.18,.055,'square');tone(180,.16,.04,'triangle',.08)}
+  else if(cat==='speed'){tone(620,.06,.04,'square');tone(980,.1,.045,'sine',.07)}
+  else if(cat==='energy'){tone(250,.15,.04,'sawtooth');tone(500,.2,.035,'triangle',.1)}
+  else {tone(520,.12,.04,'sine');tone(780,.18,.045,'sine',.08);tone(1040,.2,.035,'triangle',.18)}
+}
+function showRoundIntro(e){
+  const o=$('#roundIntroOverlay');if(!o)return;
+  if(roundIntroTimer){clearTimeout(roundIntroTimer);roundIntroTimer=null}
+  const ui=CATEGORY_UI[e.category]||['✦',String(e.category||'KATEGORIE').toUpperCase()];
+  $('#roundIntroRound').textContent=`RUNDE ${e.round||state?.round||1}`;$('#roundIntroIcon').textContent=e.icon||ui[0];$('#roundIntroLabel').textContent=e.label||ui[1];
+  o.className='round-intro-overlay active category-'+(e.category||'magic');o.setAttribute('aria-hidden','false');
+  const cat=$('#category');if(cat){cat.classList.remove('category-pulse');void cat.offsetWidth;cat.classList.add('category-pulse')}
+  $('#categoryIcon').textContent=e.icon||ui[0];$('#categoryText').textContent=e.label||ui[1];
+  clearTable();stopSelectionTimer();categorySound(e.category);
+  roundIntroTimer=setTimeout(()=>{o.classList.remove('active');o.setAttribute('aria-hidden','true')},1750);
+}
+
 let countdownUiTimer=null,selectionUiTimer=null;
 function countdownTickSound(n){
   const base=n===1?520:250+n*32;
@@ -313,7 +346,7 @@ function runCountdown(until){
     if(left!==previous){
       previous=left;
       e.className=`countdown countdown-visible count-${Math.max(1,Math.min(5,left))}`;
-      e.innerHTML=`<span class="countdown-label">RUNDE STARTET</span><span class="countdown-number">${left}</span>`;
+      e.innerHTML=`<span class="countdown-label">⚔️ KAMPF STARTET IN</span><span class="countdown-number">${left}</span><span class="countdown-sub">Mach dich bereit!</span>`;
       countdownTickSound(left);
       e.animate([{transform:'translate(-50%,-50%) scale(.88)'},{transform:'translate(-50%,-50%) scale(1.05)'},{transform:'translate(-50%,-50%) scale(1)'}],{duration:360,easing:'cubic-bezier(.2,.8,.2,1)'});
     }
@@ -330,12 +363,56 @@ function startSelectionTimer(deadline){
 }
 
 socket.on('countdown',({seconds,until})=>{show('game');ensureAudio();runCountdown(until||Date.now()+(seconds||5)*1000)});
-socket.on('roundStart',e=>{stopCountdown();clearTable();$('#categoryIcon').textContent=e.icon;$('#categoryText').textContent=e.label;$('#roundMessage').textContent='Wähle deine beste Karte.';$('#diceZone').innerHTML='';startSelectionTimer(e.deadline);beep(760,.15)});
+socket.on('allReady',e=>{toast(e.message||'Alle sind bereit!');beep(880,.18)});
+socket.on('roundIntro',showRoundIntro);
+socket.on('roundStart',e=>{stopCountdown();$('#categoryIcon').textContent=e.icon;$('#categoryText').textContent=e.label;$('#roundMessage').textContent='Wähle deine beste Karte.';$('#diceZone').innerHTML='';startSelectionTimer(e.deadline);beep(760,.15)});
 socket.on('cardCommitted',addCommitGhost);
 socket.on('playerSelected',()=>beep(300,.05));
 socket.on('cardAccepted',()=>{$('#roundMessage').textContent='✓ Deine Karte liegt – warte auf die anderen.';beep(360,.06)});
 socket.on('reveal',revealCards);
-socket.on('roundWinner',e=>{stopSelectionTimer();$('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;animateCapture(e.winnerId);beep(1040,.22)});
+function noiseBurst(duration=.15,gain=.06,when=0){
+  const ctx=ensureAudio.ctx;if(!ctx)return;const len=Math.max(1,Math.floor(ctx.sampleRate*duration));const b=ctx.createBuffer(1,len,ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);const src=ctx.createBufferSource(),g=ctx.createGain();src.buffer=b;g.gain.value=gain;src.connect(g);g.connect(ctx.destination);src.start(ctx.currentTime+when);
+}
+function finisherSound(type){
+  ensureAudio();
+  if(type==='dragonfire'){tone(88,.55,.055,'sawtooth');noiseBurst(.8,.05,.35);tone(55,.7,.05,'triangle',.3)}
+  else if(type==='dissolve'){for(let i=0;i<8;i++)tone(1050-i*85,.13,.02,'sine',i*.12)}
+  else if(type==='starbarrage'){for(let i=0;i<7;i++)tone(700+i*95,.07,.028,'triangle',i*.13)}
+  else if(type==='gunshots'){[0,.34,.68].forEach((t,i)=>{noiseBurst(.07,.11,t);tone(120-i*12,.08,.05,'square',t)})}
+  else if(type==='flowerdevour'){[420,520,620,760].forEach((f,i)=>tone(f,.26,.026,'sine',i*.18))}
+  else if(type==='cakebites'){[0,.42,.86,1.28].forEach(t=>{tone(105,.08,.06,'triangle',t);noiseBurst(.045,.025,t+.02)})}
+  else if(type==='loserplank'){[0,.48,.96].forEach(t=>{tone(145,.08,.075,'square',t);noiseBurst(.06,.055,t)})}
+  else if(type==='freeze'){for(let i=0;i<6;i++)tone(800+i*120,.1,.024,'sine',i*.16);noiseBurst(.18,.04,1.25)}
+  else if(type==='lightningstorm'){[0,.24,.55,.92].forEach(t=>{noiseBurst(.08,.07,t);tone(1800,.05,.03,'square',t)})}
+  else if(type==='portalvoid'){for(let i=0;i<9;i++)tone(360-i*27,.16,.02,'sine',i*.11)}
+  else if(type==='crystalburst'){[880,1040,1260,1480].forEach((f,i)=>tone(f,.16,.025,'triangle',i*.17));noiseBurst(.12,.04,.78)}
+  else if(type==='shadowchains'){[120,95,72].forEach((f,i)=>tone(f,.4,.04,'sawtooth',i*.25));noiseBurst(.12,.025,.8)}
+}
+function finisherMarkup(type){
+  const map={
+    dragonfire:'<span class="dragon-head">🐉</span><span class="fire-wave"></span>',
+    dissolve:'<span class="dissolve-cloud">✦ ✧ ✦ ✧ ✦</span>',
+    starbarrage:'<span class="star-shot s1">★</span><span class="star-shot s2">★</span><span class="star-shot s3">★</span><span class="star-shot s4">★</span>',
+    gunshots:'<span class="muzzle m1"></span><span class="muzzle m2"></span><span class="muzzle m3"></span><span class="bullet-hole h1"></span><span class="bullet-hole h2"></span><span class="bullet-hole h3"></span>',
+    flowerdevour:'<span class="vine v1">🌿</span><span class="vine v2">🌺</span><span class="vine v3">🌿</span><span class="vine v4">🌸</span>',
+    cakebites:'<span class="cake-bite b1">🍰</span><span class="cake-bite b2">😋</span><span class="cake-bite b3">🍰</span>',
+    loserplank:'<span class="loser-plank">LOSER</span><span class="hammer">🔨</span><span class="nail n1">•</span><span class="nail n2">•</span>',
+    freeze:'<span class="ice-spread"></span><span class="ice-spark">❄</span>',
+    lightningstorm:'<span class="bolt b1">ϟ</span><span class="bolt b2">ϟ</span><span class="bolt b3">ϟ</span>',
+    portalvoid:'<span class="portal-ring"></span><span class="portal-core"></span>',
+    crystalburst:'<span class="crys c1">◆</span><span class="crys c2">◆</span><span class="crys c3">◆</span><span class="crys c4">◆</span>',
+    shadowchains:'<span class="shadow-arm a1"></span><span class="shadow-arm a2"></span><span class="shadow-chain">⛓</span>'
+  };return map[type]||map.dissolve;
+}
+function playFinisher(e){
+  finisherSound(e.finisher);
+  const winner=document.querySelector(`#tableCards .played-card[data-player-id="${e.winnerId}"]`);if(winner)winner.classList.add('winner-charging','winner-'+e.finisher);
+  const losers=[...document.querySelectorAll('#tableCards .played-card')].filter(x=>x.dataset.playerId!==e.winnerId);
+  losers.forEach((el,i)=>{el.classList.add('finisher-target','finisher-'+e.finisher);const fx=document.createElement('div');fx.className='finisher-fx';fx.innerHTML=finisherMarkup(e.finisher);fx.style.setProperty('--stagger',`${i*.12}s`);el.append(fx)});
+  setTimeout(()=>animateCapture(e.winnerId),Math.max(2800,(e.duration||3300)-250));
+}
+
+socket.on('roundWinner',e=>{stopSelectionTimer();$('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;beep(1040,.22);playFinisher(e)});
 socket.on('roundTimeout',e=>{stopSelectionTimer();clearTable();const names=(e.penalties||[]).map(x=>x.name).join(', ');$('#roundMessage').textContent=names?`⏱ ${names} verliert eine Strafkarte. Neue Kategorie!`:'⏱ Zeit abgelaufen – neue Kategorie!';toast(e.message||'Zeit abgelaufen.');beep(190,.20)});
 socket.on('tieStart',e=>setupDice(e,'Gleichstand! Würfeln entscheidet.'));
 socket.on('tieAgain',e=>setupDice(e,'Schon wieder Gleichstand – nochmal würfeln!'));
@@ -344,9 +421,24 @@ socket.on('diceRolled',stopDiceAnimation);
 socket.on('gameOver',e=>{
   $('#roundMessage').textContent=`👑 ${e.winnerName} ist Champion!`;
   $('#gameOverTitle').textContent=`👑 ${e.winnerName} gewinnt!`;
-  $('#gameOverText').textContent='Die Partie ist beendet. Ihr könnt gemeinsam in die Lobby zurückkehren oder ins Hauptmenü gehen.';
+  $('#gameOverText').textContent='Die Partie ist beendet. Jeder entscheidet selbst, wann er fertig ist. Dein Geschenk bleibt offen, auch wenn der Host bereits fertig ist.';
   pendingGift=e.winnerId===myId;$('#rewardBtn').style.display=pendingGift?'inline-block':'none';
   if(!$('#gameOverDialog').open)$('#gameOverDialog').showModal();
+});
+socket.on('postGameWaiting',e=>{
+  // Nur DIESER Spieler hat Lobby gewählt. Die anderen bleiben bei Ergebnis/Geschenk.
+  try{$('#gameOverDialog').close()}catch{}
+  try{$('#giftDialog').close()}catch{}
+  show('lobby');
+  $('#startBtn').style.display='none';
+  $('#lobbyHint').textContent=`Du bist fertig (${e.ready}/${e.total}). Warte, bis die anderen Spieler ebenfalls „Zur Lobby“ wählen.`;
+  toast('Du bist bereit für die Lobby. Die anderen können ihr Geschenk in Ruhe öffnen.');
+});
+socket.on('postGameReadyState',e=>{
+  if(state?.phase==='gameover' && !$('#gameOverDialog').open){
+    const hint=$('#lobbyHint');
+    if(hint)hint.textContent=`Bereit: ${e.ready.length}/${e.total} Spieler`;
+  }
 });
 socket.on('backToLobby',()=>{stopCountdown();stopSelectionTimer();try{$('#gameOverDialog').close()}catch{};try{$('#giftDialog').close()}catch{};clearTable();show('lobby');toast('Zurück in der Lobby.')});
 socket.on('roomLeft',()=>{stopCountdown();stopSelectionTimer();state=null;hand=[];clearTable();renderHand();show('home');toast('Du hast den Raum verlassen.')});
@@ -361,7 +453,7 @@ function leaveRoomNow(){ if(confirm('Raum wirklich verlassen und zum Hauptmenü 
 $('#leaveLobbyBtn').addEventListener('click',leaveRoomNow);
 $('#leaveGameBtn').addEventListener('click',leaveRoomNow);
 $('#abortBtn').addEventListener('click',()=>{if(confirm('Die laufende Partie für alle abbrechen und zur Lobby zurückkehren?')){socket.emit('abortGame');toast('Spiel wird abgebrochen …')}});
-$('#returnLobbyBtn').addEventListener('click',()=>{socket.emit('returnToLobby');toast('Zurück zur Lobby …')});
+$('#returnLobbyBtn').addEventListener('click',()=>{socket.emit('returnToLobby');toast('Du bist bereit für die Lobby …')});
 $('#gameOverHomeBtn').addEventListener('click',()=>{try{$('#gameOverDialog').close()}catch{};socket.emit('leaveRoom')});
 $('#closeGameOverBtn').addEventListener('click',()=>$('#gameOverDialog').close());
 $('#rewardBtn').addEventListener('click',()=>{try{$('#gameOverDialog').close()}catch{};$('#giftResult').textContent='';$('#giftBox').style.display='inline-block';$('#giftDialog').showModal()});
