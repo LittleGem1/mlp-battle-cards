@@ -1,14 +1,19 @@
-MLP BATTLE CARDS – RAUMCODE KOPIEREN
+MLP BATTLE CARDS – SYMBOLLOSER REALISTISCHER KATEGORIE-KRISTALL
 
 Ersetzen:
 - public/client.js
 - public/style.css
 
-Neu:
-- Der Raumcode selbst ist anklickbar.
-- Direkt daneben erscheint ein Button: "📋 Code kopieren".
-- Funktioniert sowohl in der normalen Lobby als auch in der Arena-Vorbereitung.
-- Bei erfolgreichem Kopieren erscheint kurz eine Meldung.
-- Fallback eingebaut, falls der Browser die moderne Clipboard-Funktion nicht unterstützt.
+Geändert:
+- Keine Symbole und keine Kategorienamen mehr AUF dem Kristall.
+- Kristall ist ein langer vierseitiger violetter Edelstein in Diamantform.
+- 4 individuelle Glas-/Amethyst-Facetten mit Lichtbrechungen.
+- Langsamere, natürlichere 3D-Drehung mit Abbremsen und leichtem Nachschwingen.
+- Während der Drehung ist das Ergebnis verborgen.
+- Erst wenn der Kristall stoppt, erscheint darunter groß das gezogene Symbol + die Kategorie.
+- Kristall-Klirren wurde an die längere Drehung angepasst.
 
-Danach GitHub committen -> Render Deploy latest commit -> Strg+F5.
+Der Kristall wird komplett aus HTML/CSS gebaut. Es wird KEIN Kristallbild verwendet.
+
+Danach:
+GitHub committen -> Render Deploy latest commit -> Strg+F5.
