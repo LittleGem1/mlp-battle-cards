@@ -2033,3 +2033,27 @@ body:has(.hand.large-hand) .arena{
   .hand.large-hand .hand-card:not(.disabled):focus-within{transform:translateY(-9px) scale(1.07)!important}
   body:has(.hand.large-hand) .arena{padding-bottom:58vh!important}
 }
+
+
+/* ===== Nach dem Spiel wirklich in der Lobby bleiben ===== */
+.postgame-lobby-player{
+  min-height:122px;
+}
+.postgame-player-status{
+  margin-top:9px;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  text-align:center;
+}
+.postgame-lobby-player.is-back .postgame-player-status{
+  color:#b8ffd3;
+  background:rgba(38,150,92,.18);
+  border:1px solid rgba(107,255,174,.28);
+}
+.postgame-lobby-player.is-waiting .postgame-player-status{
+  color:#ffe6a1;
+  background:rgba(183,119,28,.16);
+  border:1px solid rgba(255,207,102,.25);
+}

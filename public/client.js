@@ -211,10 +211,62 @@ $('#arenaReadyLeaveBtn')?.addEventListener('click',()=>leaveRoomNow());
 
 socket.on('connect',()=>{myId=socket.id;updateHomePreview();});
 socket.on('errorMsg',toast); socket.on('notice',toast); socket.on('specialDone',e=>toast(e.text));
+
+let waitingForLobbyReset=false;
+
+function renderPostGameLobby(){
+  if(!state)return;
+  const backSet=new Set(state.postGameReady||[]);
+  $('#lobbyCode').textContent=state.code;
+  if(typeof ensureRoomCodeCopyControl==='function')ensureRoomCodeCopyControl($('#lobbyCode'),state.code);
+
+  $('#lobbyHint').textContent=`Du bist zurück in der Lobby. ${backSet.size}/${state.players.length} Spieler sind schon hier. Sobald alle zurück sind, kann die nächste Runde starten.`;
+
+  $('#lobbyPlayers').innerHTML=state.players.map(p=>{
+    const back=backSet.has(p.id);
+    const status=back?'✓ In der Lobby':'⏳ Noch im Ergebnis';
+    return `<div class="lobby-player postgame-lobby-player ${back?'is-back':'is-waiting'}">
+      ${nameplateHTML(p.name,p.accessory,true,p.frame)}
+      <div class="postgame-player-status">${status}</div>
+    </div>`;
+  }).join('');
+
+  $('#startBtn').style.display='none';
+  $('#lobbyAccessoryBtn')?.style.setProperty('display','inline-block');
+}
+
 socket.on('roomState',s=>{
   state=s;
 
+  // WICHTIG:
+  // Wenn dieser Spieler nach dem Spiel bereits "Zur Lobby" gedrückt hat,
+  // bleibt er dort, auch wenn der gemeinsame Raum serverseitig noch gameover ist.
+  const alreadyBackAfterGame =
+    s.phase==='gameover' &&
+    Array.isArray(s.postGameReady) &&
+    s.postGameReady.includes(myId);
+
+  if(alreadyBackAfterGame){
+    waitingForLobbyReset=true;
+    show('lobby');
+    document.body.classList.remove('scene-game','scene-home');
+    document.body.classList.add('scene-lobby');
+    currentScreen='lobby';
+    buildLobbyScene('crystal_cave');
+    setMusicMode('lobby');
+    hideArenaReady();
+    hideTieAlert();
+    stopCountdown();
+    stopSelectionTimer();
+    clearTable();
+    try{$('#gameOverDialog').close()}catch{}
+    try{$('#giftDialog').close()}catch{}
+    renderPostGameLobby();
+    return;
+  }
+
   if(s.phase==='lobby'){
+    waitingForLobbyReset=false;
     show('lobby');
     document.body.classList.remove('scene-game','scene-home');
     document.body.classList.add('scene-lobby');
@@ -224,11 +276,11 @@ socket.on('roomState',s=>{
     hideArenaReady();
     stopCountdown();
     stopSelectionTimer();
+    clearTable();
     renderLobby();
     return;
   }
 
-  // Bereit wird erst IN der zufällig ausgewählten Arena angezeigt.
   show('game');
   document.body.classList.remove('scene-lobby','scene-home');
   document.body.classList.add('scene-game');
@@ -1020,23 +1072,36 @@ socket.on('gameOver',e=>{
   if(!$('#gameOverDialog').open)$('#gameOverDialog').showModal();
 });
 socket.on('postGameWaiting',e=>{
-  // Nur DIESER Spieler hat Lobby gewählt. Die anderen bleiben bei Ergebnis/Geschenk.
+  waitingForLobbyReset=true;
   try{$('#gameOverDialog').close()}catch{}
   try{$('#giftDialog').close()}catch{}
+  stopCountdown();
+  stopSelectionTimer();
+  hideTieAlert();
+  clearTable();
+
   show('lobby');
+  document.body.classList.remove('scene-game','scene-home');
+  document.body.classList.add('scene-lobby');
+  currentScreen='lobby';
+  buildLobbyScene('crystal_cave');
   setMusicMode('lobby');
-  $('#startBtn').style.display='none';
-  $('#lobbyHint').textContent=`Du bist zurück in der Lobby (${e.ready}/${e.total}). Sobald alle zurück sind, ist die nächste Runde sofort startbereit.`;
-  toast('Zurück in der Lobby. Die anderen können ihr Geschenk in Ruhe öffnen.');
+
+  if(state){
+    if(!Array.isArray(state.postGameReady))state.postGameReady=[];
+    if(!state.postGameReady.includes(myId))state.postGameReady.push(myId);
+    renderPostGameLobby();
+  }
+  toast('Du bist zurück in der Lobby. Die anderen können ihr Ergebnis in Ruhe ansehen.');
 });
 socket.on('postGameReadyState',e=>{
-  if(state?.phase==='gameover' && !$('#gameOverDialog').open){
-    const hint=$('#lobbyHint');
-    if(hint)hint.textContent=`Bereit: ${e.ready.length}/${e.total} Spieler`;
+  if(state)state.postGameReady=[...(e.ready||[])];
+  if(waitingForLobbyReset){
+    renderPostGameLobby();
   }
 });
-socket.on('backToLobby',()=>{stopCountdown();stopSelectionTimer();hideTieAlert();try{$('#gameOverDialog').close()}catch{};try{$('#giftDialog').close()}catch{};clearTable();show('lobby');setMusicMode('lobby');if(state?.phase==='lobby')renderLobby();toast('Lobby ist bereit für die nächste Runde.')});
-socket.on('roomLeft',()=>{stopCountdown();stopSelectionTimer();hideTieAlert();state=null;hand=[];clearTable();renderHand();show('home');setMusicMode('lobby');toast('Du hast den Raum verlassen.')});
+socket.on('backToLobby',()=>{waitingForLobbyReset=false;stopCountdown();stopSelectionTimer();hideTieAlert();try{$('#gameOverDialog').close()}catch{};try{$('#giftDialog').close()}catch{};clearTable();show('lobby');setMusicMode('lobby');if(state?.phase==='lobby')renderLobby();toast('Lobby ist bereit für die nächste Runde.')});
+socket.on('roomLeft',()=>{waitingForLobbyReset=false;stopCountdown();stopSelectionTimer();hideTieAlert();state=null;hand=[];clearTable();renderHand();show('home');setMusicMode('lobby');toast('Du hast den Raum verlassen.')});
 socket.on('flutterChoices',e=>showChoices('Fluttershy: Welche Karte möchtest du behalten?',e.cards,c=>socket.emit('flutterKeep',{cardId:c.id})));
 socket.on('rarityChoose',e=>showChoices('Rarity: Welche Karte möchtest du austauschen?',e.cards,c=>socket.emit('raritySwap',{cardId:c.id})));
 function showChoices(title,cards,cb){$('#choiceTitle').textContent=title;const g=$('#choiceCards');g.innerHTML='';cards.forEach(c=>{const b=document.createElement('button');b.type='button';b.innerHTML=`<img src="${c.image}" alt="${escapeHtml(c.name)}">`;b.addEventListener('click',()=>{$('#choiceDialog').close();cb(c)});g.append(b)});$('#choiceDialog').showModal()}
