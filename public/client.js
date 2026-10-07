@@ -578,12 +578,18 @@ function categorySound(cat){
   else if(cat==='energy'){tone(250,.15,.04,'sawtooth');tone(500,.2,.035,'triangle',.1)}
   else {tone(520,.12,.04,'sine');tone(780,.18,.045,'sine',.08);tone(1040,.2,.035,'triangle',.18)}
 }
-function coinSpinSound(){
-  // Mehrere kleine metallische Klicks – eine einzige zusammenhängende Münzanimation.
-  [0,.18,.36,.54,.72,.9,1.08,1.26].forEach((t,i)=>{
-    tone(540+i*38,.045,.018,'triangle',t);
-    if(i%2===0)tone(980+i*24,.03,.009,'sine',t+.018);
+function crystalSpinSound(){
+  // Glasiges Kristall-Klirren statt Münz-Klicks.
+  [0,.22,.44,.68,.92,1.18,1.46,1.76,2.06].forEach((t,i)=>{
+    tone(720+i*31,.055,.014,'sine',t);
+    tone(1080+i*27,.035,.008,'triangle',t+.018);
   });
+}
+function crystalLandSound(){
+  tone(310,.11,.035,'triangle');
+  tone(620,.24,.045,'sine',.05);
+  tone(930,.32,.035,'sine',.12);
+  tone(1240,.38,.022,'triangle',.18);
 }
 function showRoundIntro(e){
   stopCountdown();
@@ -594,32 +600,42 @@ function showRoundIntro(e){
   $('#roundIntroIcon').textContent=e.icon||ui[0];
   $('#roundIntroLabel').textContent=e.label||ui[1];
 
-  // Die alte Kategorie wird bewusst ausgeblendet: auch zweimal Magie hintereinander
-  // fühlt sich dadurch eindeutig wie eine NEUE Runde an.
-  $('#categoryIcon').textContent='🪙';
-  $('#categoryText').textContent='Neue Kategorie wird gezogen …';
+  // Auch bei derselben Kategorie zweimal hintereinander wird der Beginn klar sichtbar.
+  $('#categoryIcon').textContent='🔷';
+  $('#categoryText').textContent='Der Kristall wählt die Kategorie …';
   $('#roundMessage').textContent='';
   clearTable();stopSelectionTimer();
 
-  o.className='round-intro-overlay category-coin-overlay active category-'+(e.category||'magic');
+  o.className='round-intro-overlay category-crystal-overlay active category-'+(e.category||'magic');
   o.setAttribute('aria-hidden','false');
-  const coin=$('#roundCategoryCoin');
-  coin?.classList.remove('coin-running');
-  void coin?.offsetWidth;
-  coin?.classList.add('coin-running');
-  coinSpinSound();
 
-  // Erst wenn die Münze auf der Rückseite landet, wird die neue Kategorie enthüllt.
+  const crystal=$('#roundCategoryCrystal');
+  const result=$('#categoryCrystalResult');
+  // Jede Seitenfläche hat eine feste Position um die Y-Achse. Der Endwinkel
+  // wird so gesetzt, dass exakt die serverseitig gewählte Kategorie vorne landet.
+  const landY={strength:'1440deg',speed:'1710deg',energy:'1620deg',magic:'1530deg'}[e.category]||'1530deg';
+  crystal?.style.setProperty('--crystal-land-y',landY);
+  crystal?.classList.remove('crystal-running');
+  result?.classList.remove('show');
+  void crystal?.offsetWidth;
+  crystal?.classList.add('crystal-running');
+  crystalSpinSound();
+
+  // Der Kristall landet erst vollständig, DANN wird das Ergebnis bestätigt.
   setTimeout(()=>{
+    result?.classList.add('show');
     $('#categoryIcon').textContent=e.icon||ui[0];
     $('#categoryText').textContent=e.label||ui[1];
+    crystalLandSound();
     categorySound(e.category);
     const cat=$('#category');if(cat){cat.classList.remove('category-pulse');void cat.offsetWidth;cat.classList.add('category-pulse')}
-  },2050);
+  },2700);
 
   roundIntroTimer=setTimeout(()=>{
-    o.classList.remove('active');o.setAttribute('aria-hidden','true');coin?.classList.remove('coin-running');
-  },2850);
+    o.classList.remove('active');o.setAttribute('aria-hidden','true');
+    crystal?.classList.remove('crystal-running');
+    result?.classList.remove('show');
+  },3650);
 }
 
 let countdownUiTimer=null,selectionUiTimer=null;

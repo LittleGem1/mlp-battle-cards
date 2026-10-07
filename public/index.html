@@ -100,14 +100,21 @@
     </div>
   </div>
   <div id="toast" class="toast" role="status"></div>
-  <div id="roundIntroOverlay" class="round-intro-overlay category-coin-overlay" aria-hidden="true">
-    <div class="category-coin-scene">
-      <span id="roundIntroRound" class="category-coin-round">RUNDE 1</span>
-      <div id="roundCategoryCoin" class="category-coin">
-        <div class="category-coin-face category-coin-front"><span>?</span><small>NEUE KATEGORIE</small></div>
-        <div class="category-coin-face category-coin-back"><b id="roundIntroIcon">⭐</b><strong id="roundIntroLabel">MAGIE</strong></div>
+  <div id="roundIntroOverlay" class="round-intro-overlay category-crystal-overlay" aria-hidden="true">
+    <div class="category-crystal-scene">
+      <span id="roundIntroRound" class="category-crystal-round">RUNDE 1</span>
+      <div id="roundCategoryCrystal" class="category-crystal" aria-label="Vierseitiger Kategorie-Kristall">
+        <div class="category-crystal-face crystal-face-strength"><span>🏋️</span><small>STÄRKE</small></div>
+        <div class="category-crystal-face crystal-face-speed"><span>⚡</span><small>SCHNELLIGKEIT</small></div>
+        <div class="category-crystal-face crystal-face-energy"><span>🔋</span><small>ENERGIE</small></div>
+        <div class="category-crystal-face crystal-face-magic"><span>⭐</span><small>MAGIE</small></div>
+        <i class="category-crystal-core" aria-hidden="true"></i>
+        <i class="category-crystal-glint" aria-hidden="true"></i>
       </div>
-      <span class="category-coin-hint">Die Münze entscheidet …</span>
+      <div id="categoryCrystalResult" class="category-crystal-result" aria-live="polite">
+        <b id="roundIntroIcon">⭐</b><strong id="roundIntroLabel">MAGIE</strong>
+      </div>
+      <span class="category-crystal-hint">Der Kristall entscheidet …</span>
     </div>
   </div>
   <button id="rulesBtn" class="rules-floating" type="button">📖 Spielregeln</button>

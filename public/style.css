@@ -1196,34 +1196,44 @@ body.scene-home .crystal-panel,body.scene-lobby .crystal-panel{background:linear
 .absolute-countdown-core.go>span:first-child{font-size:clamp(70px,14vw,130px)}
 @keyframes absoluteCountRing{to{transform:rotate(360deg)}}
 
-/* ONE category animation: the category coin. */
-.category-coin-overlay{position:fixed!important;inset:0!important;z-index:2000000!important;display:grid!important;place-items:center!important;pointer-events:none!important;opacity:0;visibility:hidden;background:radial-gradient(circle,rgba(13,14,53,.42),rgba(3,4,18,.82) 72%);backdrop-filter:blur(5px);transition:opacity .16s ease}
-.category-coin-overlay.active{opacity:1;visibility:visible}
-.category-coin-scene{display:grid;place-items:center;gap:12px;perspective:1100px;text-align:center}
-.category-coin-round{font-size:clamp(18px,3vw,30px);font-weight:1000;letter-spacing:.22em;color:#fff;text-shadow:0 3px 18px #000}
-.category-coin{position:relative;width:min(330px,68vw);aspect-ratio:1;transform-style:preserve-3d;filter:drop-shadow(0 24px 28px rgba(0,0,0,.48))}
-.category-coin.coin-running{animation:categoryCoinReveal 2.72s cubic-bezier(.18,.72,.18,1) both}
-.category-coin-face{position:absolute;inset:0;border-radius:50%;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:grid;place-items:center;align-content:center;border:12px solid #f4d76d;background:radial-gradient(circle at 36% 28%,#fff7bf,#d69c27 40%,#8a5115 68%,#f4d76d 70%,#6e3d0d 76%);box-shadow:inset 0 0 0 8px rgba(255,250,183,.4),inset 0 0 42px rgba(80,39,4,.48),0 0 45px rgba(255,215,85,.35)}
-.category-coin-front span{font-size:clamp(120px,30vw,220px);font-weight:1000;color:#fff9c8;text-shadow:0 6px 0 #8b5615,0 0 24px #fff6a4}
-.category-coin-front small{font-size:clamp(12px,2.7vw,19px);font-weight:1000;letter-spacing:.1em;color:#5c330b}
-.category-coin-back{transform:rotateY(180deg);background:radial-gradient(circle at 35% 28%,#fff,#d8c7ff 18%,#8158e7 45%,#283a8e 72%,#151943 76%);border-color:#9eeaff;box-shadow:inset 0 0 0 8px rgba(255,255,255,.24),inset 0 0 45px rgba(78,26,145,.5),0 0 55px currentColor}
-.category-coin-back b{font-size:clamp(105px,25vw,190px);line-height:.9;filter:drop-shadow(0 0 20px #fff)}
-.category-coin-back strong{font-size:clamp(24px,6vw,52px);font-weight:1000;color:#fff;letter-spacing:.04em;text-shadow:0 3px 14px #000}
-.category-coin-hint{font-size:clamp(13px,2.5vw,19px);font-weight:850;color:#dce7ff;text-shadow:0 2px 10px #000}
-@keyframes categoryCoinReveal{
-  0%{transform:translateY(90px) rotateY(0deg) rotateX(8deg) scale(.55);opacity:0}
-  14%{opacity:1;transform:translateY(-35px) rotateY(180deg) rotateX(-5deg) scale(1.06)}
-  42%{transform:translateY(-55px) rotateY(540deg) rotateX(8deg) scale(1.12)}
-  70%{transform:translateY(-12px) rotateY(760deg) rotateX(-3deg) scale(1.04)}
-  88%{transform:translateY(0) rotateY(890deg) scale(1.01)}
-  100%{transform:translateY(0) rotateY(900deg) rotateX(0) scale(1)}
+/* ONE category animation: a four-sided realistic crystal. */
+.category-crystal-overlay{position:fixed!important;inset:0!important;z-index:2000000!important;display:grid!important;place-items:center!important;pointer-events:none!important;opacity:0;visibility:hidden;background:radial-gradient(circle at 50% 45%,rgba(66,95,170,.28),rgba(3,4,18,.87) 70%);backdrop-filter:blur(6px);transition:opacity .18s ease}
+.category-crystal-overlay.active{opacity:1;visibility:visible}
+.category-crystal-scene{display:grid;place-items:center;gap:13px;perspective:1500px;text-align:center}
+.category-crystal-round{font-size:clamp(18px,3vw,30px);font-weight:1000;letter-spacing:.22em;color:#fff;text-shadow:0 3px 18px #000,0 0 18px rgba(130,226,255,.35)}
+.category-crystal{--crystal-land-y:1530deg;position:relative;width:min(220px,48vw);height:min(330px,70vw);transform-style:preserve-3d;filter:drop-shadow(0 30px 34px rgba(0,0,0,.55)) drop-shadow(0 0 34px rgba(111,225,255,.34));will-change:transform}
+.category-crystal.crystal-running{animation:categoryCrystalReveal 3.15s cubic-bezier(.16,.72,.12,1) both}
+.category-crystal-face{position:absolute;left:50%;top:50%;width:172px;height:292px;margin-left:-86px;margin-top:-146px;display:grid;place-items:center;align-content:center;gap:8px;backface-visibility:hidden;-webkit-backface-visibility:hidden;clip-path:polygon(50% 0,91% 18%,100% 58%,82% 88%,50% 100%,18% 88%,0 58%,9% 18%);border:1px solid rgba(224,251,255,.78);background:linear-gradient(142deg,rgba(255,255,255,.86) 0%,rgba(171,239,255,.31) 16%,rgba(91,171,255,.17) 34%,rgba(117,79,211,.28) 60%,rgba(255,121,238,.18) 79%,rgba(240,253,255,.67) 100%);box-shadow:inset 22px 0 34px rgba(255,255,255,.18),inset -24px -8px 34px rgba(57,27,137,.27),inset 0 0 14px rgba(255,255,255,.48),0 0 16px rgba(132,229,255,.2)}
+.category-crystal-face::before{content:"";position:absolute;inset:3px;clip-path:polygon(50% 0,91% 18%,100% 58%,82% 88%,50% 100%,18% 88%,0 58%,9% 18%);background:linear-gradient(72deg,transparent 0 20%,rgba(255,255,255,.42) 21% 24%,transparent 25% 46%,rgba(127,225,255,.22) 47% 51%,transparent 52% 71%,rgba(255,179,245,.18) 72% 76%,transparent 77%);mix-blend-mode:screen;opacity:.9}
+.category-crystal-face::after{content:"";position:absolute;inset:0;clip-path:polygon(50% 0,91% 18%,100% 58%,82% 88%,50% 100%,18% 88%,0 58%,9% 18%);background:linear-gradient(110deg,rgba(255,255,255,.48),transparent 19% 67%,rgba(255,255,255,.17));opacity:.75}
+.category-crystal-face>span,.category-crystal-face>small{position:relative;z-index:3}
+.category-crystal-face>span{font-size:clamp(62px,15vw,104px);line-height:1;filter:drop-shadow(0 0 12px #fff) drop-shadow(0 0 22px currentColor)}
+.category-crystal-face>small{font-size:clamp(11px,2.4vw,17px);font-weight:1000;letter-spacing:.11em;color:#fff;text-shadow:0 2px 7px #000,0 0 10px currentColor}
+.crystal-face-strength{transform:rotateY(0deg) translateZ(86px);color:#ff7070}
+.crystal-face-speed{transform:rotateY(90deg) translateZ(86px);color:#ffe35f}
+.crystal-face-energy{transform:rotateY(180deg) translateZ(86px);color:#68ffae}
+.crystal-face-magic{transform:rotateY(270deg) translateZ(86px);color:#d791ff}
+.category-crystal-core{position:absolute;left:50%;top:50%;width:78px;height:248px;margin-left:-39px;margin-top:-124px;transform:translateZ(0);clip-path:polygon(50% 0,90% 20%,78% 83%,50% 100%,22% 83%,10% 20%);background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(72,217,255,.18) 35%,rgba(174,83,255,.22) 72%,rgba(255,255,255,.38));filter:blur(.2px) drop-shadow(0 0 24px rgba(112,229,255,.7));box-shadow:inset 0 0 30px rgba(255,255,255,.4);pointer-events:none}
+.category-crystal-glint{position:absolute;left:24%;top:8%;width:18%;height:68%;border-radius:50%;transform:translateZ(90px) rotate(14deg);background:linear-gradient(180deg,rgba(255,255,255,.82),rgba(255,255,255,0));filter:blur(2px);opacity:.65;animation:crystalGlint 1.25s ease-in-out infinite alternate;pointer-events:none}
+.category-crystal-result{min-height:67px;display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 18px;border-radius:999px;border:1px solid rgba(207,242,255,.42);background:rgba(9,12,43,.78);box-shadow:0 0 25px rgba(94,217,255,.14);opacity:0;transform:translateY(9px) scale(.88);transition:.36s cubic-bezier(.2,.8,.2,1);color:#fff}
+.category-crystal-result.show{opacity:1;transform:translateY(0) scale(1)}
+.category-crystal-result b{font-size:clamp(31px,7vw,54px);filter:drop-shadow(0 0 12px #fff)}
+.category-crystal-result strong{font-size:clamp(22px,5vw,42px);font-weight:1000;letter-spacing:.04em;text-shadow:0 3px 14px #000}
+.category-crystal-hint{font-size:clamp(13px,2.5vw,19px);font-weight:850;color:#dcefff;text-shadow:0 2px 10px #000}
+@keyframes categoryCrystalReveal{
+  0%{transform:translateY(130px) rotateX(-38deg) rotateY(0deg) rotateZ(11deg) scale(.48);opacity:0}
+  11%{opacity:1}
+  24%{transform:translateY(-75px) rotateX(248deg) rotateY(520deg) rotateZ(-12deg) scale(1.05)}
+  50%{transform:translateY(-100px) rotateX(545deg) rotateY(990deg) rotateZ(8deg) scale(1.12)}
+  73%{transform:translateY(-27px) rotateX(705deg) rotateY(calc(var(--crystal-land-y) - 145deg)) rotateZ(-4deg) scale(1.05)}
+  89%{transform:translateY(5px) rotateX(720deg) rotateY(calc(var(--crystal-land-y) + 22deg)) rotateZ(1deg) scale(1.015)}
+  100%{transform:translateY(0) rotateX(720deg) rotateY(var(--crystal-land-y)) rotateZ(0deg) scale(1);opacity:1}
 }
-.category-coin-overlay.category-strength{color:#ff7878}.category-coin-overlay.category-speed{color:#ffe568}.category-coin-overlay.category-energy{color:#68ffaf}.category-coin-overlay.category-magic{color:#d994ff}
-
-/* The old round-intro card is intentionally disabled: there is only the coin animation now. */
+@keyframes crystalGlint{from{opacity:.25;transform:translateZ(90px) translateX(-4px) rotate(14deg)}to{opacity:.85;transform:translateZ(90px) translateX(9px) rotate(14deg)}}
+.category-crystal-overlay.category-strength{color:#ff7373}.category-crystal-overlay.category-speed{color:#ffe36b}.category-crystal-overlay.category-energy{color:#72ffb5}.category-crystal-overlay.category-magic{color:#db97ff}
 .round-intro-card{display:none!important}
-@media(max-width:720px){.arena-ready-panel{padding:72px 10px 170px}.arena-ready-card{padding:20px 14px}.arena-ready-actions>*{width:100%}.category-coin{width:min(280px,72vw)}}
-@media(prefers-reduced-motion:reduce){.category-coin.coin-running{animation-duration:.01ms!important}.absolute-countdown-core::before,.absolute-countdown-core::after{animation:none!important}}
+@media(max-width:720px){.arena-ready-panel{padding:72px 10px 170px}.arena-ready-card{padding:20px 14px}.arena-ready-actions>*{width:100%}.category-crystal{width:min(180px,45vw);height:min(280px,68vw)}.category-crystal-face{width:142px;height:242px;margin-left:-71px;margin-top:-121px}.crystal-face-strength{transform:rotateY(0deg) translateZ(71px)}.crystal-face-speed{transform:rotateY(90deg) translateZ(71px)}.crystal-face-energy{transform:rotateY(180deg) translateZ(71px)}.crystal-face-magic{transform:rotateY(270deg) translateZ(71px)}}
+@media(prefers-reduced-motion:reduce){.category-crystal.crystal-running{animation-duration:.01ms!important}.category-crystal-glint{animation:none!important}.absolute-countdown-core::before,.absolute-countdown-core::after{animation:none!important}}
 
 
 /* =========================================================
