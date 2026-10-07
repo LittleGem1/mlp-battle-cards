@@ -888,3 +888,71 @@
   .special-description{font-size:10px;bottom:37px;min-height:34px}
   .hand-card .special-use{font-size:10px;padding:6px 4px}
 }
+
+
+/* ===== Hintergrundmusik ohne sichtbares YouTube-Video ===== */
+#ytMusicDock{display:none!important}
+.yt-music-dock{display:none!important}
+.yt-audio-source{
+  position:fixed!important;
+  width:1px!important;
+  height:1px!important;
+  left:-10000px!important;
+  top:-10000px!important;
+  overflow:hidden!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+.music-panel{
+  position:fixed;
+  right:14px;
+  bottom:14px;
+  z-index:36;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 10px;
+  border-radius:15px;
+  border:1px solid rgba(135,224,255,.30);
+  background:rgba(10,12,45,.88);
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+  backdrop-filter:blur(7px);
+}
+.music-panel.home-hidden{display:none}
+.volume-control{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:11px;
+  color:#e9edff;
+}
+#musicVolume{
+  width:105px;
+  cursor:pointer;
+}
+#musicVolumeValue{
+  min-width:34px;
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+.selection-timer{
+  min-height:28px;
+  padding:5px 12px;
+  border-radius:999px;
+  color:#fff2af;
+  background:rgba(27,18,64,.78);
+  border:1px solid rgba(255,208,104,.42);
+  font-weight:900;
+  font-size:16px;
+  box-shadow:0 0 16px rgba(255,191,82,.09);
+}
+@media(max-width:720px){
+  .music-panel{
+    right:7px;
+    bottom:7px;
+    gap:6px;
+    padding:6px;
+  }
+  #musicVolume{width:76px}
+  .music-panel .music-toggle{font-size:10px;padding:7px}
+}

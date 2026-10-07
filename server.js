@@ -19,7 +19,7 @@ function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=M
 function roomPlayers(r){ return [...r.players.values()]; }
 function publicState(r){
   return {
-    code:r.code, hostId:r.hostId, phase:r.phase, category:r.category, countdownUntil:r.countdownUntil||null,
+    code:r.code, hostId:r.hostId, phase:r.phase, category:r.category, countdownUntil:r.countdownUntil||null, selectionDeadline:r.selectionDeadline||null,
     players:roomPlayers(r).map(p=>({id:p.id,name:p.name,accessory:p.accessory,handCount:p.hand.length,selected:!!p.selected,eliminated:p.hand.length===0,lastPlayedCardId:p.lastPlayedCardId||null})),
     round:r.round
   };
@@ -30,20 +30,23 @@ function freshPool(){ return shuffle([...normal,...specials].map(c=>c.id)); }
 function getRoom(socket){ const rc=socket.data.room; return rc?rooms.get(rc):null; }
 function activePlayers(r){ return roomPlayers(r).filter(p=>p.hand.length>0); }
 function hasNormalCard(p){ return p.hand.some(id=>byId[id]?.type==='normal'); }
-function roundParticipants(r){
-  // A player who has already committed stays a participant even though that card
-  // has been removed from their hand. Players with only special cards don't freeze the round.
-  return roomPlayers(r).filter(p=>p.selected || hasNormalCard(p));
+function requiredRoundPlayers(r){
+  const ids=(r.roundPlayerIds||[]).filter(id=>r.players.has(id));
+  return ids.map(id=>r.players.get(id));
 }
 function maybeEvaluate(r){
   if(!r || r.phase!=='select') return;
-  const expected=roundParticipants(r);
-  if(expected.length && expected.every(p=>p.selected)) evaluate(r);
+  const expected=requiredRoundPlayers(r);
+  if(expected.length && expected.every(p=>p.selected)){ if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;} r.selectionDeadline=null; evaluate(r); }
 }
-function clearPending(r){ if(r.roundTimer){clearTimeout(r.roundTimer);r.roundTimer=null;} }
+function clearPending(r){
+  if(r.roundTimer){clearTimeout(r.roundTimer);r.roundTimer=null;}
+  if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
+  r.selectionDeadline=null;
+}
 function resetToLobby(r){
   clearPending(r);
-  r.phase='lobby'; r.category=null; r.countdownUntil=null; r.round=0; r.played={}; r.dice={}; r.tieIds=[]; r.roundBuff={};
+  r.phase='lobby'; r.category=null; r.countdownUntil=null; r.selectionDeadline=null; r.roundPlayerIds=[]; r.round=0; r.played={}; r.dice={}; r.tieIds=[]; r.roundBuff={};
   for(const p of roomPlayers(r)){ p.hand=[]; p.selected=null; p.lastPlayedCardId=null; }
   io.to(r.code).emit('backToLobby');
   sendState(r);
@@ -59,17 +62,103 @@ function removePlayerFromRoom(socket, notify=true){
   if(r.phase==='select') maybeEvaluate(r);
 }
 
+function handleSelectionTimeout(r){
+  if(!r || r.phase!=='select') return;
+  r.selectionTimer=null;
+  r.selectionDeadline=null;
+
+  const timedOut=requiredRoundPlayers(r).filter(p=>!p.selected);
+  if(!timedOut.length){ maybeEvaluate(r); return; }
+
+  // Cards already committed by punctual players go back to their hands because
+  // this round is cancelled and a fresh category is drawn.
+  for(const [pid,entry] of Object.entries(r.played||{})){
+    const p=r.players.get(pid);
+    if(p && entry?.cardId && !p.hand.includes(entry.cardId)) p.hand.push(entry.cardId);
+    if(p) p.selected=null;
+  }
+
+  const penalties=[];
+  for(const p of timedOut){
+    // Remove one random card as penalty. Prefer a normal card, but if none exists
+    // any remaining card can be lost.
+    const choices=p.hand.filter(id=>byId[id]?.type==='normal');
+    const pool=choices.length?choices:p.hand;
+    if(!pool.length) continue;
+    const lostId=pool[Math.floor(Math.random()*pool.length)];
+    p.hand.splice(p.hand.indexOf(lostId),1);
+    penalties.push({playerId:p.id,name:p.name,card:byId[lostId]});
+  }
+
+  r.played={};
+  r.roundBuff={};
+  r.roundPlayerIds=[];
+  io.to(r.code).emit('roundTimeout',{
+    penalties,
+    message:'Zeit abgelaufen! Eine Strafkarte wurde abgegeben. Neue Kategorie wird gezogen.'
+  });
+  sendState(r);
+
+  const alive=activePlayers(r);
+  if(alive.length<=1){
+    r.phase='gameover';
+    const champion=alive[0] || roomPlayers(r).sort((a,b)=>b.hand.length-a.hand.length)[0];
+    io.to(r.code).emit('gameOver',{
+      winnerId:champion.id,
+      winnerName:champion.name,
+      counts:roomPlayers(r).map(p=>({id:p.id,name:p.name,count:p.hand.length}))
+    });
+    sendState(r);
+    return;
+  }
+
+  r.phase='result';
+  sendState(r);
+  startRound(r,1600);
+}
+
 function startRound(r, delay=900){
   clearPending(r);
   r.roundTimer=setTimeout(()=>{
     if(!rooms.has(r.code)) return;
     r.roundTimer=null;
     r.countdownUntil=null;
-    r.round += 1; r.phase='select'; r.played={}; r.dice={}; r.tieIds=[]; r.roundBuff={};
+    r.round += 1;
+    r.phase='select';
+    r.played={};
+    r.dice={};
+    r.tieIds=[];
+    r.roundBuff={};
     for(const p of roomPlayers(r)) p.selected=null;
+
     nextCategory(r);
-    io.to(r.code).emit('roundStart',{round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category]});
+
+    // Freeze the participant list for this round. This prevents a round from
+    // hanging because hand contents change after a card is committed.
+    r.roundPlayerIds=roomPlayers(r).filter(hasNormalCard).map(p=>p.id);
+
+    if(!r.roundPlayerIds.length){
+      r.phase='gameover';
+      const champion=roomPlayers(r).sort((a,b)=>b.hand.length-a.hand.length)[0];
+      io.to(r.code).emit('gameOver',{
+        winnerId:champion.id,winnerName:champion.name,
+        counts:roomPlayers(r).map(p=>({id:p.id,name:p.name,count:p.hand.length}))
+      });
+      sendState(r);
+      return;
+    }
+
+    r.selectionDeadline=Date.now()+10000;
+    io.to(r.code).emit('roundStart',{
+      round:r.round,
+      category:r.category,
+      label:CATEGORY_LABEL[r.category],
+      icon:CATEGORY_ICON[r.category],
+      deadline:r.selectionDeadline
+    });
     sendState(r);
+
+    r.selectionTimer=setTimeout(()=>handleSelectionTimeout(r),10050);
   },delay);
 }
 
@@ -141,7 +230,7 @@ function completeDiceRoll(r,pid){
 io.on('connection', socket=>{
   socket.on('createRoom',({name,accessory})=>{
     let c; do c=code(); while(rooms.has(c));
-    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundTimer:null};
+    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundTimer:null,selectionTimer:null,selectionDeadline:null,roundPlayerIds:[]};
     r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',hand:[],selected:null,lastPlayedCardId:null});
     rooms.set(c,r); socket.join(c); socket.data.room=c; sendState(r);
   });
@@ -179,6 +268,7 @@ io.on('connection', socket=>{
   socket.on('playCard',({cardId})=>{
     const r=getRoom(socket); if(!r||r.phase!=='select') return;
     const p=r.players.get(socket.id); const c=byId[cardId];
+    if(!r.roundPlayerIds?.includes(socket.id)) return socket.emit('errorMsg','Du bist in dieser Runde nicht als aktiver Spieler eingeplant.');
     if(!p||!c||c.type!=='normal'||!p.hand.includes(cardId)) return socket.emit('errorMsg','Diese Karte kann gerade nicht gespielt werden.');
     if(p.selected) return socket.emit('errorMsg','Du hast für diese Runde bereits eine Karte gewählt.');
     if(p.lastPlayedCardId===cardId){
@@ -240,11 +330,20 @@ io.on('connection', socket=>{
     setTimeout(()=>completeDiceRoll(r,socket.id),900);
   });
   socket.on('returnToLobby',()=>{
-    const r=getRoom(socket); if(!r||r.phase!=='gameover') return;
+    const r=getRoom(socket);
+    if(!r) return socket.emit('errorMsg','Du bist in keinem Raum.');
+    if(r.phase==='lobby'){ sendState(r); return; }
+    if(r.phase!=='gameover' && r.hostId!==socket.id){
+      return socket.emit('errorMsg','Während einer laufenden Partie kann nur der Host zur Lobby zurückkehren.');
+    }
+    io.to(r.code).emit('notice',r.phase==='gameover'?'Zurück in die Lobby.':'Die Partie wurde beendet. Zurück in die Lobby.');
     resetToLobby(r);
   });
   socket.on('abortGame',()=>{
-    const r=getRoom(socket); if(!r||r.hostId!==socket.id||r.phase==='lobby') return socket.emit('errorMsg','Nur der Host kann die laufende Partie abbrechen.');
+    const r=getRoom(socket);
+    if(!r) return socket.emit('errorMsg','Du bist in keinem Raum.');
+    if(r.hostId!==socket.id) return socket.emit('errorMsg','Nur der Host kann die laufende Partie abbrechen.');
+    if(r.phase==='lobby'){ sendState(r); return; }
     io.to(r.code).emit('notice','Die Partie wurde vom Host abgebrochen.');
     resetToLobby(r);
   });

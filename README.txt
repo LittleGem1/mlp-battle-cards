@@ -1,43 +1,38 @@
-MLP BATTLE CARDS – REPARATURPATCH
+MLP BATTLE CARDS – FLOW / 10-SEKUNDEN-STRAFE / MUSIKSTEUERUNG
 
-BITTE NUR DIESE DATEIEN ERSETZEN:
-- cards.js
+ERSETZEN:
 - server.js
+- public/index.html
 - public/client.js
 - public/style.css
 
-(Die index.html muss für diesen Patch NICHT ersetzt werden.)
+MUSIK:
+- Die beiden von dir gewählten YouTube-Tracks bleiben die Musikquelle.
+- Es wird KEIN sichtbares YouTube-Video mehr angezeigt.
+- Die Seite zeigt nur eigene Musiksteuerung: stumm/an + Lautstärkeregler.
+- Mute bleibt gespeichert und wird NICHT durch Kartenlegen/Soundeffekte wieder aufgehoben.
+- Soundeffekte und Hintergrundmusik sind technisch getrennt.
 
-GEFIXT:
-1. Musik-Mute
-   - der fehlende updateMusicButtons()-Code war ein echter JavaScript-Fehler
-   - dadurch wurden Teile der Spielanzeige abgebrochen
-   - Musikbutton schaltet jetzt YouTube wirklich stumm/an
-   - Spiel-Soundeffekte bleiben davon getrennt
+SPIEL:
+- Jede Kartenrunde hat 10 Sekunden Auswahlzeit.
+- Wenn ein Spieler keine Karte legt:
+  1. die aktuelle Runde wird abgebrochen,
+  2. bereits gelegte Karten gehen an ihre Spieler zurück,
+  3. jeder zu langsame Spieler verliert zufällig 1 Karte als Strafkarte,
+  4. danach wird automatisch eine NEUE Kategorie gezogen.
+- Die Teilnehmerliste einer Runde wird zu Rundenbeginn festgehalten.
+  Dadurch kann das Spiel nicht mehr wegen wechselnder Handgrößen hängen.
+- Sobald alle nötigen Spieler gewählt haben, wird sofort ausgewertet.
 
-2. Mitspieler im Spiel
-   - Gegneranzeige wird nicht mehr durch den Musikfehler abgebrochen
-   - Mitspieler erscheinen sichtbar oben mit Name, Kartenanzahl und Auswahlstatus
+BUTTONS:
+- Host: Spiel abbrechen -> zurück in die Lobby.
+- Nach Spielende: Zurück zur Lobby funktioniert für alle.
+- Lobby-/Hauptmenüstatus wird clientseitig zusätzlich sofort aktualisiert.
 
-3. Karte gewählt, aber Runde hängt
-   - Runden warten nur noch auf Spieler, die tatsächlich eine normale Karte spielen können
-   - Spieler mit ausschließlich Spezialkarten blockieren die Runde nicht mehr
-   - Server bestätigt deine Auswahl ausdrücklich
-   - nach dem Legen steht sichtbar: "Karte gewählt – warte auf die anderen Spieler"
+WICHTIG:
+Die Musik wird weiterhin über den offiziellen YouTube-IFrame-Player gestreamt.
+Sie wird nicht heruntergeladen oder als MP3 aus YouTube extrahiert.
 
-4. Countdown
-   - Countdown ist jetzt serverseitig mit Endzeit gespeichert
-   - falls das einzelne Countdown-Event verpasst wird, stellt roomState ihn trotzdem wieder her
-   - 5–1 wird groß in der Mitte angezeigt
-
-5. Spezialkarten
-   - deutlich größere Spezialkarten
-   - große Kategorie-Kennzeichnung direkt auf der Karte:
-       ⚡ Nur Schnelligkeit
-       🏋️ Nur Stärke
-       ✦ Jede Kategorie
-   - Effektbeschreibung wird zusätzlich groß lesbar eingeblendet
-   - "Spezial einsetzen"-Button größer
-
-Danach:
-GitHub committen -> Render "Deploy latest commit" -> im Browser Strg+F5.
+INSTALLATION:
+ZIP entpacken -> diese Dateien ersetzen -> GitHub Commit ->
+Render "Deploy latest commit" -> Browser Strg+F5.
