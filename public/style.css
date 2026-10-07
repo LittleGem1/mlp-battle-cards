@@ -1611,3 +1611,78 @@ body:has(.hand.large-hand) .arena{padding-bottom:min(48vh,430px)!important}
   .category-crystal-core{width:64px!important;height:276px!important;margin-left:-32px!important;margin-top:-138px!important}
   .category-crystal-face>span{width:66px!important;height:66px!important;font-size:43px!important}
 }
+
+/* ===== Lobby player layout: exactly 2 players per row ===== */
+#lobby .lobby-players{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  column-gap:42px!important;
+  row-gap:28px!important;
+  width:min(760px,100%)!important;
+  margin:30px auto 26px!important;
+  padding:8px 12px!important;
+  overflow:visible!important;
+  align-items:stretch!important;
+}
+
+#lobby .lobby-player{
+  position:relative!important;
+  min-width:0!important;
+  min-height:112px!important;
+  padding:24px 42px 18px!important;
+  display:grid!important;
+  place-items:center!important;
+  align-content:center!important;
+  gap:8px!important;
+  overflow:visible!important;
+  isolation:isolate!important;
+}
+
+/* Give frames and side-items enough room around each name. */
+#lobby .lobby-player .nameplate-small{
+  min-width:220px!important;
+  max-width:none!important;
+  overflow:visible!important;
+}
+
+#lobby .lobby-player .nameplate-small .name-frame{
+  width:270px!important;
+  height:86px!important;
+  object-fit:contain!important;
+}
+
+#lobby .lobby-player .nameplate-small .decor{
+  overflow:visible!important;
+}
+
+#lobby .lobby-player .nameplate-small[class*="item_"] .decor{
+  width:58px!important;
+  height:58px!important;
+  left:calc(100% - 1px)!important;
+}
+
+#lobby .lobby-player .nameplate-small[class*="item_"] .decor img{
+  width:58px!important;
+  height:58px!important;
+  object-fit:contain!important;
+}
+
+/* Decorative art is allowed to overlap the empty space around its own card,
+   but stays visually above the lobby tile instead of being clipped. */
+#lobby .lobby-player:hover,
+#lobby .lobby-player:focus-within{
+  z-index:5!important;
+}
+
+/* Narrow screens need one column so the art still stays fully visible. */
+@media(max-width:720px){
+  #lobby .lobby-players{
+    grid-template-columns:1fr!important;
+    width:min(390px,100%)!important;
+    row-gap:24px!important;
+  }
+  #lobby .lobby-player{
+    padding-left:48px!important;
+    padding-right:48px!important;
+  }
+}
