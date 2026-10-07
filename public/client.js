@@ -210,21 +210,60 @@ $('#lobbyAccessoryBtn')?.addEventListener('click',()=>{renderAccessoryGrid();$('
 $('#createBtn').addEventListener('click',()=>{directMusicGesture('lobby');ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim();if(!name)return toast('Bitte zuerst einen Namen eingeben.');remember();socket.emit('createRoom',{name,accessory:selectedAccessory,frame:selectedFrame})});
 $('#joinBtn').addEventListener('click',()=>{directMusicGesture('lobby');ensureAudio();if(!ensureStarter())return;const name=playerName.value.trim(),code=$('#roomCode').value.trim();if(!name||!code)return toast('Name und Raumcode eingeben.');remember();socket.emit('joinRoom',{name,code,accessory:selectedAccessory,frame:selectedFrame})});
 $('#startBtn').addEventListener('click',()=>{directMusicGesture('lobby');ensureAudio();socket.emit('toggleReady')});
+$('#arenaAccessoryBtn')?.addEventListener('click',()=>{renderAccessoryGrid();$('#accessoryDialog').showModal()});
+$('#arenaReadyLeaveBtn')?.addEventListener('click',()=>leaveRoomNow());
 
 socket.on('connect',()=>{myId=socket.id;updateHomePreview();});
 socket.on('errorMsg',toast); socket.on('notice',toast); socket.on('specialDone',e=>toast(e.text));
 socket.on('roomState',s=>{
   state=s;
-  if(s.phase==='lobby'){show('lobby');renderLobby();}
-  else{
-    show('game');renderGame();
-    if(s.phase==='countdown')runCountdown(s.countdownUntil||Date.now()+5000);
-    else if(s.phase==='roundintro')showRoundIntro({round:s.round,category:s.category,until:s.roundIntroUntil});
-    else if(s.phase==='select')startSelectionTimer(s.selectionDeadline);
+  // Sobald man einen Raum betreten hat, wartet man bereits IN DER ARENA.
+  // So sieht jeder seinen Bereit-Knopf am tatsächlichen Spielfeld.
+  show('game');
+
+  if(s.phase==='lobby'){
+    setMusicMode('lobby');
+    stopCountdown();
+    stopSelectionTimer();
+    renderGame();
+    renderArenaReady();
+    return;
   }
+
+  hideArenaReady();
+  setMusicMode('game');
+
+  // Countdown zuerst starten. Selbst wenn später beim Rendern etwas schiefgeht,
+  // liegt die globale Countdown-Ebene bereits über dem Browserfenster.
+  if(s.phase==='countdown') runCountdown(s.countdownUntil||Date.now()+5000);
+  renderGame();
+  if(s.phase==='roundintro')showRoundIntro({round:s.round,category:s.category,until:s.roundIntroUntil});
+  else if(s.phase==='select')startSelectionTimer(s.selectionDeadline);
 });
 let newlyDrawn=new Set();
 socket.on('hand',h=>{const before=new Set(hand.map(c=>c.id));newlyDrawn=new Set(h.filter(c=>!before.has(c.id)).map(c=>c.id));hand=h;renderHand();if(state)renderGame();if(newlyDrawn.size)setTimeout(()=>newlyDrawn.clear(),1000)});
+
+function hideArenaReady(){
+  const panel=$('#arenaReadyPanel');
+  if(panel)panel.hidden=true;
+}
+function renderArenaReady(){
+  const panel=$('#arenaReadyPanel');
+  if(!panel||!state)return;
+  panel.hidden=false;
+  const me=state.players.find(p=>p.id===myId);
+  const readyCount=state.players.filter(p=>p.ready).length;
+  $('#arenaRoomCode').textContent=state.code;
+  $('#arenaReadyPlayers').innerHTML=state.players.map(p=>`<div class="arena-ready-player ${p.ready?'is-ready':''}">${nameplateHTML(p.name,p.accessory,true,p.frame)}<span>${p.id===state.hostId?'👑 HOST · ':''}${p.ready?'✅ BEREIT':'⏳ WARTET'}</span></div>`).join('');
+  const btn=$('#startBtn');
+  btn.disabled=state.players.length<2;
+  btn.textContent=me?.ready?`↩ Nicht bereit (${readyCount}/${state.players.length})`:`✅ Bereit (${readyCount}/${state.players.length})`;
+  btn.classList.toggle('ready-active',!!me?.ready);
+  $('#categoryIcon').textContent='⚔️';
+  $('#categoryText').textContent=state.players.length<2?'Warte auf Mitspieler':'Bereit machen!';
+  $('#roundMessage').textContent=state.players.length<2?`Raumcode: ${state.code}`:'Sobald alle bereit sind, startet der Countdown für alle.';
+  updateMusicUI();
+}
 
 function renderLobby(){
   $('#lobbyCode').textContent=state.code;
@@ -522,16 +561,48 @@ function categorySound(cat){
   else if(cat==='energy'){tone(250,.15,.04,'sawtooth');tone(500,.2,.035,'triangle',.1)}
   else {tone(520,.12,.04,'sine');tone(780,.18,.045,'sine',.08);tone(1040,.2,.035,'triangle',.18)}
 }
+function coinSpinSound(){
+  // Mehrere kleine metallische Klicks – eine einzige zusammenhängende Münzanimation.
+  [0,.18,.36,.54,.72,.9,1.08,1.26].forEach((t,i)=>{
+    tone(540+i*38,.045,.018,'triangle',t);
+    if(i%2===0)tone(980+i*24,.03,.009,'sine',t+.018);
+  });
+}
 function showRoundIntro(e){
+  stopCountdown();
   const o=$('#roundIntroOverlay');if(!o)return;
   if(roundIntroTimer){clearTimeout(roundIntroTimer);roundIntroTimer=null}
   const ui=CATEGORY_UI[e.category]||['✦',String(e.category||'KATEGORIE').toUpperCase()];
-  $('#roundIntroRound').textContent=`RUNDE ${e.round||state?.round||1}`;$('#roundIntroIcon').textContent=e.icon||ui[0];$('#roundIntroLabel').textContent=e.label||ui[1];
-  o.className='round-intro-overlay active category-'+(e.category||'magic');o.setAttribute('aria-hidden','false');
-  const cat=$('#category');if(cat){cat.classList.remove('category-pulse');void cat.offsetWidth;cat.classList.add('category-pulse')}
-  $('#categoryIcon').textContent=e.icon||ui[0];$('#categoryText').textContent=e.label||ui[1];
-  clearTable();stopSelectionTimer();categorySound(e.category);
-  roundIntroTimer=setTimeout(()=>{o.classList.remove('active');o.setAttribute('aria-hidden','true')},1750);
+  $('#roundIntroRound').textContent=`RUNDE ${e.round||state?.round||1}`;
+  $('#roundIntroIcon').textContent=e.icon||ui[0];
+  $('#roundIntroLabel').textContent=e.label||ui[1];
+
+  // Die alte Kategorie wird bewusst ausgeblendet: auch zweimal Magie hintereinander
+  // fühlt sich dadurch eindeutig wie eine NEUE Runde an.
+  $('#categoryIcon').textContent='🪙';
+  $('#categoryText').textContent='Neue Kategorie wird gezogen …';
+  $('#roundMessage').textContent='';
+  clearTable();stopSelectionTimer();
+
+  o.className='round-intro-overlay category-coin-overlay active category-'+(e.category||'magic');
+  o.setAttribute('aria-hidden','false');
+  const coin=$('#roundCategoryCoin');
+  coin?.classList.remove('coin-running');
+  void coin?.offsetWidth;
+  coin?.classList.add('coin-running');
+  coinSpinSound();
+
+  // Erst wenn die Münze auf der Rückseite landet, wird die neue Kategorie enthüllt.
+  setTimeout(()=>{
+    $('#categoryIcon').textContent=e.icon||ui[0];
+    $('#categoryText').textContent=e.label||ui[1];
+    categorySound(e.category);
+    const cat=$('#category');if(cat){cat.classList.remove('category-pulse');void cat.offsetWidth;cat.classList.add('category-pulse')}
+  },2050);
+
+  roundIntroTimer=setTimeout(()=>{
+    o.classList.remove('active');o.setAttribute('aria-hidden','true');coin?.classList.remove('coin-running');
+  },2850);
 }
 
 let countdownUiTimer=null,selectionUiTimer=null;
@@ -541,31 +612,46 @@ function countdownTickSound(n){
   if(n===1)tone(780,.16,.045,'triangle',.05);
 }
 function selectionTickSound(n){if(n<=5&&n>0)tone(180+n*12,.035,.018,'square')}
+function countdownPortal(){
+  let e=document.getElementById('absoluteCountdownPortal');
+  if(!e){
+    e=document.createElement('div');
+    e.id='absoluteCountdownPortal';
+    e.setAttribute('aria-live','assertive');
+    // Direkt an BODY statt an einen Screen: Host und Gäste bekommen exakt dieselbe Ebene.
+    document.body.appendChild(e);
+  }
+  return e;
+}
 function stopCountdown(){
   if(countdownUiTimer){clearTimeout(countdownUiTimer);countdownUiTimer=null}
-  const e=$('#countdown');if(e){e.innerHTML='';e.className='countdown global-countdown';}
-  document.body.classList.remove('countdown-active');
+  const e=countdownPortal();
+  e.style.display='none';e.innerHTML='';e.className='';
+  const legacy=$('#countdown');if(legacy)legacy.style.display='none';
 }
 function runCountdown(until){
-  stopCountdown();const e=$('#countdown');if(!e)return;
-  document.body.classList.add('countdown-active');
+  if(!until)return;
+  if(countdownUiTimer){clearTimeout(countdownUiTimer);countdownUiTimer=null}
+  const e=countdownPortal();
+  const legacy=$('#countdown');if(legacy)legacy.style.display='none';
   let previous=null;
   const tick=()=>{
     const left=Math.ceil((until-Date.now())/1000);
+    e.style.display='grid';
+    e.className='absolute-countdown-portal';
     if(left<=0){
-      e.className='countdown global-countdown countdown-visible count-go';
-      e.innerHTML='<span class="countdown-label">⚔️ LOS!</span><span class="countdown-sub">Der Kampf beginnt</span>';
+      e.innerHTML='<div class="absolute-countdown-core go"><span>⚔️</span><strong>LOS!</strong><small>Der Kampf beginnt</small></div>';
       tone(780,.12,.06,'triangle');tone(1040,.24,.05,'sine',.08);
-      countdownUiTimer=setTimeout(stopCountdown,650);return;
+      countdownUiTimer=setTimeout(stopCountdown,720);return;
     }
     if(left!==previous){
       previous=left;
-      e.className=`countdown global-countdown countdown-visible count-${Math.max(1,Math.min(5,left))}`;
-      e.innerHTML=`<span class="countdown-label">⚔️ KAMPF STARTET IN</span><span class="countdown-number">${left}</span><span class="countdown-sub">Alle Spieler sehen denselben Countdown</span>`;
+      e.innerHTML=`<div class="absolute-countdown-core n${Math.max(1,Math.min(5,left))}"><small>KAMPF STARTET IN</small><strong>${left}</strong><span>⚔️ ALLE BEREIT ⚔️</span></div>`;
       countdownTickSound(left);
-      e.animate([{transform:'translate(-50%,-50%) scale(.9)'},{transform:'translate(-50%,-50%) scale(1.04)'},{transform:'translate(-50%,-50%) scale(1)'}],{duration:420,easing:'cubic-bezier(.2,.8,.2,1)'});
+      const core=e.firstElementChild;
+      core?.animate([{transform:'scale(.78)',opacity:.2},{transform:'scale(1.08)',opacity:1},{transform:'scale(1)',opacity:1}],{duration:430,easing:'cubic-bezier(.2,.8,.2,1)'});
     }
-    countdownUiTimer=setTimeout(tick,100);
+    countdownUiTimer=setTimeout(tick,80);
   };
   tick();
 }
@@ -577,7 +663,7 @@ function startSelectionTimer(deadline){
   tick();selectionUiTimer=setInterval(tick,180)
 }
 
-socket.on('countdown',({seconds,until})=>{show('game');ensureAudio();runCountdown(until||Date.now()+(seconds||5)*1000)});
+socket.on('countdown',({seconds,until})=>{hideArenaReady();show('game');setMusicMode('game');ensureAudio();runCountdown(until||Date.now()+(seconds||5)*1000)});
 socket.on('allReady',e=>{toast(e.message||'Alle sind bereit!');beep(880,.18)});
 socket.on('roundIntro',showRoundIntro);
 socket.on('roundStart',e=>{stopCountdown();$('#categoryIcon').textContent=e.icon;$('#categoryText').textContent=e.label;$('#roundMessage').textContent='Wähle deine beste Karte.';$('#diceZone').innerHTML='';startSelectionTimer(e.deadline);beep(760,.15)});

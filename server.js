@@ -120,7 +120,7 @@ function startRound(r,delay=900){
     nextCategory(r);
     r.roundPlayerIds=roomPlayers(r).filter(p=>p.hand.length>0&&hasNormalCard(p)).map(p=>p.id);
     if(!r.roundPlayerIds.length){gameOverIfNeeded(r);return;}
-    r.roundIntroUntil=Date.now()+1900;
+    r.roundIntroUntil=Date.now()+3000;
     io.to(r.code).emit('roundIntro',{round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],until:r.roundIntroUntil});
     sendState(r);
     r.roundTimer=setTimeout(()=>{
@@ -130,7 +130,7 @@ function startRound(r,delay=900){
       io.to(r.code).emit('roundStart',{round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],deadline:r.selectionDeadline});
       sendState(r);
       r.selectionTimer=setTimeout(()=>handleSelectionTimeout(r),30050);
-    },1900);
+    },3000);
   },delay);
 }
 function finishAfterCapture(r,winnerId,playedIds){

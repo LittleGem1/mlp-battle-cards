@@ -1150,3 +1150,77 @@ body.scene-home .crystal-panel,body.scene-lobby .crystal-panel{background:linear
   overflow:hidden!important;
   z-index:-1!important;
 }
+
+
+/* ===== V4: Bereit IN der Arena / unübersehbarer Countdown / Kategorie-Münze ===== */
+.arena-ready-panel{
+  position:absolute;inset:0;z-index:80;display:grid;place-items:center;padding:88px 18px 210px;
+  background:radial-gradient(circle at 50% 43%,rgba(18,23,75,.18),rgba(4,6,28,.72) 72%);
+  backdrop-filter:blur(3px);
+}
+.arena-ready-panel[hidden]{display:none!important}
+.arena-ready-card{
+  width:min(760px,94vw);padding:26px 28px 30px;border-radius:30px;text-align:center;
+  background:linear-gradient(145deg,rgba(20,19,68,.93),rgba(8,16,52,.94));
+  border:2px solid rgba(126,231,255,.48);box-shadow:0 0 65px rgba(97,204,255,.22),0 22px 70px rgba(0,0,0,.46);
+}
+.arena-ready-kicker{display:block;font-size:13px;font-weight:1000;letter-spacing:.22em;color:#bcefff}
+.arena-ready-card h2{margin:8px 0 4px;font-size:clamp(30px,6vw,50px)}
+.arena-ready-card>p{margin:0 0 18px;color:#d6ddff}
+.arena-ready-players{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:18px 0}
+.arena-ready-player{padding:12px;border-radius:17px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.065);transition:.25s transform,.25s border-color,.25s box-shadow}
+.arena-ready-player.is-ready{border-color:rgba(103,255,181,.7);box-shadow:0 0 22px rgba(80,255,172,.13);transform:translateY(-2px)}
+.arena-ready-player>span{display:block;margin-top:7px;font-size:12px;font-weight:950;color:#dbe5ff}
+.arena-ready-player.is-ready>span{color:#9fffc9}
+.arena-ready-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.arena-ready-actions .ready-btn{min-width:210px;font-size:17px}
+
+/* Countdown lives directly under BODY and therefore cannot disappear inside a screen stacking context. */
+#absoluteCountdownPortal.absolute-countdown-portal{
+  position:fixed!important;inset:0!important;z-index:2147483647!important;place-items:center!important;
+  pointer-events:none!important;background:radial-gradient(circle at 50% 50%,rgba(20,18,72,.54),rgba(2,3,18,.82) 68%,rgba(2,3,18,.92))!important;
+  isolation:isolate!important;
+}
+.absolute-countdown-core{
+  width:min(660px,92vw);aspect-ratio:1;display:grid;place-items:center;align-content:center;text-align:center;border-radius:50%;
+  background:radial-gradient(circle,#3be4ff30 0 24%,#b552ff38 42%,#111338ee 68%,transparent 70%);
+  border:5px solid rgba(255,255,255,.36);box-shadow:0 0 0 12px rgba(116,230,255,.08),0 0 90px rgba(87,224,255,.42),inset 0 0 65px rgba(241,104,255,.2);
+}
+.absolute-countdown-core::before,.absolute-countdown-core::after{content:"";position:absolute;width:min(610px,86vw);aspect-ratio:1;border-radius:50%;border:5px dashed rgba(105,232,255,.52);animation:absoluteCountRing 5s linear infinite}
+.absolute-countdown-core::after{width:min(540px,76vw);border:3px solid rgba(255,119,222,.4);animation-duration:3.4s;animation-direction:reverse}
+.absolute-countdown-core small,.absolute-countdown-core span,.absolute-countdown-core strong{position:relative;z-index:3;text-shadow:0 4px 18px #000}
+.absolute-countdown-core small{font-size:clamp(16px,3vw,31px);font-weight:1000;letter-spacing:.16em;color:#fff}
+.absolute-countdown-core strong{font-size:clamp(190px,42vw,390px);line-height:.85;font-weight:1000;background:linear-gradient(180deg,#fffbd1,#ff85db 45%,#65efff);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 30px #7cecff)}
+.absolute-countdown-core span{font-size:clamp(14px,2.6vw,24px);font-weight:950;color:#fff0af}
+.absolute-countdown-core.go strong{font-size:clamp(95px,22vw,210px);background:linear-gradient(90deg,#fff06a,#ff71d3,#63eeff,#98ff89);-webkit-background-clip:text;background-clip:text;color:transparent}
+.absolute-countdown-core.go>span:first-child{font-size:clamp(70px,14vw,130px)}
+@keyframes absoluteCountRing{to{transform:rotate(360deg)}}
+
+/* ONE category animation: the category coin. */
+.category-coin-overlay{position:fixed!important;inset:0!important;z-index:2000000!important;display:grid!important;place-items:center!important;pointer-events:none!important;opacity:0;visibility:hidden;background:radial-gradient(circle,rgba(13,14,53,.42),rgba(3,4,18,.82) 72%);backdrop-filter:blur(5px);transition:opacity .16s ease}
+.category-coin-overlay.active{opacity:1;visibility:visible}
+.category-coin-scene{display:grid;place-items:center;gap:12px;perspective:1100px;text-align:center}
+.category-coin-round{font-size:clamp(18px,3vw,30px);font-weight:1000;letter-spacing:.22em;color:#fff;text-shadow:0 3px 18px #000}
+.category-coin{position:relative;width:min(330px,68vw);aspect-ratio:1;transform-style:preserve-3d;filter:drop-shadow(0 24px 28px rgba(0,0,0,.48))}
+.category-coin.coin-running{animation:categoryCoinReveal 2.72s cubic-bezier(.18,.72,.18,1) both}
+.category-coin-face{position:absolute;inset:0;border-radius:50%;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:grid;place-items:center;align-content:center;border:12px solid #f4d76d;background:radial-gradient(circle at 36% 28%,#fff7bf,#d69c27 40%,#8a5115 68%,#f4d76d 70%,#6e3d0d 76%);box-shadow:inset 0 0 0 8px rgba(255,250,183,.4),inset 0 0 42px rgba(80,39,4,.48),0 0 45px rgba(255,215,85,.35)}
+.category-coin-front span{font-size:clamp(120px,30vw,220px);font-weight:1000;color:#fff9c8;text-shadow:0 6px 0 #8b5615,0 0 24px #fff6a4}
+.category-coin-front small{font-size:clamp(12px,2.7vw,19px);font-weight:1000;letter-spacing:.1em;color:#5c330b}
+.category-coin-back{transform:rotateY(180deg);background:radial-gradient(circle at 35% 28%,#fff,#d8c7ff 18%,#8158e7 45%,#283a8e 72%,#151943 76%);border-color:#9eeaff;box-shadow:inset 0 0 0 8px rgba(255,255,255,.24),inset 0 0 45px rgba(78,26,145,.5),0 0 55px currentColor}
+.category-coin-back b{font-size:clamp(105px,25vw,190px);line-height:.9;filter:drop-shadow(0 0 20px #fff)}
+.category-coin-back strong{font-size:clamp(24px,6vw,52px);font-weight:1000;color:#fff;letter-spacing:.04em;text-shadow:0 3px 14px #000}
+.category-coin-hint{font-size:clamp(13px,2.5vw,19px);font-weight:850;color:#dce7ff;text-shadow:0 2px 10px #000}
+@keyframes categoryCoinReveal{
+  0%{transform:translateY(90px) rotateY(0deg) rotateX(8deg) scale(.55);opacity:0}
+  14%{opacity:1;transform:translateY(-35px) rotateY(180deg) rotateX(-5deg) scale(1.06)}
+  42%{transform:translateY(-55px) rotateY(540deg) rotateX(8deg) scale(1.12)}
+  70%{transform:translateY(-12px) rotateY(760deg) rotateX(-3deg) scale(1.04)}
+  88%{transform:translateY(0) rotateY(890deg) scale(1.01)}
+  100%{transform:translateY(0) rotateY(900deg) rotateX(0) scale(1)}
+}
+.category-coin-overlay.category-strength{color:#ff7878}.category-coin-overlay.category-speed{color:#ffe568}.category-coin-overlay.category-energy{color:#68ffaf}.category-coin-overlay.category-magic{color:#d994ff}
+
+/* The old round-intro card is intentionally disabled: there is only the coin animation now. */
+.round-intro-card{display:none!important}
+@media(max-width:720px){.arena-ready-panel{padding:72px 10px 170px}.arena-ready-card{padding:20px 14px}.arena-ready-actions>*{width:100%}.category-coin{width:min(280px,72vw)}}
+@media(prefers-reduced-motion:reduce){.category-coin.coin-running{animation-duration:.01ms!important}.absolute-countdown-core::before,.absolute-countdown-core::after{animation:none!important}}

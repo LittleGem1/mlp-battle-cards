@@ -34,7 +34,6 @@
         <p id="lobbyHint">Warte auf Mitspieler …</p>
         <div id="lobbyPlayers" class="lobby-players"></div>
         <div class="lobby-actions">
-          <button id="startBtn" class="primary-btn ready-btn" type="button">✅ Bereit</button>
           <button id="lobbyAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
           <button id="leaveLobbyBtn" class="soft-btn" type="button">← Hauptmenü</button>
           <div class="music-controls"><button id="musicLobbyBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
@@ -50,6 +49,19 @@
           <div class="music-controls"><button id="musicGameBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
         </div>
         <div id="arenaVfx" class="arena-vfx" aria-hidden="true"><span class="arena-particle p1"></span><span class="arena-particle p2"></span><span class="arena-particle p3"></span><span class="arena-particle p4"></span><span class="arena-particle p5"></span><span class="arena-particle p6"></span><span class="arena-particle p7"></span><span class="arena-particle p8"></span><span class="arena-particle p9"></span><span class="arena-particle p10"></span><span class="arena-particle p11"></span><span class="arena-particle p12"></span><span class="arena-particle p13"></span><span class="arena-particle p14"></span></div>
+        <div id="arenaReadyPanel" class="arena-ready-panel" hidden>
+          <div class="arena-ready-card">
+            <span class="arena-ready-kicker">⚔️ KAMPF-VORBEREITUNG</span>
+            <h2>Raum <span id="arenaRoomCode"></span></h2>
+            <p>Alle Spieler müssen in der Arena bereit sein.</p>
+            <div id="arenaReadyPlayers" class="arena-ready-players"></div>
+            <div class="arena-ready-actions">
+              <button id="startBtn" class="primary-btn ready-btn" type="button">✅ Bereit</button>
+              <button id="arenaAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
+              <button id="arenaReadyLeaveBtn" class="soft-btn" type="button">← Hauptmenü</button>
+            </div>
+          </div>
+        </div>
         <div id="opponents" class="opponents"></div>
         <div class="center-stage">
           <div id="category" class="category"><span id="categoryIcon">✦</span><strong id="categoryText">Bereit?</strong></div>
@@ -76,7 +88,16 @@
     </div>
   </div>
   <div id="toast" class="toast" role="status"></div>
-  <div id="roundIntroOverlay" class="round-intro-overlay" aria-hidden="true"><div class="round-intro-card"><span id="roundIntroRound">RUNDE 1</span><b id="roundIntroIcon">⭐</b><strong id="roundIntroLabel">MAGIE</strong><i></i></div></div>
+  <div id="roundIntroOverlay" class="round-intro-overlay category-coin-overlay" aria-hidden="true">
+    <div class="category-coin-scene">
+      <span id="roundIntroRound" class="category-coin-round">RUNDE 1</span>
+      <div id="roundCategoryCoin" class="category-coin">
+        <div class="category-coin-face category-coin-front"><span>?</span><small>NEUE KATEGORIE</small></div>
+        <div class="category-coin-face category-coin-back"><b id="roundIntroIcon">⭐</b><strong id="roundIntroLabel">MAGIE</strong></div>
+      </div>
+      <span class="category-coin-hint">Die Münze entscheidet …</span>
+    </div>
+  </div>
   <button id="rulesBtn" class="rules-floating" type="button">📖 Spielregeln</button>
 
   <dialog id="accessoryDialog" class="modal accessory-modal">
