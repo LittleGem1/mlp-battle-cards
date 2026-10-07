@@ -672,3 +672,38 @@
   border-color:rgba(189,132,255,.52);
   box-shadow:0 0 20px rgba(148,97,255,.11);
 }
+
+
+/* ===== sichtbare Kartenwerte direkt aus cards.js =====
+   Deckt die alten gedruckten Zahlen ab, damit im Spiel garantiert nur 1–9 sichtbar sind. */
+.hand-card,
+.card-front-face{
+  position:relative;
+}
+.card-stat-number{
+  position:absolute;
+  z-index:6;
+  display:grid;
+  place-items:center;
+  width:18%;
+  height:9%;
+  min-width:18px;
+  min-height:14px;
+  border-radius:999px;
+  background:linear-gradient(180deg,#fff4c8,#f8dda0);
+  border:1px solid rgba(195,127,32,.72);
+  color:#8d1b12;
+  font-family:Georgia,'Times New Roman',serif;
+  font-weight:900;
+  line-height:1;
+  box-shadow:0 1px 4px rgba(0,0,0,.24);
+  pointer-events:none;
+}
+.stat-strength{left:20.7%;top:5.4%}
+.stat-speed{right:20.7%;top:5.4%}
+.stat-magic{left:20.7%;bottom:7.2%}
+.stat-energy{right:20.7%;bottom:7.2%}
+.hand-card .card-stat-number{font-size:11px}
+.played-card .card-stat-number{font-size:12px}
+
+/* Die neue Kampfmusik ist eine echte Audiodatei und nicht mehr nur ein paar Pieptöne. */

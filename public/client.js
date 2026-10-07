@@ -50,6 +50,10 @@ localStorage.setItem('cc_accessory',selectedAccessory);
 
 let pendingGift=false, lastReveal=[];
 let musicEnabled=localStorage.getItem('mlp_music')!=='off', musicMode='home', musicTimer=null, musicStep=0;
+const battleMusic=new Audio('/assets/music/epic_battle_theme.mp3');
+battleMusic.loop=true;
+battleMusic.volume=.33;
+battleMusic.preload='auto';
 const diceAnimations=new Map();
 const playerName=$('#playerName'); playerName.value=localStorage.getItem('cc_name')||'';
 
@@ -128,6 +132,14 @@ function renderGame(){
   $('#opponents').innerHTML=others.map(p=>`<div class="opponent" data-player-id="${p.id}">${nameplateHTML(p.name,p.accessory,true)}<div class="opponent-meta"><span>${p.handCount} Karten</span>${p.selected?'<span>✓ gewählt</span>':''}</div><div class="back-fan">${Array.from({length:Math.min(p.handCount,7)},(_,i)=>`<img src="/assets/card_back.webp" alt="verdeckte Karte" style="transform:rotate(${(i-3)*5}deg)">`).join('')}</div></div>`).join('');
   renderHand();
 }
+function statOverlayHTML(c){
+  if(!c || c.type!=='normal') return '';
+  return `<span class="card-stat-number stat-strength">${c.strength}</span>
+          <span class="card-stat-number stat-speed">${c.speed}</span>
+          <span class="card-stat-number stat-magic">${c.magic}</span>
+          <span class="card-stat-number stat-energy">${c.energy}</span>`;
+}
+
 function renderHand(){
   const wrap=$('#hand'); if(!wrap)return;
   wrap.innerHTML='';
@@ -139,7 +151,7 @@ function renderHand(){
     const blocked=c.type==='normal' && c.id===blockedId && normalCards.some(x=>x.id!==blockedId);
     const el=document.createElement('div');
     el.className=`hand-card ${c.type==='special'?'special':''} ${blocked?'recently-played disabled':''}`;
-    const img=document.createElement('img'); img.src=c.image; img.alt=c.name; el.append(img);
+    const img=document.createElement('img'); img.src=c.image; img.alt=c.name; el.append(img); if(c.type==='normal')el.insertAdjacentHTML('beforeend',statOverlayHTML(c));
 
     if(blocked){
       const lock=document.createElement('div');
@@ -191,49 +203,41 @@ function beep(freq=620,dur=.1){tone(freq,dur,.055,'sine')}
 function setMusicMode(mode){musicMode=mode;restartMusic()}
 function restartMusic(){
   if(musicTimer){clearInterval(musicTimer);musicTimer=null}
-  if(!musicEnabled || !ensureAudio.ctx || musicMode==='home')return;
+  battleMusic.pause();
 
-  musicStep=0;
-  if(musicMode==='lobby'){
-    const lobby=[261.63,329.63,392,523.25,392,329.63];
-    const play=()=>{
-      if(!musicEnabled)return;
-      const f=lobby[musicStep++%lobby.length];
-      tone(f,.62,.011,'triangle');
-      if(musicStep%3===0)tone(f*2,.16,.006,'sine',.10);
-    };
-    play();
-    musicTimer=setInterval(play,820);
+  if(!musicEnabled || musicMode==='home') return;
+
+  if(musicMode==='game'){
+    battleMusic.currentTime=0;
+    const p=battleMusic.play();
+    if(p&&p.catch)p.catch(()=>{});
     return;
   }
 
-  // Eigenes, prozedurales Battle-Thema: schneller Moll-Puls + Bass/Schlag.
-  // Keine externe oder urheberrechtlich geschützte Musikdatei nötig.
-  const lead=[220,261.63,293.66,329.63,293.66,349.23,329.63,261.63,
-              220,261.63,329.63,392,349.23,329.63,293.66,261.63];
-  const bass=[110,110,130.81,110,146.83,130.81,110,98];
+  // Lobby: bewusst ruhiger als der eigentliche Kampf.
+  if(!ensureAudio.ctx)return;
+  musicStep=0;
+  const lobby=[261.63,329.63,392,523.25,392,329.63];
   const play=()=>{
-    if(!musicEnabled)return;
-    const step=musicStep++;
-    const f=lead[step%lead.length];
-    tone(f,.23,.013,step%4===3?'sawtooth':'square');
-    tone(bass[Math.floor(step/2)%bass.length],.18,.018,'triangle');
-    // kurzer "Drum"-Impuls
-    if(step%2===0) tone(72,.075,.024,'sine');
-    if(step%4===2) tone(145,.055,.010,'square',.03);
-    if(step%8===7) tone(f*2,.12,.008,'sine',.08);
+    if(!musicEnabled || musicMode!=='lobby')return;
+    const f=lobby[musicStep++%lobby.length];
+    tone(f,.62,.011,'triangle');
+    if(musicStep%3===0)tone(f*2,.16,.006,'sine',.10);
   };
   play();
-  musicTimer=setInterval(play,285);
+  musicTimer=setInterval(play,820);
 }
-function toggleMusic(){musicEnabled=!musicEnabled;localStorage.setItem('mlp_music',musicEnabled?'on':'off');if(musicEnabled)ensureAudio();else if(musicTimer){clearInterval(musicTimer);musicTimer=null}updateMusicButtons();restartMusic()}
-function updateMusicButtons(){document.querySelectorAll('.music-toggle').forEach(b=>b.textContent=musicEnabled?'🔊 Musik an':'🔇 Musik aus')}
-function clearTable(){lastReveal=[];$('#tableCards').innerHTML=''}
-function addCommitGhost(e){
-  const t=$('#tableCards'); if(t.querySelector(`[data-player-id="${e.playerId}"]`))return;
-  const d=document.createElement('div');d.className='played-card ghost-card card-commit';d.dataset.playerId=e.playerId;
-  d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-back-face"><img src="/assets/card_back.webp" alt="verdeckte Karte"></div></div><div class="who">${escapeHtml(e.name)}</div>`;
-  t.append(d); beep(340,.06);
+function toggleMusic(){
+  musicEnabled=!musicEnabled;
+  localStorage.setItem('mlp_music',musicEnabled?'on':'off');
+  if(!musicEnabled){
+    if(musicTimer){clearInterval(musicTimer);musicTimer=null}
+    battleMusic.pause();
+  }else{
+    ensureAudio();
+  }
+  updateMusicButtons();
+  restartMusic();
 }
 function revealCards(e){
   lastReveal=e.entries;const t=$('#tableCards');
@@ -241,7 +245,7 @@ function revealCards(e){
     let d=t.querySelector(`[data-player-id="${x.pid}"]`);
     if(!d){d=document.createElement('div');t.append(d)}
     d.className='played-card reveal-flip';d.dataset.playerId=x.pid;d.style.animationDelay=`${i*.07}s`;
-    d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-front-face"><img src="${x.card.image}" alt="${escapeHtml(x.card.name)}"><span class="value">${x.value}${x.bonus?` (+${x.bonus})`:''}</span></div></div><div class="who">${escapeHtml(x.name)}</div>`;
+    d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-front-face"><img src="${x.card.image}" alt="${escapeHtml(x.card.name)}">${statOverlayHTML(x.card)}<span class="value">${x.value}${x.bonus?` (+${x.bonus})`:''}</span></div></div><div class="who">${escapeHtml(x.name)}</div>`;
   });
   $('#roundMessage').textContent='Karten werden verglichen …';beep(920,.12);
 }

@@ -1,42 +1,34 @@
-MLP BATTLE CARDS – BALANCE / LOBBY / MUSIK PATCH
+MLP BATTLE CARDS – EPIC BATTLE MUSIC + KARTENBALANCE
 
-Enthalten sind NUR:
+Nur diese Dateien/Ordner ersetzen:
 - cards.js
 - server.js
 - public/index.html
 - public/client.js
 - public/style.css
+- public/assets/music/
 
-Änderungen:
-1. Kartenwerte:
-   - Alle Basiswerte sind hart auf maximal 9 begrenzt.
-   - Kontrollierter höchster Basiswert in cards.js: 9
-   - Auch Spezial-Boni können den Rundenwert nicht mehr über 9 drücken.
-     Bei 9 gegen 9 entsteht ein Gleichstand -> Würfeln.
+NEU:
+1. Echte neue Battle-Musik:
+   - eigenständig erzeugte Kampfmusik als Audiodatei
+   - schneller 150-BPM-Rhythmus
+   - Drums, Bass, Brass-artige Stabs, Arpeggios und Kampfmelodie
+   - läuft nur während des Kartenduells als Loop
+   - Lobby bleibt ruhiger
 
-2. Accessoire in der Lobby:
-   - Neuer Button "✨ Accessoire wählen".
-   - Auswahl wird sofort an alle Spieler synchronisiert und im Lobby-Namensschild aktualisiert.
+2. Alle 60 normalen Karten neu balanciert:
+   - KEIN Wert ist höher als 9
+   - es gibt bewusst mehrere starke 9er:
+     Stärke: 6 Karten mit 9
+     Schnelligkeit: 8 Karten mit 9
+     Magie: 8 Karten mit 9
+     Energie: 11 Karten mit 9
+   - trotzdem hat keine einzelne Karte überall 9
 
-3. Gerade gespielte Karte:
-   - Eine Karte, die du in der letzten Runde gespielt und zurückgewonnen hast,
-     kann in der direkt folgenden Runde NICHT erneut gespielt werden.
-   - Sie ist sichtbar abgedunkelt mit "⏳ Gerade gespielt".
-   - Der Server blockiert sie zusätzlich, also nicht nur optisch.
+3. Sichtbare Zahlen:
+   - Das Spiel legt die Werte aus cards.js direkt über die Zahlen auf dem Kartenbild.
+   - Dadurch kann im Spiel auch dann keine alte gedruckte 10 mehr sichtbar/maßgeblich sein.
 
-4. Musik:
-   - Lobby bleibt ruhiger.
-   - Im Kartenduell läuft jetzt ein schnelleres, selbst erzeugtes Battle-Thema
-     mit Moll-Puls, Bass und Schlag-Impulsen.
-   - Keine externe Musikdatei notwendig.
-
-Installation:
-1. ZIP entpacken.
-2. Genau diese 5 Dateien im Projekt ersetzen.
-3. Bei GitHub nur diese Dateien hochladen/committen.
-4. Render -> Manual Deploy -> Deploy latest commit.
-5. Browser -> Strg + F5.
-
-Hinweis:
-Die korrigierten Bilder von Photo Finish und Sapphire Shores sind ein separater
-2-Karten-Patch und werden von diesem Code-Patch nicht überschrieben.
+INSTALLATION:
+ZIP-Inhalt in deinen Projektordner kopieren -> ersetzen.
+Dann GitHub committen -> Render Manual Deploy -> Strg+F5.
