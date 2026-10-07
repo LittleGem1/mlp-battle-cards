@@ -402,6 +402,68 @@ function renderLobby(){
   updateMusicUI();
 }
 
+
+function arenaSeatStyle(index,count){
+  // Eigener Spieler sitzt unten. Alle Gegner bilden darüber den Rest des Kreises.
+  if(count<=1)return '--seat-x:50%;--seat-y:8%;';
+  const start=-160,end=-20;
+  const angle=(start+(end-start)*(index/(count-1)))*Math.PI/180;
+  const x=50+Math.cos(angle)*46;
+  const y=48+Math.sin(angle)*40;
+  return `--seat-x:${x.toFixed(2)}%;--seat-y:${y.toFixed(2)}%;`;
+}
+
+function ensureMatchActionButtons(){
+  const actions=document.querySelector('.game-actions');
+  if(!actions)return;
+
+  let surrender=$('#surrenderBtn');
+  if(!surrender){
+    surrender=document.createElement('button');
+    surrender.id='surrenderBtn';
+    surrender.type='button';
+    surrender.className='danger-btn surrender-btn';
+    surrender.textContent='🏳 Aufgeben';
+    const music=actions.querySelector('.music-controls');
+    actions.insertBefore(surrender,music||actions.lastChild);
+
+    let armTimer=null;
+    surrender.addEventListener('click',()=>{
+      if(surrender.dataset.armed==='1'){
+        clearTimeout(armTimer);
+        surrender.dataset.armed='0';
+        surrender.textContent='🏳 Aufgeben';
+        socket.emit('giveUp');
+        return;
+      }
+      surrender.dataset.armed='1';
+      surrender.textContent='⚠ Wirklich aufgeben?';
+      toast('Nochmal klicken, um wirklich aufzugeben.');
+      armTimer=setTimeout(()=>{
+        surrender.dataset.armed='0';
+        surrender.textContent='🏳 Aufgeben';
+      },3000);
+    });
+  }
+
+  let quickLobby=$('#quickLobbyBtn');
+  if(!quickLobby){
+    quickLobby=document.createElement('button');
+    quickLobby.id='quickLobbyBtn';
+    quickLobby.type='button';
+    quickLobby.className='primary-btn quick-lobby-btn';
+    quickLobby.textContent='↩ Zur Lobby';
+    const music=actions.querySelector('.music-controls');
+    actions.insertBefore(quickLobby,music||actions.lastChild);
+    quickLobby.addEventListener('click',()=>{
+      try{$('#gameOverDialog').close()}catch{}
+      socket.emit('returnToLobby');
+      toast('Zurück zur Lobby …');
+    });
+  }
+}
+ensureMatchActionButtons();
+
 function renderGame(){
   if(!state)return;
   const me=state.players.find(p=>p.id===myId);if(!me)return;
@@ -412,12 +474,35 @@ function renderGame(){
     arena.classList.add('arena-'+arenaId);
     if(arena.dataset.vfx!==arenaId){arena.dataset.vfx=arenaId;buildArenaVfx(arenaId);}
   }
+  ensureMatchActionButtons();
   $('#abortBtn').style.display=myId===state.hostId&&state.phase!=='gameover'?'inline-block':'none';
+
+  const surrenderBtn=$('#surrenderBtn');
+  const canSurrender=['countdown','roundintro','select'].includes(state.phase)&&!me.surrendered;
+  if(surrenderBtn){
+    surrenderBtn.style.display=canSurrender?'inline-block':'none';
+    if(!canSurrender){surrenderBtn.dataset.armed='0';surrenderBtn.textContent='🏳 Aufgeben';}
+  }
+  const quickLobbyBtn=$('#quickLobbyBtn');
+  if(quickLobbyBtn)quickLobbyBtn.style.display=state.phase==='gameover'?'inline-block':'none';
+
   $('#selfName').textContent=me.name;
-  $('#selfCount').textContent=`${me.handCount} Karten`;
+  $('#selfCount').textContent=me.surrendered?'🏳 Aufgegeben · Zuschauer':`${me.handCount} Karten`;
   $('#selfNameplate').innerHTML=nameplateHTML(me.name,me.accessory,true,me.frame);
+
   const others=state.players.filter(p=>p.id!==myId);
-  $('#opponents').innerHTML=others.length?others.map(p=>`<div class="opponent ${p.selected?'has-selected':''}" data-player-id="${p.id}">${nameplateHTML(p.name,p.accessory,true,p.frame)}<div class="opponent-meta"><span>${p.handCount} Karten</span>${p.selected?'<span class="selected-mark">✓ Karte liegt</span>':'<span>wartet …</span>'}</div><div class="back-fan">${Array.from({length:Math.min(p.handCount,7)},(_,i)=>`<img src="/assets/card_back.webp" alt="verdeckte Karte" style="transform:rotate(${(i-3)*5}deg)">`).join('')}</div></div>`).join(''):'<div class="opponent-empty">Warte auf Mitspieler …</div>';
+  $('#opponents').innerHTML=others.length?others.map((p,i)=>{
+    const status=p.surrendered
+      ? '<span class="surrendered-mark">🏳 Aufgegeben</span>'
+      : (p.selected?'<span class="selected-mark">✓ Karte liegt</span>':'<span>wartet …</span>');
+    const fan=p.surrendered?'':`<div class="back-fan">${Array.from({length:Math.min(p.handCount,7)},(_,j)=>`<img src="/assets/card_back.webp" alt="verdeckte Karte" style="transform:rotate(${(j-3)*5}deg)">`).join('')}</div>`;
+    return `<div class="opponent ${p.selected?'has-selected':''} ${p.surrendered?'is-surrendered':''}" style="${arenaSeatStyle(i,others.length)}" data-player-id="${p.id}">
+      ${nameplateHTML(p.name,p.accessory,true,p.frame)}
+      <div class="opponent-meta"><span>${p.surrendered?'Zuschauer':`${p.handCount} Karten`}</span>${status}</div>
+      ${fan}
+    </div>`;
+  }).join(''):'<div class="opponent-empty">Warte auf Mitspieler …</div>';
+
   renderHand();updateMusicUI();
 }
 
@@ -479,6 +564,11 @@ function buildHandCard(c,me,normals,blockedId){
 function renderHand(){
   const wrap=$('#hand');if(!wrap)return;wrap.innerHTML='';
   const me=state?.players?.find(p=>p.id===myId);
+  if(me?.surrendered){
+    wrap.classList.remove('large-hand');
+    wrap.innerHTML='<div class="spectator-hand-note">🏳 Du hast aufgegeben · Du kannst das Match weiter ansehen</div>';
+    return;
+  }
   const blockedId=me?.lastPlayedCardId||null;
   const normals=hand.filter(c=>c.type==='normal');
   const activeCategory=state?.category;
@@ -1058,6 +1148,7 @@ function playFinisher(e){
   setTimeout(()=>{overlay.className='finisher-overlay';overlay.setAttribute('aria-hidden','true');winnerBox.innerHTML='';loserBox.innerHTML='';impact.className='finisher-impact';document.body.classList.remove('finisher-running');$('#tableCards').innerHTML='';},duration+80);
 }
 
+socket.on('playerGaveUp',e=>{toast(`🏳 ${e.name} hat aufgegeben und schaut jetzt zu.`);beep(180,.14)});
 socket.on('roundWinner',e=>{stopSelectionTimer();$('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;beep(1040,.22);playFinisher(e)});
 socket.on('roundTimeout',e=>{stopSelectionTimer();clearTable();const names=(e.penalties||[]).map(x=>x.name).join(', ');$('#roundMessage').textContent=names?`⏱ ${names} verliert eine Strafkarte. Neue Kategorie!`:'⏱ Zeit abgelaufen – neue Kategorie!';toast(e.message||'Zeit abgelaufen.');beep(190,.20)});
 socket.on('tieStart',e=>setupDice(e,'Gleichstand! Würfeln entscheidet.'));

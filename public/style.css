@@ -2057,3 +2057,134 @@ body:has(.hand.large-hand) .arena{
   background:rgba(183,119,28,.16);
   border:1px solid rgba(255,207,102,.25);
 }
+
+
+/* =========================================================
+   FIX-PAKET VOR DEM RELIKT-SYSTEM
+   - Gegner kreisförmig um die Mitte
+   - Handkarten in echten Reihen, niemals übereinander
+   - Aufgeben + direkte Lobby nach Match
+   ========================================================= */
+
+/* Gegner bilden zusammen mit dem eigenen Platz unten einen Ring um die Arena. */
+#game .arena{position:relative!important;}
+#game .opponents{
+  position:absolute!important;
+  z-index:7!important;
+  inset:62px 1.5% 245px!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0!important;
+  min-height:0!important;
+  display:block!important;
+  background:none!important;
+  border:0!important;
+  pointer-events:none!important;
+}
+#game .opponent{
+  --seat-x:50%;
+  --seat-y:10%;
+  position:absolute!important;
+  left:var(--seat-x)!important;
+  top:var(--seat-y)!important;
+  transform:translate(-50%,-50%)!important;
+  width:clamp(125px,15vw,190px)!important;
+  min-width:0!important;
+  padding:7px 8px!important;
+  border-radius:16px!important;
+  background:rgba(9,10,42,.76)!important;
+  border:1px solid rgba(133,222,255,.25)!important;
+  box-shadow:0 10px 28px rgba(0,0,0,.28)!important;
+  backdrop-filter:blur(5px)!important;
+  pointer-events:auto!important;
+}
+#game .opponent.has-selected{border-color:rgba(111,255,181,.55)!important}
+#game .opponent.is-surrendered{
+  opacity:.68!important;
+  filter:grayscale(.35)!important;
+  border-color:rgba(255,177,177,.28)!important;
+}
+.surrendered-mark{color:#ffc4c4;font-weight:900}
+#game .opponent-empty{
+  position:absolute!important;
+  left:50%!important;top:9%!important;
+  transform:translateX(-50%)!important;
+  width:max-content!important;
+}
+
+/* Mitte bleibt frei und lesbar. */
+#game .center-stage{z-index:4!important;margin-top:90px!important;}
+
+/* Handkarten: KEINE negativen Abstände/Überlappung mehr.
+   Wenn die Breite nicht reicht, entsteht automatisch die nächste Reihe darunter/ darüber. */
+#game .hand:not(.large-hand){
+  height:auto!important;
+  min-height:175px!important;
+  max-height:48vh!important;
+  padding:18px 18px 12px!important;
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:10px 12px!important;
+  align-content:flex-end!important;
+  align-items:flex-end!important;
+  justify-content:center!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  pointer-events:none!important;
+  background:linear-gradient(180deg,transparent,rgba(5,7,27,.72) 20%,rgba(6,7,30,.96))!important;
+}
+#game .hand:not(.large-hand) .hand-card{
+  margin-left:0!important;
+  width:clamp(100px,10.2vw,136px)!important;
+  flex:0 0 auto!important;
+  pointer-events:auto!important;
+}
+#game .hand.large-hand{
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+}
+#game .hand.large-hand .hand-tier-row{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  justify-content:center!important;
+  align-content:flex-end!important;
+  gap:10px!important;
+  overflow-x:hidden!important;
+  overflow-y:visible!important;
+  padding-left:20px!important;
+  padding-right:20px!important;
+}
+#game .hand.large-hand .hand-card{
+  margin-left:0!important;
+  flex:0 0 auto!important;
+}
+body:has(#game .hand:not(.large-hand)) .arena{padding-bottom:230px!important;}
+
+/* Match-Aktionen */
+#surrenderBtn,#quickLobbyBtn{font-weight:950}
+#quickLobbyBtn{box-shadow:0 0 18px rgba(122,226,255,.22)}
+.spectator-hand-note{
+  pointer-events:auto;
+  margin:auto;
+  padding:13px 20px;
+  border-radius:16px;
+  background:rgba(15,16,54,.92);
+  border:1px solid rgba(255,190,190,.3);
+  color:#ffe0e0;
+  font-weight:900;
+  box-shadow:0 8px 24px rgba(0,0,0,.28);
+}
+
+@media(max-width:760px){
+  #game .opponents{inset:74px 0 210px!important}
+  #game .opponent{width:118px!important;padding:5px!important}
+  #game .opponent .nameplate{transform:scale(.82);transform-origin:center}
+  #game .opponent-meta{font-size:9px!important;gap:3px!important}
+  #game .opponent .back-fan{height:44px!important}
+  #game .opponent .back-fan img{width:28px!important;margin-left:-16px!important}
+  #game .center-stage{margin-top:118px!important}
+  #game .hand:not(.large-hand){max-height:52vh!important;gap:7px!important;padding:12px 8px 8px!important}
+  #game .hand:not(.large-hand) .hand-card{width:88px!important;margin-left:0!important}
+  #game .hand.large-hand .hand-tier-row{gap:7px!important;padding-left:8px!important;padding-right:8px!important}
+  body:has(#game .hand:not(.large-hand)) .arena{padding-bottom:210px!important}
+}
