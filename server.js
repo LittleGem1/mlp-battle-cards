@@ -15,8 +15,8 @@ const CATEGORY_LABEL = { strength:'Stärke', speed:'Schnelligkeit', energy:'Ener
 const CATEGORY_ICON = { strength:'🏋️', speed:'⚡', energy:'🔋', magic:'⭐' };
 const NORMAL_HAND_TARGET = 6;
 const NORMAL_COPIES = 3;
-const REWARD_SPECIAL_COPIES = 8;
-const REWARD_ARTIFACT_COPIES = 8;
+const REWARD_SPECIAL_COPIES = 2;
+const REWARD_ARTIFACT_COPIES = 10;
 
 function code(){ const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return Array.from({length:5},()=>a[Math.floor(Math.random()*a.length)]).join(''); }
 function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
@@ -106,6 +106,134 @@ function discardCard(r,id){
   if(c.type==='normal')r.normalDiscard.push(id);
   else if(c.type==='special')r.rewardDiscard.push(id);
 }
+
+function playedCardIds(entry){
+  if(!entry)return [];
+  if(Array.isArray(entry.cardIds))return entry.cardIds.filter(Boolean);
+  return entry.cardId?[entry.cardId]:[];
+}
+function resetRoundFX(r){
+  r.roundFX={
+    skipped:[],forcedLose:[],protected:[],autoWinner:[],hydra:[],stormKing:[],doubleNormal:[],
+    debuff:{},strengthDebuff:{},artifactBlocked:false
+  };
+  r.specialHistory=[];
+}
+function fxHas(r,key,id){return !!r.roundFX?.[key]?.includes(id)}
+function fxAdd(r,key,id){
+  if(!r.roundFX)resetRoundFX(r);
+  if(!Array.isArray(r.roundFX[key]))r.roundFX[key]=[];
+  if(!r.roundFX[key].includes(id))r.roundFX[key].push(id);
+}
+function fxRemove(r,key,id){
+  if(Array.isArray(r.roundFX?.[key]))r.roundFX[key]=r.roundFX[key].filter(x=>x!==id);
+}
+function isProtectedFrom(r,targetId,sourceId){
+  return targetId!==sourceId && fxHas(r,'protected',targetId);
+}
+function emitImpact(r,effect,targetIds,text){
+  io.to(r.code).emit('specialImpact',{effect,targetIds:Array.isArray(targetIds)?targetIds:[targetIds],text});
+}
+function discardPlayedEntry(r,pid){
+  const entry=r.played?.[pid];
+  if(!entry)return;
+  for(const id of playedCardIds(entry))discardCard(r,id);
+  delete r.played[pid];
+  const p=r.players.get(pid);if(p)p.selected=null;
+}
+function skipPlayerThisRound(r,targetId,sourceId,sourceName){
+  const target=r.players.get(targetId);
+  if(!target||target.surrendered)return false;
+  if(isProtectedFrom(r,targetId,sourceId)){
+    io.to(r.code).emit('specialBlocked',{targetId,targetName:target.name,sourceName});
+    return false;
+  }
+  discardPlayedEntry(r,targetId);
+  fxAdd(r,'skipped',targetId);
+  r.roundPlayerIds=(r.roundPlayerIds||[]).filter(id=>id!==targetId);
+  io.to(r.code).emit('playerSkipped',{playerId:targetId,name:target.name,sourceName});
+  emitImpact(r,'skip',targetId,`${target.name} setzt diese Runde aus.`);
+  return true;
+}
+function markForcedLose(r,targetId,sourceId,sourceName,effect='shadow'){
+  const target=r.players.get(targetId);
+  if(!target||target.surrendered)return false;
+  if(isProtectedFrom(r,targetId,sourceId)){
+    io.to(r.code).emit('specialBlocked',{targetId,targetName:target.name,sourceName});
+    return false;
+  }
+  fxAdd(r,'forcedLose',targetId);
+  emitImpact(r,effect,targetId,`${target.name}s Karte zählt diese Runde nicht.`);
+  return true;
+}
+function addDebuff(r,targetId,amount,sourceId,sourceName,kind='generic'){
+  const target=r.players.get(targetId);
+  if(!target||target.surrendered)return false;
+  if(isProtectedFrom(r,targetId,sourceId)){
+    io.to(r.code).emit('specialBlocked',{targetId,targetName:target.name,sourceName});
+    return false;
+  }
+  const field=kind==='strength'?'strengthDebuff':'debuff';
+  if(!r.roundFX)resetRoundFX(r);
+  r.roundFX[field][targetId]=(r.roundFX[field][targetId]||0)+amount;
+  emitImpact(r,'debuff',targetId,`${target.name}: ${amount} auf den Kartenwert.`);
+  return true;
+}
+function clearNegativeEffects(r,pid){
+  const wasSkipped=fxHas(r,'skipped',pid);
+  fxRemove(r,'skipped',pid);fxRemove(r,'forcedLose',pid);
+  if(r.roundFX){delete r.roundFX.debuff[pid];delete r.roundFX.strengthDebuff[pid];}
+  const p=r.players.get(pid);
+  if(wasSkipped&&p&&!p.surrendered&&hasNormalCard(p)&&!r.roundPlayerIds.includes(pid))r.roundPlayerIds.push(pid);
+  if(p?.pendingForcedDiscard){
+    clearTimeout(p.pendingForcedDiscard.timer);
+    p.pendingForcedDiscard=null;
+  }
+}
+function availableTargets(r,p,mode='any'){
+  return roomPlayers(r).filter(t=>{
+    if(t.id===p.id||t.surrendered)return false;
+    if(mode==='played'&&!playedCardIds(r.played?.[t.id]).length)return false;
+    if(mode==='hand'&&!t.hand.length)return false;
+    return true;
+  });
+}
+function requestTarget(socket,r,p,sourceCard,action,mode='any',title='Wähle einen Gegner'){
+  const targets=availableTargets(r,p,mode);
+  if(!targets.length){socket.emit('errorMsg','Für diesen Effekt gibt es gerade kein gültiges Ziel.');return false;}
+  socket.data.pendingSpecial={room:r.code,action,sourceCardId:sourceCard.id};
+  socket.emit('specialTargetRequest',{title,card:sourceCard,targets:targets.map(t=>({id:t.id,name:t.name,selected:!!t.selected,handCount:t.hand.length}))});
+  return true;
+}
+function consumeSpecial(r,p,c){
+  const i=p.hand.indexOf(c.id);
+  if(i<0)return false;
+  p.hand.splice(i,1);r.rewardDiscard.push(c.id);
+  p.specialUsed=(p.specialUsed||0)+1;
+  r.specialHistory.push({playerId:p.id,cardId:c.id,effect:c.effect});
+  io.to(r.code).emit('specialPlayed',{playerId:p.id,name:p.name,card:c});
+  return true;
+}
+function specialAllowance(p){return 1+(p.specialExtra||0)}
+function mayUseSpecial(p){return (p.specialUsed||0)<specialAllowance(p)}
+function forceDiscardChoice(r,target,sourceName){
+  if(!target||!target.hand.length)return;
+  if(target.pendingForcedDiscard?.timer)clearTimeout(target.pendingForcedDiscard.timer);
+  const token=`${Date.now()}-${Math.random()}`;
+  const auto=()=>{
+    if(!target.pendingForcedDiscard||target.pendingForcedDiscard.token!==token||!target.hand.length)return;
+    const id=target.hand[Math.floor(Math.random()*target.hand.length)];
+    target.hand.splice(target.hand.indexOf(id),1);discardCard(r,id);
+    target.pendingForcedDiscard=null;
+    io.to(target.id).emit('specialDone',{text:`${sourceName}: Eine Karte wurde automatisch abgelegt.`});
+    emitImpact(r,'discard',target.id,`${target.name} legt 1 Karte ab.`);
+    sendState(r);
+  };
+  const timer=setTimeout(auto,8000);
+  target.pendingForcedDiscard={token,sourceName,timer};
+  io.to(target.id).emit('forcedDiscardRequest',{title:`${sourceName}: Lege 1 Handkarte ab`,cards:target.hand.map(id=>byId[id]).filter(Boolean)});
+}
+
 function refillNormalHands(r){
   const report=[];
   for(const p of roomPlayers(r)){
@@ -137,6 +265,11 @@ function drawRewardForWinner(r,winnerId){
     if(!card)continue;
 
     if(card.type==='artifact'){
+      // Iron Will: In dieser Runde darf niemand ein Artefakt ziehen.
+      if(r.roundFX?.artifactBlocked){
+        r.rewardDiscard.push(id);
+        continue;
+      }
       // Ein eigenes Duplikat zählt nicht doppelt und wird direkt zurückgemischt.
       if(already.has(card.id)){
         r.rewardDiscard.push(id);
@@ -164,20 +297,27 @@ function drawRewardForWinner(r,winnerId){
 function nextCategory(r){
   if(!Array.isArray(r.categoryHistory)) r.categoryHistory=[];
   const previous=r.category;
-  const last3=r.categoryHistory.slice(-3);
-  const blocked=last3.length===3 && last3.every(c=>c===last3[0]) ? last3[0] : null;
-  let choices=blocked ? CATEGORIES.filter(c=>c!==blocked) : [...CATEGORIES];
 
-  // Nach einem Würfel-Gleichstand wird garantiert ein anderer Begriff gezogen.
+  if(r.forcedNextCategory&&CATEGORIES.includes(r.forcedNextCategory)){
+    r.category=r.forcedNextCategory;
+    r.forcedNextCategory=null;
+    r.forceNextCategoryDifferent=false;
+    r.categoryHistory.push(r.category);
+    if(r.categoryHistory.length>3)r.categoryHistory=r.categoryHistory.slice(-3);
+    return;
+  }
+
+  const last3=r.categoryHistory.slice(-3);
+  const blocked=last3.length===3&&last3.every(c=>c===last3[0])?last3[0]:null;
+  let choices=blocked?CATEGORIES.filter(c=>c!==blocked):[...CATEGORIES];
   if(r.forceNextCategoryDifferent&&previous&&choices.length>1){
     const different=choices.filter(c=>c!==previous);
     if(different.length)choices=different;
   }
   r.forceNextCategoryDifferent=false;
-
   r.category=choices[Math.floor(Math.random()*choices.length)];
   r.categoryHistory.push(r.category);
-  if(r.categoryHistory.length>3) r.categoryHistory=r.categoryHistory.slice(-3);
+  if(r.categoryHistory.length>3)r.categoryHistory=r.categoryHistory.slice(-3);
 }
 function requiredPlayers(r){ return (r.roundPlayerIds||[]).map(id=>r.players.get(id)).filter(p=>p&&!p.surrendered); }
 
@@ -185,16 +325,17 @@ function resetToLobby(r){
   clearTimers(r);
   r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;
   r.round=0;r.played={};r.dice={};r.tieIds=[];r.roundBuff={};r.roundPlayerIds=[];
-  r.postGameReady=new Set();r.forceNextCategoryDifferent=false;
+  r.postGameReady=new Set();r.forceNextCategoryDifferent=false;r.forcedNextCategory=null;resetRoundFX(r);
   r.normalDeck=[];r.normalDiscard=[];r.rewardDeck=[];r.rewardDiscard=[];
   for(const p of roomPlayers(r)){
-    p.hand=[];p.artifacts=[];p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;
+    p.hand=[];p.artifacts=[];p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.pendingForcedDiscard=null;p.specialUsed=0;p.specialExtra=0;p.pendingForcedDiscard=null;
   }
   sendState(r);
   io.to(r.code).emit('backToLobby');
 }
 function removePlayerFromRoom(socket,notify=true){
   const r=getRoom(socket);if(!r)return;
+  const leaving=r.players.get(socket.id);if(leaving?.pendingForcedDiscard?.timer)clearTimeout(leaving.pendingForcedDiscard.timer);
   r.players.delete(socket.id);socket.leave(r.code);socket.data.room=null;socket.emit('roomLeft');
   if(!r.players.size){clearTimers(r);rooms.delete(r.code);return;}
   if(r.hostId===socket.id)r.hostId=roomPlayers(r)[0].id;
@@ -243,7 +384,8 @@ function handleSelectionTimeout(r){
 
   for(const [pid,entry] of Object.entries(r.played)){
     const p=r.players.get(pid);
-    if(p&&entry?.cardId&&!p.hand.includes(entry.cardId))p.hand.push(entry.cardId);
+    if(!p)continue;
+    for(const id of playedCardIds(entry))p.hand.push(id);
   }
 
   const penalties=[];
@@ -267,8 +409,8 @@ function startRound(r,delay=900){
   if(r.selectionTimer)clearTimeout(r.selectionTimer);
   r.roundTimer=setTimeout(()=>{
     if(!rooms.has(r.code))return;
-    r.roundTimer=null;r.round++;r.phase='roundintro';r.played={};r.dice={};r.tieIds=[];r.roundBuff={};
-    for(const p of roomPlayers(r))p.selected=null;
+    r.roundTimer=null;r.round++;r.phase='roundintro';r.played={};r.dice={};r.tieIds=[];r.roundBuff={};resetRoundFX(r);
+    for(const p of roomPlayers(r)){p.selected=null;p.specialUsed=0;p.specialExtra=0;}
     nextCategory(r);
     r.roundPlayerIds=roomPlayers(r).filter(p=>!p.surrendered&&p.hand.length>0&&hasNormalCard(p)).map(p=>p.id);
     if(!r.roundPlayerIds.length){gameOverIfNeeded(r);return;}
@@ -289,13 +431,24 @@ function finishRoundCycle(r,winnerId,playedIds){
   if(!r||r.phase==='gameover')return;
   const winner=r.players.get(winnerId);if(!winner)return;
 
-  // Die gespielten normalen Karten gehen NICHT an den Sieger.
-  // Sie wandern in den normalen Ablagestapel und können später wieder auftauchen.
   for(const id of playedIds)discardCard(r,id);
   r.played={};
   for(const p of roomPlayers(r))p.selected=null;
 
   refillNormalHands(r);
+
+  // Hydra: Wer Hydra eingesetzt und die Runde NICHT gewonnen hat, erhält danach
+  // zusätzlich 1 normale Karte. Diese kommt extra zur normalen Auffüllung dazu.
+  for(const pid of (r.roundFX?.hydra||[])){
+    if(pid===winnerId)continue;
+    const p=r.players.get(pid);
+    if(!p||p.surrendered)continue;
+    const bonus=drawNormal(r,1);
+    if(bonus.length){
+      p.hand.push(...bonus);
+      io.to(pid).emit('bonusDraw',{source:'Hydra',cards:bonus.map(id=>byId[id]).filter(Boolean)});
+    }
+  }
   sendState(r);
 
   setTimeout(()=>{
@@ -303,11 +456,7 @@ function finishRoundCycle(r,winnerId,playedIds){
     const reward=drawRewardForWinner(r,winnerId);
     sendState(r);
     if(gameOverIfNeeded(r))return;
-    io.to(r.code).emit('rewardPhaseDone',{
-      winnerId,
-      winnerName:winner.name,
-      rewardKind:reward?.type||null
-    });
+    io.to(r.code).emit('rewardPhaseDone',{winnerId,winnerName:winner.name,rewardKind:reward?.type||null});
     startRound(r,1800);
   },900);
 }
@@ -318,7 +467,7 @@ function pickFinisher(r){
   r.lastFinisher=f;return f;
 }
 function settleRound(r,winnerId){
-  const ids=Object.values(r.played).map(x=>x.cardId),winner=r.players.get(winnerId);if(!winner)return;
+  const ids=Object.values(r.played).flatMap(playedCardIds),winner=r.players.get(winnerId);if(!winner)return;
   r.phase='result';
   const finisher=pickFinisher(r),duration=4600;
   io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:ids.map(id=>byId[id]).filter(Boolean),finisher,duration});
@@ -327,24 +476,71 @@ function settleRound(r,winnerId){
 }
 function evaluate(r){
   if(r.phase!=='select')return;
-  if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}r.selectionDeadline=null;
-  const vals=[];
+  if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
+  r.selectionDeadline=null;
+
+  let vals=[];
   for(const [pid,e] of Object.entries(r.played)){
-    const c=byId[e.cardId];if(!c)continue;
-    const base=Math.min(9,Number(c[r.category]||0));let value=base;
+    const ids=playedCardIds(e),cards=ids.map(id=>byId[id]).filter(c=>c?.type==='normal');
+    if(!cards.length)continue;
+
+    // Timberwolves: Von den zwei gespielten normalen Karten zählt der höhere
+    // Wert der aktuellen Kategorie. Beide Karten gehen danach in den Ablagestapel.
+    let c=cards[0];
+    for(const candidate of cards){
+      if(Number(candidate[r.category]||0)>Number(c[r.category]||0))c=candidate;
+    }
+
+    const base=Math.min(9,Number(c[r.category]||0));
+    let value=base;
     const buff=r.roundBuff[pid]||{};
     if(r.category==='speed'&&buff.speed)value+=buff.speed;
     if(r.category==='strength'&&buff.strength)value+=buff.strength;
-    value=Math.min(9,value);
-    vals.push({pid,cardId:c.id,value,base,bonus:Math.max(0,value-base)});
+    value+=(r.roundFX?.debuff?.[pid]||0);
+    if(r.category==='strength')value+=(r.roundFX?.strengthDebuff?.[pid]||0);
+    value=Math.max(0,value);
+
+    vals.push({
+      pid,cardId:c.id,value,base,bonus:value-base,cards:cards.map(x=>x.id),
+      forcedLose:fxHas(r,'forcedLose',pid)
+    });
   }
+
   if(!vals.length){startRound(r,700);return;}
-  const max=Math.max(...vals.map(x=>x.value)),tied=vals.filter(x=>x.value===max);
+
+  // Daybreaker: Nur Daybreaker-Nutzer mit einer gelegten normalen Karte können gewinnen.
+  const auto=vals.filter(x=>fxHas(r,'autoWinner',x.pid)&&!x.forcedLose);
+  let contenders=auto.length?auto:vals.filter(x=>!x.forcedLose);
+  if(!contenders.length)contenders=vals;
+
+  // Storm King: Nur bei Schnelligkeit und nur wenn er tatsächlich im höchsten
+  // Gleichstand liegt, bekommt er +2 und kann den Gleichstand brechen.
+  if(!auto.length&&r.category==='speed'){
+    let top=Math.max(...contenders.map(x=>x.value));
+    const initiallyTied=contenders.filter(x=>x.value===top);
+    if(initiallyTied.length>1){
+      for(const x of initiallyTied){
+        if(fxHas(r,'stormKing',x.pid))x.value+=2;
+      }
+    }
+  }
+
+  const max=Math.max(...contenders.map(x=>x.value));
+  const tied=contenders.filter(x=>x.value===max);
+
   r.phase='reveal';
-  io.to(r.code).emit('reveal',{category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],entries:vals.map(x=>({...x,card:byId[x.cardId],name:r.players.get(x.pid)?.name||'?'}))});
+  io.to(r.code).emit('reveal',{
+    category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],
+    entries:vals.map(x=>({...x,card:byId[x.cardId],name:r.players.get(x.pid)?.name||'?'}))
+  });
   sendState(r);
+
   if(tied.length===1)setTimeout(()=>settleRound(r,tied[0].pid),2100);
-  else setTimeout(()=>{r.phase='tie';r.tieIds=tied.map(x=>x.pid);r.dice={};io.to(r.code).emit('tieStart',{playerIds:r.tieIds,names:r.tieIds.map(id=>r.players.get(id)?.name)});sendState(r);},1700);
+  else setTimeout(()=>{
+    r.phase='tie';r.tieIds=tied.map(x=>x.pid);r.dice={};
+    io.to(r.code).emit('tieStart',{playerIds:r.tieIds,names:r.tieIds.map(id=>r.players.get(id)?.name)});
+    sendState(r);
+  },1700);
 }
 function drawFromPool(r,count,exclude=[],kind='any'){
   if(kind==='normal'||kind==='any')return drawNormal(r,count);
@@ -386,7 +582,7 @@ function beginMatch(r){
     if(starterSpecial)p.hand.push(starterSpecial);
   }
 
-  r.categoryHistory=[];r.forceNextCategoryDifferent=false;r.phase='countdown';r.round=0;r.countdownUntil=Date.now()+5000;
+  r.categoryHistory=[];r.forceNextCategoryDifferent=false;r.forcedNextCategory=null;resetRoundFX(r);r.phase='countdown';r.round=0;r.countdownUntil=Date.now()+5000;
   io.to(r.code).emit('matchLoadout',{
     normalCards:NORMAL_HAND_TARGET,
     specialCards:1,
@@ -421,8 +617,8 @@ function maybeStartWhenReady(r){
 io.on('connection',socket=>{
   socket.on('createRoom',({name,accessory,frame})=>{
     let c;do c=code();while(rooms.has(c));
-    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[]};
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false});
+    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[]};
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     rooms.set(c,r);socket.join(c);socket.data.room=c;sendState(r);
   });
   socket.on('joinRoom',({code:rc,name,accessory,frame})=>{
@@ -430,7 +626,7 @@ io.on('connection',socket=>{
     if(!r)return socket.emit('errorMsg','Raum nicht gefunden.');
     if(r.phase!=='lobby')return socket.emit('errorMsg','Die Partie läuft bereits.');
     if(r.players.size>=8)return socket.emit('errorMsg','Der Raum ist voll.');
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false});
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     if(r.readyTimer){clearTimeout(r.readyTimer);r.readyTimer=null;r.readyLock=false;}
     for(const p of roomPlayers(r))p.ready=false;
     socket.join(c);socket.data.room=c;sendState(r);
@@ -457,33 +653,277 @@ io.on('connection',socket=>{
     const p=r.players.get(socket.id),c=byId[cardId];
     if(p?.surrendered)return socket.emit('errorMsg','Du hast aufgegeben und schaust nur noch zu.');
     if(!p||!c||c.type!=='normal'||!p.hand.includes(cardId))return socket.emit('errorMsg','Diese Karte kann nicht gespielt werden.');
-    if(p.selected)return socket.emit('errorMsg','Du hast bereits eine Karte gewählt.');
-    if(p.lastPlayedCardId===cardId){
+    if(p.selected)return socket.emit('errorMsg','Du hast bereits alle Karten für diese Runde gewählt.');
+
+    const entry=r.played[socket.id]||{cardIds:[]};
+    const needed=fxHas(r,'doubleNormal',p.id)?2:1;
+    if(entry.cardIds.length>=needed)return socket.emit('errorMsg','Du hast bereits genug normale Karten gelegt.');
+
+    if(p.lastPlayedCardId===cardId&&entry.cardIds.length===0){
       const alt=p.hand.some(id=>id!==cardId&&byId[id]?.type==='normal');
       if(alt)return socket.emit('errorMsg','Diese Karte hast du gerade gespielt. Nimm diesmal eine andere.');
     }
-    p.selected=cardId;p.lastPlayedCardId=cardId;p.hand.splice(p.hand.indexOf(cardId),1);r.played[socket.id]={cardId};
+
+    p.hand.splice(p.hand.indexOf(cardId),1);
+    entry.cardIds.push(cardId);entry.cardId=entry.cardIds[0];
+    r.played[socket.id]=entry;
+    socket.emit('cardAccepted',{cardId});
     io.to(r.code).emit('cardCommitted',{playerId:socket.id,name:p.name});
+
+    if(entry.cardIds.length<needed){
+      p.selected=false;
+      socket.emit('extraNormalNeeded',{remaining:needed-entry.cardIds.length,source:'Timberwolves'});
+      sendState(r);
+      return;
+    }
+
+    p.selected=true;
+    p.lastPlayedCardId=cardId;
     io.to(r.code).emit('playerSelected',{playerId:socket.id,name:p.name});
-    socket.emit('cardAccepted',{cardId});sendState(r);maybeEvaluate(r);
+    sendState(r);maybeEvaluate(r);
   });
   socket.on('useSpecial',({cardId})=>{
-    const r=getRoom(socket);if(!r||r.phase!=='select')return socket.emit('errorMsg','Spezialkarten nur während der Auswahl.');
-    const p=r.players.get(socket.id),c=byId[cardId];if(p?.surrendered)return socket.emit('errorMsg','Du hast aufgegeben und schaust nur noch zu.');if(!p||!c||c.type!=='special'||!p.hand.includes(cardId))return;
-    if(p.selected)return socket.emit('errorMsg','Du hast schon eine normale Karte gelegt.');
-    const consume=()=>{
-      const i=p.hand.indexOf(cardId);
-      if(i>=0){p.hand.splice(i,1);r.rewardDiscard.push(cardId);}
-    };
-    io.to(r.code).emit('specialPlayed',{playerId:p.id,name:p.name,card:c});
-    if(c.effect==='rainbow'){if(r.category!=='speed')return socket.emit('errorMsg','Nur bei Schnelligkeit.');consume();r.roundBuff[p.id]={...(r.roundBuff[p.id]||{}),speed:2};socket.emit('specialDone',{text:'+2 Schnelligkeit.'});}
-    else if(c.effect==='applejack'){if(r.category!=='strength')return socket.emit('errorMsg','Nur bei Stärke.');consume();r.roundBuff[p.id]={...(r.roundBuff[p.id]||{}),strength:1};socket.emit('specialDone',{text:'+1 Stärke.'});}
-    else if(c.effect==='pinkie'){consume();const d=drawFromPool(r,1,[],'normal');p.hand.push(...d);socket.emit('specialDone',{text:d.length?'1 neue Karte gezogen.':'Keine freie Karte.'});}
-    else if(c.effect==='twilight'){consume();const d=drawFromPool(r,2,[],'normal');p.hand.push(...d);socket.emit('specialDone',{text:`${d.length} neue Karten gezogen.`});}
-    else if(c.effect==='fluttershy'){const d=drawFromPool(r,2,[],'normal');if(!d.length)return socket.emit('errorMsg','Keine freie Karte.');consume();socket.data.pendingFlutter={room:r.code,choices:d};socket.emit('flutterChoices',{cards:d.map(id=>byId[id])});}
-    else if(c.effect==='rarity'){const candidates=p.hand.filter(id=>id!==cardId);if(!candidates.length)return socket.emit('errorMsg','Du brauchst eine weitere Karte.');consume();socket.data.pendingRarity={room:r.code};socket.emit('rarityChoose',{cards:p.hand.map(id=>byId[id])});}
+    const r=getRoom(socket);
+    if(!r||r.phase!=='select')return socket.emit('errorMsg','Spezialkarten nur während der Auswahl.');
+    const p=r.players.get(socket.id),source=byId[cardId];
+    if(p?.surrendered)return socket.emit('errorMsg','Du hast aufgegeben und schaust nur noch zu.');
+    if(!p||!source||source.type!=='special'||!p.hand.includes(cardId))return;
+    if(p.selected)return socket.emit('errorMsg','Du hast schon deine normale Karte vollständig gelegt.');
+    if(socket.data.pendingSpecial)return socket.emit('errorMsg','Beende zuerst die aktuelle Spezialkarten-Auswahl.');
+    if(!mayUseSpecial(p))return socket.emit('errorMsg','Du kannst in dieser Runde nur 1 Spezialkarte einsetzen. Changeling erlaubt eine zusätzliche.');
+
+    let effectCard=source;
+
+    // Chrysalis kopiert die zuletzt von einem Gegner ausgespielte Spezialkarte.
+    if(source.effect==='chrysalis'){
+      const last=[...(r.specialHistory||[])].reverse().find(x=>x.playerId!==p.id&&x.effect!=='chrysalis');
+      if(!last)return socket.emit('errorMsg','Es wurde noch keine gegnerische Spezialkarte gespielt, die Chrysalis kopieren kann.');
+      effectCard=byId[last.cardId]||source;
+    }
+
+    const effect=effectCard.effect;
+
+    // Vorbedingungen VOR dem Verbrauch prüfen.
+    if(effect==='rainbow'&&r.category!=='speed')return socket.emit('errorMsg','Rainbow Dash kann nur bei Schnelligkeit eingesetzt werden.');
+    if(effect==='applejack'&&r.category!=='strength')return socket.emit('errorMsg','Applejack kann nur bei Stärke eingesetzt werden.');
+    if(effect==='stormking'&&r.category!=='speed')return socket.emit('errorMsg','Storm King wirkt nur bei Schnelligkeit.');
+    if(effect==='ahuizotl'&&!availableTargets(r,p,'played').length)return socket.emit('errorMsg','Ahuizotl braucht einen Gegner, der seine Karte bereits gelegt hat.');
+    if(['tirek','cozy','sludge','bugbear','sombra','ponyshadows','maneiac','lightningdust','gilda'].includes(effect)){
+      const mode=['cozy','sludge','maneiac','gilda'].includes(effect)?'hand':'any';
+      if(!availableTargets(r,p,mode).length)return socket.emit('errorMsg','Für diese Spezialkarte gibt es gerade kein gültiges Ziel.');
+    }
+    if(effect==='manticore'&&!r.normalDiscard.length&&!r.rewardDiscard.length)return socket.emit('errorMsg','Die Ablagestapel sind noch leer.');
+
+    if(!consumeSpecial(r,p,source))return;
+
+    // Bei Chrysalis wird visuell Chrysalis gezeigt, aber mechanisch der kopierte Effekt ausgeführt.
+    if(source.effect==='chrysalis'){
+      socket.emit('specialDone',{text:`Chrysalis kopiert: ${effectCard.name}.`});
+      io.to(r.code).emit('specialCopied',{playerId:p.id,name:p.name,copied:effectCard});
+    }
+
+    if(effect==='rainbow'){
+      r.roundBuff[p.id]={...(r.roundBuff[p.id]||{}),speed:(r.roundBuff[p.id]?.speed||0)+2};
+      socket.emit('specialDone',{text:'+2 Schnelligkeit.'});
+    }else if(effect==='applejack'){
+      r.roundBuff[p.id]={...(r.roundBuff[p.id]||{}),strength:(r.roundBuff[p.id]?.strength||0)+1};
+      socket.emit('specialDone',{text:'+1 Stärke.'});
+    }else if(effect==='pinkie'){
+      const d=drawNormal(r,1);p.hand.push(...d);socket.emit('specialDone',{text:d.length?'1 normale Karte gezogen.':'Keine Karte verfügbar.'});
+    }else if(effect==='twilight'){
+      const d=drawNormal(r,2);p.hand.push(...d);socket.emit('specialDone',{text:`${d.length} normale Karten gezogen.`});
+    }else if(effect==='fluttershy'){
+      const d=drawNormal(r,2);socket.data.pendingFlutter={room:r.code,choices:d};
+      socket.emit('flutterChoices',{cards:d.map(id=>byId[id]).filter(Boolean)});
+    }else if(effect==='rarity'){
+      socket.data.pendingRarity={room:r.code};
+      socket.emit('rarityChoose',{cards:p.hand.map(id=>byId[id]).filter(Boolean)});
+    }else if(effect==='tirek'){
+      requestTarget(socket,r,p,source,'tirek','any','Tirek: Welchen Gegner willst du schwächen?');
+    }else if(effect==='stormking'){
+      fxAdd(r,'stormKing',p.id);socket.emit('specialDone',{text:'Bei Schnelligkeits-Gleichstand erhältst du +2.'});
+    }else if(effect==='flimflam'){
+      const d=drawNormal(r,1);p.hand.push(...d);
+      forceDiscardChoice(r,p,'Flim und Flam');
+      socket.emit('specialDone',{text:'1 normale Karte gezogen – jetzt 1 Handkarte ablegen.'});
+    }else if(effect==='cozy'){
+      requestTarget(socket,r,p,source,'cozy','hand','Cozy Glow: Wer soll eine zufällige Handkarte verlieren?');
+    }else if(effect==='sludge'){
+      requestTarget(socket,r,p,source,'sludge','hand','Sludge: Wähle den Gegner, dessen Karte du bestimmst.');
+    }else if(effect==='diamonddogs'){
+      const d=drawNormal(r,2);
+      socket.data.pendingSpecial={room:r.code,action:'diamonddogs',sourceCardId:source.id,choices:d};
+      socket.emit('specialCardRequest',{title:'Diamond Dogs: Behalte 1 der 2 Karten',cards:d.map(id=>byId[id]).filter(Boolean)});
+    }else if(effect==='changeling'){
+      p.specialExtra=(p.specialExtra||0)+1;
+      socket.emit('specialDone',{text:'Du darfst diese Runde noch 1 zusätzliche Spezialkarte spielen.'});
+    }else if(effect==='nightmare'){
+      r.forcedNextCategory='magic';
+      socket.emit('specialDone',{text:'Die nächste Runde wird automatisch Magie.'});
+      io.to(r.code).emit('specialImpact',{effect:'nightmare',targetIds:[],text:'Die nächste Runde gehört der Magie.'});
+    }else if(effect==='hydra'){
+      fxAdd(r,'hydra',p.id);socket.emit('specialDone',{text:'Bei einer Niederlage erhältst du nach der Runde 1 zusätzliche normale Karte.'});
+    }else if(effect==='bugbear'){
+      requestTarget(socket,r,p,source,'bugbear','any','Bugbear: Wer setzt diese Runde aus?');
+    }else if(effect==='manticore'){
+      const pool=[...r.normalDiscard.map(id=>({id,zone:'normal'})),...r.rewardDiscard.map(id=>({id,zone:'reward'}))];
+      socket.data.pendingSpecial={room:r.code,action:'manticore',sourceCardId:source.id,choices:pool};
+      socket.emit('specialCardRequest',{title:'Manticore: Nimm 1 Karte aus dem Ablagestapel zurück',cards:pool.map(x=>byId[x.id]).filter(Boolean)});
+    }else if(effect==='timberwolves'){
+      fxAdd(r,'doubleNormal',p.id);socket.emit('specialDone',{text:'Lege diese Runde 2 normale Karten. Der höhere Kategorienwert zählt.'});
+    }else if(effect==='grogar'){
+      socket.data.pendingSpecial={room:r.code,action:'grogar',sourceCardId:source.id};
+      socket.emit('specialCategoryRequest',{title:'Grogar: Wähle die Kategorie',categories:CATEGORIES.map(id=>({id,label:CATEGORY_LABEL[id],icon:CATEGORY_ICON[id]}))});
+    }else if(effect==='sombra'){
+      fxAdd(r,'protected',p.id);
+      requestTarget(socket,r,p,source,'sombra','any','King Sombra: Welcher Gegner verliert 2 Stärke?');
+    }else if(effect==='daybreaker'){
+      fxAdd(r,'autoWinner',p.id);socket.emit('specialDone',{text:'Sobald du deine normale Karte legst, gewinnst du diese Runde automatisch.'});
+    }else if(effect==='ironwill'){
+      r.roundFX.artifactBlocked=true;socket.emit('specialDone',{text:'In dieser Runde kann niemand ein Artefakt ziehen.'});
+      io.to(r.code).emit('specialImpact',{effect:'ironwill',targetIds:[],text:'Artefaktziehungen sind für diese Runde blockiert.'});
+    }else if(effect==='ponyshadows'){
+      requestTarget(socket,r,p,source,'ponyshadows','any','Pony of Shadows: Welche gegnerische Karte soll nicht zählen?');
+    }else if(effect==='windigos'){
+      for(const t of roomPlayers(r)){
+        if(t.id!==p.id&&!t.surrendered)skipPlayerThisRound(r,t.id,p.id,'Windigos');
+      }
+      socket.emit('specialDone',{text:'Alle anderen Spieler setzen diese Runde aus.'});
+      maybeEvaluate(r);
+    }else if(effect==='sunset'){
+      const d=drawNormal(r,3);
+      socket.data.pendingSpecial={room:r.code,action:'sunset',sourceCardId:source.id,choices:d};
+      socket.emit('specialCardRequest',{title:'Sunset Shimmer: Behalte 1 der obersten 3 normalen Karten',cards:d.map(id=>byId[id]).filter(Boolean)});
+    }else if(effect==='starlight'){
+      for(const t of roomPlayers(r)){
+        if(t.id===p.id||t.surrendered)continue;
+        if(isProtectedFrom(r,t.id,p.id)){io.to(r.code).emit('specialBlocked',{targetId:t.id,targetName:t.name,sourceName:'Starlight Glimmer'});continue;}
+        forceDiscardChoice(r,t,'Starlight Glimmer');
+      }
+      socket.emit('specialDone',{text:'Alle Gegner müssen 1 Handkarte ablegen.'});
+    }else if(effect==='trixie'){
+      clearNegativeEffects(r,p.id);
+      socket.emit('specialDone',{text:'Trixie hebt die negativen Spezialeffekte auf dir auf.'});
+      io.to(r.code).emit('specialCleansed',{playerId:p.id,name:p.name});
+    }else if(effect==='ahuizotl'){
+      requestTarget(socket,r,p,source,'ahuizotl','played','Ahuizotl: Wähle einen Gegner, der bereits gelegt hat.');
+    }else if(effect==='maneiac'){
+      requestTarget(socket,r,p,source,'maneiac','hand','Mane-iac: Wähle den Gegner, dessen Handkarte du bestimmst.');
+    }else if(effect==='lightningdust'){
+      requestTarget(socket,r,p,source,'lightningdust','any','Lightning Dust: Wer verliert diese Runde automatisch?');
+    }else if(effect==='gilda'){
+      requestTarget(socket,r,p,source,'gilda','hand','Gilda: Von welchem Gegner willst du eine zufällige Karte nehmen?');
+    }
+
     sendState(r);
   });
+
+  socket.on('specialTargetChoice',({targetId})=>{
+    const pending=socket.data.pendingSpecial,r=getRoom(socket),p=r?.players.get(socket.id);
+    if(!pending||!r||pending.room!==r.code||!p)return;
+    const target=r.players.get(targetId),action=pending.action,source=byId[pending.sourceCardId];
+    if(!target||target.id===p.id||target.surrendered){socket.data.pendingSpecial=null;return socket.emit('errorMsg','Ungültiges Ziel.');}
+    socket.data.pendingSpecial=null;
+
+    if(action==='tirek'){
+      addDebuff(r,target.id,-2,p.id,'Tirek');
+    }else if(action==='cozy'){
+      if(!target.hand.length)return socket.emit('errorMsg','Dieser Gegner hat keine Handkarte.');
+      const id=target.hand[Math.floor(Math.random()*target.hand.length)];
+      target.hand.splice(target.hand.indexOf(id),1);discardCard(r,id);
+      const d=drawNormal(r,1);target.hand.push(...d);
+      emitImpact(r,'cozy',target.id,`${target.name} verliert zufällig 1 Handkarte und zieht 1 normale Karte.`);
+    }else if(action==='sludge'||action==='maneiac'){
+      if(!target.hand.length)return socket.emit('errorMsg','Dieser Gegner hat keine Handkarte.');
+      socket.data.pendingSpecial={room:r.code,action:action==='sludge'?'sludge-card':'maneiac-card',sourceCardId:source.id,targetId:target.id};
+      socket.emit('specialCardRequest',{title:`${action==='sludge'?'Sludge':'Mane-iac'}: Welche Karte von ${target.name} soll abgelegt werden?`,cards:target.hand.map(id=>byId[id]).filter(Boolean)});
+      return;
+    }else if(action==='bugbear'){
+      skipPlayerThisRound(r,target.id,p.id,'Bugbear');maybeEvaluate(r);
+    }else if(action==='sombra'){
+      addDebuff(r,target.id,-2,p.id,'King Sombra','strength');
+    }else if(action==='ponyshadows'){
+      markForcedLose(r,target.id,p.id,'Pony of Shadows','shadow');
+    }else if(action==='ahuizotl'){
+      if(!playedCardIds(r.played[target.id]).length)return socket.emit('errorMsg','Dieser Gegner hat noch keine Karte gelegt.');
+      addDebuff(r,target.id,-2,p.id,'Ahuizotl');
+    }else if(action==='lightningdust'){
+      markForcedLose(r,target.id,p.id,'Lightning Dust','lightning');
+    }else if(action==='gilda'){
+      if(!target.hand.length)return socket.emit('errorMsg','Dieser Gegner hat keine Handkarte.');
+      const id=target.hand[Math.floor(Math.random()*target.hand.length)];
+      target.hand.splice(target.hand.indexOf(id),1);p.hand.push(id);
+      emitImpact(r,'steal',[target.id,p.id],`${p.name} nimmt eine zufällige Karte von ${target.name}.`);
+    }
+    sendState(r);
+  });
+
+  socket.on('specialCategoryChoice',({category})=>{
+    const pending=socket.data.pendingSpecial,r=getRoom(socket);
+    if(!pending||!r||pending.room!==r.code||pending.action!=='grogar'||!CATEGORIES.includes(category))return;
+    socket.data.pendingSpecial=null;
+    r.category=category;
+    if(Array.isArray(r.categoryHistory)&&r.categoryHistory.length)r.categoryHistory[r.categoryHistory.length-1]=category;
+    io.to(r.code).emit('categoryOverride',{category,label:CATEGORY_LABEL[category],icon:CATEGORY_ICON[category],source:'Grogar'});
+    io.to(socket.id).emit('specialDone',{text:`Grogar bestimmt: ${CATEGORY_LABEL[category]}.`});
+    sendState(r);
+  });
+
+  socket.on('specialCardChoice',({cardId})=>{
+    const pending=socket.data.pendingSpecial,r=getRoom(socket),p=r?.players.get(socket.id);
+    if(!pending||!r||pending.room!==r.code||!p)return;
+    const action=pending.action;
+
+    if(action==='sludge-card'||action==='maneiac-card'){
+      const target=r.players.get(pending.targetId);
+      if(!target||!target.hand.includes(cardId))return socket.emit('errorMsg','Diese Karte ist nicht mehr verfügbar.');
+      target.hand.splice(target.hand.indexOf(cardId),1);discardCard(r,cardId);
+      emitImpact(r,action==='sludge-card'?'sludge':'maneiac',target.id,`${target.name} muss ${byId[cardId]?.name||'eine Karte'} ablegen.`);
+      socket.data.pendingSpecial=null;sendState(r);return;
+    }
+
+    if(action==='diamonddogs'||action==='sunset'){
+      if(!pending.choices?.includes(cardId))return;
+      p.hand.push(cardId);
+      const rest=[...pending.choices];
+      rest.splice(rest.indexOf(cardId),1);
+      if(action==='sunset'){
+        // Die zwei nicht gewählten Karten bleiben im normalen Ziehstapel.
+        r.normalDeck.unshift(...rest);
+      }else{
+        r.normalDiscard.push(...rest);
+      }
+      socket.data.pendingSpecial=null;
+      socket.emit('specialDone',{text:`${byId[cardId]?.name||'Karte'} behalten.`});
+      sendState(r);return;
+    }
+
+    if(action==='manticore'){
+      const idx=pending.choices?.findIndex(x=>x.id===cardId);
+      if(idx<0)return;
+      const choice=pending.choices[idx];
+      const pile=choice.zone==='reward'?r.rewardDiscard:r.normalDiscard;
+      const pileIndex=pile.indexOf(cardId);
+      if(pileIndex<0)return socket.emit('errorMsg','Diese Karte liegt nicht mehr im Ablagestapel.');
+      pile.splice(pileIndex,1);p.hand.push(cardId);
+      socket.data.pendingSpecial=null;
+      socket.emit('specialDone',{text:`${byId[cardId]?.name||'Karte'} aus dem Ablagestapel zurückgeholt.`});
+      sendState(r);return;
+    }
+  });
+
+  socket.on('forcedDiscardChoice',({cardId})=>{
+    const r=getRoom(socket),p=r?.players.get(socket.id);
+    if(!r||!p?.pendingForcedDiscard||!p.hand.includes(cardId))return;
+    clearTimeout(p.pendingForcedDiscard.timer);
+    const sourceName=p.pendingForcedDiscard.sourceName;
+    p.pendingForcedDiscard=null;
+    p.hand.splice(p.hand.indexOf(cardId),1);discardCard(r,cardId);
+    socket.emit('specialDone',{text:`${sourceName}: ${byId[cardId]?.name||'Eine Karte'} abgelegt.`});
+    emitImpact(r,'discard',p.id,`${p.name} legt 1 Karte ab.`);
+    sendState(r);
+  });
+
   socket.on('flutterKeep',({cardId})=>{const x=socket.data.pendingFlutter,r=getRoom(socket);if(!x||!r||x.room!==r.code||!x.choices.includes(cardId))return;const p=r.players.get(socket.id);
     const other=x.choices.filter(id=>id!==cardId);
     r.normalDiscard.push(...other);
@@ -502,7 +942,7 @@ io.on('connection',socket=>{
     // Bereits gelegte Karte sauber zurücknehmen, damit die laufende Runde
     // ohne den aufgegebenen Spieler weiter ausgewertet werden kann.
     const entry=r.played[socket.id];
-    if(entry?.cardId)discardCard(r,entry.cardId);
+    for(const id of playedCardIds(entry))discardCard(r,id);
     delete r.played[socket.id];
     delete r.roundBuff[socket.id];
     delete r.dice[socket.id];
