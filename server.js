@@ -19,7 +19,7 @@ function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=M
 function roomPlayers(r){ return [...r.players.values()]; }
 function publicState(r){
   return {
-    code:r.code, hostId:r.hostId, phase:r.phase, category:r.category,
+    code:r.code, hostId:r.hostId, phase:r.phase, category:r.category, countdownUntil:r.countdownUntil||null,
     players:roomPlayers(r).map(p=>({id:p.id,name:p.name,accessory:p.accessory,handCount:p.hand.length,selected:!!p.selected,eliminated:p.hand.length===0,lastPlayedCardId:p.lastPlayedCardId||null})),
     round:r.round
   };
@@ -29,10 +29,21 @@ function nextCategory(r){ r.category=CATEGORIES[Math.floor(Math.random()*CATEGOR
 function freshPool(){ return shuffle([...normal,...specials].map(c=>c.id)); }
 function getRoom(socket){ const rc=socket.data.room; return rc?rooms.get(rc):null; }
 function activePlayers(r){ return roomPlayers(r).filter(p=>p.hand.length>0); }
+function hasNormalCard(p){ return p.hand.some(id=>byId[id]?.type==='normal'); }
+function roundParticipants(r){
+  // A player who has already committed stays a participant even though that card
+  // has been removed from their hand. Players with only special cards don't freeze the round.
+  return roomPlayers(r).filter(p=>p.selected || hasNormalCard(p));
+}
+function maybeEvaluate(r){
+  if(!r || r.phase!=='select') return;
+  const expected=roundParticipants(r);
+  if(expected.length && expected.every(p=>p.selected)) evaluate(r);
+}
 function clearPending(r){ if(r.roundTimer){clearTimeout(r.roundTimer);r.roundTimer=null;} }
 function resetToLobby(r){
   clearPending(r);
-  r.phase='lobby'; r.category=null; r.round=0; r.played={}; r.dice={}; r.tieIds=[]; r.roundBuff={};
+  r.phase='lobby'; r.category=null; r.countdownUntil=null; r.round=0; r.played={}; r.dice={}; r.tieIds=[]; r.roundBuff={};
   for(const p of roomPlayers(r)){ p.hand=[]; p.selected=null; p.lastPlayedCardId=null; }
   io.to(r.code).emit('backToLobby');
   sendState(r);
@@ -45,10 +56,7 @@ function removePlayerFromRoom(socket, notify=true){
   if(r.hostId===socket.id) r.hostId=roomPlayers(r)[0].id;
   if(notify) io.to(r.code).emit('notice','Ein Spieler hat den Raum verlassen.');
   sendState(r);
-  if(r.phase==='select'){
-    const expected=roomPlayers(r).filter(x=>x.hand.length>0||x.selected);
-    if(expected.length && expected.every(x=>x.selected)) evaluate(r);
-  }
+  if(r.phase==='select') maybeEvaluate(r);
 }
 
 function startRound(r, delay=900){
@@ -56,6 +64,7 @@ function startRound(r, delay=900){
   r.roundTimer=setTimeout(()=>{
     if(!rooms.has(r.code)) return;
     r.roundTimer=null;
+    r.countdownUntil=null;
     r.round += 1; r.phase='select'; r.played={}; r.dice={}; r.tieIds=[]; r.roundBuff={};
     for(const p of roomPlayers(r)) p.selected=null;
     nextCategory(r);
@@ -162,13 +171,16 @@ io.on('connection', socket=>{
     for(const p of ps){ p.hand=[]; p.lastPlayedCardId=null; }
     for(let k=0;k<7;k++) for(const p of ps) p.hand.push(pool.shift());
     r.phase='countdown'; r.round=0;
-    io.to(r.code).emit('countdown',{seconds:5}); sendState(r);
-    setTimeout(()=>startRound(r,0),5600);
+    r.countdownUntil=Date.now()+5200;
+    sendState(r);
+    io.to(r.code).emit('countdown',{seconds:5,until:r.countdownUntil});
+    setTimeout(()=>startRound(r,0),5300);
   });
   socket.on('playCard',({cardId})=>{
     const r=getRoom(socket); if(!r||r.phase!=='select') return;
     const p=r.players.get(socket.id); const c=byId[cardId];
-    if(!p||!c||c.type!=='normal'||p.selected||!p.hand.includes(cardId)) return;
+    if(!p||!c||c.type!=='normal'||!p.hand.includes(cardId)) return socket.emit('errorMsg','Diese Karte kann gerade nicht gespielt werden.');
+    if(p.selected) return socket.emit('errorMsg','Du hast für diese Runde bereits eine Karte gewählt.');
     if(p.lastPlayedCardId===cardId){
       const hasAlternative=p.hand.some(id=>id!==cardId && byId[id]?.type==='normal');
       if(hasAlternative){
@@ -181,9 +193,10 @@ io.on('connection', socket=>{
     r.played[socket.id]={cardId};
     // Everyone sees a face-down card fly onto the table as soon as a player commits.
     io.to(r.code).emit('cardCommitted',{playerId:socket.id,name:p.name});
-    io.to(r.code).emit('playerSelected',{playerId:socket.id}); sendState(r);
-    const expected=roomPlayers(r).filter(x=>x.hand.length>0||x.selected);
-    if(expected.every(x=>x.selected)) evaluate(r);
+    io.to(r.code).emit('playerSelected',{playerId:socket.id,name:p.name});
+    socket.emit('cardAccepted',{cardId});
+    sendState(r);
+    maybeEvaluate(r);
   });
   socket.on('useSpecial',({cardId})=>{
     const r=getRoom(socket); if(!r||r.phase!=='select') return;
@@ -208,16 +221,17 @@ io.on('connection', socket=>{
       consume(); socket.data.pendingRarity={room:r.code}; socket.emit('rarityChoose',{cards:p.hand.map(id=>byId[id])});
     }
     sendState(r);
+    maybeEvaluate(r);
   });
   socket.on('flutterKeep',({cardId})=>{
     const x=socket.data.pendingFlutter; const r=getRoom(socket); if(!x||!r||x.room!==r.code||!x.choices.includes(cardId)) return;
-    const p=r.players.get(socket.id); p.hand.push(cardId); socket.data.pendingFlutter=null; socket.emit('specialDone',{text:`${byId[cardId].name} wurde behalten.`}); sendState(r);
+    const p=r.players.get(socket.id); p.hand.push(cardId); socket.data.pendingFlutter=null; socket.emit('specialDone',{text:`${byId[cardId].name} wurde behalten.`}); sendState(r); maybeEvaluate(r);
   });
   socket.on('raritySwap',({cardId})=>{
     const x=socket.data.pendingRarity; const r=getRoom(socket); if(!x||!r||x.room!==r.code) return;
     const p=r.players.get(socket.id); if(!p.hand.includes(cardId)) return;
     p.hand.splice(p.hand.indexOf(cardId),1); const d=drawFromPool(r,1,[cardId]); if(d.length)p.hand.push(d[0]);
-    socket.data.pendingRarity=null; socket.emit('specialDone',{text:d.length?`${byId[cardId].name} wurde gegen ${byId[d[0]].name} getauscht.`:'Keine freie Karte mehr im Stapel.'}); sendState(r);
+    socket.data.pendingRarity=null; socket.emit('specialDone',{text:d.length?`${byId[cardId].name} wurde gegen ${byId[d[0]].name} getauscht.`:'Keine freie Karte mehr im Stapel.'}); sendState(r); maybeEvaluate(r);
   });
   socket.on('rollDice',()=>{
     const r=getRoom(socket); if(!r||r.phase!=='tie'||!r.tieIds.includes(socket.id)||r.dice[socket.id]!==undefined) return;
