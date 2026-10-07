@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MLP Battle Cards – Sammle die meisten Karten</title>
+  <title>MLP Battle Cards – Jagd nach den Artefakten</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body class="scene-home">
@@ -14,7 +14,7 @@
       <div class="hero crystal-panel">
         <div class="logo-gem">✦</div>
         <h1>MLP Battle Cards</h1>
-        <p>Sammle die meisten Karten, um zu gewinnen.</p>
+        <p>Gewinne Runden, ziehe aus dem goldenen Stapel und finde alle drei Artefakte.</p>
         <div class="profile-row">
           <label>Dein Name <input id="playerName" maxlength="24" placeholder="Spielername" /></label>
           <button id="accessoryBtn" class="soft-btn" type="button">Items & Rahmen</button>
@@ -24,7 +24,7 @@
           <button id="createBtn" class="primary-btn" type="button">✨ Raum erstellen</button>
           <div class="join-box"><input id="roomCode" maxlength="5" placeholder="RAUMCODE" /><button id="joinBtn" class="primary-btn" type="button">Beitreten</button></div>
         </div>
-        <p class="hint">2–8 Spieler · 7 zufällige, einzigartige Karten pro Spieler</p>
+        <p class="hint">2–8 Spieler · Start: 6 normale Karten + 1 Spezialkarte · doppelte Karten sind möglich</p>
       </div>
     </section>
 
@@ -34,7 +34,7 @@
         <p id="lobbyHint">Warte auf Mitspieler …</p>
         <div id="lobbyPlayers" class="lobby-players"></div>
         <div class="lobby-actions">
-          <button id="startBtn" class="primary-btn" type="button">⚔️ Match vorbereiten</button>
+          <button id="startBtn" class="primary-btn ready-btn" type="button">✅ Bereit</button>
           <button id="lobbyAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
           <button id="leaveLobbyBtn" class="soft-btn" type="button">← Hauptmenü</button>
           <div class="music-controls"><button id="musicLobbyBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
@@ -50,33 +50,18 @@
           <div class="music-controls"><button id="musicGameBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
         </div>
         <div id="arenaVfx" class="arena-vfx" aria-hidden="true"><span class="arena-particle p1"></span><span class="arena-particle p2"></span><span class="arena-particle p3"></span><span class="arena-particle p4"></span><span class="arena-particle p5"></span><span class="arena-particle p6"></span><span class="arena-particle p7"></span><span class="arena-particle p8"></span><span class="arena-particle p9"></span><span class="arena-particle p10"></span><span class="arena-particle p11"></span><span class="arena-particle p12"></span><span class="arena-particle p13"></span><span class="arena-particle p14"></span></div>
-        <div id="arenaReadyPanel" class="arena-ready-panel" hidden>
-          <div class="arena-ready-card">
-            <span class="arena-ready-kicker">⚔️ KAMPF-VORBEREITUNG</span>
-            <h2>Raum <span id="arenaRoomCode"></span></h2>
-            <p>Alle Spieler müssen in der Arena bereit sein.</p>
-            <div id="arenaReadyPlayers" class="arena-ready-players"></div>
-            <div class="arena-ready-music">
-              <strong>🎵 Battle-Musik</strong>
-              <div class="music-controls lobby-ready-music-controls">
-                <button class="soft-btn music-toggle" type="button">🔇 Musik stumm</button>
-                <label class="ready-volume-wrap">
-                  <span>🔈</span>
-                  <input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Battle-Musiklautstärke">
-                  <span>🔊</span>
-                  <b class="music-volume-readout">30%</b>
-                </label>
-              </div>
-            </div>
-            <div class="arena-ready-actions">
-              <button id="arenaReadyBtn" class="primary-btn ready-btn" type="button">✅ Bereit</button>
-              <button id="arenaAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
-              <button id="arenaReadyLeaveBtn" class="soft-btn" type="button">← Hauptmenü</button>
-            </div>
-          </div>
-        </div>
         <div id="opponents" class="opponents"></div>
         <div class="center-stage">
+          <div id="deckHud" class="deck-hud" aria-label="Ziehstapel">
+            <div id="normalDeckHud" class="deck-pile normal-deck-pile">
+              <img src="/assets/card_back.webp" alt="Normaler Ziehstapel">
+              <span><strong>Normal</strong><small id="normalDeckCount">–</small></span>
+            </div>
+            <div id="rewardDeckHud" class="deck-pile reward-deck-pile">
+              <img src="/assets/special_back_gold.png" alt="Spezial- und Artefaktstapel">
+              <span><strong>Goldstapel</strong><small id="rewardDeckCount">–</small></span>
+            </div>
+          </div>
           <div id="category" class="category"><span id="categoryIcon">✦</span><strong id="categoryText">Bereit?</strong></div>
           <div id="countdownAnchor" class="countdown-anchor" aria-hidden="true"></div>
           <div id="tableCards" class="table-cards"></div>
@@ -86,21 +71,13 @@
         </div>
         <div id="selfNameplate" class="self-nameplate"></div>
         <div class="self-bar"><strong id="selfName"></strong><span id="selfCount"></span></div>
+        <div id="artifactShelf" class="artifact-shelf" aria-label="Deine Artefakte"></div>
         <div id="hand" class="hand"></div>
       </div>
     </section>
   </main>
 
   <div id="countdown" class="countdown global-countdown" aria-live="assertive"></div>
-  <div id="tieOverlay" class="tie-alert-overlay" aria-hidden="true">
-    <div class="tie-alert-card">
-      <span class="tie-kicker">⚔️ GLEICHSTAND ⚔️</span>
-      <div class="tie-dice-visual"><span>🎲</span><b>VS</b><span>🎲</span></div>
-      <h2 id="tieAlertTitle">Würfelduell!</h2>
-      <p id="tieAlertText">Gleiche Werte – jetzt entscheidet das Glück.</p>
-      <button id="tieRollBtn" class="primary-btn tie-roll-big" type="button">🎲 JETZT WÜRFELN</button>
-    </div>
-  </div>
   <div id="finisherOverlay" class="finisher-overlay" aria-hidden="true">
     <div class="finisher-stage">
       <div id="finisherHeadline" class="finisher-headline"></div>
@@ -109,24 +86,19 @@
       <div id="finisherImpact" class="finisher-impact" aria-hidden="true"></div>
     </div>
   </div>
-  <div id="toast" class="toast" role="status"></div>
-  <div id="roundIntroOverlay" class="round-intro-overlay category-crystal-overlay" aria-hidden="true">
-    <div class="category-crystal-scene">
-      <span id="roundIntroRound" class="category-crystal-round">RUNDE 1</span>
-      <div id="roundCategoryCrystal" class="category-crystal" aria-label="Vierseitiger Kategorie-Kristall">
-        <div class="category-crystal-face crystal-face-strength" aria-label="Stärke"><span>🏋️</span></div>
-        <div class="category-crystal-face crystal-face-speed" aria-label="Schnelligkeit"><span>⚡</span></div>
-        <div class="category-crystal-face crystal-face-energy" aria-label="Energie"><span>🔋</span></div>
-        <div class="category-crystal-face crystal-face-magic" aria-label="Magie"><span>⭐</span></div>
-        <i class="category-crystal-core" aria-hidden="true"></i>
-        <i class="category-crystal-glint" aria-hidden="true"></i>
+  <div id="rewardDrawOverlay" class="reward-draw-overlay" aria-hidden="true">
+    <div class="reward-draw-card">
+      <span id="rewardDrawKicker">GOLDSTAPEL</span>
+      <div id="rewardCardFlipper" class="reward-card-flipper">
+        <div class="reward-card-face reward-card-back"><img src="/assets/special_back_gold.png" alt=""></div>
+        <div class="reward-card-face reward-card-front"><img id="rewardDrawImage" src="/assets/special_back_gold.png" alt=""></div>
       </div>
-      <div id="categoryCrystalResult" class="category-crystal-result" aria-live="polite">
-        <b id="roundIntroIcon">⭐</b><strong id="roundIntroLabel">MAGIE</strong>
-      </div>
-      <span class="category-crystal-hint">Der Kristall entscheidet …</span>
+      <strong id="rewardDrawTitle">Belohnung</strong>
+      <small id="rewardDrawText"></small>
     </div>
   </div>
+  <div id="toast" class="toast" role="status"></div>
+  <div id="roundIntroOverlay" class="round-intro-overlay" aria-hidden="true"><div class="round-intro-card"><span id="roundIntroRound">RUNDE 1</span><b id="roundIntroIcon">⭐</b><strong id="roundIntroLabel">MAGIE</strong><i></i></div></div>
   <button id="rulesBtn" class="rules-floating" type="button">📖 Spielregeln</button>
 
   <dialog id="accessoryDialog" class="modal accessory-modal">
@@ -167,21 +139,21 @@
       <div id="tutorialSlides" class="tutorial-slides">
         <article class="tutorial-step active" data-step="0">
           <div class="tutorial-copy">
-            <h4>1. Dein Ziel</h4>
-            <p>Du startest mit <strong>7 zufälligen Karten</strong>. Gewinne Runden, sammle die ausgespielten Karten und versuche als letzter Spieler noch Karten zu besitzen.</p>
+            <h4>1. Dein neues Ziel</h4>
+            <p>Finde als Erster alle drei Artefakte: <strong>Elemente der Harmonie</strong>, <strong>Kristall Herz</strong> und <strong>Star Swirls Tagebuch</strong>. Wer alle drei besitzt, gewinnt.</p>
           </div>
           <div class="tutorial-picture tutorial-hand-picture">
             <img src="/assets/cards/01_Applejack.webp" alt="Applejack Karte">
             <img src="/assets/cards/02_Rainbow_Dash.webp" alt="Rainbow Dash Karte">
             <img src="/assets/cards/03_Twilight_Sparkle.webp" alt="Twilight Sparkle Karte">
-            <span class="tutorial-callout">7 Karten auf deiner Hand</span>
+            <span class="tutorial-callout">6 Normal + 1 Spezial</span>
           </div>
         </article>
 
         <article class="tutorial-step" data-step="1">
           <div class="tutorial-copy">
-            <h4>2. Kategorie beachten</h4>
-            <p>Zu Beginn erscheint eine Kategorie. Nur dieser Wert zählt in der Runde. Der große Countdown zeigt dir vorher gut sichtbar, wann es losgeht.</p>
+            <h4>2. Zwei Ziehstapel</h4>
+            <p>Du startest mit <strong>6 normalen Karten + 1 Spezialkarte</strong>. Der normale Stapel füllt deine Charakterkarten auf. Im <strong>goldenen Stapel</strong> liegen Spezialkarten und Artefakte.</p>
           </div>
           <div class="tutorial-picture category-picture">
             <div class="tutorial-countdown-demo">3</div>
@@ -191,8 +163,8 @@
 
         <article class="tutorial-step" data-step="2">
           <div class="tutorial-copy">
-            <h4>3. Eine Karte wählen</h4>
-            <p>Vergleiche den passenden Wert und klicke deine beste Karte. Beim Darüberfahren hebt sie sich an. <strong>Gedrückt halten</strong> öffnet später die große Kartenansicht.</p>
+            <h4>3. Kategorie & Karte</h4>
+            <p>Der Kristall bestimmt Stärke, Schnelligkeit, Energie oder Magie. Spiele eine normale Karte verdeckt. Der höchste Wert der aktuellen Kategorie gewinnt die Runde.</p>
           </div>
           <div class="tutorial-picture choose-picture">
             <div class="tutorial-card-choice good"><img src="/assets/cards/01_Applejack.webp" alt="Applejack"><b>🏋️ 9</b><small>Gute Wahl</small></div>
@@ -203,40 +175,40 @@
 
         <article class="tutorial-step" data-step="3">
           <div class="tutorial-copy">
-            <h4>4. Ablegen, aufdecken, gewinnen</h4>
-            <p>Alle gewählten Karten fliegen verdeckt in die Mitte. Sobald alle gewählt haben, drehen sie sich gleichzeitig um. Der höchste Wert gewinnt alle ausgespielten Karten.</p>
+            <h4>4. Ablegen & automatisch auffüllen</h4>
+            <p>Nach der Auswertung gehen <strong>alle gespielten normalen Karten zurück in den Kartenkreislauf</strong>. Danach wird jede normale Hand automatisch wieder auf <strong>6 Karten</strong> aufgefüllt – auch Verluste durch Effekte werden erst dann ersetzt.</p>
           </div>
           <div class="tutorial-picture reveal-picture">
             <div class="tutorial-back"><img src="/assets/card_back.webp" alt="Kartenrückseite"></div>
             <span class="tutorial-arrow">➜</span>
             <div class="tutorial-front"><img src="/assets/cards/01_Applejack.webp" alt="Applejack Karte"></div>
-            <span class="tutorial-win">🏆 Karten gehen zum Gewinner</span>
+            <span class="tutorial-win">♻ Karten zurück · Hände werden aufgefüllt</span>
           </div>
         </article>
 
         <article class="tutorial-step" data-step="4">
           <div class="tutorial-copy">
-            <h4>5. Gleichstand & Zeitlimit</h4>
-            <p>Bei Gleichstand würfeln nur die beteiligten Spieler. Hast du nach <strong>30 Sekunden</strong> nichts gelegt, verlierst du eine zufällige Strafkarte und eine neue Kategorie wird gezogen.</p>
+            <h4>5. Der Rundensieg</h4>
+            <p>Der Gewinner zieht zusätzlich <strong>1 Karte vom goldenen Stapel</strong>. Das kann eine Spezialkarte oder eines der drei Artefakte sein. Doppelte normale und Spezialkarten sind ausdrücklich möglich.</p>
           </div>
           <div class="tutorial-picture tie-picture">
             <div class="tutorial-die">⚄</div><div class="tutorial-die second">⚂</div>
-            <div class="tutorial-timeout">⏱ 30 → 0<br><small>Keine Karte = Strafkarte</small></div>
+            <div class="tutorial-timeout">🏆 Sieger zieht aus dem Goldstapel</div>
           </div>
         </article>
 
         <article class="tutorial-step" data-step="5">
           <div class="tutorial-copy">
-            <h4>6. Spezialkarten & Belohnungen</h4>
-            <p>Spezialkarten zeigen deutlich, wann sie eingesetzt werden können. Ein Sieg kann dir ein neues <strong>Item oder einen Rahmen</strong> freischalten. Unentdecktes bleibt als <strong>?</strong> verborgen.</p>
+            <h4>6. Spezialkarten, Gleichstand & Sieg</h4>
+            <p>Spezialkarten verändern Runden. Bei Gleichstand wird gewürfelt. Wer aufgibt, schaut weiter zu. Sobald ein Spieler <strong>alle drei verschiedenen Artefakte</strong> gesammelt hat, endet das Match.</p>
           </div>
           <div class="tutorial-picture special-picture">
             <img class="tutorial-special" src="/assets/specials/64_Spezial_Pinkie_Pie.webp" alt="Pinkie Pie Spezialkarte">
             <span class="magic-spark">✨</span>
-            <div class="tutorial-reward-preview">
-              <img src="/assets/frames/sakura.webp" alt="Sakura Rahmen">
-              <span>oder</span>
-              <div class="tutorial-mystery">?</div>
+            <div class="tutorial-reward-preview artifact-preview">
+              <img src="/assets/special_back_gold.png" alt="Goldener Ziehstapel">
+              <span>→</span>
+              <img src="/assets/artifacts/02_Kristall_Herz.png" alt="Kristall Herz">
             </div>
           </div>
         </article>
@@ -297,7 +269,7 @@
     <div id="cardInspectStage" class="card-inspect-stage">
       <div id="cardInspectCard" class="card-inspect-card">
         <div class="card-inspect-face card-inspect-front"><img id="cardInspectFront" src="" alt="Kartenvorderseite"></div>
-        <div class="card-inspect-face card-inspect-back"><img src="/assets/card_back.webp" alt="Kartenrückseite"></div>
+        <div class="card-inspect-face card-inspect-back"><img id="cardInspectBack" src="/assets/card_back.webp" alt="Kartenrückseite"></div>
       </div>
     </div>
     <div class="inspect-hint">Gedrückt halten öffnet diese Ansicht · Rechtsklick ziehen = 360° drehen · ESC = schließen</div>

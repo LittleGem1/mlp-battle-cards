@@ -210,6 +210,7 @@ $('#arenaAccessoryBtn')?.addEventListener('click',()=>{renderAccessoryGrid();$('
 $('#arenaReadyLeaveBtn')?.addEventListener('click',()=>leaveRoomNow());
 
 socket.on('connect',()=>{myId=socket.id;updateHomePreview();});
+socket.on('matchLoadout',e=>toast(`🃏 Start: ${e.normalCards} normale Karten + ${e.specialCards} Spezialkarte · Ziel: 3 Artefakte`));
 socket.on('errorMsg',toast); socket.on('notice',toast); socket.on('specialDone',e=>toast(e.text));
 
 let waitingForLobbyReset=false;
@@ -464,6 +465,71 @@ function ensureMatchActionButtons(){
 }
 ensureMatchActionButtons();
 
+
+const ARTIFACT_ORDER=[
+  {id:'a01',name:'Elemente der Harmonie',icon:'✦'},
+  {id:'a02',name:'Kristall Herz',icon:'💎'},
+  {id:'a03',name:'Star Swirls Tagebuch',icon:'📘'}
+];
+function artifactSlotsHTML(owned=[]){
+  const ids=new Set((owned||[]).map(a=>typeof a==='string'?a:a.id));
+  return `<div class="artifact-mini-row">${ARTIFACT_ORDER.map(a=>`<span class="artifact-mini ${ids.has(a.id)?'found':''}" title="${escapeHtml(a.name)}">${ids.has(a.id)?a.icon:'?'}</span>`).join('')}</div>`;
+}
+function renderArtifactShelf(me){
+  const shelf=$('#artifactShelf');if(!shelf)return;
+  const owned=me?.artifacts||[];
+  const ids=new Set(owned.map(a=>a.id));
+  shelf.innerHTML=`<div class="artifact-shelf-title"><strong>ARTEFAKTE</strong><span>${ids.size}/3</span></div>
+    <div class="artifact-shelf-slots">${ARTIFACT_ORDER.map(a=>{
+      const card=owned.find(x=>x.id===a.id);
+      return `<div class="artifact-slot ${card?'found':''}" title="${escapeHtml(a.name)}">
+        ${card?`<img src="${card.image}" alt="${escapeHtml(card.name)}">`:`<span>?</span>`}
+        <small>${escapeHtml(a.name)}</small>
+      </div>`;
+    }).join('')}</div>`;
+}
+function updateDeckHud(){
+  if(!state)return;
+  const n=$('#normalDeckCount'),r=$('#rewardDeckCount');
+  if(n)n.textContent=state.deckCounts?.normal??'–';
+  if(r)r.textContent=state.deckCounts?.reward??'–';
+}
+function cardShuffleSound(){
+  ensureAudio();
+  [0,.055,.11,.17,.23,.31].forEach((t,i)=>tone(190+i*26,.045,.018,'triangle',t));
+  noiseBurst?.(.16,.025,.08);
+}
+function rewardChime(){
+  ensureAudio();
+  [520,660,820,1040].forEach((f,i)=>tone(f,.18,.03,'sine',i*.085));
+}
+function artifactFanfare(){
+  ensureAudio();
+  [392,523,659,784,1046].forEach((f,i)=>tone(f,.28,.04,'triangle',i*.11));
+  tone(130,.65,.035,'sine',.25);
+}
+function pulseDeck(id){
+  const el=$(id);if(!el)return;
+  el.classList.remove('deck-pulse');void el.offsetWidth;el.classList.add('deck-pulse');
+  setTimeout(()=>el.classList.remove('deck-pulse'),900);
+}
+function showRewardDraw(e){
+  const o=$('#rewardDrawOverlay');if(!o)return;
+  const flipper=$('#rewardCardFlipper'),img=$('#rewardDrawImage');
+  const title=$('#rewardDrawTitle'),txt=$('#rewardDrawText'),kicker=$('#rewardDrawKicker');
+  const me=e.playerId===myId;
+  const isArtifact=e.kind==='artifact';
+  kicker.textContent=isArtifact?'ARTEFAKT GEFUNDEN':'GOLDSTAPEL';
+  title.textContent=isArtifact?(e.card?.name||'Artefakt'):(me&&e.card?e.card.name:`${e.playerName} zieht eine Spezialkarte`);
+  txt.textContent=isArtifact?`${e.playerName} sichert ein Artefakt!`:(me?'Neue Spezialkarte auf deiner Hand.':'Die Spezialkarte bleibt geheim.');
+  img.src=e.card?.image||'/assets/special_back_gold.png';
+  flipper.classList.remove('flipped');o.classList.add('active');o.setAttribute('aria-hidden','false');
+  pulseDeck('rewardDeckHud');rewardChime();
+  setTimeout(()=>{if(e.card)flipper.classList.add('flipped')},550);
+  if(isArtifact)setTimeout(artifactFanfare,700);
+  setTimeout(()=>{o.classList.remove('active');o.setAttribute('aria-hidden','true')},isArtifact?3000:2200);
+}
+
 function renderGame(){
   if(!state)return;
   const me=state.players.find(p=>p.id===myId);if(!me)return;
@@ -487,7 +553,9 @@ function renderGame(){
   if(quickLobbyBtn)quickLobbyBtn.style.display=state.phase==='gameover'?'inline-block':'none';
 
   $('#selfName').textContent=me.name;
-  $('#selfCount').textContent=me.surrendered?'🏳 Aufgegeben · Zuschauer':`${me.handCount} Karten`;
+  $('#selfCount').textContent=me.surrendered?'🏳 Aufgegeben · Zuschauer':`${me.handCount} Karten · ${me.artifactCount||0}/3 Artefakte`;
+  renderArtifactShelf(me);
+  updateDeckHud();
   $('#selfNameplate').innerHTML=nameplateHTML(me.name,me.accessory,true,me.frame);
 
   const others=state.players.filter(p=>p.id!==myId);
@@ -498,7 +566,7 @@ function renderGame(){
     const fan=p.surrendered?'':`<div class="back-fan">${Array.from({length:Math.min(p.handCount,7)},(_,j)=>`<img src="/assets/card_back.webp" alt="verdeckte Karte" style="transform:rotate(${(j-3)*5}deg)">`).join('')}</div>`;
     return `<div class="opponent ${p.selected?'has-selected':''} ${p.surrendered?'is-surrendered':''}" style="${arenaSeatStyle(i,others.length)}" data-player-id="${p.id}">
       ${nameplateHTML(p.name,p.accessory,true,p.frame)}
-      <div class="opponent-meta"><span>${p.surrendered?'Zuschauer':`${p.handCount} Karten`}</span>${status}</div>
+      <div class="opponent-meta"><span>${p.surrendered?'Zuschauer':`${p.handCount} Karten`}</span>${status}</div>${artifactSlotsHTML(p.artifacts)}
       ${fan}
     </div>`;
   }).join(''):'<div class="opponent-empty">Warte auf Mitspieler …</div>';
@@ -515,6 +583,8 @@ function openCardInspect(card){
   if(!card)return;
   const overlay=$('#cardInspectOverlay'),front=$('#cardInspectFront'),name=$('#cardInspectName');
   front.src=card.image;front.alt=card.name||'Karte';name.textContent=card.name||'Karte';
+  const back=$('#cardInspectBack');
+  if(back)back.src=(card.type==='special'||card.type==='artifact')?'/assets/special_back_gold.png':'/assets/card_back.webp';
   inspectRotationY=0;inspectRotationX=0;applyInspectRotation();
   overlay.classList.add('open');overlay.setAttribute('aria-hidden','false');
 }
@@ -1049,12 +1119,17 @@ function finisherTargetRect(winnerId){
   return target.getBoundingClientRect();
 }
 function flyFinisherCardsToWinner(winnerId){
-  const tr=finisherTargetRect(winnerId),tx=tr.left+tr.width/2,ty=tr.top+tr.height/2;
+  // Im neuen Spielsystem gehen die ausgespielten Karten zurück in den normalen Kartenkreislauf.
+  const target=$('#normalDeckHud')||$('#tableCards');
+  if(!target)return;
+  const tr=target.getBoundingClientRect(),tx=tr.left+tr.width/2,ty=tr.top+tr.height/2;
   document.querySelectorAll('#finisherOverlay .finisher-card-shell').forEach((el,i)=>{
     const r=el.getBoundingClientRect(),dx=tx-(r.left+r.width/2),dy=ty-(r.top+r.height/2);
-    const from=getComputedStyle(el).transform==='none'?'translate(0,0) scale(1)':getComputedStyle(el).transform;el.animate([{transform:from,opacity:1},{transform:`translate(${dx}px,${dy}px) scale(.12) rotate(${i%2?26:-26}deg)`,opacity:.06}],{duration:850,delay:i*55,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
+    const from=getComputedStyle(el).transform==='none'?'translate(0,0) scale(1)':getComputedStyle(el).transform;
+    el.animate([{transform:from,opacity:1},{transform:`translate(${dx}px,${dy}px) scale(.10) rotate(${i%2?30:-30}deg)`,opacity:.08}],
+      {duration:850,delay:i*55,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
   });
-  tone(780,.12,.04,'triangle');tone(1040,.18,.035,'sine',.09);
+  pulseDeck('normalDeckHud');cardShuffleSound();
 }
 
 function eraseCakeBite(ctx,w,h,b){
@@ -1150,6 +1225,21 @@ function playFinisher(e){
 
 socket.on('playerGaveUp',e=>{toast(`🏳 ${e.name} hat aufgegeben und schaut jetzt zu.`);beep(180,.14)});
 socket.on('roundWinner',e=>{stopSelectionTimer();$('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;beep(1040,.22);playFinisher(e)});
+socket.on('handRefill',e=>{
+  pulseDeck('normalDeckHud');cardShuffleSound();
+  const mine=(e.players||[]).find(p=>p.playerId===myId);
+  if(mine?.cards?.length)toast(`♻ Deine normalen Karten werden auf ${e.target||6} aufgefüllt (+${mine.cards.length}).`);
+  else toast('♻ Die normalen Hände werden automatisch aufgefüllt.');
+});
+socket.on('rewardDraw',e=>showRewardDraw(e));
+socket.on('artifactFound',e=>{
+  if(e.playerId===myId)toast(`💎 ${e.card.name} gefunden! ${e.collected}/${e.total} Artefakte.`);
+  else toast(`💎 ${e.playerName} findet ${e.card.name}! (${e.collected}/${e.total})`);
+  if(state)renderGame();
+});
+socket.on('rewardPhaseDone',e=>{
+  $('#roundMessage').textContent=`✨ ${e.winnerName} hat seine Belohnung gezogen.`;
+});
 socket.on('roundTimeout',e=>{stopSelectionTimer();clearTable();const names=(e.penalties||[]).map(x=>x.name).join(', ');$('#roundMessage').textContent=names?`⏱ ${names} verliert eine Strafkarte. Neue Kategorie!`:'⏱ Zeit abgelaufen – neue Kategorie!';toast(e.message||'Zeit abgelaufen.');beep(190,.20)});
 socket.on('tieStart',e=>setupDice(e,'Gleichstand! Würfeln entscheidet.'));
 socket.on('tieAgain',e=>setupDice(e,'Schon wieder Gleichstand – nochmal würfeln!'));

@@ -78,5 +78,11 @@ const specials = [
   {id:'s65',type:'special',name:'Fluttershy – Sanfte Hilfe',effect:'fluttershy',text:'Sieh dir 2 Karten an und behalte 1.',useIcon:'✦',useLabel:'Jede Kategorie',image:'/assets/specials/65_Spezial_Fluttershy.webp'},
   {id:'s66',type:'special',name:'Rarity – Perfekte Auswahl',effect:'rarity',text:'Tausche 1 Handkarte gegen eine neue.',useIcon:'✦',useLabel:'Jede Kategorie',image:'/assets/specials/66_Spezial_Rarity.webp'}
 ];
-const byId = Object.fromEntries([...normal,...specials].map(c=>[c.id,c]));
-module.exports={normal,specials,byId};
+const artifacts = [
+  {id:'a01',type:'artifact',artifactKey:'elements',name:'Elemente der Harmonie',image:'/assets/artifacts/01_Elemente_der_Harmonie.png'},
+  {id:'a02',type:'artifact',artifactKey:'crystalheart',name:'Kristall Herz',image:'/assets/artifacts/02_Kristall_Herz.png'},
+  {id:'a03',type:'artifact',artifactKey:'starswirl',name:'Star Swirls Tagebuch',image:'/assets/artifacts/03_Star_Swirls_Tagebuch.png'}
+];
+
+const byId = Object.fromEntries([...normal,...specials,...artifacts].map(c=>[c.id,c]));
+module.exports={normal,specials,artifacts,byId};
