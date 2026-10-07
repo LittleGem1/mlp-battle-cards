@@ -847,6 +847,7 @@ function enterArenaReady(r){
   for(const p of roomPlayers(r)){p.ready=!!p.isBot;p.selected=null;}
   io.to(r.code).emit('arenaReadyPhase',{arenaId:r.arenaId});
   sendState(r);
+  maybeStartWhenReady(r);
   return true;
 }
 function maybeStartWhenReady(r){
@@ -898,6 +899,10 @@ io.on('connection',socket=>{
     const r=getRoom(socket),p=r?.players.get(socket.id);
     if(!r||r.phase!=='ready'||!p||r.readyLock)return;
     p.ready=!p.ready;
+
+    // Computer-Spieler brauchen keinen eigenen Button und bleiben immer bereit.
+    for(const bot of roomPlayers(r).filter(x=>x.isBot))bot.ready=true;
+
     sendState(r);
     maybeStartWhenReady(r);
   });

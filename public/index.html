@@ -35,7 +35,7 @@
         <p id="lobbyHint">Warte auf Mitspieler …</p>
         <div id="lobbyPlayers" class="lobby-players"></div>
         <div class="lobby-actions">
-          <button id="startBtn" class="primary-btn ready-btn" type="button">✅ Bereit</button>
+          <button id="startBtn" class="primary-btn ready-btn" type="button">⚔ In die Arena</button>
           <button id="lobbyAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
           <button id="botLobbyBtn" class="soft-btn" type="button">🤖 Test-Bot hinzufügen</button>
           <button id="leaveLobbyBtn" class="soft-btn" type="button">← Hauptmenü</button>
@@ -51,6 +51,25 @@
           <button id="leaveGameBtn" class="soft-btn" type="button">← Hauptmenü</button>
           <div class="music-controls"><button id="musicGameBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
         </div>
+
+        <div id="arenaReadyPanel" class="arena-ready-panel" hidden>
+          <div class="arena-ready-card crystal-panel">
+            <span class="arena-ready-kicker">⚔ KAMPF-VORBEREITUNG</span>
+            <h2>Die Arena ist bereit</h2>
+            <p>Raum <strong id="arenaRoomCode"></strong> · Jeder menschliche Spieler klickt hier auf Bereit. PonyBot ist automatisch bereit.</p>
+            <div id="arenaReadyPlayers" class="arena-ready-players"></div>
+            <div class="arena-ready-actions">
+              <button id="arenaReadyBtn" class="primary-btn ready-btn" type="button">✅ Bereit</button>
+              <button id="arenaAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
+              <button id="arenaReadyLeaveBtn" class="soft-btn" type="button">← Hauptmenü</button>
+            </div>
+            <div class="arena-ready-music">
+              <strong>🎵 Kampfmusik</strong>
+              <span>PonyBot wartet hier nicht auf einen eigenen Klick – nur du musst dich bereit melden.</span>
+            </div>
+          </div>
+        </div>
+
         <div id="arenaVfx" class="arena-vfx" aria-hidden="true"><span class="arena-particle p1"></span><span class="arena-particle p2"></span><span class="arena-particle p3"></span><span class="arena-particle p4"></span><span class="arena-particle p5"></span><span class="arena-particle p6"></span><span class="arena-particle p7"></span><span class="arena-particle p8"></span><span class="arena-particle p9"></span><span class="arena-particle p10"></span><span class="arena-particle p11"></span><span class="arena-particle p12"></span><span class="arena-particle p13"></span><span class="arena-particle p14"></span></div>
         <div id="opponents" class="opponents"></div>
         <div class="center-stage">
@@ -204,7 +223,7 @@
           <div class="tutorial-copy">
             <h4>6. Spezialkarten, Gleichstand & Sieg</h4>
             <p>Normalerweise darfst du <strong>1 Spezialkarte pro Runde</strong> einsetzen – Changeling erlaubt dir eine zweite. Manche Spezialkarten lassen dich einen Gegner, eine Handkarte oder sogar die Kategorie auswählen. Verlorene normale Karten werden erst <strong>nach Abschluss der Runde</strong> beim automatischen Auffüllen ersetzt; verlorene Spezialkarten nicht. Bei Gleichstand wird gewürfelt. Sobald ein Spieler <strong>alle drei verschiedenen Artefakte</strong> besitzt, gewinnt er das Match.</p>
-            <div class="tutorial-special-note"><strong>Wichtig:</strong> Iron Will kann eine Artefaktziehung für die gesamte Runde verhindern. Grogar bestimmt die aktuelle Kategorie selbst. Windigos lassen alle anderen aussetzen. Daybreaker gewinnt die Runde automatisch, sobald eine normale Karte gelegt wurde.</div>
+            <div class="tutorial-special-note"><strong>Wichtig:</strong> Iron Will kann eine Artefaktziehung für die gesamte Runde verhindern. Grogar bestimmt die aktuelle Kategorie selbst. Windigos lassen alle anderen aussetzen. Daybreaker gewinnt die Runde automatisch, sobald eine normale Karte gelegt wurde.<br><br><strong>Danach kannst du hier direkt eine komplette Proberunde gegen PonyBot spielen</strong> – inklusive verdecktem Ablegen, Spezialkarte, Aufdecken, automatischem Auffüllen und Goldstapel.</div>
           </div>
           <div class="tutorial-picture special-picture tutorial-special-fan">
             <img class="tutorial-special special-one" src="/assets/specials/64_Spezial_Pinkie_Pie.webp" alt="Pinkie Pie Spezialkarte">
@@ -215,25 +234,57 @@
         </article>
       </div>
 
-      <section id="trainingArea" class="training-area" hidden>
+
+      <section id="trainingArea" class="training-area practice-round" hidden>
         <div class="training-header">
-          <div><span class="tutorial-kicker">🎓 MINI-TRAINING</span><h4 id="trainingTitle">Proberunde 1 von 4</h4></div>
-          <button id="trainingSkipBtn" class="soft-btn" type="button">Training beenden</button>
+          <div>
+            <span class="tutorial-kicker">🎮 PROBERUNDE</span>
+            <h4 id="trainingTitle">Proberunde gegen PonyBot</h4>
+          </div>
+          <button id="trainingSkipBtn" class="soft-btn" type="button">Proberunde beenden</button>
         </div>
-        <p id="trainingText">Wähle für die angezeigte Kategorie die bessere Karte.</p>
-        <div id="trainingCategory" class="training-category">🏋️ Stärke</div>
-        <div class="training-board">
-          <div class="training-opponent"><span>Trainingsgegner</span><img src="/assets/card_back.webp" alt="Verdeckte Gegnerkarte"></div>
-          <div id="trainingTable" class="training-table"></div>
+
+        <p id="trainingText">PonyBot legt eine Karte verdeckt. Schau auf die Kategorie und entscheide dich wie in einer echten Runde.</p>
+
+        <div class="practice-status-row">
+          <div class="practice-player-status"><strong>DU</strong><span id="practicePlayerStatus">3 normale Karten · 1 Spezialkarte</span></div>
+          <div id="trainingCategory" class="training-category">🏋️ Stärke</div>
+          <div class="practice-player-status bot"><strong>🤖 PonyBot</strong><span id="practiceBotStatus">legt eine Karte …</span></div>
         </div>
+
+        <div class="training-board practice-board">
+          <div class="practice-deck normal">
+            <img src="/assets/card_back.webp" alt="Normaler Ziehstapel">
+            <small>Normaler Stapel</small>
+          </div>
+
+          <div class="training-opponent practice-opponent">
+            <span>🤖 PonyBot</span>
+            <div id="practiceBotCard" class="practice-bot-card">
+              <img src="/assets/card_back.webp" alt="Verdeckte Gegnerkarte">
+            </div>
+          </div>
+
+          <div id="trainingTable" class="training-table practice-table">
+            <div class="practice-table-placeholder">Hier landen die gespielten Karten</div>
+          </div>
+
+          <div class="practice-deck gold">
+            <img src="/assets/special_back_gold.png" alt="Goldstapel">
+            <small>Goldstapel</small>
+          </div>
+        </div>
+
+        <div id="practiceSpecialZone" class="practice-special-zone"></div>
         <div id="trainingChoices" class="training-choices"></div>
         <div id="trainingResult" class="training-result"></div>
       </section>
 
+
       <div id="tutorialNav" class="tutorial-nav">
         <button id="tutorialPrevBtn" class="soft-btn" type="button">← Zurück</button>
         <button id="tutorialNextBtn" class="primary-btn" type="button">Weiter →</button>
-        <button id="tutorialTrainingBtn" class="primary-btn" type="button" hidden>🎓 Karten-Training starten</button>
+        <button id="tutorialTrainingBtn" class="primary-btn" type="button" hidden>🎮 Proberunde spielen</button>
         <button id="tutorialBotBtn" class="soft-btn tutorial-bot-btn" type="button" hidden>🤖 Echtes Testspiel gegen PonyBot</button>
       </div>
     </div>
