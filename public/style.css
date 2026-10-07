@@ -1070,3 +1070,83 @@ body.scene-home .crystal-panel,body.scene-lobby .crystal-panel{background:linear
 @keyframes megaStarHit{0%{transform:translate(0,0) rotate(0) scale(.7);opacity:0}22%{opacity:1}100%{transform:translate(var(--sx),var(--sy)) rotate(540deg) scale(.15);opacity:0}}
 .stage-stickerstorm .st1{--stx:185%;--sty:90%}.stage-stickerstorm .st2{--stx:-185%;--sty:85%}.stage-stickerstorm .st3{--stx:190%;--sty:10%}.stage-stickerstorm .st4{--stx:-190%;--sty:0%}.stage-stickerstorm .st5{--stx:175%;--sty:-80%}.stage-stickerstorm .st6{--stx:-175%;--sty:-75%}
 @keyframes stickerSlap{0%{transform:translate(0,0) rotate(-360deg) scale(.4);opacity:0}70%{opacity:1}100%{transform:translate(var(--stx),var(--sty)) rotate(15deg) scale(1);opacity:1}}
+
+
+/* ===== V3: loser labels removed / real cake bites / reliable background music ===== */
+.finisher-losers .finisher-tag{display:none!important}
+
+/* Do NOT use the old rectangular/polygon cake removal. Canvas makes real round bite marks. */
+.stage-cakebites .loser-card,
+.finisher-cakebites{
+  animation:none!important;
+  clip-path:none!important;
+  -webkit-clip-path:none!important;
+}
+.stage-cakebites .finisher-card-image{visibility:visible}
+.cake-bite-canvas{
+  position:absolute;
+  inset:0;
+  z-index:5;
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:18px;
+  box-shadow:0 0 0 3px rgba(255,255,255,.18),0 18px 40px rgba(0,0,0,.45);
+  transform-origin:center;
+}
+.cake-bite-canvas.bite-pulse{animation:realBitePulse .24s cubic-bezier(.2,.85,.3,1)}
+.cake-bite-canvas.cake-final-crumble{animation:cakeFinalCrumble .62s ease-in forwards}
+.real-bite-crumbs{
+  position:absolute;
+  z-index:46;
+  width:12px;height:12px;
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+}
+.real-bite-crumbs i{
+  position:absolute;
+  left:0;top:0;
+  width:9px;height:9px;
+  border-radius:45% 55% 50% 50%;
+  background:linear-gradient(135deg,#ffe7a9,#d99049);
+  box-shadow:0 0 6px rgba(255,213,135,.8);
+  animation:realCrumbFly .72s ease-out both;
+}
+.real-bite-crumbs i:nth-child(1){--cx:-42px;--cy:-35px}
+.real-bite-crumbs i:nth-child(2){--cx:37px;--cy:-31px;animation-delay:.03s}
+.real-bite-crumbs i:nth-child(3){--cx:-53px;--cy:9px;animation-delay:.05s}
+.real-bite-crumbs i:nth-child(4){--cx:50px;--cy:13px;animation-delay:.08s}
+.real-bite-crumbs i:nth-child(5){--cx:-18px;--cy:48px;animation-delay:.11s}
+.real-bite-crumbs i:nth-child(6){--cx:22px;--cy:44px;animation-delay:.14s}
+@keyframes realBitePulse{
+  0%{transform:scale(1)}
+  45%{transform:scale(.965) rotate(-.6deg)}
+  100%{transform:scale(1)}
+}
+@keyframes realCrumbFly{
+  0%{opacity:0;transform:translate(0,0) scale(.3) rotate(0)}
+  18%{opacity:1}
+  100%{opacity:0;transform:translate(var(--cx),var(--cy)) scale(.8) rotate(210deg)}
+}
+@keyframes cakeFinalCrumble{
+  from{opacity:1;filter:none;transform:scale(1)}
+  to{opacity:.12;filter:blur(1.4px) saturate(.65);transform:scale(.88) rotate(2deg)}
+}
+
+/* Keep the YouTube source actually instantiated while still visually unobtrusive.
+   Some browsers stop completely hidden/off-screen media, so use a tiny clipped host instead. */
+.yt-audio-player{
+  position:fixed!important;
+  right:0!important;
+  bottom:0!important;
+  left:auto!important;
+  top:auto!important;
+  width:2px!important;
+  height:2px!important;
+  opacity:.01!important;
+  clip-path:inset(0 0 0 0)!important;
+  pointer-events:none!important;
+  overflow:hidden!important;
+  z-index:-1!important;
+}
