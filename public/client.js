@@ -262,6 +262,7 @@ function renderArenaReady(){
   const me=state.players.find(p=>p.id===myId);
   const readyCount=state.players.filter(p=>p.ready).length;
   $('#arenaRoomCode').textContent=state.code;
+  ensureRoomCodeCopyControl($('#arenaRoomCode'),state.code);
   $('#arenaReadyPlayers').innerHTML=state.players.map(p=>`<div class="arena-ready-player ${p.ready?'is-ready':''}">${nameplateHTML(p.name,p.accessory,true,p.frame)}<span>${p.id===state.hostId?'👑 HOST · ':''}${p.ready?'✅ BEREIT':'⏳ WARTET'}</span></div>`).join('');
   const btn=$('#arenaReadyBtn');
   btn.disabled=state.players.length<2;
@@ -273,8 +274,73 @@ function renderArenaReady(){
   updateMusicUI();
 }
 
+
+async function copyRoomCode(code){
+  const value=String(code||'').trim();
+  if(!value)return;
+
+  let copied=false;
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(value);
+      copied=true;
+    }
+  }catch(e){}
+
+  if(!copied){
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=value;
+      ta.setAttribute('readonly','');
+      ta.style.position='fixed';
+      ta.style.left='-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      copied=document.execCommand('copy');
+      ta.remove();
+    }catch(e){}
+  }
+
+  toast(copied?`Raumcode ${value} kopiert!`:`Raumcode: ${value}`);
+}
+
+function ensureRoomCodeCopyControl(codeEl,code){
+  if(!codeEl)return;
+
+  codeEl.classList.add('copyable-room-code');
+  codeEl.title='Klicken zum Kopieren';
+  codeEl.setAttribute('role','button');
+  codeEl.setAttribute('tabindex','0');
+
+  if(!codeEl.dataset.copyBound){
+    codeEl.dataset.copyBound='1';
+    codeEl.addEventListener('click',()=>copyRoomCode(codeEl.textContent));
+    codeEl.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){
+        e.preventDefault();
+        copyRoomCode(codeEl.textContent);
+      }
+    });
+  }
+
+  const parent=codeEl.parentElement;
+  if(!parent)return;
+
+  let btn=parent.querySelector('.room-code-copy-btn');
+  if(!btn){
+    btn=document.createElement('button');
+    btn.type='button';
+    btn.className='room-code-copy-btn';
+    btn.innerHTML='📋 Code kopieren';
+    btn.addEventListener('click',()=>copyRoomCode(codeEl.textContent));
+    codeEl.insertAdjacentElement('afterend',btn);
+  }
+  btn.dataset.code=String(code||'');
+}
+
 function renderLobby(){
   $('#lobbyCode').textContent=state.code;
+  ensureRoomCodeCopyControl($('#lobbyCode'),state.code);
   $('#lobbyHint').textContent=state.players.length<2?'Schick den Code an deine Mitspieler.':'Der Host startet die Kampf-Vorbereitung. Bereit wird erst in der Arena geklickt.';
   $('#lobbyPlayers').innerHTML=state.players.map(p=>`<div class="lobby-player">${nameplateHTML(p.name,p.accessory,true,p.frame)}<div>${p.id===state.hostId?'Host 👑':'Mitspieler'}</div></div>`).join('');
   const start=$('#startBtn');
