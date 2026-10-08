@@ -1,0 +1,15 @@
+MLP BATTLE CARDS V6 - MINI UPDATE (2 TEILE)
+
+Voraussetzung: Du hast V5 oder V4 mit dem V5-Bugfix bereits auf GitHub.
+
+ANLEITUNG
+1. Beide ZIP-Dateien herunterladen und entpacken.
+2. Die entpackten Ordner MLP_BATTLE_CARDS_V6_MINI_UPDATE aus beiden Teilen zusammenfuehren.
+3. Oeffne den zusammengefuehrten Ordner. Lade die Dateien UND Ordner aus seinem Inneren in dein GitHub-Repository hoch (nicht den aeusseren Ordner und nicht die ZIP-Dateien).
+4. Vorhandene Dateien bei GitHub ersetzen, andere Daten beibehalten.
+5. Auf Render die neue Version starten und testen.
+
+Enthalten sind nur neu hinzugekommene oder geaenderte Dateien der V6 gegenueber V5.
+Deine bestehenden Karten, Sounds, Regeln und Assets bleiben bestehen.
+
+Hinweis: Verwendete Bilder aus vorherigen Versionen sind teilweise als Platzhalter rekonstruiert. Die CSS-Animationen sind nicht automatisch eine framegenaue Rekonstruktion aller alten GIF-Vorlagen.
