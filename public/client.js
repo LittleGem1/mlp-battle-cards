@@ -1037,8 +1037,39 @@ function crystalLandSound(){
   tone(930,.32,.035,'sine',.12);
   tone(1240,.38,.022,'triangle',.18);
 }
+
+function ensureCategoryCrystalMarkup(){
+  const overlay=$('#roundIntroOverlay');
+  if(!overlay)return;
+  if($('#roundCategoryCrystal')&&$('#categoryCrystalResult'))return;
+
+  let card=overlay.querySelector('.round-intro-card');
+  if(!card){
+    card=document.createElement('div');
+    card.className='round-intro-card category-crystal-stage';
+    overlay.append(card);
+  }
+  card.classList.add('category-crystal-stage');
+  card.innerHTML=`
+    <span id="roundIntroRound">RUNDE 1</span>
+    <div id="roundCategoryCrystal" class="category-crystal" aria-label="Kristall zieht die Kategorie">
+      <div class="category-crystal-face crystal-face-strength"><span></span></div>
+      <div class="category-crystal-face crystal-face-speed"><span></span></div>
+      <div class="category-crystal-face crystal-face-energy"><span></span></div>
+      <div class="category-crystal-face crystal-face-magic"><span></span></div>
+      <div class="category-crystal-core"></div>
+      <div class="category-crystal-glint"></div>
+    </div>
+    <div id="categoryCrystalResult" class="category-crystal-result" aria-live="polite">
+      <b id="roundIntroIcon">⭐</b>
+      <strong id="roundIntroLabel">MAGIE</strong>
+    </div>
+    <small class="category-crystal-hint">Der Kristall bestimmt die Kategorie …</small>`;
+}
+
 function showRoundIntro(e){
   stopCountdown();
+  ensureCategoryCrystalMarkup();
   const o=$('#roundIntroOverlay');if(!o)return;
   if(roundIntroTimer){clearTimeout(roundIntroTimer);roundIntroTimer=null}
 
@@ -1162,7 +1193,21 @@ function startSelectionTimer(deadline){
 socket.on('countdown',({seconds,until})=>{hideArenaReady();show('game');setMusicMode('game');ensureAudio();runCountdown(until||Date.now()+(seconds||5)*1000)});
 socket.on('allReady',e=>{toast(e.message||'Alle sind bereit!');beep(880,.18)});
 socket.on('roundIntro',showRoundIntro);
-socket.on('roundStart',e=>{stopCountdown();$('#categoryIcon').textContent=e.icon;$('#categoryText').textContent=e.label;$('#roundMessage').textContent='Wähle deine beste Karte.';$('#diceZone').innerHTML='';startSelectionTimer(e.deadline);beep(760,.15)});
+socket.on('roundStart',e=>{
+  stopCountdown();
+  const cat=$('#category');
+  $('#categoryIcon').textContent=e.icon;
+  $('#categoryText').textContent=e.label;
+  if(cat){
+    cat.classList.add('category-visible');
+    cat.setAttribute('aria-label',`${e.label}`);
+    cat.classList.remove('category-pulse');void cat.offsetWidth;cat.classList.add('category-pulse');
+  }
+  $('#roundMessage').textContent='Wähle deine beste Karte.';
+  $('#diceZone').innerHTML='';
+  startSelectionTimer(e.deadline);
+  beep(760,.15);
+});
 socket.on('cardCommitted',addCommitGhost);
 socket.on('playerSelected',()=>beep(300,.05));
 socket.on('cardAccepted',()=>{$('#roundMessage').textContent='✓ Deine Karte liegt – warte auf die anderen.';beep(360,.06)});

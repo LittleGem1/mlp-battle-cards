@@ -119,7 +119,26 @@
     </div>
   </div>
   <div id="toast" class="toast" role="status"></div>
-  <div id="roundIntroOverlay" class="round-intro-overlay" aria-hidden="true"><div class="round-intro-card"><span id="roundIntroRound">RUNDE 1</span><b id="roundIntroIcon">⭐</b><strong id="roundIntroLabel">MAGIE</strong><i></i></div></div>
+  <div id="roundIntroOverlay" class="round-intro-overlay category-crystal-overlay" aria-hidden="true">
+    <div class="round-intro-card category-crystal-stage">
+      <span id="roundIntroRound">RUNDE 1</span>
+
+      <div id="roundCategoryCrystal" class="category-crystal" aria-label="Kristall zieht die Kategorie">
+        <div class="category-crystal-face crystal-face-strength"><span></span></div>
+        <div class="category-crystal-face crystal-face-speed"><span></span></div>
+        <div class="category-crystal-face crystal-face-energy"><span></span></div>
+        <div class="category-crystal-face crystal-face-magic"><span></span></div>
+        <div class="category-crystal-core"></div>
+        <div class="category-crystal-glint"></div>
+      </div>
+
+      <div id="categoryCrystalResult" class="category-crystal-result" aria-live="polite">
+        <b id="roundIntroIcon">⭐</b>
+        <strong id="roundIntroLabel">MAGIE</strong>
+      </div>
+      <small class="category-crystal-hint">Der Kristall bestimmt die Kategorie …</small>
+    </div>
+  </div>
   <button id="rulesBtn" class="rules-floating" type="button">📖 Spielregeln</button>
 
   <dialog id="accessoryDialog" class="modal accessory-modal">

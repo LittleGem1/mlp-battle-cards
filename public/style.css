@@ -2703,3 +2703,182 @@ body:has(#game .hand:not(.large-hand)) .arena{padding-bottom:230px!important;}
   .tutorial-practice-cta>strong{font-size:15px}
   .tutorial-practice-cta>span{font-size:10px}
 }
+
+
+/* ============================================================
+   NOTFALL-FIX: KRISTALL + KATEGORIE + KARTEN-HOVER
+   Nur Darstellung – keine Änderung an der Spielmechanik.
+   ============================================================ */
+
+/* Der Kristall braucht seine eigene saubere Bühne. */
+#roundIntroOverlay.category-crystal-overlay{
+  z-index:120000!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:18px!important;
+  overflow:hidden!important;
+}
+#roundIntroOverlay .category-crystal-stage{
+  width:min(520px,92vw)!important;
+  min-width:0!important;
+  max-height:94vh!important;
+  padding:18px 26px 22px!important;
+  display:grid!important;
+  grid-template-rows:auto minmax(250px,1fr) auto auto!important;
+  justify-items:center!important;
+  align-items:center!important;
+  gap:7px!important;
+  overflow:visible!important;
+  background:radial-gradient(circle at 50% 45%,rgba(75,44,137,.72),rgba(10,12,42,.96) 70%)!important;
+}
+#roundIntroOverlay .category-crystal{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1;
+  z-index:3!important;
+}
+#roundIntroOverlay .category-crystal-result{
+  position:relative!important;
+  z-index:4!important;
+}
+#roundIntroOverlay .category-crystal-hint{
+  display:block!important;
+  text-align:center!important;
+  font-size:12px!important;
+  margin-top:1px!important;
+}
+
+/* Die aktuelle Kategorie darf nie wieder hinter PonyBot / Gegnern verschwinden. */
+#game .center-stage{
+  z-index:10!important;
+  margin-top:88px!important;
+  padding:68px 12px 12px!important;
+  box-sizing:border-box!important;
+  overflow:visible!important;
+}
+#game #category{
+  position:absolute!important;
+  z-index:30!important;
+  top:12px!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  display:flex!important;
+  visibility:visible!important;
+  opacity:1!important;
+  min-width:max-content!important;
+  max-width:90%!important;
+  white-space:nowrap!important;
+  box-shadow:
+    0 8px 28px rgba(0,0,0,.38),
+    0 0 26px rgba(114,224,255,.22)!important;
+}
+#game #category.category-visible{
+  animation:categoryVisiblePop .38s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes categoryVisiblePop{
+  from{transform:translateX(-50%) scale(.82);opacity:.2}
+  to{transform:translateX(-50%) scale(1);opacity:1}
+}
+#game .table-cards{
+  position:relative!important;
+  z-index:8!important;
+  margin-top:8px!important;
+}
+#game .opponents{
+  z-index:6!important;
+}
+#game .opponent{
+  z-index:6!important;
+}
+
+/* Handkarten dürfen beim Hover NICHT an ihrer eigenen Handbox abgeschnitten werden. */
+#game .hand,
+#game .hand:not(.large-hand),
+#game .hand.large-hand{
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+  box-sizing:border-box!important;
+}
+
+/* Normale Hand wächst bei mehreren Reihen nach oben. */
+#game .hand:not(.large-hand){
+  min-height:190px!important;
+  padding:68px 14px 10px!important;
+  flex-wrap:wrap!important;
+  align-content:flex-end!important;
+  align-items:flex-end!important;
+  gap:9px 11px!important;
+}
+
+/* Etwas weniger extremer Hover: groß genug zum Lesen, bleibt aber komplett sichtbar. */
+#game .hand:not(.large-hand) .hand-card:not(.disabled):hover,
+#game .hand:not(.large-hand) .hand-card:not(.disabled):focus-within{
+  transform:translateY(-26px) scale(1.12)!important;
+  z-index:100!important;
+}
+#game .hand:not(.large-hand) .hand-card{
+  transform-origin:bottom center!important;
+}
+
+/* Auch die großen Hand-Reihen dürfen ihre Karten nicht abschneiden. */
+#game .hand.large-hand{
+  overflow:visible!important;
+  padding-top:58px!important;
+}
+#game .hand.large-hand .hand-tier,
+#game .hand.large-hand .hand-tier-row{
+  overflow:visible!important;
+}
+#game .hand.large-hand .hand-tier-row{
+  flex-wrap:wrap!important;
+  justify-content:center!important;
+  min-height:145px!important;
+  padding:34px 24px 12px!important;
+}
+#game .hand.large-hand .hand-card:not(.disabled):hover,
+#game .hand.large-hand .hand-card:not(.disabled):focus-within{
+  transform:translateY(-22px) scale(1.11)!important;
+  z-index:110!important;
+}
+
+/* Die Arena selbst soll die nach oben wachsende Hand nicht abschneiden. */
+#game .arena{
+  overflow:visible!important;
+  min-height:100vh!important;
+}
+
+/* Die Artefaktleiste sitzt über der Hand statt mitten über den Karten. */
+#game .artifact-shelf{
+  bottom:198px!important;
+}
+
+@media(max-width:760px){
+  #roundIntroOverlay .category-crystal-stage{
+    width:min(390px,94vw)!important;
+    padding:14px 16px 18px!important;
+    grid-template-rows:auto minmax(220px,1fr) auto auto!important;
+  }
+  #game .center-stage{
+    margin-top:105px!important;
+    padding-top:62px!important;
+  }
+  #game #category{
+    top:9px!important;
+    max-width:94%!important;
+    font-size:16px!important;
+    padding:8px 14px!important;
+  }
+  #game .hand:not(.large-hand){
+    min-height:175px!important;
+    padding:58px 7px 8px!important;
+    gap:6px!important;
+  }
+  #game .hand:not(.large-hand) .hand-card:not(.disabled):hover,
+  #game .hand:not(.large-hand) .hand-card:not(.disabled):focus-within{
+    transform:translateY(-20px) scale(1.09)!important;
+  }
+  #game .artifact-shelf{
+    bottom:178px!important;
+  }
+}
