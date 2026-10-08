@@ -3263,3 +3263,27 @@ body:has(#game .hand:not(.large-hand)) .arena{padding-bottom:230px!important;}
   .battle-crystal-wrap{width:220px;height:285px}
   .battle-crystal{width:155px;height:240px}
 }
+
+
+/* ============================================================
+   KARTEN-OPTIK: KEINE KÜNSTLICHEN SCHWARZEN RAHMEN
+   ============================================================ */
+#game .hand-card,
+#game .hand-card.special,
+#game .played-card,
+.card-inspect-face{
+  background:transparent!important;
+}
+#game .hand-card>img,
+#game .played-card img,
+.card-inspect-face img,
+.reward-choice-card img{
+  background:transparent!important;
+  object-fit:contain!important;
+}
+#game .hand-card>img{
+  clip-path:inset(0 round 10px);
+}
+#game .hand-card.special>img{
+  filter:none!important;
+}

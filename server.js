@@ -16,7 +16,8 @@ const CATEGORY_ICON = { strength:'🏋️', speed:'⚡', energy:'🔋', magic:'�
 const NORMAL_HAND_TARGET = 6;
 const NORMAL_COPIES = 3;
 const REWARD_SPECIAL_COPIES = 2;
-const REWARD_ARTIFACT_COPIES = 10;
+const REWARD_ARTIFACT_COPIES = 2;
+const ARTIFACT_REWARD_COOLDOWN = 1;
 
 function code(){ const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return Array.from({length:5},()=>a[Math.floor(Math.random()*a.length)]).join(''); }
 function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
@@ -78,7 +79,12 @@ function buildNormalDeck(){
 function buildRewardDeck(){
   const deck=[];
   for(let i=0;i<REWARD_SPECIAL_COPIES;i++)deck.push(...specials.map(c=>c.id));
-  for(let i=0;i<REWARD_ARTIFACT_COPIES;i++)deck.push(...artifacts.map(c=>c.id));
+
+  // Jedes Artefakt ist exakt gleich selten. Die Reihenfolge ist komplett zufällig:
+  // Elemente, Kristall Herz oder Star Swirls Tagebuch können jeweils zuerst kommen.
+  for(let i=0;i<REWARD_ARTIFACT_COPIES;i++){
+    deck.push(...shuffle(artifacts.map(c=>c.id)));
+  }
   return shuffle(deck);
 }
 function initDecks(r){
@@ -492,31 +498,49 @@ function refillNormalHands(r){
 function hasAllArtifacts(p){
   return new Set(p.artifacts||[]).size>=artifacts.length;
 }
-function drawRewardCandidate(r,p){
+function drawRewardCandidate(r,p,{allowArtifact=true,excludeIds=[]}={}){
   const already=new Set(p.artifacts||[]);
+  const excluded=new Set(excludeIds||[]);
+  const deferred=[];
+  let result=null;
   let attempts=0;
-  while(attempts++<180){
+
+  while(attempts++<220){
     recycleRewardDeck(r);
     const id=r.rewardDeck.pop();
-    if(!id)return null;
+    if(!id)break;
     const card=byId[id];
     if(!card)continue;
 
+    if(excluded.has(id)){
+      deferred.push(id);
+      continue;
+    }
+
     if(card.type==='artifact'){
-      // Iron Will: In dieser Runde dürfen keine Artefakte gewählt werden.
-      if(r.roundFX?.artifactBlocked){
-        r.rewardDiscard.push(id);
+      // Iron Will oder Artefakt-Cooldown: in dieser Goldauswahl keine Artefakte.
+      if(!allowArtifact || r.roundFX?.artifactBlocked){
+        deferred.push(id);
         continue;
       }
-      // Bereits eigenes Artefakt nicht als nutzlose Auswahl zeigen.
+      // Ein Artefakt, das dieser Spieler bereits besitzt, wird ihm nicht erneut angeboten.
       if(already.has(card.id)){
-        r.rewardDiscard.push(id);
+        deferred.push(id);
         continue;
       }
     }
-    return id;
+
+    result=id;
+    break;
   }
-  return null;
+
+  // Übersprungene Karten bleiben im Goldstapel und werden neu gemischt.
+  if(deferred.length){
+    r.rewardDeck.push(...deferred);
+    r.rewardDeck=shuffle(r.rewardDeck);
+  }
+
+  return result;
 }
 function returnRewardCandidate(r,id){
   if(!id)return;
@@ -531,10 +555,18 @@ function beginRewardChoice(r,winnerId){
   }
 
   const candidates=[];
-  for(let i=0;i<2;i++){
-    const id=drawRewardCandidate(r,p);
-    if(id)candidates.push(id);
-  }
+  const artifactAllowed=(r.artifactRewardCooldown||0)<=0;
+
+  // 2 Goldkarten, aber höchstens EIN Artefakt in derselben Auswahl.
+  const first=drawRewardCandidate(r,p,{allowArtifact:artifactAllowed});
+  if(first)candidates.push(first);
+
+  const firstIsArtifact=first&&byId[first]?.type==='artifact';
+  const second=drawRewardCandidate(r,p,{
+    allowArtifact:artifactAllowed&&!firstIsArtifact,
+    excludeIds:first?[first]:[]
+  });
+  if(second)candidates.push(second);
 
   if(!candidates.length){
     io.to(r.code).emit('rewardPhaseDone',{winnerId,winnerName:p.name,rewardKind:null});
@@ -592,6 +624,11 @@ function resolveRewardChoice(r,winnerId,chosenId,token){
 
   if(chosen?.type==='artifact'){
     if(!(p.artifacts||[]).includes(chosen.id))p.artifacts.push(chosen.id);
+
+    // Nach einem gefundenen Artefakt ist die nächste Goldauswahl garantiert
+    // artefaktfrei. Erst die darauffolgende darf wieder eines enthalten.
+    r.artifactRewardCooldown=ARTIFACT_REWARD_COOLDOWN;
+
     io.to(r.code).emit('artifactFound',{
       playerId:p.id,playerName:p.name,card:chosen,
       artifacts:p.artifacts.map(x=>byId[x]).filter(Boolean),
@@ -599,6 +636,11 @@ function resolveRewardChoice(r,winnerId,chosenId,token){
     });
   }else if(chosen?.type==='special'){
     p.hand.push(chosen.id);
+
+    // Eine komplette artefaktfreie Goldauswahl verbraucht den Cooldown.
+    if((r.artifactRewardCooldown||0)>0){
+      r.artifactRewardCooldown=Math.max(0,r.artifactRewardCooldown-1);
+    }
   }
 
   r.pendingReward=null;
@@ -647,7 +689,7 @@ function resetToLobby(r){
   r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;
   r.round=0;r.played={};r.dice={};r.tieIds=[];r.roundBuff={};r.roundPlayerIds=[];
   r.postGameReady=new Set();r.forceNextCategoryDifferent=false;r.forcedNextCategory=null;resetRoundFX(r);
-  r.normalDeck=[];r.normalDiscard=[];r.rewardDeck=[];r.rewardDiscard=[];r.pendingReward=null;
+  r.normalDeck=[];r.normalDiscard=[];r.rewardDeck=[];r.rewardDiscard=[];r.pendingReward=null;r.artifactRewardCooldown=0;
   for(const p of roomPlayers(r)){
     p.hand=[];p.artifacts=[];p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.pendingForcedDiscard=null;
   }
@@ -946,13 +988,13 @@ function maybeStartWhenReady(r){
 io.on('connection',socket=>{
   socket.on('createRoom',({name,accessory,frame})=>{
     let c;do c=code();while(rooms.has(c));
-    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null};
+    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null,artifactRewardCooldown:0};
     r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     rooms.set(c,r);socket.join(c);socket.data.room=c;sendState(r);
   });
   socket.on('createBotRoom',({name,accessory,frame})=>{
     let c;do c=code();while(rooms.has(c));
-    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null};
+    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null,artifactRewardCooldown:0};
     r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     rooms.set(c,r);socket.join(c);socket.data.room=c;addBotToRoom(r);sendState(r);
     socket.emit('notice','🤖 PonyBot wurde als Testgegner hinzugefügt.');
