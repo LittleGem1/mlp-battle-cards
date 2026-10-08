@@ -1,0 +1,11 @@
+{
+  "version": "V6",
+  "features": [
+    "4 new random arenas",
+    "crystal cave lobby",
+    "special card fixes",
+    "sound overlap reduction",
+    "hand layout fix",
+    "special asset fallbacks"
+  ]
+}
