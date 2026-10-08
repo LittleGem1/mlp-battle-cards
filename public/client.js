@@ -119,19 +119,40 @@ const BATTLE_SFX = {
 const battleSoundCache=new Map();
 const battleSoundCooldowns=new Map();
 let battleSoundVolume=Math.max(0,Math.min(1,Number(localStorage.getItem('mlp_sfx_volume')||0.55)));
+const LOBBY_BACKGROUND='/assets/backgrounds/lobby_crystal_cave.png';
+const ARENA_BACKGROUNDS={
+  jade_palace:'/assets/backgrounds/arena_1_jade_palace.png',
+  whispering_forest:'/assets/backgrounds/arena_2_forest.png',
+  steampunk_works:'/assets/backgrounds/arena_3_steampunk.png',
+  witchs_table:'/assets/backgrounds/arena_4_alchemy.png'
+};
+const ARENA_CLASS_IDS=Object.keys(ARENA_BACKGROUNDS);
+const EXCLUSIVE_SFX_GROUPS={
+  kristall:'crystalSpin', special:'special', smolder:'finisher', meteor:'finisher', cookie:'finisher',
+  fall:'finisher', melt:'finisher', glass:'finisher', portal:'finisher', xmark:'finisher', shadow:'finisher',
+  spin:'finisher', dust:'finisher', heart:'finisher', lobby_sterne:'ambient'
+};
+const exclusiveSfxPlayers=new Map();
+
 function playSfx(key,{gain=1,cooldown=100}={}){
   const file=BATTLE_SFX[key];if(!file)return;
   const now=performance.now(),last=battleSoundCooldowns.get(key);
   if(last!==undefined && now-last<cooldown)return;
   battleSoundCooldowns.set(key,now);
   try{
-    // Clone the buffered media element so concurrent effects don't cut each other off.
     let asset=battleSoundCache.get(file);
     if(!asset){asset=new Audio('/assets/sounds/'+file);asset.preload='auto';battleSoundCache.set(file,asset)}
+    const group=EXCLUSIVE_SFX_GROUPS[key];
+    if(group){
+      const prev=exclusiveSfxPlayers.get(group);
+      if(prev){try{prev.pause();prev.currentTime=0}catch(e){}}
+    }
     const audio=asset.cloneNode(true);audio.volume=Math.max(0,Math.min(1,battleSoundVolume*gain));
+    if(group){exclusiveSfxPlayers.set(group,audio);audio.addEventListener('ended',()=>{if(exclusiveSfxPlayers.get(group)===audio)exclusiveSfxPlayers.delete(group)},{once:true});}
     audio.play().catch(()=>{});
   }catch(e){console.warn('Sound nicht abspielbar:',file,e)}
 }
+
 
 const playerName=$('#playerName'); playerName.value=localStorage.getItem('cc_name')||'';
 
@@ -141,7 +162,7 @@ function show(name){
   screens[name].classList.add('active');
   document.body.classList.remove('scene-home','scene-lobby','scene-game');
   document.body.classList.add('scene-'+name);
-  if(name==='home'||name==='lobby')buildLobbyScene('crystal_cave');
+  if(name==='home'||name==='lobby'){applyLobbyBackdrop();buildLobbyScene('crystal_cave');} else {clearBodyBackdrop();}
   currentScreen=name;
   if(name==='lobby')playSfx('lobby_sterne',{gain:.50,cooldown:3000});
   setMusicMode(name==='game'?'game':'lobby');
@@ -164,45 +185,47 @@ const LOBBY_SCENES=['crystal_cave'];
 let lastLobbyScene='';
 function chooseLobbyScene(){return 'crystal_cave';}
 function makeEl(cls,styles={}){const e=document.createElement('i');e.className=cls;for(const [k,v] of Object.entries(styles))e.style.setProperty(k,v);return e}
+function currentLobbyBg(){return `linear-gradient(rgba(10,14,34,.34),rgba(10,14,34,.42)), url(${LOBBY_BACKGROUND})`;}
+function applyLobbyBackdrop(){document.body.style.backgroundImage=currentLobbyBg();document.body.style.backgroundSize='cover';document.body.style.backgroundPosition='center center';document.body.style.backgroundAttachment='fixed';}
+function clearBodyBackdrop(){document.body.style.backgroundImage='';document.body.style.backgroundSize='';document.body.style.backgroundPosition='';document.body.style.backgroundAttachment='';}
+
 function buildLobbyScene(scene='crystal_cave'){
-  scene='crystal_cave';
   const root=$('#lobbySceneVfx');if(!root)return;
-  document.body.classList.remove('lobby-scene-dojo','lobby-scene-crystal_cave','lobby-scene-cosmic');
-  document.body.classList.add('lobby-scene-'+scene);document.body.dataset.lobbyScene=scene;
-  root.className='lobby-scene-vfx scene-'+scene;root.innerHTML='';
-  if(scene==='dojo'){
-    for(let i=0;i<5;i++)root.append(makeEl('dojo-lantern',{ '--x':`${8+i*21}%`,'--delay':`${-i*.8}s`,'--scale':`${.7+(i%2)*.2}` }));
-    for(let i=0;i<18;i++)root.append(makeEl('dojo-petal',{ '--x':`${(i*19)%104}%`,'--delay':`${-(i%9)*.8}s`,'--dur':`${7+(i%6)}s`,'--drift':`${-90+(i*27)%180}px` }));
-    for(let i=0;i<10;i++)root.append(makeEl('dojo-spark',{ '--x':`${(i*31)%100}%`,'--y':`${15+(i*17)%70}%`,'--delay':`${-i*.35}s` }));
-  }else if(scene==='crystal_cave'){
-    for(let i=0;i<13;i++)root.append(makeEl('cave-crystal',{ '--x':`${(i*23)%101}%`,'--h':`${70+(i*31)%150}px`,'--delay':`${-i*.3}s`,'--rot':`${-18+(i*13)%36}deg` }));
-    for(let i=0;i<26;i++)root.append(makeEl('cave-mote',{ '--x':`${(i*37)%103}%`,'--delay':`${-(i%11)*.55}s`,'--dur':`${6+(i%7)}s`,'--size':`${3+(i%4)}px` }));
-    for(let i=0;i<12;i++)root.append(makeEl('cave-drop',{ '--x':`${5+(i*47)%92}%`,'--delay':`${-(i%6)*.7}s` }));
-  }else{
-    root.append(makeEl('cosmic-planet'));
-    root.append(makeEl('cosmic-ring'));
-    for(let i=0;i<42;i++)root.append(makeEl('cosmic-star',{ '--x':`${(i*53)%101}%`,'--y':`${(i*29)%92}%`,'--delay':`${-(i%10)*.4}s`,'--size':`${1+(i%4)}px` }));
-    for(let i=0;i<8;i++)root.append(makeEl('cosmic-meteor',{ '--x':`${-20+(i*19)%90}%`,'--y':`${5+(i*11)%55}%`,'--delay':`${-i*1.4}s` }));
-  }
+  scene='crystal_cave';
+  document.body.dataset.lobbyScene=scene;
+  root.className='lobby-scene-vfx scene-'+scene;
+  root.innerHTML='';
+  root.style.backgroundImage=currentLobbyBg();
+  applyLobbyBackdrop();
+  for(let i=0;i<24;i++)root.append(makeEl('cave-mote',{ '--x':`${(i*37)%103}%`,'--delay':`${-(i%11)*.55}s`,'--dur':`${6+(i%7)}s`,'--size':`${3+(i%4)}px` }));
+  for(let i=0;i<10;i++)root.append(makeEl('cave-glimmer',{ '--x':`${5+(i*47)%92}%`,'--y':`${8+(i*23)%80}%`,'--delay':`${-(i%6)*.8}s` }));
 }
 buildLobbyScene();
+
 function buildArenaVfx(id){
-  const root=$('#arenaVfx');if(!root)return;root.innerHTML='';root.className='arena-vfx vfx-'+id;
-  if(id==='crystal_colosseum'){
-    for(let i=0;i<18;i++)root.append(makeEl('arena-crystal-shard',{ '--x':`${(i*31)%101}%`,'--y':`${8+(i*23)%82}%`,'--delay':`${-(i%9)*.45}s`,'--scale':`${.45+(i%5)*.16}` }));
-    for(let i=0;i<3;i++)root.append(makeEl('arena-rune-ring',{ '--ring':`${i}`,'--delay':`${-i*2.1}s` }));
-    for(let i=0;i<5;i++)root.append(makeEl('arena-light-beam',{ '--x':`${8+i*21}%`,'--delay':`${-i*.9}s` }));
-  }else if(id==='storm_temple'){
-    for(let i=0;i<42;i++)root.append(makeEl('arena-rain',{ '--x':`${(i*17)%105}%`,'--delay':`${-(i%12)*.12}s`,'--dur':`${.55+(i%5)*.08}s` }));
-    for(let i=0;i<5;i++)root.append(makeEl('arena-cloud',{ '--x':`${-5+i*24}%`,'--y':`${3+(i%2)*9}%`,'--delay':`${-i*1.4}s` }));
-    for(let i=0;i<4;i++)root.append(makeEl('arena-lightning',{ '--x':`${13+i*23}%`,'--delay':`${-i*2.2}s` }));
-  }else{
-    for(let i=0;i<34;i++)root.append(makeEl('forge-spark',{ '--x':`${(i*29)%102}%`,'--delay':`${-(i%13)*.22}s`,'--dur':`${2.8+(i%6)*.35}s` }));
-    for(let i=0;i<9;i++)root.append(makeEl('forge-rune',{ '--x':`${8+(i*11)%84}%`,'--y':`${12+(i*17)%72}%`,'--delay':`${-i*.7}s` }));
-    for(let i=0;i<3;i++)root.append(makeEl('forge-orbit',{ '--ring':`${i}`,'--delay':`${-i*2.7}s` }));
+  const root=$('#arenaVfx');if(!root)return;
+  root.innerHTML='';
+  root.className='arena-vfx vfx-'+id;
+  root.style.backgroundImage=`linear-gradient(rgba(8,12,30,.28),rgba(8,12,30,.34)), url(${ARENA_BACKGROUNDS[id]||ARENA_BACKGROUNDS.jade_palace})`;
+  if(id==='jade_palace' || id==='whispering_forest'){
+    for(let i=0;i<18;i++)root.append(makeEl('arena-leaf',{ '--x':`${(i*17)%101}%`,'--y':`${(i*11)%70}%`,'--delay':`${-(i%8)*.9}s`,'--dur':`${7+(i%5)}s`,'--drift':`${-60+(i*13)%120}px` }));
+  }
+  if(id==='whispering_forest'){
+    for(let i=0;i<4;i++)root.append(makeEl('forest-crown',{ '--x':`${i*28}%`,'--delay':`${-i*.8}s` }));
+    root.append(makeEl('forest-water-sheen'));
+  }
+  if(id==='steampunk_works'){
+    for(let i=0;i<6;i++)root.append(makeEl('gear-wheel',{ '--x':`${6+i*16}%`,'--y':`${12+(i%3)*18}%`,'--size':`${84+(i%3)*34}px`,'--dur':`${8+(i%4)*2}s` }));
+    for(let i=0;i<10;i++)root.append(makeEl('forge-spark',{ '--x':`${(i*29)%102}%`,'--delay':`${-(i%13)*.22}s`,'--dur':`${2.8+(i%6)*.35}s` }));
+  }
+  if(id==='witchs_table'){
+    for(let i=0;i<16;i++)root.append(makeEl('alchemy-bubble',{ '--x':`${22+(i*4)%55}%`,'--y':`${64+(i%5)*4}%`,'--delay':`${-(i%10)*.5}s`,'--dur':`${3.6+(i%5)*.4}s` }));
+    for(let i=0;i<12;i++)root.append(makeEl('witch-spark',{ '--x':`${10+(i*7)%78}%`,'--y':`${16+(i*11)%65}%`,'--delay':`${-(i%9)*.35}s` }));
   }
 }
+
 const CATEGORY_UI={strength:['🏋️','STÄRKE'],speed:['⚡','SCHNELLIGKEIT'],energy:['🔋','ENERGIE'],magic:['⭐','MAGIE']};
+
 
 function accessoryDecor(key){const a=ITEMS[key]||ITEMS.changeling;return `<span class="decor decor-${key}" aria-hidden="true"><img src="${a.image}" alt=""></span>`;}
 function frameDecor(key){if(!key||!FRAMES[key])return '';return `<img class="name-frame" src="${FRAMES[key].image}" alt="" aria-hidden="true">`;}
@@ -591,8 +614,8 @@ function renderGame(){
   const me=state.players.find(p=>p.id===myId);if(!me)return;
   const arena=document.querySelector('.arena');
   if(arena){
-    arena.classList.remove('arena-crystal_colosseum','arena-storm_temple','arena-celestial_forge');
-    const arenaId=state.arenaId||'crystal_colosseum';
+    ARENA_CLASS_IDS.forEach(id=>arena.classList.remove('arena-'+id));
+    const arenaId=state.arenaId||'jade_palace';
     arena.classList.add('arena-'+arenaId);
     if(arena.dataset.vfx!==arenaId){arena.dataset.vfx=arenaId;buildArenaVfx(arenaId);}
   }
@@ -638,7 +661,7 @@ let inspectRotationY=0,inspectRotationX=0,inspectDragging=false,inspectLastX=0,i
 function openCardInspect(card){
   if(!card)return;
   const overlay=$('#cardInspectOverlay'),front=$('#cardInspectFront'),name=$('#cardInspectName');
-  front.src=card.image;front.alt=card.name||'Karte';name.textContent=card.name||'Karte';
+  front.src=card.image;front.alt=card.name||'Karte';name.textContent=(card.name||'Karte')+(card.type==='special'?' · '+(card.text||'Spezialeffekt'):'');
   const back=$('#cardInspectBack');
   if(back)back.src=(card.type==='special'||card.type==='artifact')?'/assets/special_back_gold.png':'/assets/card_back.webp';
   inspectRotationY=0;inspectRotationX=0;applyInspectRotation();
@@ -703,7 +726,7 @@ function buildHandCard(c,me,normals,blockedId){
   const el=document.createElement('div');
   el.className=`hand-card ${c.type==='special'?`special effect-${c.effect||'generic'}`:''} ${blocked?'recently-played disabled':''} ${newlyDrawn.has(c.id)?'drawing-in':''}`;
   el.dataset.cardId=c.id;
-  const img=document.createElement('img');img.src=c.image;img.alt=c.name;el.append(img);bindCardInspector(el,c);
+  const img=document.createElement('img');img.src=c.image;img.alt=c.name;img.loading='eager';img.addEventListener('error',()=>{img.src=(c.type==='special'||c.type==='artifact')?'/assets/special_back_gold.png':'/assets/card_back.webp';el.classList.add('missing-art')},{once:true});el.append(img);bindCardInspector(el,c);
 
   if(c.type==='normal'){
     if(blocked){const lock=document.createElement('div');lock.className='recent-lock';lock.textContent='⏳ Gerade gespielt';el.append(lock)}
@@ -720,7 +743,9 @@ function buildHandCard(c,me,normals,blockedId){
     el.addEventListener('keydown',e=>{if(!blocked&&(e.key==='Enter'||e.key===' ')){e.preventDefault();play()}});
   }else{
     el.classList.add('special-readable');
-    el.insertAdjacentHTML('beforeend',specialUseInfo(c));
+    const strip=document.createElement('div');strip.className='special-text-strip';
+    strip.innerHTML=`<strong>${c.useIcon||'✦'} ${escapeHtml(c.useLabel||'Spezialkarte')}</strong><span>${escapeHtml(c.text||'Spezialeffekt')}</span>`;
+    el.append(strip);
 
     const actions=document.createElement('div');
     actions.className='special-actions';
@@ -748,7 +773,7 @@ function buildHandCard(c,me,normals,blockedId){
     if(state?.phase!=='select'||me?.selected){use.disabled=true;use.title='Spezialkarte während der Kartenauswahl und vor der normalen Karte spielen';}
 
     // Bei Spezialkarten ist ein normaler Klick zum Lesen da – gespielt wird
-    // ausschließlich über den deutlichen „Einsetzen“-Button.
+    // ausschließlich über den deutlichen „Ausspielen“-Button unter der Karte.
     el.addEventListener('click',e=>{
       if(e.target.closest('button'))return;
       if(el.dataset.inspectConsumed==='1'){delete el.dataset.inspectConsumed;return;}
@@ -1251,6 +1276,7 @@ socket.on('roundStart',e=>{
   $('#roundMessage').textContent='Wähle deine beste Karte.';
   $('#diceZone').innerHTML='';
   startSelectionTimer(e.deadline);
+  setTimeout(()=>{if(currentScreen==='game')$('#hand')?.scrollIntoView({behavior:'smooth',block:'end'});},280);
   beep(760,.15);
 });
 socket.on('cardCommitted',addCommitGhost);
@@ -1380,48 +1406,72 @@ function setupCakeBites(){
           canvas.classList.remove('bite-pulse');
           void canvas.offsetWidth;
           canvas.classList.add('bite-pulse');
-        },380+i*520+shellIndex*80);
+        },760+i*440+shellIndex*80);
       });
-      setTimeout(()=>canvas.classList.add('cake-final-crumble'),3650+shellIndex*80);
+      setTimeout(()=>canvas.classList.add('cake-final-crumble'),3840+shellIndex*80);
     };
     if(img.complete&&img.naturalWidth)start();
     else img.addEventListener('load',start,{once:true});
   });
 }
 
+
+function v7FinisherDecor(kind,layer){
+  if(kind==='smolder'){
+    layer.innerHTML='<img class="v7-animated-gif v7-smolder-gif" src="/assets/animations/smolder-approved.gif?round='+Date.now()+'" alt="Smolder spuckt Feuer">';
+  }else if(kind==='meteor'){
+    layer.innerHTML='<span class="v7-meteor-trail"></span><img class="v7-animated-gif v7-meteor-gif" src="/assets/animations/meteor-approved.gif?round='+Date.now()+'" alt="Einschlag des Meteoriten"><span class="v7-impact-flash"></span>';
+  }else if(kind==='dust'){
+    for(let i=0;i<95;i++){
+      const p=document.createElement('i');p.className='v7-dust-particle';
+      const a=i*2.3999632297;const radius=65+(i%13)*12;
+      p.style.setProperty('--dx',`${Math.cos(a)*radius}px`);
+      p.style.setProperty('--dy',`${Math.sin(a)*radius-85}px`);
+      p.style.setProperty('--delay',`${.40+(i%12)*.027}s`);
+      p.style.setProperty('--hue',`${(i%4)*40+175}deg`);
+      p.style.left=`${15+(i*47)%70}%`;p.style.top=`${10+(i*59)%80}%`;
+      layer.append(p);
+    }
+  }else if(kind==='heart'){
+    layer.innerHTML=`<div class="v7-heart-flask" aria-hidden="true"><svg viewBox="0 0 170 195" role="img"><defs><linearGradient id="hFlask" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff" stop-opacity=".88"/><stop offset=".5" stop-color="#ea8efa" stop-opacity=".72"/><stop offset="1" stop-color="#702ebb" stop-opacity=".64"/></linearGradient></defs><path d="M65 40 L65 18 L104 18 L104 40 C153 30 170 77 151 104 L88 167 L22 103 C3 66 30 27 65 40Z" fill="url(#hFlask)" stroke="#ffffff" stroke-width="6"/><path d="M85 30 L74 76 L99 93 L69 138" fill="none" stroke="#ffffff" stroke-width="6"/><path d="M43 91 L87 84 L120 49" fill="none" stroke="#ffc5fb" stroke-width="3"/></svg><span class="v7-heart-crack">✧</span></div>`;
+    for(let i=0;i<21;i++){
+      const p=document.createElement('i');p.className='v7-glass-fragment';
+      const a=i*Math.PI*2/21;
+      p.style.setProperty('--dx',`${Math.cos(a)*(100+(i%4)*28)}px`);
+      p.style.setProperty('--dy',`${Math.sin(a)*(120+(i%5)*24)+45}px`);
+      p.style.setProperty('--rot',`${i*43}deg`);layer.append(p);
+    }
+  }
+}
 function playFinisher(e){
   const kind=BATTLE_SFX[e.finisher]?e.finisher:'dust';
   const overlay=$('#finisherOverlay'),winnerBox=$('#finisherWinner'),loserBox=$('#finisherLosers'),headline=$('#finisherHeadline'),impact=$('#finisherImpact');
   if(!overlay||!winnerBox||!loserBox)return animateCapture(e.winnerId);
   const available=lastReveal.length ? lastReveal : (e.revealEntries||[]);
-  const winnerEntry=available.find(x=>x.pid===e.winnerId),losers=available.filter(x=>x.pid!==e.winnerId);
-  const names={fall:'KARTE FÄLLT',melt:'REGEN & ZERFLIESSEN',glass:'GLASBRUCH',portal:'PORTAL',xmark:'VERLOREN',shadow:'SCHATTEN',spin:'WEGWIRBELN',meteor:'METEORIT',dust:'MAGISCHER STAUB',heart:'GEBROCHENES HERZ',smolder:'SMOLDER',cookie:'KEKS-BISSE'};
-  headline.textContent=(names[kind]||'FINISHER')+'!';
+  const winnerEntry=available.find(x=>x.pid===e.winnerId);
+  const losers=available.filter(x=>x.pid!==e.winnerId);
+  const labels={fall:'KARTE FÄLLT',melt:'REGEN & ZERFLIESSEN',glass:'GLASBRUCH',portal:'PORTAL',xmark:'ROTES X',shadow:'SCHATTEN',spin:'WEGWIRBELN',meteor:'METEORIT',dust:'MAGISCHER STAUB',heart:'GEBROCHENES GLASHERZ',smolder:'SMOLDERS FEUER',cookie:'KEKS-BISSE'};
+  headline.textContent=(labels[kind]||'FINISHER')+'!';
   winnerBox.innerHTML=winnerEntry?`<div class="finisher-card-shell winner-card"><span class="finisher-tag">🏆 ${escapeHtml(winnerEntry.name)}</span><img src="${winnerEntry.card.image}" alt="${escapeHtml(winnerEntry.card.name)}"></div>`:'';
   loserBox.innerHTML=losers.map((x,i)=>`<div class="finisher-card-shell loser-card v4-loser v4-${kind}" style="--loser-index:${i}"><img class="finisher-card-image" src="${x.card.image}" alt="${escapeHtml(x.card.name)}"><span class="v4-overlay-effect" aria-hidden="true"></span></div>`).join('');
   impact.className='finisher-impact v4-impact-'+kind;
-  overlay.className='finisher-overlay active play v4-finisher stage-'+kind;
+  overlay.className='finisher-overlay active play v4-finisher v7-finisher stage-'+kind;
   overlay.setAttribute('aria-hidden','false');
   document.body.classList.add('finisher-running');
-  if(kind==='smolder'){
-    loserBox.querySelectorAll('.v4-overlay-effect').forEach(x=>{
-      x.innerHTML='<img class="v4-smolder" src="/assets/animations/smolder-fire.webp" alt=""><img class="v4-fire" src="/assets/animations/fire-stream.webp" alt="">';
-    });
-  }
-  if(kind==='meteor')loserBox.querySelectorAll('.v4-overlay-effect').forEach(x=>x.innerHTML='<img class="v4-meteor" src="/assets/animations/meteor.webp" alt="">');
-  if(kind==='melt')loserBox.querySelectorAll('.v4-overlay-effect').forEach(x=>x.innerHTML='<span class="v4-raincloud">☁</span>'+Array.from({length:15},(_,i)=>`<i class="v4-raindrop" style="--drop:${i};left:${i*7}%"></i>`).join(''));
-  if(kind==='glass'||kind==='heart')loserBox.querySelectorAll('.v4-overlay-effect').forEach(x=>x.innerHTML='<span class="v4-crack">'+(kind==='heart'?'💔':'✳')+'</span>'+Array.from({length:12},(_,i)=>`<i class="v4-shard" style="--dx:${(i-5)*24}px;--rot:${i*32}deg"></i>`).join(''));
-  if(kind==='portal')loserBox.querySelectorAll('.v4-overlay-effect').forEach(x=>x.innerHTML='<span class="v4-portal"></span>');
-  if(kind==='xmark')loserBox.querySelectorAll('.v4-overlay-effect').forEach(x=>x.innerHTML='<span class="v4-x">✕</span>');
-  if(kind==='dust')loserBox.querySelectorAll('.v4-overlay-effect').forEach(x=>x.innerHTML=Array.from({length:22},(_,i)=>`<i class="v4-dust" style="--dx:${(i-10)*13}px;--delay:${(i*.05).toFixed(2)}s"></i>`).join(''));
+  loserBox.querySelectorAll('.v4-overlay-effect').forEach(layer=>{
+    v7FinisherDecor(kind,layer);
+    if(kind==='melt')layer.innerHTML='<span class="v4-raincloud">☁</span>'+Array.from({length:20},(_,i)=>`<i class="v4-raindrop" style="left:${i*5}%"></i>`).join('');
+    if(kind==='glass')layer.innerHTML='<span class="v4-crack">✳</span>'+Array.from({length:16},(_,i)=>`<i class="v4-shard" style="--dx:${(i-7)*24}px;--rot:${i*38}deg"></i>`).join('');
+    if(kind==='portal')layer.innerHTML='<span class="v4-portal"></span>';
+    if(kind==='xmark')layer.innerHTML='<span class="v4-x">✕</span>';
+  });
   if(kind==='cookie'){
     loserBox.querySelectorAll('.v4-cookie').forEach(x=>x.classList.add('finisher-cakebites'));
     setupCakeBites();
   }
   playSfx(kind,{gain:1,cooldown:350});
-  playSfx('sieger_glanz',{gain:.40,cooldown:600});
-  const duration=Math.max(4100,e.duration||4200);
-  setTimeout(()=>{playSfx('capture',{gain:.82,cooldown:350});flyFinisherCardsToWinner(e.winnerId)},duration-930);
+  const duration=Math.max(4400,e.duration||4200);
+  setTimeout(()=>{playSfx('capture',{gain:.7,cooldown:350});flyFinisherCardsToWinner(e.winnerId)},duration-910);
   setTimeout(()=>{
     overlay.className='finisher-overlay';overlay.setAttribute('aria-hidden','true');
     winnerBox.innerHTML='';loserBox.innerHTML='';impact.className='finisher-impact';
@@ -1481,9 +1531,15 @@ socket.on('rewardChoiceWaiting',e=>{
 });
 socket.on('rewardChosen',e=>{
   closeRewardChoice();
-  if(e.card){
+  if(e.kind==='artifact' && e.card){
     showRewardDraw({playerId:e.playerId,playerName:e.playerName,kind:e.kind,card:e.card});
+  }else if(e.kind==='special' && e.playerId!==myId){
+    showRewardDraw({playerId:e.playerId,playerName:e.playerName,kind:'special',card:null});
   }
+});
+socket.on('rewardChosenPrivate',e=>{
+  if(e.playerId!==myId || !e.card)return;
+  showRewardDraw({playerId:e.playerId,playerName:e.playerName,kind:'special',card:e.card});
 });
 
 socket.on('handRefill',e=>{
