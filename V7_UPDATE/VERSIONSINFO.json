@@ -1,0 +1,17 @@
+{
+  "version": "V7.2",
+  "requires": "V5/V6 base files",
+  "changes": [
+    "random 4 arenas",
+    "crystal lobby",
+    "hand below arena",
+    "heart flask",
+    "cookie positioning",
+    "smolder/meteor GIF",
+    "dust visibility",
+    "Hydra replacement",
+    "Cozy pegasus replacement",
+    "Chrysalis readable",
+    "secret special reward"
+  ]
+}

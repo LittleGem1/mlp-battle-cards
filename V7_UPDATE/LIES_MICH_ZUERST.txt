@@ -1,0 +1,31 @@
+MLP BATTLE CARDS – V7 BUGFIX / DIESES PAKET IST EIN UPDATE
+
+Voraussetzung: Dein GitHub-Repository enthaelt bereits das komplette Spiel aus V5/V6 (alle alten Karten, Audio-Dateien, Grafiken, server.js und index.html). Das Paket enthaelt nur geaenderte/ergaenzte Dateien.
+
+GITHUB-UPLOAD:
+1. ZIP herunterladen und ENTPACKEN.
+2. Den Ordner V7_UPDATE oeffnen.
+3. Alles IN diesem Ordner auf der Root-Ebene deines GitHub-Repositories hochladen.
+4. Dateien ersetzen lassen. Vorhandene andere Karten und Sounddateien NICHT loeschen.
+5. Render/Hosting neu deployen; Browser danach STRG+F5.
+
+BEHOBEN/UEBERARBEITET:
+- 4 feste neue Arena-Bilder, die pro Match zufaellig gewaehlt werden
+- Kristallhoehlengrafik als Lobby (einfaches CSS-Glitzern)
+- Kartenhand als eigener Abschnitt UNTERHALB der Arena (kein Overlay mehr)
+- 12 Verlierer-Finisher bleiben erhalten. Smolder und Meteorit nutzen echte 12-Frame-GIFs.
+- Keks-Bisse mit sichtbarer/zentrierter Karte; Herzflasche zersplittert sichtbar
+- Staub deutlich sichtbarer
+- Hydra als Sonderkarte mit korrektem Text ohne irrefuehrende Normalwert-Anzeige
+- Cozy Glow als Pegasus ohne Horn (neues Kartenbild normal + spezial)
+- Chrysalis-Effekt ist immer auf der Karte lesbar
+- Gold-Spezialkarten: Nur Gewinner erhaelt Bild/Name ueber Socket; Gegner sehen Goldrueckseite
+
+HINWEIS ZU GRAFIKTREUE:
+Die alten originalen Einzelbilder fuer Hydra, Cozy Glow und die urspruengliche
+Herzbruch-Animation waren in der lokalen V6-Vorlage nicht verfuegbar.
+Daher sind Hydra/Cozy neu gestaltete Ersatzkarten und der Glashertz-Finisher
+technisch neu animiert, keine pixelgenaue Wiederherstellung der alten Vorlage.
+
+Diese Version ist eine Patch-Version. Die urspruenglichen Musik-/Audio-Daten und
+Nicht-Betroffenen Karten aus deinem Repo bleiben erhalten.
