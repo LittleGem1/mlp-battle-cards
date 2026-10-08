@@ -2882,3 +2882,384 @@ body:has(#game .hand:not(.large-hand)) .arena{padding-bottom:230px!important;}
     bottom:178px!important;
   }
 }
+
+
+/* ============================================================
+   FIX: SICHTBARER KRISTALL + ARTEFAKTE RECHTS + SPECIALS + 2/1 GOLD
+   ============================================================ */
+
+/* Der Kategorie-Kristall wird als eigener BODY-Portal gerendert.
+   Damit kann ihn kein Arena-Element, Bot oder overflow mehr verdecken. */
+.round-crystal-portal{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147480000!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:18px!important;
+  background:radial-gradient(circle at 50% 45%,rgba(86,54,171,.32),rgba(2,4,22,.84) 70%)!important;
+  backdrop-filter:blur(5px)!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  transition:opacity .2s ease!important;
+}
+.round-crystal-portal.active{
+  opacity:1!important;
+  visibility:visible!important;
+}
+.round-crystal-portal.leaving{opacity:0!important}
+.round-crystal-box{
+  width:min(500px,92vw);
+  display:grid;
+  justify-items:center;
+  gap:10px;
+  color:#fff;
+  text-align:center;
+}
+.round-crystal-round{
+  font-size:clamp(17px,3vw,27px);
+  font-weight:1000;
+  letter-spacing:.2em;
+  text-shadow:0 3px 16px #000;
+}
+.battle-crystal-wrap{
+  width:270px;
+  height:330px;
+  display:grid;
+  place-items:center;
+  perspective:1300px;
+}
+.battle-crystal{
+  position:relative;
+  width:185px;
+  height:285px;
+  clip-path:polygon(50% 0,88% 18%,100% 55%,78% 87%,50% 100%,22% 87%,0 55%,12% 18%);
+  transform-style:preserve-3d;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.84) 0 7%,transparent 8% 18%,rgba(157,104,255,.72) 19% 43%,rgba(80,37,188,.94) 44% 66%,rgba(214,103,255,.73) 67% 84%,rgba(255,255,255,.56) 85%),
+    linear-gradient(45deg,#5115a8,#bb55ff 42%,#5ce6ff 70%,#381173);
+  border:1px solid rgba(244,232,255,.85);
+  box-shadow:
+    inset 22px 8px 30px rgba(255,255,255,.25),
+    inset -24px -12px 38px rgba(38,5,97,.48),
+    0 0 38px rgba(184,91,255,.65),
+    0 0 75px rgba(98,221,255,.28);
+  filter:drop-shadow(0 28px 28px rgba(0,0,0,.52));
+}
+.battle-crystal::before,.battle-crystal::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  clip-path:inherit;
+  pointer-events:none;
+}
+.battle-crystal::before{
+  background:
+    linear-gradient(64deg,transparent 0 23%,rgba(255,255,255,.47) 24% 27%,transparent 28% 48%,rgba(119,225,255,.3) 49% 53%,transparent 54% 73%,rgba(255,184,249,.31) 74% 79%,transparent 80%);
+  mix-blend-mode:screen;
+}
+.battle-crystal::after{
+  background:linear-gradient(110deg,rgba(255,255,255,.45),transparent 22% 65%,rgba(255,255,255,.17));
+}
+.battle-crystal .facet{
+  position:absolute;
+  inset:14% 17%;
+  opacity:.45;
+  border:1px solid rgba(255,255,255,.38);
+  pointer-events:none;
+}
+.battle-crystal .f1{clip-path:polygon(50% 0,100% 45%,50% 54%,0 45%);background:rgba(255,255,255,.25)}
+.battle-crystal .f2{clip-path:polygon(0 45%,50% 54%,32% 100%,0 74%);background:rgba(80,218,255,.25)}
+.battle-crystal .f3{clip-path:polygon(100% 45%,50% 54%,68% 100%,100% 74%);background:rgba(255,91,236,.22)}
+.battle-crystal .f4{clip-path:polygon(32% 100%,50% 54%,68% 100%,50% 100%);background:rgba(78,27,161,.4)}
+.crystal-shine{
+  position:absolute;
+  left:22%;
+  top:7%;
+  width:18%;
+  height:67%;
+  border-radius:50%;
+  transform:rotate(15deg);
+  background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,0));
+  filter:blur(3px);
+  opacity:.65;
+}
+.battle-crystal.spinning{
+  animation:battleCrystalSpin 2.72s cubic-bezier(.12,.75,.12,1) both!important;
+}
+@keyframes battleCrystalSpin{
+  0%{transform:translateY(105px) rotateX(-28deg) rotateY(0deg) rotateZ(9deg) scale(.55);opacity:.2}
+  15%{opacity:1}
+  35%{transform:translateY(-48px) rotateX(210deg) rotateY(620deg) rotateZ(-8deg) scale(1.08)}
+  65%{transform:translateY(-60px) rotateX(470deg) rotateY(1210deg) rotateZ(5deg) scale(1.13)}
+  86%{transform:translateY(-8px) rotateX(690deg) rotateY(1665deg) rotateZ(-2deg) scale(1.03)}
+  100%{transform:translateY(0) rotateX(720deg) rotateY(1800deg) rotateZ(0) scale(1);opacity:1}
+}
+.round-crystal-result{
+  min-height:62px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  padding:9px 20px;
+  border-radius:999px;
+  background:rgba(11,10,45,.92);
+  border:1px solid rgba(255,220,106,.48);
+  opacity:0;
+  transform:translateY(10px) scale(.85);
+  transition:.3s ease;
+  box-shadow:0 0 28px rgba(140,225,255,.2);
+}
+.round-crystal-result.show{
+  opacity:1;
+  transform:translateY(0) scale(1);
+}
+.round-crystal-result b{font-size:38px}
+.round-crystal-result strong{font-size:clamp(23px,5vw,39px);font-weight:1000}
+
+/* Artefakte nicht mehr über den Handkarten. */
+#game .artifact-shelf{
+  position:fixed!important;
+  left:auto!important;
+  right:16px!important;
+  top:52%!important;
+  bottom:auto!important;
+  transform:translateY(-50%)!important;
+  width:168px!important;
+  z-index:22!important;
+  padding:9px!important;
+}
+#game .artifact-shelf-slots{
+  grid-template-columns:1fr!important;
+  gap:6px!important;
+}
+#game .artifact-slot{
+  height:48px!important;
+  grid-template-columns:31px 1fr!important;
+}
+#game .artifact-slot img{width:29px!important;height:39px!important}
+#game .artifact-slot small{font-size:8px!important;line-height:1.05!important}
+
+/* Specialkarten: die Grafik selbst bleibt frei lesbar.
+   Klick auf die Karte = große Kartenansicht; Buttons schweben darüber. */
+#game .hand-card.special{
+  width:132px!important;
+  overflow:visible!important;
+  z-index:12;
+}
+#game .hand-card.special:hover,
+#game .hand-card.special:focus-within{
+  z-index:150!important;
+  transform:translateY(-28px) scale(1.15)!important;
+}
+#game .hand-card.special .special-category-badge,
+#game .hand-card.special .special-description{
+  display:none!important;
+}
+#game .special-hover-info{
+  position:absolute;
+  z-index:170;
+  left:50%;
+  bottom:calc(100% + 45px);
+  width:220px;
+  transform:translateX(-50%) translateY(8px);
+  display:grid;
+  gap:4px;
+  padding:9px 10px;
+  border-radius:11px;
+  background:rgba(7,7,30,.97);
+  border:1px solid rgba(255,210,94,.4);
+  color:#fff;
+  font-size:10px;
+  line-height:1.25;
+  text-align:left;
+  opacity:0;
+  visibility:hidden;
+  transition:.16s ease;
+  pointer-events:none;
+  box-shadow:0 10px 28px rgba(0,0,0,.42);
+}
+#game .special-hover-info strong{color:#ffe579;font-size:11px}
+#game .hand-card.special:hover .special-hover-info,
+#game .hand-card.special:focus-within .special-hover-info{
+  opacity:1;
+  visibility:visible;
+  transform:translateX(-50%) translateY(0);
+}
+#game .special-actions{
+  position:absolute;
+  z-index:180;
+  left:50%;
+  bottom:calc(100% + 7px);
+  transform:translateX(-50%);
+  display:flex;
+  gap:5px;
+  width:max-content;
+}
+#game .special-actions button{
+  min-height:31px;
+  padding:6px 8px;
+  border-radius:9px;
+  border:1px solid rgba(255,255,255,.28);
+  color:white;
+  font-size:10px;
+  font-weight:950;
+  cursor:pointer;
+  box-shadow:0 6px 16px rgba(0,0,0,.35);
+}
+#game .special-actions .special-read{
+  background:rgba(22,38,77,.96);
+}
+#game .special-actions .special-use{
+  position:static!important;
+  inset:auto!important;
+  background:linear-gradient(135deg,#7048ed,#d54bd4)!important;
+  padding:6px 9px!important;
+  font-size:10px!important;
+}
+#game .hand{
+  padding-top:82px!important;
+}
+
+/* 2 Goldkarten -> 1 auswählen */
+.reward-choice-overlay{
+  position:fixed;
+  inset:0;
+  z-index:2147481000;
+  display:grid;
+  place-items:center;
+  padding:18px;
+  background:radial-gradient(circle at center,rgba(105,58,162,.3),rgba(2,3,17,.86));
+  backdrop-filter:blur(7px);
+  opacity:0;
+  visibility:hidden;
+  transition:.2s ease;
+}
+.reward-choice-overlay.active{opacity:1;visibility:visible}
+.reward-choice-panel{
+  width:min(720px,94vw);
+  display:grid;
+  justify-items:center;
+  gap:10px;
+  padding:20px;
+  border-radius:22px;
+  background:linear-gradient(145deg,rgba(26,19,71,.98),rgba(10,23,56,.98));
+  border:1px solid rgba(255,218,98,.42);
+  box-shadow:0 22px 60px rgba(0,0,0,.52),0 0 40px rgba(255,202,64,.12);
+  color:white;
+  text-align:center;
+}
+.reward-choice-panel h2,.reward-choice-panel p{margin:0}
+.reward-choice-kicker{
+  font-size:11px;
+  font-weight:1000;
+  letter-spacing:.16em;
+  color:#ffe471;
+}
+.reward-choice-cards{
+  width:100%;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  gap:22px;
+  flex-wrap:wrap;
+  margin:8px 0;
+}
+.reward-choice-card{
+  width:210px;
+  display:grid;
+  justify-items:center;
+  gap:6px;
+  padding:10px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.055);
+  color:white;
+  cursor:pointer;
+  transition:.2s ease;
+}
+.reward-choice-card:hover{
+  transform:translateY(-9px) scale(1.035);
+  border-color:rgba(255,224,110,.7);
+  box-shadow:0 0 30px rgba(255,204,70,.2);
+}
+.reward-choice-card:disabled{opacity:.55;cursor:wait}
+.reward-choice-card>span{
+  font-size:9px;
+  font-weight:1000;
+  letter-spacing:.12em;
+  color:#ffe37a;
+}
+.reward-choice-card img{
+  width:170px;
+  border-radius:10px;
+  box-shadow:0 12px 28px rgba(0,0,0,.4);
+}
+.reward-choice-card strong{font-size:14px}
+.reward-choice-card small{font-size:10px;opacity:.75}
+.reward-choice-card>b{
+  margin-top:2px;
+  padding:7px 11px;
+  border-radius:9px;
+  background:linear-gradient(135deg,#7450ec,#d84bd8);
+  font-size:11px;
+}
+.reward-choice-card.artifact>b{
+  background:linear-gradient(135deg,#bd8415,#f0c44f);
+  color:#261600;
+}
+.practice-two-rewards{
+  width:100%;
+  display:flex;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:14px;
+}
+.practice-reward-choice{
+  width:155px;
+  display:grid;
+  justify-items:center;
+  gap:4px;
+  padding:8px;
+  border-radius:13px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,215,94,.3);
+  color:white;
+  cursor:pointer;
+}
+.practice-reward-choice img{width:115px;border-radius:7px}
+.practice-reward-choice>span{font-size:8px;color:#ffe278;font-weight:950}
+.practice-reward-choice strong{font-size:10px}
+.practice-reward-choice small{font-size:8px;opacity:.7}
+.practice-chosen-special{
+  display:grid;
+  justify-items:center;
+  gap:7px;
+}
+.practice-chosen-special img{width:115px;border-radius:9px}
+
+/* Kleinere Fenster: Artefakte als schmale rechte Seitenleiste. */
+@media(max-width:900px){
+  #game .artifact-shelf{
+    right:4px!important;
+    width:126px!important;
+    top:50%!important;
+  }
+  #game .artifact-slot small{font-size:7px!important}
+  #game .hand-card.special{width:118px!important}
+  #game .special-hover-info{width:190px}
+}
+@media(max-width:650px){
+  #game .artifact-shelf{
+    width:104px!important;
+    opacity:.92;
+  }
+  #game .artifact-shelf-title strong{font-size:8px}
+  #game .artifact-slot{grid-template-columns:24px 1fr!important;padding:3px!important}
+  #game .artifact-slot img{width:22px!important;height:30px!important}
+  .reward-choice-card{width:145px}
+  .reward-choice-card img{width:122px}
+  .battle-crystal-wrap{width:220px;height:285px}
+  .battle-crystal{width:155px;height:240px}
+}

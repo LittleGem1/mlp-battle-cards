@@ -592,7 +592,7 @@ function renderGame(){
 }
 
 function specialUseInfo(c){
-  return `<div class="special-category-badge"><span>${c.useIcon||'✦'}</span><strong>${escapeHtml(c.useLabel||'Jede Kategorie')}</strong></div><div class="special-description">${escapeHtml(c.text||'Spezialeffekt')}</div>`;
+  return `<div class="special-hover-info"><strong>${c.useIcon||'✦'} ${escapeHtml(c.useLabel||'Spezialkarte')}</strong><span>${escapeHtml(c.text||'Spezialeffekt')}</span></div>`;
 }
 function statOverlayHTML(c){return '';}
 let inspectRotationY=0,inspectRotationX=0,inspectDragging=false,inspectLastX=0,inspectLastY=0;
@@ -680,14 +680,39 @@ function buildHandCard(c,me,normals,blockedId){
     el.addEventListener('click',play);
     el.addEventListener('keydown',e=>{if(!blocked&&(e.key==='Enter'||e.key===' ')){e.preventDefault();play()}});
   }else{
+    el.classList.add('special-readable');
     el.insertAdjacentHTML('beforeend',specialUseInfo(c));
-    const b=document.createElement('button');b.className='special-use';b.type='button';b.textContent='✨ Spezial einsetzen';
-    b.addEventListener('click',e=>{
+
+    const actions=document.createElement('div');
+    actions.className='special-actions';
+
+    const read=document.createElement('button');
+    read.className='special-read';
+    read.type='button';
+    read.textContent='🔍 Lesen';
+    read.addEventListener('click',e=>{e.stopPropagation();openCardInspect(c)});
+
+    const use=document.createElement('button');
+    use.className='special-use';
+    use.type='button';
+    use.textContent='✨ Einsetzen';
+    use.addEventListener('click',e=>{
       e.stopPropagation();ensureAudio();
       if(state?.phase!=='select')return toast('Spezialkarten nur während der Auswahl.');
+      if(me?.selected)return toast('Du hast deine normale Karte bereits vollständig gelegt.');
       socket.emit('useSpecial',{cardId:c.id});
     });
-    el.append(b);
+
+    actions.append(read,use);
+    el.append(actions);
+
+    // Bei Spezialkarten ist ein normaler Klick zum Lesen da – gespielt wird
+    // ausschließlich über den deutlichen „Einsetzen“-Button.
+    el.addEventListener('click',e=>{
+      if(e.target.closest('button'))return;
+      if(el.dataset.inspectConsumed==='1'){delete el.dataset.inspectConsumed;return;}
+      openCardInspect(c);
+    });
   }
   return el;
 }
@@ -1038,98 +1063,90 @@ function crystalLandSound(){
   tone(1240,.38,.022,'triangle',.18);
 }
 
-function ensureCategoryCrystalMarkup(){
-  const overlay=$('#roundIntroOverlay');
-  if(!overlay)return;
-  if($('#roundCategoryCrystal')&&$('#categoryCrystalResult'))return;
-
-  let card=overlay.querySelector('.round-intro-card');
-  if(!card){
-    card=document.createElement('div');
-    card.className='round-intro-card category-crystal-stage';
-    overlay.append(card);
+let roundIntroActiveKey='';
+function categoryCrystalPortal(){
+  let portal=document.getElementById('categoryCrystalPortal');
+  if(!portal){
+    portal=document.createElement('div');
+    portal.id='categoryCrystalPortal';
+    portal.className='round-crystal-portal';
+    portal.setAttribute('aria-hidden','true');
+    portal.innerHTML=`
+      <div class="round-crystal-box">
+        <span id="portalRoundLabel" class="round-crystal-round">RUNDE 1</span>
+        <div class="battle-crystal-wrap">
+          <div id="battleCategoryCrystal" class="battle-crystal">
+            <i class="facet f1"></i><i class="facet f2"></i><i class="facet f3"></i><i class="facet f4"></i>
+            <i class="crystal-shine"></i>
+          </div>
+        </div>
+        <div id="portalCrystalResult" class="round-crystal-result">
+          <b id="portalCrystalIcon">⭐</b>
+          <strong id="portalCrystalLabel">MAGIE</strong>
+        </div>
+        <small>Der Kristall bestimmt die Kategorie …</small>
+      </div>`;
+    document.body.appendChild(portal);
   }
-  card.classList.add('category-crystal-stage');
-  card.innerHTML=`
-    <span id="roundIntroRound">RUNDE 1</span>
-    <div id="roundCategoryCrystal" class="category-crystal" aria-label="Kristall zieht die Kategorie">
-      <div class="category-crystal-face crystal-face-strength"><span></span></div>
-      <div class="category-crystal-face crystal-face-speed"><span></span></div>
-      <div class="category-crystal-face crystal-face-energy"><span></span></div>
-      <div class="category-crystal-face crystal-face-magic"><span></span></div>
-      <div class="category-crystal-core"></div>
-      <div class="category-crystal-glint"></div>
-    </div>
-    <div id="categoryCrystalResult" class="category-crystal-result" aria-live="polite">
-      <b id="roundIntroIcon">⭐</b>
-      <strong id="roundIntroLabel">MAGIE</strong>
-    </div>
-    <small class="category-crystal-hint">Der Kristall bestimmt die Kategorie …</small>`;
+  return portal;
 }
-
+function closeCategoryCrystal(){
+  const p=document.getElementById('categoryCrystalPortal');
+  if(p){p.classList.remove('active');p.setAttribute('aria-hidden','true');}
+  roundIntroActiveKey='';
+}
 function showRoundIntro(e){
   stopCountdown();
-  ensureCategoryCrystalMarkup();
-  const o=$('#roundIntroOverlay');if(!o)return;
-  if(roundIntroTimer){clearTimeout(roundIntroTimer);roundIntroTimer=null}
+  const key=`${e.round||state?.round||1}:${e.until||state?.roundIntroUntil||''}`;
+  const portal=categoryCrystalPortal();
 
+  // roomState und roundIntro-Event kommen fast gleichzeitig.
+  // Dieselbe Runde darf die Animation deshalb NICHT neu starten.
+  if(roundIntroActiveKey===key && portal.classList.contains('active'))return;
+  roundIntroActiveKey=key;
+
+  if(roundIntroTimer){clearTimeout(roundIntroTimer);roundIntroTimer=null;}
   const ui=CATEGORY_UI[e.category]||['✦',String(e.category||'KATEGORIE').toUpperCase()];
-  $('#roundIntroRound').textContent=`RUNDE ${e.round||state?.round||1}`;
 
-  // Das Ergebnis ist während der Drehung bewusst verborgen.
-  $('#roundIntroIcon').textContent=e.icon||ui[0];
-  $('#roundIntroLabel').textContent=e.label||ui[1];
+  $('#portalRoundLabel').textContent=`RUNDE ${e.round||state?.round||1}`;
+  $('#portalCrystalIcon').textContent=e.icon||ui[0];
+  $('#portalCrystalLabel').textContent=e.label||ui[1];
+
   $('#categoryIcon').textContent='💎';
   $('#categoryText').textContent='Der Kristall wählt die Kategorie …';
   $('#roundMessage').textContent='';
   clearTable();
   stopSelectionTimer();
 
-  o.className='round-intro-overlay category-crystal-overlay active category-'+(e.category||'magic');
-  o.setAttribute('aria-hidden','false');
-
-  const crystal=$('#roundCategoryCrystal');
-  const result=$('#categoryCrystalResult');
-
-  // Keine Kategorie-Symbole auf dem Kristall.
-  crystal?.querySelectorAll('.category-crystal-face span,.category-crystal-face small')
-    .forEach(el=>el.setAttribute('aria-hidden','true'));
-
-  // Unterschiedliche natürliche Endlage je Kategorie, ohne dass eine Seite beschriftet ist.
-  const endAngles={
-    strength:'1512deg',
-    speed:'1602deg',
-    energy:'1692deg',
-    magic:'1782deg'
-  };
-  crystal?.style.setProperty('--crystal-land-y',endAngles[e.category]||'1782deg');
-  crystal?.style.setProperty('--crystal-land-x',({
-    strength:'8deg',speed:'-6deg',energy:'5deg',magic:'-8deg'
-  })[e.category]||'-8deg');
-
-  crystal?.classList.remove('crystal-running');
+  const crystal=$('#battleCategoryCrystal');
+  const result=$('#portalCrystalResult');
   result?.classList.remove('show');
+  crystal?.classList.remove('spinning');
+  portal.classList.remove('leaving');
+  portal.classList.add('active');
+  portal.setAttribute('aria-hidden','false');
+
   void crystal?.offsetWidth;
-  crystal?.classList.add('crystal-running');
+  crystal?.classList.add('spinning');
   crystalSpinSound();
 
-  // Erst NACH der vollständigen Drehung wird Symbol + Begriff eingeblendet.
   setTimeout(()=>{
+    if(roundIntroActiveKey!==key)return;
+    crystal?.classList.remove('spinning');
     result?.classList.add('show');
     $('#categoryIcon').textContent=e.icon||ui[0];
     $('#categoryText').textContent=e.label||ui[1];
     crystalLandSound();
     categorySound(e.category);
     const cat=$('#category');
-    if(cat){cat.classList.remove('category-pulse');void cat.offsetWidth;cat.classList.add('category-pulse')}
-  },3050);
+    if(cat){cat.classList.remove('category-pulse');void cat.offsetWidth;cat.classList.add('category-pulse');}
+  },2700);
 
   roundIntroTimer=setTimeout(()=>{
-    o.classList.remove('active');
-    o.setAttribute('aria-hidden','true');
-    crystal?.classList.remove('crystal-running');
-    result?.classList.remove('show');
-  },4100);
+    if(roundIntroActiveKey!==key)return;
+    portal.classList.add('leaving');
+    setTimeout(closeCategoryCrystal,260);
+  },3850);
 }
 
 let countdownUiTimer=null,selectionUiTimer=null;
@@ -1195,6 +1212,7 @@ socket.on('allReady',e=>{toast(e.message||'Alle sind bereit!');beep(880,.18)});
 socket.on('roundIntro',showRoundIntro);
 socket.on('roundStart',e=>{
   stopCountdown();
+  closeCategoryCrystal();
   const cat=$('#category');
   $('#categoryIcon').textContent=e.icon;
   $('#categoryText').textContent=e.label;
@@ -1368,6 +1386,61 @@ function playFinisher(e){
 
 socket.on('playerGaveUp',e=>{toast(`🏳 ${e.name} hat aufgegeben und schaut jetzt zu.`);beep(180,.14)});
 socket.on('roundWinner',e=>{stopSelectionTimer();$('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;beep(1040,.22);playFinisher(e)});
+
+let rewardChoiceToken=null,rewardChoiceClock=null;
+function closeRewardChoice(){
+  const o=$('#rewardChoiceOverlay');
+  if(o){o.classList.remove('active');o.setAttribute('aria-hidden','true');}
+  rewardChoiceToken=null;
+  if(rewardChoiceClock){clearInterval(rewardChoiceClock);rewardChoiceClock=null;}
+}
+function showRewardChoice(e){
+  const o=$('#rewardChoiceOverlay'),grid=$('#rewardChoiceCards');
+  if(!o||!grid)return;
+  rewardChoiceToken=e.token;
+  grid.innerHTML='';
+  for(const card of (e.cards||[])){
+    const b=document.createElement('button');
+    b.type='button';
+    b.className=`reward-choice-card ${card.type==='artifact'?'artifact':'special'}`;
+    b.innerHTML=`<span>${card.type==='artifact'?'💎 ARTEFAKT':'✨ SPEZIALKARTE'}</span>
+      <img src="${card.image}" alt="${escapeHtml(card.name)}">
+      <strong>${escapeHtml(card.name)}</strong>
+      <small>${card.type==='artifact'?'Für dein Siegziel sammeln':'Kommt auf deine Hand'}</small>
+      <b>Diese behalten</b>`;
+    bindCardInspector(b,card);
+    b.addEventListener('click',()=>{
+      if(!rewardChoiceToken)return;
+      [...grid.querySelectorAll('button')].forEach(x=>x.disabled=true);
+      socket.emit('chooseReward',{cardId:card.id,token:rewardChoiceToken});
+    });
+    grid.append(b);
+  }
+
+  o.classList.add('active');o.setAttribute('aria-hidden','false');
+  pulseDeck('rewardDeckHud');rewardChime();
+
+  let left=Number(e.seconds||18);
+  const timer=$('#rewardChoiceTimer');
+  if(timer)timer.textContent=`Wähle 1 von 2 · ${left}s`;
+  if(rewardChoiceClock)clearInterval(rewardChoiceClock);
+  rewardChoiceClock=setInterval(()=>{
+    left=Math.max(0,left-1);
+    if(timer)timer.textContent=left?`Wähle 1 von 2 · ${left}s`:'Wird automatisch gewählt …';
+    if(left<=0){clearInterval(rewardChoiceClock);rewardChoiceClock=null;}
+  },1000);
+}
+socket.on('rewardChoice',showRewardChoice);
+socket.on('rewardChoiceWaiting',e=>{
+  if(e.winnerId!==myId)toast(`🏆 ${e.playerName} zieht 2 Goldkarten und wählt 1 davon.`);
+});
+socket.on('rewardChosen',e=>{
+  closeRewardChoice();
+  if(e.card){
+    showRewardDraw({playerId:e.playerId,playerName:e.playerName,kind:e.kind,card:e.card});
+  }
+});
+
 socket.on('handRefill',e=>{
   pulseDeck('normalDeckHud');cardShuffleSound();
   const mine=(e.players||[]).find(p=>p.playerId===myId);
@@ -1743,8 +1816,8 @@ function showPracticeGoldDraw(){
   g.innerHTML=`
     <button id="practiceGoldDrawBtn" class="training-gold-deck practice-gold-draw" type="button">
       <img src="/assets/special_back_gold.png" alt="Goldstapel">
-      <strong>Goldstapel ziehen</strong>
-      <small>Nur der Rundensieger zieht hier</small>
+      <strong>2 Goldkarten ziehen</strong>
+      <small>Als Sieger darfst du danach 1 davon behalten</small>
     </button>`;
   $('#practiceSpecialZone').innerHTML='<div class="practice-special-used">Spezialkarten werden nicht automatisch ersetzt.</div>';
   $('#practiceGoldDrawBtn').addEventListener('click',drawPracticeReward);
@@ -1753,28 +1826,51 @@ function drawPracticeReward(){
   if(!practiceState||practiceState.rewardDrawn)return;
   practiceState.rewardDrawn=true;
   rewardChime();
-  $('#trainingChoices').innerHTML='';
-  $('#trainingTable').innerHTML=`
-    <div class="training-reward-flip practice-reward-flip">
-      <div class="training-reward-inner">
-        <img class="training-reward-back" src="/assets/special_back_gold.png" alt="Goldene Rückseite">
-        <img class="training-reward-front" src="/assets/artifacts/02_Kristall_Herz.png" alt="Kristall Herz">
-      </div>
+
+  const g=$('#trainingChoices');
+  g.innerHTML=`
+    <div class="practice-two-rewards">
+      <button class="practice-reward-choice" data-practice-reward="artifact" type="button">
+        <span>💎 ARTEFAKT</span>
+        <img src="/assets/artifacts/02_Kristall_Herz.png" alt="Kristall Herz">
+        <strong>Kristall Herz</strong>
+        <small>Für dein Siegziel</small>
+      </button>
+      <button class="practice-reward-choice" data-practice-reward="special" type="button">
+        <span>✨ SPEZIALKARTE</span>
+        <img src="/assets/specials_new/91_Lightning_Dust.png" alt="Lightning Dust">
+        <strong>Lightning Dust</strong>
+        <small>Kommt auf deine Hand</small>
+      </button>
     </div>`;
-  setTimeout(()=>document.querySelector('.practice-reward-flip')?.classList.add('flipped'),300);
-  setTimeout(()=>{
-    artifactFanfare();
-    $('#practicePlayerStatus').textContent='💎 1 / 3 Artefakte';
-    $('#trainingTable').insertAdjacentHTML('beforeend',`
-      <div class="training-artifact-row">
-        <img src="/assets/artifacts/01_Elemente_der_Harmonie.png" alt="Elemente der Harmonie">
-        <img class="found" src="/assets/artifacts/02_Kristall_Herz.png" alt="Kristall Herz">
-        <img src="/assets/artifacts/03_Star_Swirls_Tagebuch.png" alt="Star Swirls Tagebuch">
-        <small>Kristall Herz gefunden · 1 / 3</small>
-      </div>`);
-    setPracticeResult('<strong>💎 Kristall Herz gefunden!</strong><br>So läuft eine echte Runde: Kategorie → verdeckt legen → Spezialkarte möglich → aufdecken → normale Karten auffüllen → Sieger zieht aus dem Goldstapel.');
-    showPracticeFinishActions();
-  },1050);
+  setPracticeResult('🏆 Du hast 2 Karten vom Goldstapel gezogen. Jetzt wählst du genau 1 davon.');
+
+  g.querySelectorAll('[data-practice-reward]').forEach(b=>b.addEventListener('click',()=>{
+    const artifact=b.dataset.practiceReward==='artifact';
+    g.querySelectorAll('button').forEach(x=>x.disabled=true);
+    artifact?artifactFanfare():rewardChime();
+
+    if(artifact){
+      $('#practicePlayerStatus').textContent='💎 1 / 3 Artefakte';
+      $('#trainingTable').innerHTML=`
+        <div class="training-artifact-row">
+          <img src="/assets/artifacts/01_Elemente_der_Harmonie.png" alt="Elemente der Harmonie">
+          <img class="found" src="/assets/artifacts/02_Kristall_Herz.png" alt="Kristall Herz">
+          <img src="/assets/artifacts/03_Star_Swirls_Tagebuch.png" alt="Star Swirls Tagebuch">
+          <small>Kristall Herz gewählt · 1 / 3</small>
+        </div>`;
+      setPracticeResult('<strong>💎 Kristall Herz behalten!</strong><br>Die andere Goldkarte wird zurück in den Stapel gemischt. Sammle alle 3 verschiedenen Artefakte, um das Match zu gewinnen.');
+    }else{
+      $('#practicePlayerStatus').textContent='6 normale Karten · +1 Spezialkarte';
+      $('#trainingTable').innerHTML=`
+        <div class="practice-chosen-special">
+          <img src="/assets/specials_new/91_Lightning_Dust.png" alt="Lightning Dust">
+          <strong>Lightning Dust kommt auf deine Hand</strong>
+        </div>`;
+      setPracticeResult('<strong>✨ Spezialkarte behalten!</strong><br>Die andere Goldkarte wird zurück in den Stapel gemischt. In einem echten Match kannst du diese Spezialkarte in einer späteren Runde einsetzen.');
+    }
+    setTimeout(showPracticeFinishActions,450);
+  }));
 }
 function showPracticeRetry(){
   const g=$('#trainingChoices');

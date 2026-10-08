@@ -40,7 +40,7 @@ function botLater(r,fn,delay=650){
   return t;
 }
 function clearTimers(r){
-  for(const key of ['roundTimer','selectionTimer','countdownTimer','readyTimer']){
+  for(const key of ['roundTimer','selectionTimer','countdownTimer','readyTimer','rewardChoiceTimer']){
     if(r[key]){clearTimeout(r[key]);r[key]=null;}
   }
   clearBotTimers(r);
@@ -492,47 +492,128 @@ function refillNormalHands(r){
 function hasAllArtifacts(p){
   return new Set(p.artifacts||[]).size>=artifacts.length;
 }
-function drawRewardForWinner(r,winnerId){
-  const p=r.players.get(winnerId);
-  if(!p||p.surrendered)return null;
+function drawRewardCandidate(r,p){
   const already=new Set(p.artifacts||[]);
   let attempts=0;
-  while(attempts++<120){
+  while(attempts++<180){
     recycleRewardDeck(r);
     const id=r.rewardDeck.pop();
-    if(!id)break;
+    if(!id)return null;
     const card=byId[id];
     if(!card)continue;
 
     if(card.type==='artifact'){
-      // Iron Will: In dieser Runde darf niemand ein Artefakt ziehen.
+      // Iron Will: In dieser Runde dürfen keine Artefakte gewählt werden.
       if(r.roundFX?.artifactBlocked){
         r.rewardDiscard.push(id);
         continue;
       }
-      // Ein eigenes Duplikat zählt nicht doppelt und wird direkt zurückgemischt.
+      // Bereits eigenes Artefakt nicht als nutzlose Auswahl zeigen.
       if(already.has(card.id)){
         r.rewardDiscard.push(id);
         continue;
       }
-      p.artifacts.push(card.id);
-      io.to(r.code).emit('rewardDraw',{playerId:p.id,playerName:p.name,kind:'artifact',card});
-      io.to(r.code).emit('artifactFound',{
-        playerId:p.id,playerName:p.name,card,
-        artifacts:p.artifacts.map(x=>byId[x]).filter(Boolean),
-        collected:new Set(p.artifacts).size,total:artifacts.length
-      });
-      return card;
     }
-
-    if(card.type==='special'){
-      p.hand.push(id);
-      io.to(p.id).emit('rewardDraw',{playerId:p.id,playerName:p.name,kind:'special',card});
-      io.to(r.code).except(p.id).emit('rewardDraw',{playerId:p.id,playerName:p.name,kind:'special',card:null});
-      return card;
-    }
+    return id;
   }
   return null;
+}
+function returnRewardCandidate(r,id){
+  if(!id)return;
+  r.rewardDeck.push(id);
+  r.rewardDeck=shuffle(r.rewardDeck);
+}
+function beginRewardChoice(r,winnerId){
+  const p=r.players.get(winnerId);
+  if(!p||p.surrendered){
+    startRound(r,1200);
+    return;
+  }
+
+  const candidates=[];
+  for(let i=0;i<2;i++){
+    const id=drawRewardCandidate(r,p);
+    if(id)candidates.push(id);
+  }
+
+  if(!candidates.length){
+    io.to(r.code).emit('rewardPhaseDone',{winnerId,winnerName:p.name,rewardKind:null});
+    startRound(r,1300);
+    return;
+  }
+
+  r.phase='rewardchoice';
+  const token=`reward:${r.round}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+  r.pendingReward={winnerId,cards:candidates,token};
+  sendState(r);
+
+  const publicInfo={winnerId,playerName:p.name,count:candidates.length};
+  io.to(r.code).emit('rewardChoiceWaiting',publicInfo);
+
+  if(p.isBot){
+    botLater(r,()=>{
+      if(!r.pendingReward||r.pendingReward.token!==token)return;
+      // PonyBot bevorzugt ein fehlendes Artefakt, sonst zufällige Spezialkarte.
+      const missingArtifact=candidates.find(id=>byId[id]?.type==='artifact' && !(p.artifacts||[]).includes(id));
+      const chosen=missingArtifact||candidates[Math.floor(Math.random()*candidates.length)];
+      resolveRewardChoice(r,winnerId,chosen,token);
+    },900);
+    return;
+  }
+
+  io.to(p.id).emit('rewardChoice',{
+    token,
+    cards:candidates.map(id=>byId[id]).filter(Boolean),
+    seconds:18
+  });
+
+  if(r.rewardChoiceTimer)clearTimeout(r.rewardChoiceTimer);
+  r.rewardChoiceTimer=setTimeout(()=>{
+    r.rewardChoiceTimer=null;
+    if(!r.pendingReward||r.pendingReward.token!==token)return;
+    const auto=candidates[Math.floor(Math.random()*candidates.length)];
+    resolveRewardChoice(r,winnerId,auto,token);
+  },18000);
+}
+function resolveRewardChoice(r,winnerId,chosenId,token){
+  const pending=r.pendingReward;
+  const p=r.players.get(winnerId);
+  if(!pending||!p||pending.winnerId!==winnerId)return false;
+  if(token&&pending.token!==token)return false;
+  if(!pending.cards.includes(chosenId))return false;
+
+  if(r.rewardChoiceTimer){clearTimeout(r.rewardChoiceTimer);r.rewardChoiceTimer=null;}
+
+  const chosen=byId[chosenId];
+  const unchosen=pending.cards.filter(id=>id!==chosenId);
+
+  // Nicht gewählte Goldkarte geht zurück in den Goldstapel und kann später wieder auftauchen.
+  for(const id of unchosen)returnRewardCandidate(r,id);
+
+  if(chosen?.type==='artifact'){
+    if(!(p.artifacts||[]).includes(chosen.id))p.artifacts.push(chosen.id);
+    io.to(r.code).emit('artifactFound',{
+      playerId:p.id,playerName:p.name,card:chosen,
+      artifacts:p.artifacts.map(x=>byId[x]).filter(Boolean),
+      collected:new Set(p.artifacts).size,total:artifacts.length
+    });
+  }else if(chosen?.type==='special'){
+    p.hand.push(chosen.id);
+  }
+
+  r.pendingReward=null;
+  io.to(r.code).emit('rewardChosen',{
+    playerId:p.id,playerName:p.name,card:chosen,kind:chosen?.type||null
+  });
+  sendState(r);
+
+  if(gameOverIfNeeded(r))return true;
+
+  io.to(r.code).emit('rewardPhaseDone',{
+    winnerId:p.id,winnerName:p.name,rewardKind:chosen?.type||null
+  });
+  startRound(r,1800);
+  return true;
 }
 function nextCategory(r){
   if(!Array.isArray(r.categoryHistory)) r.categoryHistory=[];
@@ -566,7 +647,7 @@ function resetToLobby(r){
   r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;
   r.round=0;r.played={};r.dice={};r.tieIds=[];r.roundBuff={};r.roundPlayerIds=[];
   r.postGameReady=new Set();r.forceNextCategoryDifferent=false;r.forcedNextCategory=null;resetRoundFX(r);
-  r.normalDeck=[];r.normalDiscard=[];r.rewardDeck=[];r.rewardDiscard=[];
+  r.normalDeck=[];r.normalDiscard=[];r.rewardDeck=[];r.rewardDiscard=[];r.pendingReward=null;
   for(const p of roomPlayers(r)){
     p.hand=[];p.artifacts=[];p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.pendingForcedDiscard=null;
   }
@@ -576,6 +657,12 @@ function resetToLobby(r){
 function removePlayerFromRoom(socket,notify=true){
   const r=getRoom(socket);if(!r)return;
   const leaving=r.players.get(socket.id);if(leaving?.pendingForcedDiscard?.timer)clearTimeout(leaving.pendingForcedDiscard.timer);
+  if(r.phase==='rewardchoice'&&r.pendingReward?.winnerId===socket.id){
+    if(r.rewardChoiceTimer){clearTimeout(r.rewardChoiceTimer);r.rewardChoiceTimer=null;}
+    for(const id of (r.pendingReward.cards||[]))returnRewardCandidate(r,id);
+    r.pendingReward=null;
+    startRound(r,900);
+  }
   r.players.delete(socket.id);socket.leave(r.code);socket.data.room=null;socket.emit('roomLeft');
   const humans=roomPlayers(r).filter(p=>!p.isBot);
   if(!humans.length){clearTimers(r);rooms.delete(r.code);return;}
@@ -658,7 +745,7 @@ function startRound(r,delay=900){
     nextCategory(r);
     r.roundPlayerIds=roomPlayers(r).filter(p=>!p.surrendered&&p.hand.length>0&&hasNormalCard(p)).map(p=>p.id);
     if(!r.roundPlayerIds.length){gameOverIfNeeded(r);return;}
-    r.roundIntroUntil=Date.now()+3000;
+    r.roundIntroUntil=Date.now()+4000;
     io.to(r.code).emit('roundIntro',{round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],until:r.roundIntroUntil});
     sendState(r);
     r.roundTimer=setTimeout(()=>{
@@ -669,7 +756,7 @@ function startRound(r,delay=900){
       sendState(r);
       scheduleBotsForSelect(r);
       r.selectionTimer=setTimeout(()=>handleSelectionTimeout(r),30050);
-    },3000);
+    },4000);
   },delay);
 }
 function finishRoundCycle(r,winnerId,playedIds){
@@ -698,11 +785,7 @@ function finishRoundCycle(r,winnerId,playedIds){
 
   setTimeout(()=>{
     if(!rooms.has(r.code)||r.phase==='gameover')return;
-    const reward=drawRewardForWinner(r,winnerId);
-    sendState(r);
-    if(gameOverIfNeeded(r))return;
-    io.to(r.code).emit('rewardPhaseDone',{winnerId,winnerName:winner.name,rewardKind:reward?.type||null});
-    startRound(r,1800);
+    beginRewardChoice(r,winnerId);
   },900);
 }
 const FINISHERS=['dragonfire','dissolve','starbarrage','gunshots','flowerdevour','cakebites','loserplank','freeze','lightningstorm','portalvoid','crystalburst','shadowchains','paintbomb','stickerstorm','cometcrash','magicseal'];
@@ -863,13 +946,13 @@ function maybeStartWhenReady(r){
 io.on('connection',socket=>{
   socket.on('createRoom',({name,accessory,frame})=>{
     let c;do c=code();while(rooms.has(c));
-    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[]};
+    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null};
     r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     rooms.set(c,r);socket.join(c);socket.data.room=c;sendState(r);
   });
   socket.on('createBotRoom',({name,accessory,frame})=>{
     let c;do c=code();while(rooms.has(c));
-    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[]};
+    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null};
     r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     rooms.set(c,r);socket.join(c);socket.data.room=c;addBotToRoom(r);sendState(r);
     socket.emit('notice','🤖 PonyBot wurde als Testgegner hinzugefügt.');
@@ -1188,6 +1271,17 @@ io.on('connection',socket=>{
     socket.emit('specialDone',{text:`${sourceName}: ${byId[cardId]?.name||'Eine Karte'} abgelegt.`});
     emitImpact(r,'discard',p.id,`${p.name} legt 1 Karte ab.`);
     sendState(r);maybeEvaluate(r);
+  });
+
+  socket.on('chooseReward',({cardId,token})=>{
+    const r=getRoom(socket),p=r?.players.get(socket.id);
+    if(!r||!p||p.isBot)return;
+    if(r.phase!=='rewardchoice'||!r.pendingReward||r.pendingReward.winnerId!==socket.id){
+      return socket.emit('errorMsg','Gerade gibt es keine Goldkarte für dich auszuwählen.');
+    }
+    if(!resolveRewardChoice(r,socket.id,cardId,token)){
+      socket.emit('errorMsg','Diese Goldkarte kann nicht mehr gewählt werden.');
+    }
   });
 
   socket.on('flutterKeep',({cardId})=>{const x=socket.data.pendingFlutter,r=getRoom(socket);if(!x||!r||x.room!==r.code||!x.choices.includes(cardId))return;const p=r.players.get(socket.id);
