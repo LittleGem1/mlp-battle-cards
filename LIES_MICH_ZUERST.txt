@@ -1,0 +1,37 @@
+MLP BATTLE CARDS – VERSION 4: ALLE FIXES, 12 FINISHER, V3 SOUNDS
+=============================================================
+WICHTIG: Du brauchst dein bisheriges komplettes GitHub-Spiel.
+Dieses ZIP ist ein UPDATE, keine neue Website und kein Ersatz für alle Bilddateien.
+
+AUF GITHUB:
+1. ZIP entpacken.
+2. server.js und cards.js ins HAUPTVERZEICHNIS des Spiel-Repositories kopieren/ersetzen.
+3. Aus dem ZIP den Ordner public öffnen.
+4. public/index.html, client.js und style.css in den bereits vorhandenen Ordner public kopieren und ersetzen.
+5. public/assets/sounds (alle 28 MP3) und public/assets/animations (3 WebP) hochladen.
+6. public/assets/artifacts enthält alle 3 Sammelbilder und special_back_gold.png.
+7. public/assets/specials_new enthält einige aktualisierte Bilder; vorhandene andere Bilder erhalten!
+8. Commit changes, dann Render auf den neuen Commit deployen.
+9. Spiel mit Strg+F5 / neuem privaten Fenster laden.
+
+ACHTUNG: Lösche NICHT deinen bisherigen public/assets-Ordner!
+Sonst verschwinden die Pony-Karten, Hintergründe und Artefakt-Bilder.
+GitHub Pages allein reicht für dieses Socket.IO-Spiel nicht; der Node/Render-Server muss laufen.
+
+NEUER STAND:
+- 2 Ziehstapel: normale Karten und Gold/Spezial/Artefakte.
+- Automatisches Auffüllen bis zum normalen Ziel (6 normale Handkarten, Specials zusätzlich).
+- Ein Timeout nach 30 Sekunden kostet dauerhaft eine Karte (reduziertes Auffüllziel).
+- 6 normale Karten + exakt 1 Spezialkarte zum Start.
+- 3 Artefakte + Sammelleiste rechts, Gewinn bei 3 verschiedenen Artefakten.
+- 2 Goldkarten ansehen, 1 wählen (Artefakte möglich), Spezialfähigkeiten und Bots vorhanden.
+- rotierender facettierter Kategorien-Kristall & Countdown sichtbar.
+- 12 Verliereranimationen, Smolder & Meteor bebildert, mit allen 12 V3 Finisher-Sounds.
+- 28 V3 Sound-Dateien: unverändert übernommen, absichtlich stumme 5 Ereignisse bleiben stumm.
+- Lobby-Musik YouTube pWAP7fIwGnI; Kampfmusik YouTube 9gBTKiVqprE.
+- Drei Startaccessoires Changeling-Flügel, Ballons und Süßigkeiten jederzeit frei.
+
+HINWEIS ZUR PRÜFUNG:
+Dieses Update wird durch automatisierte Datei- und Code-Tests geprüft.
+Eine echte Mehrspielerpartie auf deinem Live-Render-Server ist aus dieser Umgebung nicht testbar.
+Falls Musik im Browser nicht beginnt: einmal ins Spiel klicken / Musik an und Lautstärke prüfen.

@@ -3,16 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MLP Battle Cards – Sammle die meisten Karten</title>
+  <title>MLP Battle Cards – Artefakte & Sound V4</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
-<body>
+<body class="scene-home">
+  <div id="crystalDrift" class="crystal-drift" aria-hidden="true"></div>
+  <div id="lobbySceneVfx" class="lobby-scene-vfx" aria-hidden="true"></div>
   <main id="app">
     <section id="home" class="screen active">
       <div class="hero crystal-panel">
         <div class="logo-gem">✦</div>
         <h1>MLP Battle Cards</h1>
-        <p>Sammle die meisten Karten, um zu gewinnen.</p>
+        <p>Gewinne Runden, ziehe aus dem goldenen Stapel und finde alle drei Artefakte.</p>
         <div class="profile-row">
           <label>Dein Name <input id="playerName" maxlength="24" placeholder="Spielername" /></label>
           <button id="accessoryBtn" class="soft-btn" type="button">Items & Rahmen</button>
@@ -21,9 +23,9 @@
         <div class="menu-grid">
           <button id="createBtn" class="primary-btn" type="button">✨ Raum erstellen</button>
           <div class="join-box"><input id="roomCode" maxlength="5" placeholder="RAUMCODE" /><button id="joinBtn" class="primary-btn" type="button">Beitreten</button></div>
+          <button id="botTestBtn" class="soft-btn bot-test-home" type="button">🤖 Testspiel gegen PonyBot</button>
         </div>
-        <button id="botModeBtn" class="primary-btn owner-bot-btn" type="button" hidden>🤖 Privater Bot-Testmodus</button>
-        <p class="hint">2–8 Spieler · 7 zufällige, einzigartige Karten pro Spieler</p>
+        <p class="hint">2–8 Spieler · Start: 6 normale Karten + 1 Spezialkarte · doppelte Karten sind möglich</p>
       </div>
     </section>
 
@@ -33,8 +35,9 @@
         <p id="lobbyHint">Warte auf Mitspieler …</p>
         <div id="lobbyPlayers" class="lobby-players"></div>
         <div class="lobby-actions">
-          <button id="startBtn" class="primary-btn" type="button">Spiel starten</button>
+          <button id="startBtn" class="primary-btn ready-btn" type="button">⚔ In die Arena</button>
           <button id="lobbyAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
+          <button id="botLobbyBtn" class="soft-btn" type="button">🤖 Test-Bot hinzufügen</button>
           <button id="leaveLobbyBtn" class="soft-btn" type="button">← Hauptmenü</button>
           <div class="music-controls"><button id="musicLobbyBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
         </div>
@@ -48,11 +51,40 @@
           <button id="leaveGameBtn" class="soft-btn" type="button">← Hauptmenü</button>
           <div class="music-controls"><button id="musicGameBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
         </div>
-        <div class="crystal c1"></div><div class="crystal c2"></div><div class="crystal c3"></div><div class="crystal c4"></div>
+
+        <div id="arenaReadyPanel" class="arena-ready-panel" hidden>
+          <div class="arena-ready-card crystal-panel">
+            <span class="arena-ready-kicker">⚔ KAMPF-VORBEREITUNG</span>
+            <h2>Die Arena ist bereit</h2>
+            <p>Raum <strong id="arenaRoomCode"></strong> · Jeder menschliche Spieler klickt hier auf Bereit. PonyBot ist automatisch bereit.</p>
+            <div id="arenaReadyPlayers" class="arena-ready-players"></div>
+            <div class="arena-ready-actions">
+              <button id="arenaReadyBtn" class="primary-btn ready-btn" type="button">✅ Bereit</button>
+              <button id="arenaAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
+              <button id="arenaReadyLeaveBtn" class="soft-btn" type="button">← Hauptmenü</button>
+            </div>
+            <div class="arena-ready-music">
+              <strong>🎵 Kampfmusik</strong>
+              <span>PonyBot wartet hier nicht auf einen eigenen Klick – nur du musst dich bereit melden.</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="arenaVfx" class="arena-vfx" aria-hidden="true"><span class="arena-particle p1"></span><span class="arena-particle p2"></span><span class="arena-particle p3"></span><span class="arena-particle p4"></span><span class="arena-particle p5"></span><span class="arena-particle p6"></span><span class="arena-particle p7"></span><span class="arena-particle p8"></span><span class="arena-particle p9"></span><span class="arena-particle p10"></span><span class="arena-particle p11"></span><span class="arena-particle p12"></span><span class="arena-particle p13"></span><span class="arena-particle p14"></span></div>
         <div id="opponents" class="opponents"></div>
         <div class="center-stage">
+          <div id="deckHud" class="deck-hud" aria-label="Ziehstapel">
+            <div id="normalDeckHud" class="deck-pile normal-deck-pile">
+              <img src="/assets/card_back.webp" alt="Normaler Ziehstapel">
+              <span><strong>Normal</strong><small id="normalDeckCount">–</small></span>
+            </div>
+            <div id="rewardDeckHud" class="deck-pile reward-deck-pile">
+              <img src="/assets/special_back_gold.png" alt="Spezial- und Artefaktstapel">
+              <span><strong>Goldstapel</strong><small id="rewardDeckCount">–</small></span>
+            </div>
+          </div>
           <div id="category" class="category"><span id="categoryIcon">✦</span><strong id="categoryText">Bereit?</strong></div>
-          <div id="countdown" class="countdown" aria-live="assertive"></div>
+          <div id="countdownAnchor" class="countdown-anchor" aria-hidden="true"></div>
           <div id="tableCards" class="table-cards"></div>
           <div id="selectionTimer" class="selection-timer" aria-live="polite"></div>
           <div id="roundMessage" class="round-message" aria-live="polite"></div>
@@ -60,28 +92,65 @@
         </div>
         <div id="selfNameplate" class="self-nameplate"></div>
         <div class="self-bar"><strong id="selfName"></strong><span id="selfCount"></span></div>
+        <div id="artifactShelf" class="artifact-shelf" aria-label="Deine Artefakte"><div class="artifact-shelf-title"><strong>ARTEFAKTE</strong><span>0/3</span></div><div class="artifact-shelf-slots"><div class="artifact-slot"><span>?</span><small>Elemente der Harmonie</small></div><div class="artifact-slot"><span>?</span><small>Kristall Herz</small></div><div class="artifact-slot"><span>?</span><small>Star Swirls Tagebuch</small></div></div></div>
         <div id="hand" class="hand"></div>
       </div>
     </section>
   </main>
 
-  <div id="toast" class="toast" role="status"></div>
-  <button id="rulesBtn" class="rules-floating" type="button">📖 Spielregeln</button>
-
-
-  <dialog id="ownerDialog" class="modal owner-modal">
-    <div class="owner-box">
-      <span class="owner-kicker">🔐 PRIVATER TESTZUGANG</span>
-      <h3>Owner-Modus</h3>
-      <p>Dieser Bereich ist nicht Teil des normalen Spiels. Nach erfolgreicher Freischaltung erscheint nur in deinem Browser der Bot-Testmodus.</p>
-      <input id="ownerCodeInput" type="password" autocomplete="off" placeholder="Owner-Code" />
-      <div id="ownerMessage" class="owner-message"></div>
-      <div class="owner-actions">
-        <button id="ownerUnlockBtn" class="primary-btn" type="button">Freischalten</button>
-        <button id="ownerCloseBtn" class="soft-btn" type="button">Schließen</button>
-      </div>
+  <div id="countdown" class="countdown global-countdown" aria-live="assertive"></div>
+  <div id="finisherOverlay" class="finisher-overlay" aria-hidden="true">
+    <div class="finisher-stage">
+      <div id="finisherHeadline" class="finisher-headline"></div>
+      <div id="finisherWinner" class="finisher-winner"></div>
+      <div id="finisherLosers" class="finisher-losers"></div>
+      <div id="finisherImpact" class="finisher-impact" aria-hidden="true"></div>
     </div>
-  </dialog>
+  </div>
+  
+  <div id="rewardChoiceOverlay" class="reward-choice-overlay" aria-hidden="true">
+    <div class="reward-choice-panel">
+      <span class="reward-choice-kicker">🏆 RUNDENSIEG</span>
+      <h2>Ziehe 2 Goldkarten</h2>
+      <p>Wähle <strong>eine</strong> davon. Die andere wird zurück in den Goldstapel gemischt.</p>
+      <div id="rewardChoiceCards" class="reward-choice-cards"></div>
+      <small id="rewardChoiceTimer">Wähle deine Belohnung …</small>
+    </div>
+  </div>
+
+  <div id="rewardDrawOverlay" class="reward-draw-overlay" aria-hidden="true">
+    <div class="reward-draw-card">
+      <span id="rewardDrawKicker">GOLDSTAPEL</span>
+      <div id="rewardCardFlipper" class="reward-card-flipper">
+        <div class="reward-card-face reward-card-back"><img src="/assets/special_back_gold.png" alt=""></div>
+        <div class="reward-card-face reward-card-front"><img id="rewardDrawImage" src="/assets/special_back_gold.png" alt=""></div>
+      </div>
+      <strong id="rewardDrawTitle">Belohnung</strong>
+      <small id="rewardDrawText"></small>
+    </div>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <div id="roundIntroOverlay" class="round-intro-overlay category-crystal-overlay" aria-hidden="true">
+    <div class="round-intro-card category-crystal-stage">
+      <span id="roundIntroRound">RUNDE 1</span>
+
+      <div id="roundCategoryCrystal" class="category-crystal" aria-label="Kristall zieht die Kategorie">
+        <div class="category-crystal-face crystal-face-strength"><span></span></div>
+        <div class="category-crystal-face crystal-face-speed"><span></span></div>
+        <div class="category-crystal-face crystal-face-energy"><span></span></div>
+        <div class="category-crystal-face crystal-face-magic"><span></span></div>
+        <div class="category-crystal-core"></div>
+        <div class="category-crystal-glint"></div>
+      </div>
+
+      <div id="categoryCrystalResult" class="category-crystal-result" aria-live="polite">
+        <b id="roundIntroIcon">⭐</b>
+        <strong id="roundIntroLabel">MAGIE</strong>
+      </div>
+      <small class="category-crystal-hint">Der Kristall bestimmt die Kategorie …</small>
+    </div>
+  </div>
+  <button id="rulesBtn" class="rules-floating" type="button">📖 Spielregeln</button>
 
   <dialog id="accessoryDialog" class="modal accessory-modal">
     <form method="dialog">
@@ -121,32 +190,33 @@
       <div id="tutorialSlides" class="tutorial-slides">
         <article class="tutorial-step active" data-step="0">
           <div class="tutorial-copy">
-            <h4>1. Dein Ziel</h4>
-            <p>Du startest mit <strong>7 zufälligen Karten</strong>. Gewinne Runden, sammle die ausgespielten Karten und versuche als letzter Spieler noch Karten zu besitzen.</p>
+            <h4>1. Dein neues Ziel</h4>
+            <p>Finde als Erster alle drei Artefakte: <strong>Elemente der Harmonie</strong>, <strong>Kristall Herz</strong> und <strong>Star Swirls Tagebuch</strong>. Wer alle drei besitzt, gewinnt.</p>
           </div>
-          <div class="tutorial-picture tutorial-hand-picture">
-            <img src="/assets/cards/01_Applejack.webp" alt="Applejack Karte">
-            <img src="/assets/cards/02_Rainbow_Dash.webp" alt="Rainbow Dash Karte">
-            <img src="/assets/cards/03_Twilight_Sparkle.webp" alt="Twilight Sparkle Karte">
-            <span class="tutorial-callout">7 Karten auf deiner Hand</span>
+          <div class="tutorial-picture artifact-goal-picture">
+            <div class="artifact-goal-card"><img src="/assets/artifacts/01_Elemente_der_Harmonie.png" alt="Elemente der Harmonie"><span>Elemente der Harmonie</span></div>
+            <div class="artifact-goal-card"><img src="/assets/artifacts/02_Kristall_Herz.png" alt="Kristall Herz"><span>Kristall Herz</span></div>
+            <div class="artifact-goal-card"><img src="/assets/artifacts/03_Star_Swirls_Tagebuch.png" alt="Star Swirls Tagebuch"><span>Star Swirls Tagebuch</span></div>
+            <strong class="artifact-goal-label">✨ Sammle alle 3 und gewinne!</strong>
           </div>
         </article>
 
         <article class="tutorial-step" data-step="1">
           <div class="tutorial-copy">
-            <h4>2. Kategorie beachten</h4>
-            <p>Zu Beginn erscheint eine Kategorie. Nur dieser Wert zählt in der Runde. Der große Countdown zeigt dir vorher gut sichtbar, wann es losgeht.</p>
+            <h4>2. Zwei Ziehstapel</h4>
+            <p>Du startest mit <strong>6 normalen Karten + 1 Spezialkarte</strong>. Der normale Stapel füllt deine Charakterkarten auf. Im <strong>goldenen Stapel</strong> liegen Spezialkarten und Artefakte.</p>
           </div>
-          <div class="tutorial-picture category-picture">
-            <div class="tutorial-countdown-demo">3</div>
-            <div class="tutorial-categories"><span>🏋️ Stärke</span><span>⚡ Schnelligkeit</span><span>🔋 Energie</span><span>⭐ Magie</span></div>
+          <div class="tutorial-picture tutorial-decks-picture">
+            <div class="tutorial-deck-card normal"><img src="/assets/card_back.webp" alt="Normaler Kartenstapel"><strong>Normaler Stapel</strong><small>Charakterkarten · automatische Auffüllung</small></div>
+            <span class="tutorial-deck-plus">+</span>
+            <div class="tutorial-deck-card gold"><img src="/assets/special_back_gold.png" alt="Goldener Kartenstapel"><strong>Goldstapel</strong><small>Sieger zieht 2 · behält 1 · Artefakte sind selten</small></div>
           </div>
         </article>
 
         <article class="tutorial-step" data-step="2">
           <div class="tutorial-copy">
-            <h4>3. Eine Karte wählen</h4>
-            <p>Vergleiche den passenden Wert und klicke deine beste Karte. Beim Darüberfahren hebt sie sich an. <strong>Gedrückt halten</strong> öffnet später die große Kartenansicht.</p>
+            <h4>3. Kategorie & Karte</h4>
+            <p>Der Kristall bestimmt Stärke, Schnelligkeit, Energie oder Magie. Spiele eine normale Karte verdeckt. Der höchste Wert der aktuellen Kategorie gewinnt die Runde.</p>
           </div>
           <div class="tutorial-picture choose-picture">
             <div class="tutorial-card-choice good"><img src="/assets/cards/01_Applejack.webp" alt="Applejack"><b>🏋️ 9</b><small>Gute Wahl</small></div>
@@ -157,64 +227,100 @@
 
         <article class="tutorial-step" data-step="3">
           <div class="tutorial-copy">
-            <h4>4. Ablegen, aufdecken, gewinnen</h4>
-            <p>Alle gewählten Karten fliegen verdeckt in die Mitte. Sobald alle gewählt haben, drehen sie sich gleichzeitig um. Der höchste Wert gewinnt alle ausgespielten Karten.</p>
+            <h4>4. Ablegen & automatisch auffüllen</h4>
+            <p>Nach der Auswertung gehen <strong>alle gespielten normalen Karten zurück in den Kartenkreislauf</strong>. Danach wird jede normale Hand automatisch wieder auf <strong>6 Karten</strong> aufgefüllt – auch Verluste durch Effekte werden erst dann ersetzt.</p>
           </div>
           <div class="tutorial-picture reveal-picture">
             <div class="tutorial-back"><img src="/assets/card_back.webp" alt="Kartenrückseite"></div>
             <span class="tutorial-arrow">➜</span>
             <div class="tutorial-front"><img src="/assets/cards/01_Applejack.webp" alt="Applejack Karte"></div>
-            <span class="tutorial-win">🏆 Karten gehen zum Gewinner</span>
+            <span class="tutorial-win">♻ Karten zurück · Hände werden aufgefüllt</span>
           </div>
         </article>
 
         <article class="tutorial-step" data-step="4">
           <div class="tutorial-copy">
-            <h4>5. Gleichstand & Zeitlimit</h4>
-            <p>Bei Gleichstand würfeln nur die beteiligten Spieler. Hast du nach <strong>10 Sekunden</strong> nichts gelegt, verlierst du eine zufällige Strafkarte und eine neue Kategorie wird gezogen.</p>
+            <h4>5. Der Rundensieg</h4>
+            <p>Der Gewinner zieht <strong>2 Karten vom Goldstapel und behält 1 davon</strong>. Meist sind es Spezialkarten; Artefakte sind deutlich seltener. Nach einem gefundenen Artefakt ist die nächste Goldauswahl garantiert artefaktfrei. Die drei Artefakte haben <strong>keine feste Reihenfolge</strong> – auch Star Swirls Tagebuch kann das erste gefundene Artefakt sein. Doppelte normale und Spezialkarten sind ausdrücklich möglich.</p>
           </div>
           <div class="tutorial-picture tie-picture">
             <div class="tutorial-die">⚄</div><div class="tutorial-die second">⚂</div>
-            <div class="tutorial-timeout">⏱ 10 → 0<br><small>Keine Karte = Strafkarte</small></div>
+            <div class="tutorial-timeout">🏆 Sieger zieht 2 Goldkarten · 1 behalten</div>
           </div>
         </article>
 
         <article class="tutorial-step" data-step="5">
           <div class="tutorial-copy">
-            <h4>6. Spezialkarten & Belohnungen</h4>
-            <p>Spezialkarten zeigen deutlich, wann sie eingesetzt werden können. Ein Sieg kann dir ein neues <strong>Item oder einen Rahmen</strong> freischalten. Unentdecktes bleibt als <strong>?</strong> verborgen.</p>
-          </div>
-          <div class="tutorial-picture special-picture">
-            <img class="tutorial-special" src="/assets/specials/64_Spezial_Pinkie_Pie.webp" alt="Pinkie Pie Spezialkarte">
-            <span class="magic-spark">✨</span>
-            <div class="tutorial-reward-preview">
-              <img src="/assets/frames/sakura.webp" alt="Sakura Rahmen">
-              <span>oder</span>
-              <div class="tutorial-mystery">?</div>
+            <h4>6. Spezialkarten, Gleichstand & Sieg</h4>
+            <p>Normalerweise darfst du <strong>1 Spezialkarte pro Runde</strong> einsetzen – Changeling erlaubt dir eine zweite. Manche Spezialkarten lassen dich einen Gegner, eine Handkarte oder sogar die Kategorie auswählen. Verlorene normale Karten werden erst <strong>nach Abschluss der Runde</strong> beim automatischen Auffüllen ersetzt; verlorene Spezialkarten nicht. Bei Gleichstand wird gewürfelt. Sobald ein Spieler <strong>alle drei verschiedenen Artefakte</strong> besitzt, gewinnt er das Match.</p>
+            <div class="tutorial-special-note"><strong>Wichtig:</strong> Iron Will kann eine Artefaktziehung für die gesamte Runde verhindern. Grogar bestimmt die aktuelle Kategorie selbst. Windigos lassen alle anderen aussetzen. Daybreaker gewinnt die Runde automatisch, sobald eine normale Karte gelegt wurde.</div>
+            <div class="tutorial-practice-cta">
+              <strong>🎮 Jetzt selbst ausprobieren!</strong>
+              <span>Spiele direkt eine komplette Proberunde gegen PonyBot und lerne Kategorie, Kartenwahl, Spezialkarte, Aufdecken, Auffüllen und Goldstapel praktisch kennen.</span>
+              <button id="tutorialPracticeCtaBtn" class="primary-btn tutorial-practice-start" type="button">🎮 Proberunde starten</button>
             </div>
+          </div>
+          <div class="tutorial-picture special-picture tutorial-special-fan">
+            <img class="tutorial-special special-one" src="/assets/specials/64_Spezial_Pinkie_Pie.webp" alt="Pinkie Pie Spezialkarte">
+            <img class="tutorial-special special-two" src="/assets/specials_new/80_Grogar.png" alt="Grogar Spezialkarte">
+            <img class="tutorial-special special-three" src="/assets/specials_new/91_Lightning_Dust.png" alt="Lightning Dust Spezialkarte">
+            <span class="tutorial-special-rule">Normal: 1 Spezialkarte pro Runde<br><small>Changeling erlaubt eine zweite.</small></span>
           </div>
         </article>
       </div>
 
-      <section id="trainingArea" class="training-area" hidden>
+
+      <section id="trainingArea" class="training-area practice-round" hidden>
         <div class="training-header">
-          <div><span class="tutorial-kicker">🎓 MINI-TRAINING</span><h4 id="trainingTitle">Proberunde 1 von 2</h4></div>
-          <button id="trainingSkipBtn" class="soft-btn" type="button">Training beenden</button>
+          <div>
+            <span class="tutorial-kicker">🎮 PROBERUNDE</span>
+            <h4 id="trainingTitle">Proberunde gegen PonyBot</h4>
+          </div>
+          <button id="trainingSkipBtn" class="soft-btn" type="button">Proberunde beenden</button>
         </div>
-        <p id="trainingText">Wähle für die angezeigte Kategorie die bessere Karte.</p>
-        <div id="trainingCategory" class="training-category">🏋️ Stärke</div>
-        <div class="training-board">
-          <div class="training-opponent"><span>Trainingsgegner</span><img src="/assets/card_back.webp" alt="Verdeckte Gegnerkarte"></div>
-          <div id="trainingTable" class="training-table"></div>
+
+        <p id="trainingText">PonyBot legt eine Karte verdeckt. Schau auf die Kategorie und entscheide dich wie in einer echten Runde.</p>
+
+        <div class="practice-status-row">
+          <div class="practice-player-status"><strong>DU</strong><span id="practicePlayerStatus">3 normale Karten · 1 Spezialkarte</span></div>
+          <div id="trainingCategory" class="training-category">🏋️ Stärke</div>
+          <div class="practice-player-status bot"><strong>🤖 PonyBot</strong><span id="practiceBotStatus">legt eine Karte …</span></div>
         </div>
+
+        <div class="training-board practice-board">
+          <div class="practice-deck normal">
+            <img src="/assets/card_back.webp" alt="Normaler Ziehstapel">
+            <small>Normaler Stapel</small>
+          </div>
+
+          <div class="training-opponent practice-opponent">
+            <span>🤖 PonyBot</span>
+            <div id="practiceBotCard" class="practice-bot-card">
+              <img src="/assets/card_back.webp" alt="Verdeckte Gegnerkarte">
+            </div>
+          </div>
+
+          <div id="trainingTable" class="training-table practice-table">
+            <div class="practice-table-placeholder">Hier landen die gespielten Karten</div>
+          </div>
+
+          <div class="practice-deck gold">
+            <img src="/assets/special_back_gold.png" alt="Goldstapel">
+            <small>Goldstapel</small>
+          </div>
+        </div>
+
+        <div id="practiceSpecialZone" class="practice-special-zone"></div>
         <div id="trainingChoices" class="training-choices"></div>
         <div id="trainingResult" class="training-result"></div>
       </section>
 
+
       <div id="tutorialNav" class="tutorial-nav">
         <button id="tutorialPrevBtn" class="soft-btn" type="button">← Zurück</button>
         <button id="tutorialNextBtn" class="primary-btn" type="button">Weiter →</button>
-        <button id="tutorialTrainingBtn" class="primary-btn" type="button" hidden>🎓 Training starten</button>
+        <button id="tutorialTrainingBtn" class="primary-btn" type="button" hidden>🎮 Proberunde starten</button>
+        <button id="tutorialBotBtn" class="soft-btn tutorial-bot-btn" type="button" hidden>🤖 Echtes Testspiel gegen PonyBot</button>
       </div>
     </div>
   </dialog>
@@ -251,7 +357,7 @@
     <div id="cardInspectStage" class="card-inspect-stage">
       <div id="cardInspectCard" class="card-inspect-card">
         <div class="card-inspect-face card-inspect-front"><img id="cardInspectFront" src="" alt="Kartenvorderseite"></div>
-        <div class="card-inspect-face card-inspect-back"><img src="/assets/card_back.webp" alt="Kartenrückseite"></div>
+        <div class="card-inspect-face card-inspect-back"><img id="cardInspectBack" src="/assets/card_back.webp" alt="Kartenrückseite"></div>
       </div>
     </div>
     <div class="inspect-hint">Gedrückt halten öffnet diese Ansicht · Rechtsklick ziehen = 360° drehen · ESC = schließen</div>
@@ -281,9 +387,9 @@
   </dialog>
 
   <div id="ytAudioPlayer" class="yt-audio-player" aria-hidden="true"></div>
-  <div class="music-credit">Musik im Hintergrund via YouTube.</div>
+  <div class="music-credit">Ausgewählte Lobby- und Battle-Musik läuft unsichtbar im Hintergrund via YouTube.</div>
   <script src="https://www.youtube.com/iframe_api"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/client.js"></script>
-</body>
+<!-- V4: kompatibel zum vorhandenen GitHub/Render-Spiel. --></body>
 </html>
