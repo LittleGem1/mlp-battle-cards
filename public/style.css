@@ -3548,3 +3548,43 @@ body.scene-lobby #lobbySceneVfx .cave-glimmer{
 @keyframes lobbyFloat{0%{transform:translate3d(0,0,0) scale(.8);opacity:0}10%{opacity:.9}100%{transform:translate3d(24px,104vh,0) scale(1.2);opacity:0}}
 @keyframes crystalTwinkle{0%,100%{transform:scale(.75);opacity:.3}50%{transform:scale(1.6);opacity:1}}
 body.scene-game #lobbySceneVfx{display:none!important}
+
+/* ===============================================================
+   PUNKT 1 – WARTEL0BBY: remove legacy opaque lobby scene
+   Same crystal-cave background as the working start screen.
+   Scope deliberately limited to the waiting lobby (#lobby).
+   =============================================================== */
+body.scene-lobby #lobby.screen,
+body.scene-lobby #lobby.screen.active,
+#lobby.screen,
+#lobby.screen.active {
+  background: transparent !important;
+  background-image: none !important;
+  background-color: transparent !important;
+  isolation: auto !important;
+}
+#lobby.screen::before,
+#lobby.screen::after,
+body.scene-lobby #lobby.screen::before,
+body.scene-lobby #lobby.screen::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  animation: none !important;
+}
+/* Let the actual approved cave show through behind the room and players. */
+body.scene-lobby #lobby .lobby.crystal-panel {
+  background: linear-gradient(145deg, rgba(8, 18, 48, .76), rgba(19, 13, 53, .69)) !important;
+  border-color: rgba(192, 239, 255, .60) !important;
+  box-shadow: 0 24px 75px rgba(2, 7, 30, .48), inset 0 0 35px rgba(144, 225, 255, .08) !important;
+  backdrop-filter: blur(7px) !important;
+}
+body.scene-lobby #lobby .lobby-player {
+  background: rgba(14, 25, 61, .72) !important;
+  border-color: rgba(177, 229, 255, .28) !important;
+}
+/* Cave sparkles are decorative, never intercept the lobby controls. */
+body.scene-lobby #lobbySceneVfx,
+body.scene-lobby #lobbySceneVfx *,
+body.scene-lobby #crystalDrift,
+body.scene-lobby #crystalDrift * { pointer-events: none !important; }
