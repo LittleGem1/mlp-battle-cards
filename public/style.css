@@ -3588,3 +3588,103 @@ body.scene-lobby #lobbySceneVfx,
 body.scene-lobby #lobbySceneVfx *,
 body.scene-lobby #crystalDrift,
 body.scene-lobby #crystalDrift * { pointer-events: none !important; }
+
+
+/* ===============================================================
+   PUNKT 2 – Die VIER Arena-Bilder & leise Umweltanimationen
+   Ausschließlich #game, niemals die Lobby oder die Kartenlogik.
+   Die alten als .png bezeichneten Bilder waren GIF89a-Dateien.
+   Korrekte Dateiendung vermeidet Browser/MIME-Fehler.
+   =============================================================== */
+body.scene-game #game .arena{
+  position:relative!important;
+  display:block!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  background-color:#081022!important;
+  background-repeat:no-repeat!important;
+  background-position:center top!important;
+  background-size:100% auto!important; /* vollständige Bildbreite ohne Seitenbeschnitt */
+}
+body.scene-game #game .arena.arena-jade_palace{
+  background-image:url('/assets/backgrounds/arena_1_jade_palace.gif')!important;
+}
+body.scene-game #game .arena.arena-whispering_forest{
+  background-image:url('/assets/backgrounds/arena_2_forest.gif')!important;
+}
+body.scene-game #game .arena.arena-steampunk_works{
+  background-image:url('/assets/backgrounds/arena_3_steampunk.gif')!important;
+}
+body.scene-game #game .arena.arena-witchs_table{
+  background-image:url('/assets/backgrounds/arena_4_alchemy.gif')!important;
+}
+/* Nur Umweltpartikel im separaten Layer. Er darf nicht mehr den
+   eigentlichen Hintergrund mit einem deckenden Rechteck überdecken. */
+body.scene-game #game .arena #arenaVfx{
+  position:absolute!important;
+  inset:0!important;
+  z-index:1!important;
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  background:none!important;
+  background-color:transparent!important;
+  filter:none!important;
+  pointer-events:none!important;
+  overflow:hidden!important;
+}
+body.scene-game #game #arenaVfx *,
+body.scene-game #game #arenaVfx::before,
+body.scene-game #game #arenaVfx::after{pointer-events:none!important}
+/* Kartentisch und Bedienung davor, auf sanft getöntem Glas. */
+body.scene-game #game .center-stage{
+  background:linear-gradient(180deg,rgba(4,8,25,.13),rgba(4,8,25,.36))!important;
+  backdrop-filter:blur(.5px)!important;
+}
+body.scene-game #game .arena-ready-panel{
+  background:linear-gradient(180deg,rgba(3,5,21,.22),rgba(3,5,21,.34))!important;
+  backdrop-filter:blur(.7px)!important;
+}
+/* Wald: Licht auf fließendem Wasser statt Wackeln des gesamten Bildes. */
+body.scene-game #game #arenaVfx.vfx-whispering_forest .forest-water-sheen{
+  left:0!important;right:0!important;bottom:10%!important;height:13%!important;
+  opacity:.62!important;
+  background:repeating-linear-gradient(110deg,
+    rgba(192,236,255,0) 0 35px,rgba(200,247,255,.20) 53px,
+    rgba(176,225,253,0) 80px,rgba(190,237,255,.12) 114px,
+    rgba(192,236,255,0) 149px)!important;
+  background-size:330px 100%!important;
+  animation:punkt2WaterFlow 5s linear infinite!important;
+}
+@keyframes punkt2WaterFlow{from{background-position:0 0}to{background-position:330px 0}}
+/* Steampunk: vorhandene Zahnräder drehen sich, ruhige Dampfwolken. */
+body.scene-game #game #arenaVfx.vfx-steampunk_works::before,
+body.scene-game #game #arenaVfx.vfx-steampunk_works::after{
+  content:""!important;display:block!important;position:absolute;
+  width:110px;height:150px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(219,235,237,.30) 0%,rgba(213,223,221,.14) 40%,transparent 70%);
+  filter:blur(13px);opacity:0;
+  animation:punkt2Steam 6.5s ease-in-out infinite;
+}
+body.scene-game #game #arenaVfx.vfx-steampunk_works::before{left:7%;bottom:24%;}
+body.scene-game #game #arenaVfx.vfx-steampunk_works::after{right:9%;bottom:18%;animation-delay:-3.2s;}
+@keyframes punkt2Steam{
+  0%{transform:translate3d(0,20px,0) scale(.60);opacity:0}
+  30%{opacity:.40}
+  75%{opacity:.25}
+  100%{transform:translate3d(22px,-155px,0) scale(1.8);opacity:0}
+}
+/* Die bekannten Effekte bleiben auf ihren Arenen begrenzt. */
+body.scene-game #game #arenaVfx.vfx-jade_palace .arena-leaf,
+body.scene-game #game #arenaVfx.vfx-whispering_forest .arena-leaf,
+body.scene-game #game #arenaVfx.vfx-whispering_forest .forest-crown,
+body.scene-game #game #arenaVfx.vfx-steampunk_works .gear-wheel,
+body.scene-game #game #arenaVfx.vfx-witchs_table .alchemy-bubble,
+body.scene-game #game #arenaVfx.vfx-witchs_table .witch-spark{
+  visibility:visible!important;
+}
+/* Ein Effekt darf niemals eine Karte oder Schaltfläche abfangen. */
+body.scene-game #game .arena::before,
+body.scene-game #game .arena::after{pointer-events:none!important}

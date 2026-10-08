@@ -1,0 +1,18 @@
+PUNKT 2 – VIER ARENEN (nur Hintergrund und ruhige Umweltanimationen)
+
+ACHTUNG: Dieses Paket baut auf deinem funktionierenden PUNKT-1-Lobbyfix auf.
+Du brauchst nichts aus V8 neu einzuspielen.
+
+1. ZIP entpacken.
+2. Den INHALT des Ordners MLP_BATTLE_CARDS_PUNKT2_ARENEN_ONLY in dein GitHub-Projekt hochladen.
+3. public/style.css ERSETZEN.
+4. Vier GIFs in public/assets/backgrounds/ NEU HINZUFÜGEN.
+5. Warten, bis Render wirklich fertig ist. Strg+F5 zum Aktualisieren.
+6. Über 'In die Arena' ein Match mit PonyBot öffnen. Bei jedem neuen Match wird einer der vier Hintergründe zufällig gewählt.
+
+FIX: Jadepalast: Blätter. Wald: Bach / Blätter / Baumkronen.
+Steampunk: Zahnräder / Dampf. Hexen-Alchemietisch: Blasen / Funken.
+
+UNVERÄNDERT: Startbildschirm, Wartelobby, Karten, Sounds, Rundenablauf, Server.
+
+Falls dir im Match nur die dunkle Oberfläche erscheint, überprüfe, ob die .gif-Dateien im GitHub-Ordner public/assets/backgrounds/ liegen.
