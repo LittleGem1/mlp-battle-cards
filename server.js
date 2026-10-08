@@ -287,7 +287,7 @@ function settleRound(r,winnerId){
   const ids=Object.values(r.played).map(x=>x.cardId),winner=r.players.get(winnerId);if(!winner)return;
   r.phase='result';
   io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:ids.map(id=>byId[id]).filter(Boolean)});
-  setTimeout(()=>finishAfterCapture(r,winnerId,ids),1050);
+  setTimeout(()=>finishAfterCapture(r,winnerId,ids),3300);
 }
 function evaluate(r){
   if(r.phase!=='select')return;

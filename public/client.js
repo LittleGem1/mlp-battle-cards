@@ -294,7 +294,7 @@ function toggleMusic(){userInteracted=true;musicEnabled=!musicEnabled;localStora
 function setMusicVolume(v){userInteracted=true;musicVolume=Math.max(0,Math.min(100,Number(v)||0));localStorage.setItem('mlp_music_volume',String(musicVolume));if(ytReady&&ytPlayer){try{ytPlayer.setVolume(musicVolume)}catch(e){}}updateMusicUI()}
 function updateMusicUI(){document.querySelectorAll('.music-toggle').forEach(b=>b.textContent=musicEnabled?'🔇 Musik stumm':'🔊 Musik an');document.querySelectorAll('.music-volume').forEach(s=>s.value=String(musicVolume))}
 
-function clearTable(){lastReveal=[];$('#tableCards').innerHTML=''}
+function clearTable(){lastReveal=[];clearLoserEffects();$('#tableCards').innerHTML=''}
 function addCommitGhost(e){const t=$('#tableCards');if(t.querySelector(`[data-player-id="${e.playerId}"]`))return;const d=document.createElement('div');d.className='played-card ghost-card card-commit';d.dataset.playerId=e.playerId;d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-back-face"><img src="/assets/card_back.webp" alt="verdeckte Karte"></div></div><div class="who">${escapeHtml(e.name)}</div>`;t.append(d);const source=e.playerId===myId?document.querySelector('.hand-card[data-pending-play="1"]'):document.querySelector(`.opponent[data-player-id="${e.playerId}"] .back-fan`);if(source){const sr=source.getBoundingClientRect(),tr=d.getBoundingClientRect();const clone=document.createElement('img');clone.src='/assets/card_back.webp';clone.className='flying-card';clone.style.left=`${sr.left+sr.width/2-40}px`;clone.style.top=`${sr.top+sr.height/2-56}px`;document.body.append(clone);d.style.opacity='0';requestAnimationFrame(()=>{clone.style.transform=`translate(${tr.left+tr.width/2-(sr.left+sr.width/2)}px,${tr.top+tr.height/2-(sr.top+sr.height/2)}px) rotate(${e.playerId===myId?-10:10}deg) scale(.9)`;clone.style.opacity='.25'});setTimeout(()=>{clone.remove();d.style.opacity='1'},560)}beep(340,.06)}
 function revealCards(e){
   lastReveal=e.entries;const t=$('#tableCards');
@@ -341,6 +341,85 @@ function stopDiceAnimation(e){
 function showSpecialBurst(e){specialSound();const overlay=document.createElement('div');overlay.className='special-burst';overlay.innerHTML=`<div class="special-burst-card"><div class="magic-ring"></div><img src="${e.card.image}" alt=""><strong>${escapeHtml(e.name)}</strong><span>${e.card.useIcon||'✦'} ${escapeHtml(e.card.useLabel||'Spezialkarte')}</span></div>`;document.body.append(overlay);setTimeout(()=>overlay.classList.add('active'),20);setTimeout(()=>overlay.classList.add('fade'),1150);setTimeout(()=>overlay.remove(),1650)}
 socket.on('specialPlayed',showSpecialBurst);
 
+// === Round loser effects: all 12 approved variants ===
+const LOSER_EFFECTS=['fall','melt','glass','portal','xmark','shadow','spin','meteor','dust','heart','smolder','cookie'];
+function loserFxSound(type){
+  ensureAudio();
+  const seq={
+    fall:[[150,.10,.035,'triangle',0],[95,.25,.04,'sine',.10]],
+    melt:[[310,.08,.02,'sine',0],[260,.12,.02,'sine',.08],[205,.16,.02,'sine',.18]],
+    glass:[[760,.05,.035,'square',0],[980,.04,.025,'square',.06],[530,.08,.025,'triangle',.12]],
+    portal:[[240,.18,.025,'sine',0],[360,.22,.03,'triangle',.12],[520,.26,.025,'sine',.25]],
+    xmark:[[120,.10,.05,'square',0],[95,.18,.04,'square',.12]],
+    shadow:[[170,.18,.025,'sine',0],[120,.35,.03,'sine',.18]],
+    spin:[[330,.08,.02,'triangle',0],[450,.08,.02,'triangle',.08],[620,.10,.02,'triangle',.16]],
+    meteor:[[105,.16,.075,'square',.32],[62,.55,.07,'sine',.38],[420,.09,.035,'triangle',.34]],
+    dust:[[520,.05,.016,'sine',0],[680,.05,.016,'sine',.08],[860,.07,.016,'triangle',.16]],
+    heart:[[320,.12,.025,'sine',0],[220,.22,.035,'triangle',.20]],
+    smolder:[[135,.12,.028,'sawtooth',0],[153,.12,.028,'sawtooth',.055],[171,.12,.028,'sawtooth',.11],[82,.55,.06,'triangle',.24]],
+    cookie:[[250,.035,.027,'square',.25],[275,.035,.027,'square',.49],[300,.035,.027,'square',.73],[325,.035,.027,'square',.97]]
+  }[type]||[];
+  seq.forEach(([f,d,v,w,o])=>tone(f,d,v,w,o));
+}
+function clearLoserEffects(){
+  document.querySelectorAll('#tableCards .round-loser-fx').forEach(el=>{
+    LOSER_EFFECTS.forEach(t=>el.classList.remove(`loser-${t}`));
+    el.classList.remove('round-loser-fx');
+    el.querySelectorAll('.loser-effect-layer,.cookie-bite,.cookie-crumb,.heart-clone').forEach(x=>x.remove());
+  });
+  document.querySelectorAll('#tableCards .round-winner-glow').forEach(el=>el.classList.remove('round-winner-glow'));
+}
+function addRain(layer){for(let i=0;i<20;i++){const r=document.createElement('i');r.className='loser-rain';r.style.left=`${3+i*5}%`;r.style.animationDelay=`${(i%6)*.11}s`;layer.append(r)}}
+function addGlass(layer){
+  const shards=[[-78,-86,-35],[-42,-106,40],[55,-90,72],[90,-35,-80],[-92,28,-120],[88,36,120],[-55,96,55],[48,108,-45]];
+  shards.forEach(([x,y,r])=>{const s=document.createElement('i');s.className='loser-glass-shard';s.style.setProperty('--sx',`${x}px`);s.style.setProperty('--sy',`${y}px`);s.style.setProperty('--sr',`${r}deg`);layer.append(s)})
+}
+function addDust(layer){
+  for(let i=0;i<48;i++){const p=document.createElement('i');p.className='loser-dust';const a=Math.PI*2*i/48,rad=62+(i%8)*8;p.style.setProperty('--dx',`${Math.cos(a)*rad}px`);p.style.setProperty('--dy',`${Math.sin(a)*rad}px`);p.style.animationDelay=`${(i%9)*.025}s`;layer.append(p)}
+  const pile=document.createElement('i');pile.className='loser-dust-pile';layer.append(pile)
+}
+function addCookieBites(el){
+  const bites=[['right','8%',.12],['right','30%',.38],['right','55%',.64],['right','78%',.90],['bottom','72%',1.16],['bottom','42%',1.42],['bottom','12%',1.68],['left','66%',1.94],['left','38%',2.18],['left','12%',2.42]];
+  bites.forEach(([side,pos,delay],i)=>{
+    const b=document.createElement('i');b.className='cookie-bite';b.style.setProperty('--bite-delay',`${delay}s`);b.dataset.side=side;
+    if(side==='right'||side==='left'){b.style.top=pos;b.style[side]='-20px'}else{b.style.left=pos;b.style.bottom='-20px'}
+    el.append(b);
+    for(let c=0;c<3;c++){const crumb=document.createElement('i');crumb.className='cookie-crumb';crumb.style.setProperty('--crumb-delay',`${delay+.03+c*.04}s`);crumb.style.setProperty('--crumb-x',`${(c-1)*15+(i%2?7:-6)}px`);crumb.style.setProperty('--crumb-r',`${(i*41+c*33)%180-90}deg`);if(side==='right'||side==='left'){crumb.style.top=`calc(${pos} + ${c*5}px)`;crumb.style[side]='3px'}else{crumb.style.left=`calc(${pos} + ${c*5}px)`;crumb.style.bottom='3px'}el.append(crumb)}
+  });
+}
+function addHeartClones(el,layer){
+  const front=el.querySelector('.card-front-face');if(!front)return;
+  const left=front.cloneNode(true),right=front.cloneNode(true);left.classList.add('heart-clone','heart-left');right.classList.add('heart-clone','heart-right');layer.append(left,right)
+}
+function playLoserEffect(el,type){
+  if(!el)return;
+  el.classList.add('round-loser-fx',`loser-${type}`);
+  const layer=document.createElement('div');layer.className='loser-effect-layer';
+  if(type==='fall'){layer.innerHTML='<strong class="loser-word">VERLOREN</strong>';el.append(layer)}
+  else if(type==='melt'){layer.innerHTML='<span class="loser-rain-cloud">☁</span><span class="loser-melt-puddle"></span>';addRain(layer);el.append(layer)}
+  else if(type==='glass'){layer.innerHTML='<span class="loser-cracks"></span>';addGlass(layer);el.append(layer)}
+  else if(type==='portal'){layer.innerHTML='<span class="loser-portal-ring"></span>';el.append(layer)}
+  else if(type==='xmark'){layer.innerHTML='<strong class="loser-big-x">✕</strong>';el.append(layer)}
+  else if(type==='shadow'){layer.innerHTML='<span class="loser-shadow-fade"></span>';el.append(layer)}
+  else if(type==='spin'){layer.innerHTML='<span class="loser-spin-flash"></span>';el.append(layer)}
+  else if(type==='meteor'){
+    layer.innerHTML='<img class="loser-meteor-art" src="/assets/animations/meteor.webp" alt=""><span class="loser-impact"></span><span class="loser-burn-glow meteor-burn"></span><span class="loser-ember ember-a"></span><span class="loser-ember ember-b"></span><span class="loser-ember ember-c"></span>';el.append(layer)
+  }else if(type==='dust'){addDust(layer);el.append(layer)}
+  else if(type==='heart'){layer.innerHTML='<span class="loser-heart-symbol">💔</span>';addHeartClones(el,layer);el.append(layer)}
+  else if(type==='smolder'){
+    layer.innerHTML='<img class="loser-smolder-art" src="/assets/animations/smolder-fire.webp" alt=""><img class="loser-fire-stream" src="/assets/animations/fire-stream.webp" alt=""><span class="loser-burn-glow"></span>';el.append(layer)
+  }else if(type==='cookie'){addCookieBites(el)}
+  loserFxSound(type);
+}
+function playRoundResultEffects(winnerId){
+  clearLoserEffects();
+  const winner=document.querySelector(`#tableCards .played-card[data-player-id="${winnerId}"]`);winner?.classList.add('round-winner-glow');
+  const losers=(lastReveal||[]).filter(x=>x.pid!==winnerId);
+  const start=(Number(state?.round)||0)%LOSER_EFFECTS.length;
+  losers.forEach((entry,i)=>{const el=document.querySelector(`#tableCards .played-card[data-player-id="${entry.pid}"]`);playLoserEffect(el,LOSER_EFFECTS[(start+i)%LOSER_EFFECTS.length])});
+}
+
+
 let countdownUiTimer=null,selectionUiTimer=null;
 function countdownTickSound(n){
   const base=n===1?520:250+n*32;
@@ -383,7 +462,13 @@ socket.on('cardCommitted',addCommitGhost);
 socket.on('playerSelected',()=>beep(300,.05));
 socket.on('cardAccepted',()=>{$('#roundMessage').textContent='✓ Deine Karte liegt – warte auf die anderen.';beep(360,.06)});
 socket.on('reveal',revealCards);
-socket.on('roundWinner',e=>{stopSelectionTimer();$('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;animateCapture(e.winnerId);beep(1040,.22)});
+socket.on('roundWinner',e=>{
+  stopSelectionTimer();
+  $('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;
+  playRoundResultEffects(e.winnerId);
+  beep(1040,.22);
+  setTimeout(()=>{clearLoserEffects();animateCapture(e.winnerId)},2650);
+});
 socket.on('roundTimeout',e=>{stopSelectionTimer();clearTable();const names=(e.penalties||[]).map(x=>x.name).join(', ');$('#roundMessage').textContent=names?`⏱ ${names} verliert eine Strafkarte. Neue Kategorie!`:'⏱ Zeit abgelaufen – neue Kategorie!';toast(e.message||'Zeit abgelaufen.');beep(190,.20)});
 socket.on('tieStart',e=>setupDice(e,'Gleichstand! Würfeln entscheidet.'));
 socket.on('tieAgain',e=>setupDice(e,'Schon wieder Gleichstand – nochmal würfeln!'));
