@@ -1,24 +1,22 @@
-MLP BATTLE CARDS – PUNKT 2 ARENEN: SICHERER EINZELFIX
+MLP BATTLE CARDS - PUNKT 2 ARENA KORREKTUR
 
-WICHTIG: Nur eine EINZIGE Datei ersetzen:
-  public/style.css
+Dieses Paket enthält NUR eine Ersatzdatei: public/style.css.
+Benutze bitte ausschließlich die Datei im Unterordner public/.
+Bitte NICHT die Sicherung hochladen!
 
-Anleitung:
-1) ZIP herunterladen und entpacken.
-2) NUR die Datei aus public/style.css in deinen GitHub-Ordner public/ hochladen.
-3) Die bestehende Datei überschreiben; sonst NICHTS ersetzen.
-4) Auf das erfolgreiche Render-Deployment warten und Strg+F5 drücken.
-5) Im Match mit PonyBot das Arenabild prüfen.
+1. Entpacke die ZIP.
+2. GitHub -> Repository -> public -> style.css öffnen.
+3. public/style.css aus diesem Paket hochladen/ersetzen.
+4. Render-Deployment abwarten.
+5. Spielseite mit Strg+F5 aktualisieren und eine Runde mit PonyBot starten.
 
-Enthalten sind die vier animierten Arenen direkt in style.css.
-Du musst diesmal KEINE GIFs oder andere Bilddateien hochladen!
+Wichtig: Anders als vorher ist die Jadepalast-Arena jetzt IMMER ein
+sichtbarer Rückfallhintergrund. Wenn das Spiel die gewählte Arena-ID
+kennt, erscheint stattdessen Wald, Steampunk oder Hexentisch.
+Alle 4 Motive sind animierte WebP und benötigen keine Zusatzdateien.
 
-Die funktionierende Punkt-1-Lobby ist vollständig enthalten.
-JS, Server, Cards und Sound werden NICHT geändert.
+Die funktionierende Punkt-1-Kristallhöhlen-Lobby bleibt erhalten.
+Spielmechanik, Karten und JS/Server wurden NICHT geändert.
 
-Zurücksetzen: Falls es trotzdem ein Problem gibt, verwende die
-Datei SICHERUNG_ZUM_ZURUECKSETZEN/style.css als public/style.css.
-Das stellt die vorherige funktionierende Lobby-CSS wieder her.
-
-Hinweis: Der angezeigte Hintergrund wird zu Matchbeginn zufällig vom
-Server ausgewählt, wie zuvor. Pro Match ist daher nur eine Arena zu sehen.
+SICHERUNG/style.css ist die zuvor bestätigte funktionierende
+Wartelobby-CSS für den Fall, dass du zurücksetzen musst.
