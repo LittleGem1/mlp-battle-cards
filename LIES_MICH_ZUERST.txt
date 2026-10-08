@@ -1,37 +1,20 @@
-MLP BATTLE CARDS – VERSION 4: ALLE FIXES, 12 FINISHER, V3 SOUNDS
-=============================================================
-WICHTIG: Du brauchst dein bisheriges komplettes GitHub-Spiel.
-Dieses ZIP ist ein UPDATE, keine neue Website und kein Ersatz für alle Bilddateien.
+MLP BATTLE CARDS – V5 Bugfix-Paket (8. Oktober 2026)
 
-AUF GITHUB:
-1. ZIP entpacken.
-2. server.js und cards.js ins HAUPTVERZEICHNIS des Spiel-Repositories kopieren/ersetzen.
-3. Aus dem ZIP den Ordner public öffnen.
-4. public/index.html, client.js und style.css in den bereits vorhandenen Ordner public kopieren und ersetzen.
-5. public/assets/sounds (alle 28 MP3) und public/assets/animations (3 WebP) hochladen.
-6. public/assets/artifacts enthält alle 3 Sammelbilder und special_back_gold.png.
-7. public/assets/specials_new enthält einige aktualisierte Bilder; vorhandene andere Bilder erhalten!
-8. Commit changes, dann Render auf den neuen Commit deployen.
-9. Spiel mit Strg+F5 / neuem privaten Fenster laden.
+Basis: V4 Komplettupdate. V5 enthaelt alle fuer die aktuelle Vollversion benoetigten Dateien.
 
-ACHTUNG: Lösche NICHT deinen bisherigen public/assets-Ordner!
-Sonst verschwinden die Pony-Karten, Hintergründe und Artefakt-Bilder.
-GitHub Pages allein reicht für dieses Socket.IO-Spiel nicht; der Node/Render-Server muss laufen.
+Behoben / bearbeitet:
+- Spezialkarten: eigener deutlich sichtbarer AUSSPIELEN-Knopf UNTER der Karte (vor der normalen Karte waehrend Auswahl).
+- Handlimit: hoechstens 7 Karten INSGESAMT, einschliesslich Spezialkarten. Normale Nachziehfunktion respektiert dieses Limit.
+- Kristall: zugelassenes V3-Geräusch in einer Schleife, die exakt beim Stoppen des Kristalls endet.
+- Verliereranimationen: zusaetzliche Absicherung gegen fehlende Kartendaten; Keks-Bisse animieren die aktuell verlorene Karte schrittweise mit Canvas.
+- Smolder-/Meteor-/Keks-Original-GIFs liegen als Vergleich unter public/assets/animations/originale-vorschau (zeigen Demo-Karten, nicht fuer den direkten Einsatz als Overlay geeignet).
+- Alle zuvor freigegebenen V3-Audiodateien und Artefakte bleiben enthalten.
 
-NEUER STAND:
-- 2 Ziehstapel: normale Karten und Gold/Spezial/Artefakte.
-- Automatisches Auffüllen bis zum normalen Ziel (6 normale Handkarten, Specials zusätzlich).
-- Ein Timeout nach 30 Sekunden kostet dauerhaft eine Karte (reduziertes Auffüllziel).
-- 6 normale Karten + exakt 1 Spezialkarte zum Start.
-- 3 Artefakte + Sammelleiste rechts, Gewinn bei 3 verschiedenen Artefakten.
-- 2 Goldkarten ansehen, 1 wählen (Artefakte möglich), Spezialfähigkeiten und Bots vorhanden.
-- rotierender facettierter Kategorien-Kristall & Countdown sichtbar.
-- 12 Verliereranimationen, Smolder & Meteor bebildert, mit allen 12 V3 Finisher-Sounds.
-- 28 V3 Sound-Dateien: unverändert übernommen, absichtlich stumme 5 Ereignisse bleiben stumm.
-- Lobby-Musik YouTube pWAP7fIwGnI; Kampfmusik YouTube 9gBTKiVqprE.
-- Drei Startaccessoires Changeling-Flügel, Ballons und Süßigkeiten jederzeit frei.
+Installation:
+1. Beide V5-Teile herunterladen und ENTpacken (nicht die Zips hochladen).
+2. Beider Inhalte in einen gemeinsamen Ordner legen.
+3. Alle enthaltenen Dateien an den gleichen relativen Pfaden im GitHub-Repository hochladen/ersetzen.
+4. Andere vorhandene Assets in GitHub nicht loeschen.
+5. GitHub committen, Render neu starten und Spiel im Browser aktualisieren.
 
-HINWEIS ZUR PRÜFUNG:
-Dieses Update wird durch automatisierte Datei- und Code-Tests geprüft.
-Eine echte Mehrspielerpartie auf deinem Live-Render-Server ist aus dieser Umgebung nicht testbar.
-Falls Musik im Browser nicht beginnt: einmal ins Spiel klicken / Musik an und Lautstärke prüfen.
+Hinweis: Das sind Code-/Browsertests, keine Garantie fuer alle Szenarien im produktiven Mehrspielermodus.

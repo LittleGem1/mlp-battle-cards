@@ -3351,3 +3351,31 @@ body:has(#game .hand:not(.large-hand)) .arena{padding-bottom:230px!important;}
 #finisherOverlay .v4-bite:nth-child(2){top:30%;left:5%}#finisherOverlay .v4-bite:nth-child(3){top:75%;left:75%}#finisherOverlay .v4-bite:nth-child(4){top:4%;left:45%}#finisherOverlay .v4-bite:nth-child(5){top:90%;left:25%}
 @keyframes v4Nibble{to{opacity:.75}}
 @media(prefers-reduced-motion:reduce){#finisherOverlay.v4-finisher *{animation-duration:.4s!important}}
+
+/* === V5: Spezialkarten-Aktion unter der Karte, immer erreichbar === */
+#game .hand{height:270px!important;padding-bottom:68px!important;padding-top:14px!important;overflow:visible!important;align-items:flex-end!important}
+#game .hand-card.special{overflow:visible!important;z-index:12}
+#game .hand-card.special:hover,#game .hand-card.special:focus-within{z-index:300!important}
+#game .hand-card.special .special-actions{position:absolute!important;top:calc(100% + 7px)!important;bottom:auto!important;left:50%!important;transform:translateX(-50%)!important;z-index:9999!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:4px!important;min-width:105px!important;width:max-content!important;max-width:135px!important;pointer-events:auto!important}
+#game .hand-card.special .special-actions button{display:block!important;position:static!important;min-height:28px!important;padding:5px 10px!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;border-radius:8px!important;white-space:nowrap!important;font-size:12px!important;line-height:1.2!important}
+#game .hand-card.special .special-actions .special-use{background:linear-gradient(120deg,#7549e3,#bf3ec8)!important;color:#fff!important;border:1px solid #f2bfff!important;box-shadow:0 0 12px #ca6cf877!important}
+#game .hand-card.special .special-actions .special-use:disabled{background:#4f4667!important;opacity:.6!important;cursor:not-allowed!important}
+@media(max-width:750px){#game .hand{height:250px!important;padding-bottom:70px!important}#game .hand-card.special .special-actions button{font-size:11px!important}}
+/* === V5: echtes Biss-für-Biss auf der tatsächlich ausgespielten Karte === */
+#finisherOverlay.stage-cookie .v4-cookie .finisher-card-image{animation:none!important}
+#finisherOverlay.stage-cookie .v4-cookie .cake-bite-canvas{width:100%!important;height:auto!important;display:block!important;position:relative!important;z-index:5!important;border-radius:16px!important;box-shadow:0 14px 30px rgba(0,0,0,.5)}
+#finisherOverlay.stage-cookie .v4-cookie .real-bite-crumbs{position:absolute;z-index:8;pointer-events:none}
+#finisherOverlay.stage-cookie .v4-cookie .real-bite-crumbs i{display:inline-block;width:7px;height:7px;margin:3px;border-radius:2px;background:#e6b97a;animation:crumb-fly .9s ease-out forwards}
+@keyframes crumb-fly{to{opacity:0;transform:translateY(45px) rotate(230deg)}}
+#finisherOverlay.stage-cookie .v4-cookie .cake-final-crumble{animation:cookie-last-crumb .55s forwards}
+@keyframes cookie-last-crumb{to{opacity:0;transform:scale(.12) rotate(25deg);filter:blur(12px)}}
+/* Make all 12 finisher effects truly visible, even in newer browsers. */
+#finisherOverlay.v4-finisher .v4-overlay-effect{z-index:8!important}
+
+/* Higher specificity than previous responsive hand layout, including its !important paddings. */
+#game .hand:not(.large-hand){height:auto!important;min-height:275px!important;padding:36px 14px 78px!important;overflow:visible!important;align-items:flex-end!important;justify-content:center!important}
+#game .hand:not(.large-hand) .hand-card.special{overflow:visible!important}
+#game .hand:not(.large-hand) .hand-card.special .special-actions{pointer-events:auto!important}
+@media(max-width:760px){#game .hand:not(.large-hand){padding:25px 12px 80px!important;min-height:245px!important;max-height:65vh!important;overflow-y:auto!important}}
+/* Prevent hover animation from moving the Special button away from the mouse while clicking. */
+#game .hand:not(.large-hand) .hand-card.special:hover,#game .hand:not(.large-hand) .hand-card.special:focus-within{transform:none!important;filter:none!important;z-index:300!important}

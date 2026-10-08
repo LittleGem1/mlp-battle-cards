@@ -1,0 +1,5 @@
+MLP Battle Cards V5 – Teil 1 von 2
+Dieses Archiv separat entpacken und danach die Inhalte beider Archive zu den gleichen Ordnerpfaden zusammenfuehren.
+Ins GitHub-Repository kommen die entpackten Dateien, NICHT die ZIP-Dateien.
+V4-Restdateien und sonstige existierende public/assets-Dateien nicht komplett loeschen.
+

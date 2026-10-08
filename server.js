@@ -14,6 +14,7 @@ const CATEGORIES = ['strength','speed','energy','magic'];
 const CATEGORY_LABEL = { strength:'Stärke', speed:'Schnelligkeit', energy:'Energie', magic:'Magie' };
 const CATEGORY_ICON = { strength:'🏋️', speed:'⚡', energy:'🔋', magic:'⭐' };
 const NORMAL_HAND_TARGET = 6;
+const MAX_TOTAL_HAND = 7; // V5: Maximum inklusive aller Spezialkarten
 const NORMAL_COPIES = 3;
 const REWARD_SPECIAL_COPIES = 2;
 const REWARD_ARTIFACT_COPIES = 2;
@@ -65,7 +66,22 @@ function publicState(r){
     }))
   };
 }
+function enforceHandLimit(r,p){
+  if(!p || !Array.isArray(p.hand))return;
+  while(p.hand.length>MAX_TOTAL_HAND){
+    // Newly drawn normals are at the end, but special rewards must survive.
+    let idx=-1;
+    for(let i=p.hand.length-1;i>=0;i--){
+      if(byId[p.hand[i]]?.type==='normal'){idx=i;break;}
+    }
+    if(idx<0)idx=p.hand.length-1;
+    const [excess]=p.hand.splice(idx,1);
+    if(byId[excess]?.type==='normal')r.normalDeck.unshift(excess);
+    else if(byId[excess]?.type==='special')r.rewardDeck.unshift(excess);
+  }
+}
 function sendState(r){
+  for(const p of roomPlayers(r))enforceHandLimit(r,p);
   io.to(r.code).emit('roomState',publicState(r));
   for(const p of roomPlayers(r)){
     if(!p.isBot)io.to(p.id).emit('hand',p.hand.map(id=>byId[id]).filter(Boolean));
@@ -111,6 +127,9 @@ function drawNormal(r,count=1){
     if(id)out.push(id);
   }
   return out;
+}
+function drawNormalForHand(r,p,count=1){
+  return drawNormal(r,Math.max(0,Math.min(count,MAX_TOTAL_HAND-p.hand.length)));
 }
 function drawSpecialOnly(r){
   recycleRewardDeck(r);
@@ -486,14 +505,15 @@ function refillNormalHands(r){
     if(p.surrendered)continue;
     const have=p.hand.filter(id=>byId[id]?.type==='normal').length;
     const cap=Math.max(0,NORMAL_HAND_TARGET-(p.timeoutPenaltyCount||0));
-    const need=Math.max(0,cap-have);
+    // Never refill past 7 total cards, including specials won from the gold deck.
+    const need=Math.max(0,Math.min(cap-have,MAX_TOTAL_HAND-p.hand.length));
     const drawn=drawNormal(r,need);
     if(drawn.length){
       p.hand.push(...drawn);
       report.push({playerId:p.id,name:p.name,cards:drawn.map(id=>byId[id]).filter(Boolean)});
     }
   }
-  if(report.length)io.to(r.code).emit('handRefill',{players:report,target:NORMAL_HAND_TARGET});
+  if(report.length)io.to(r.code).emit('handRefill',{players:report,target:MAX_TOTAL_HAND});
   return report;
 }
 function hasAllArtifacts(p){
@@ -842,7 +862,11 @@ function settleRound(r,winnerId){
   const ids=Object.values(r.played).flatMap(playedCardIds),winner=r.players.get(winnerId);if(!winner)return;
   r.phase='result';
   const finisher=pickFinisher(r),duration=4200;
-  io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:ids.map(id=>byId[id]).filter(Boolean),finisher,duration});
+  io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:ids.map(id=>byId[id]).filter(Boolean),finisher,duration,
+    revealEntries:Object.entries(r.played).map(([pid,entry])=>{
+      const p=r.players.get(pid),cardId=playedCardIds(entry)[0];
+      return {pid,name:p?.name||'Spieler',card:byId[cardId]};
+    }).filter(x=>x.card)});
   sendState(r);
   setTimeout(()=>finishRoundCycle(r,winnerId,ids),duration+220);
 }
@@ -1122,9 +1146,9 @@ io.on('connection',socket=>{
       r.roundBuff[p.id]={...(r.roundBuff[p.id]||{}),strength:(r.roundBuff[p.id]?.strength||0)+1};
       socket.emit('specialDone',{text:'+1 Stärke.'});
     }else if(effect==='pinkie'){
-      const d=drawNormal(r,1);p.hand.push(...d);socket.emit('specialDone',{text:d.length?'1 normale Karte gezogen.':'Keine Karte verfügbar.'});
+      const d=drawNormalForHand(r,p,1);p.hand.push(...d);socket.emit('specialDone',{text:d.length?'1 normale Karte gezogen.':'Keine Karte verfügbar.'});
     }else if(effect==='twilight'){
-      const d=drawNormal(r,2);p.hand.push(...d);socket.emit('specialDone',{text:`${d.length} normale Karten gezogen.`});
+      const d=drawNormalForHand(r,p,2);p.hand.push(...d);socket.emit('specialDone',{text:`${d.length} normale Karten gezogen.`});
     }else if(effect==='fluttershy'){
       const d=drawNormal(r,2);socket.data.pendingFlutter={room:r.code,choices:d};
       socket.emit('flutterChoices',{cards:d.map(id=>byId[id]).filter(Boolean)});

@@ -734,7 +734,8 @@ function buildHandCard(c,me,normals,blockedId){
     const use=document.createElement('button');
     use.className='special-use';
     use.type='button';
-    use.textContent='✨ Einsetzen';
+    use.textContent='✨ Ausspielen';
+    use.setAttribute('aria-label',`${c.name} als Spezialkarte ausspielen`);
     use.addEventListener('click',e=>{
       e.stopPropagation();ensureAudio();
       if(state?.phase!=='select')return toast('Spezialkarten nur während der Auswahl.');
@@ -744,6 +745,7 @@ function buildHandCard(c,me,normals,blockedId){
 
     actions.append(read,use);
     el.append(actions);
+    if(state?.phase!=='select'||me?.selected){use.disabled=true;use.title='Spezialkarte während der Kartenauswahl und vor der normalen Karte spielen';}
 
     // Bei Spezialkarten ist ein normaler Klick zum Lesen da – gespielt wird
     // ausschließlich über den deutlichen „Einsetzen“-Button.
@@ -769,8 +771,8 @@ function renderHand(){
   const activeCategory=state?.category;
   const hasCategory=['strength','speed','energy','magic'].includes(activeCategory);
 
-  // Bis 10 Karten bleibt die gewohnte Handansicht erhalten.
-  if(hand.length<=10){
+  // V5: Die Hand ist serverseitig auf maximal sieben Karten begrenzt.
+  if(hand.length<=7){
     wrap.classList.remove('large-hand');
     for(const c of hand)wrap.append(buildHandCard(c,me,normals,blockedId));
     return;
@@ -1075,7 +1077,20 @@ function categorySound(cat){
   else if(cat==='energy'){tone(250,.15,.04,'sawtooth');tone(500,.2,.035,'triangle',.1)}
   else {tone(520,.12,.04,'sine');tone(780,.18,.045,'sine',.08);tone(1040,.2,.035,'triangle',.18)}
 }
-function crystalSpinSound(){playSfx('kristall',{gain:.8,cooldown:1200})}
+let crystalSpinAudio=null;
+function stopCrystalSpinSound(){
+  if(crystalSpinAudio){crystalSpinAudio.pause();crystalSpinAudio.currentTime=0;crystalSpinAudio=null;}
+}
+function crystalSpinSound(){
+  stopCrystalSpinSound();
+  const file=BATTLE_SFX.kristall;if(!file)return;
+  try{
+    const audio=new Audio('/assets/sounds/'+file);
+    audio.loop=true;audio.volume=Math.max(0,Math.min(1,battleSoundVolume*.8));
+    crystalSpinAudio=audio;
+    audio.play().catch(()=>{});
+  }catch(err){console.warn('Kristallton nicht abspielbar:',err)}
+}
 function crystalLandSound(){playSfx('vergleich',{gain:.6,cooldown:1200})}
 let roundIntroActiveKey='';
 function categoryCrystalPortal(){
@@ -1105,6 +1120,7 @@ function categoryCrystalPortal(){
   return portal;
 }
 function closeCategoryCrystal(){
+  stopCrystalSpinSound();
   const p=document.getElementById('categoryCrystalPortal');
   if(p){p.classList.remove('active');p.setAttribute('aria-hidden','true');}
   roundIntroActiveKey='';
@@ -1147,6 +1163,7 @@ function showRoundIntro(e){
   setTimeout(()=>{
     if(roundIntroActiveKey!==key)return;
     crystal?.classList.remove('spinning');
+    stopCrystalSpinSound();
     result?.classList.add('show');
     $('#categoryIcon').textContent=e.icon||ui[0];
     $('#categoryText').textContent=e.label||ui[1];
@@ -1359,9 +1376,7 @@ function setupCakeBites(){
         setTimeout(()=>{
           eraseCakeBite(ctx,w,h,b);
           popCakeCrumbs(shell,b.xp,b.yp);
-          // Each visible bite gets a soft chomp + crumb sound.
-          tone(102+i*7,.075,.06,'triangle');
-          noiseBurst(.055,.035,.01);
+          // Der freigegebene V3-Crunch wird zu Beginn separat abgespielt.
           canvas.classList.remove('bite-pulse');
           void canvas.offsetWidth;
           canvas.classList.add('bite-pulse');
@@ -1378,7 +1393,8 @@ function playFinisher(e){
   const kind=BATTLE_SFX[e.finisher]?e.finisher:'dust';
   const overlay=$('#finisherOverlay'),winnerBox=$('#finisherWinner'),loserBox=$('#finisherLosers'),headline=$('#finisherHeadline'),impact=$('#finisherImpact');
   if(!overlay||!winnerBox||!loserBox)return animateCapture(e.winnerId);
-  const winnerEntry=lastReveal.find(x=>x.pid===e.winnerId),losers=lastReveal.filter(x=>x.pid!==e.winnerId);
+  const available=lastReveal.length ? lastReveal : (e.revealEntries||[]);
+  const winnerEntry=available.find(x=>x.pid===e.winnerId),losers=available.filter(x=>x.pid!==e.winnerId);
   const names={fall:'KARTE FÄLLT',melt:'REGEN & ZERFLIESSEN',glass:'GLASBRUCH',portal:'PORTAL',xmark:'VERLOREN',shadow:'SCHATTEN',spin:'WEGWIRBELN',meteor:'METEORIT',dust:'MAGISCHER STAUB',heart:'GEBROCHENES HERZ',smolder:'SMOLDER',cookie:'KEKS-BISSE'};
   headline.textContent=(names[kind]||'FINISHER')+'!';
   winnerBox.innerHTML=winnerEntry?`<div class="finisher-card-shell winner-card"><span class="finisher-tag">🏆 ${escapeHtml(winnerEntry.name)}</span><img src="${winnerEntry.card.image}" alt="${escapeHtml(winnerEntry.card.name)}"></div>`:'';
@@ -1398,7 +1414,10 @@ function playFinisher(e){
   if(kind==='portal')loserBox.querySelectorAll('.v4-overlay-effect').forEach(x=>x.innerHTML='<span class="v4-portal"></span>');
   if(kind==='xmark')loserBox.querySelectorAll('.v4-overlay-effect').forEach(x=>x.innerHTML='<span class="v4-x">✕</span>');
   if(kind==='dust')loserBox.querySelectorAll('.v4-overlay-effect').forEach(x=>x.innerHTML=Array.from({length:22},(_,i)=>`<i class="v4-dust" style="--dx:${(i-10)*13}px;--delay:${(i*.05).toFixed(2)}s"></i>`).join(''));
-  if(kind==='cookie')loserBox.querySelectorAll('.v4-overlay-effect').forEach(x=>x.innerHTML=Array.from({length:5},(_,i)=>`<span class="v4-bite" style="--delay:${(.38+i*.56).toFixed(2)}s"></span>`).join(''));
+  if(kind==='cookie'){
+    loserBox.querySelectorAll('.v4-cookie').forEach(x=>x.classList.add('finisher-cakebites'));
+    setupCakeBites();
+  }
   playSfx(kind,{gain:1,cooldown:350});
   playSfx('sieger_glanz',{gain:.40,cooldown:600});
   const duration=Math.max(4100,e.duration||4200);
