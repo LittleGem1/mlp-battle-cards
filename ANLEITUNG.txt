@@ -1,16 +1,6 @@
-MLP Battle Cards – kleines Arena-Update
-
-Dieses Update enthält NUR die beiden bearbeiteten Dateien aus dem Spiel:
-public/index.html
-public/style.css
-
-ANLEITUNG:
-1. ZIP herunterladen und entpacken.
-2. Im GitHub-Repository LittleGem1/mlp-battle-cards in den Ordner public gehen.
-3. Dort index.html und style.css mit den Dateien aus diesem ZIP ersetzen.
-4. Änderungen committen und das Deployment abwarten.
-5. Spielseite mit Strg + F5 neu laden.
-
-Bitte nicht versehentlich die index.html und style.css im Projekt-Hauptordner ersetzen; betroffen ist public/.
-Originalgrafiken bleiben im Repository; sie müssen NICHT neu hochgeladen werden.
-Hinweis: Live-Multiplayer-Test auf Render wurde nicht durchgeführt.
+MLP Battle Cards Arena Restore
+1. ZIP entpacken.
+2. Dateien public/style.css und public/index.html in GitHub im Ordner public ersetzen.
+3. Aenderungen committen, Render-Deploy abwarten, Strg+F5.
+4. Sichere vorher die alten beiden Dateien.
+Dieses Update passt nur die Arena-Darstellung an.
