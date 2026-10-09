@@ -1,115 +1,136 @@
-/* =========================================================
-   MLP Battle Cards – Harter Arena-Ersatz
-   DIESE EINE DATEI hochladen/ersetzen:
-   public/arena_visuals.css
+/* MLP Battle Cards – Arena-Reparatur, 10.10.2026
+   Ersatz fuer public/arena_visuals.css.
+   Vier bestehende Arena-Motive und Overlays bleiben erhalten.
+   Spielflaeche: vollbreit; Spieler-/Mittelbereich: transparent. */
 
-   Zweck:
-   - alte Arena-Hintergründe komplett überschreiben
-   - alte Arena-Pseudoeffekte deaktivieren
-   - alte in #arenaVfx erzeugte Einzelteile verstecken
-   - nur noch neue Stillbilder + neue Overlay-Dateien zeigen
-   ========================================================= */
-
-/* Arena-Container selbst immer als Hintergrundträger verwenden */
 #game.screen.active > .arena,
 body.scene-game #game.screen.active > .arena,
 #game .arena {
-  background-position: center center !important;
-  background-size: cover !important;
-  background-repeat: no-repeat !important;
+  background-position:center center !important;
+  background-size:cover !important;
+  background-repeat:no-repeat !important;
 }
-
-/* VFX-Ebene als reines Overlay */
 #game.screen.active > .arena > #arenaVfx,
 body.scene-game #game.screen.active > .arena > #arenaVfx,
 #game .arena #arenaVfx {
-  position: absolute !important;
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  overflow: hidden !important;
-  pointer-events: none !important;
-  z-index: 1 !important;
-  background-position: center center !important;
-  background-size: cover !important;
-  background-repeat: no-repeat !important;
-  background-color: transparent !important;
-  filter: none !important;
-  box-shadow: none !important;
+  position:absolute !important;
+  inset:0 !important;
+  width:100% !important;
+  height:100% !important;
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  overflow:hidden !important;
+  pointer-events:none !important;
+  z-index:1 !important;
+  background-position:center center !important;
+  background-size:cover !important;
+  background-repeat:no-repeat !important;
+  background-color:transparent !important;
+  filter:none !important;
+  box-shadow:none !important;
 }
-
-/* Alles alte in arenaVfx verstecken */
-#game .arena #arenaVfx > * { display: none !important; }
-
-/* Alte Pseudoeffekte komplett aus */
+#game .arena #arenaVfx > * {display:none !important}
 #game .arena::before,
 #game .arena::after,
 #game .arena #arenaVfx::before,
 #game .arena #arenaVfx::after {
-  content: none !important;
-  display: none !important;
-  background: none !important;
-  background-image: none !important;
-  animation: none !important;
-  box-shadow: none !important;
-  filter: none !important;
+  content:none !important;
+  display:none !important;
+  background:none !important;
+  background-image:none !important;
+  animation:none !important;
+  box-shadow:none !important;
+  filter:none !important;
 }
-
-/* ================= Arena 1 – Jadepalast ================= */
+/* Originalarenen unveraendert */
 #game .arena.arena-jade_palace,
 #game .arena[data-vfx="jade_palace"],
 body.scene-game #game.screen.active > .arena.arena-jade_palace,
 body.scene-game #game.screen.active > .arena[data-vfx="jade_palace"] {
-  background: url('/assets/backgrounds/arena_1_jadepalast_still.png') center center / cover no-repeat !important;
+  background:url('/assets/backgrounds/arena_1_jadepalast_still.png') center center / cover no-repeat !important;
 }
 #game .arena.arena-jade_palace #arenaVfx,
 #game .arena[data-vfx="jade_palace"] #arenaVfx,
 body.scene-game #game.screen.active > .arena.arena-jade_palace > #arenaVfx,
 body.scene-game #game.screen.active > .arena[data-vfx="jade_palace"] > #arenaVfx {
-  background: url('/assets/backgrounds/arena_1_blaetter_overlay.webp') center center / cover no-repeat !important;
+  background:url('/assets/backgrounds/arena_1_blaetter_overlay.webp') center center / cover no-repeat !important;
 }
-
-/* ================= Arena 2 – Magischer Wald ================= */
 #game .arena.arena-whispering_forest,
 #game .arena[data-vfx="whispering_forest"],
 body.scene-game #game.screen.active > .arena.arena-whispering_forest,
 body.scene-game #game.screen.active > .arena[data-vfx="whispering_forest"] {
-  background: url('/assets/backgrounds/arena_2_wald_still.png') center center / cover no-repeat !important;
+  background:url('/assets/backgrounds/arena_2_wald_still.png') center center / cover no-repeat !important;
 }
 #game .arena.arena-whispering_forest #arenaVfx,
 #game .arena[data-vfx="whispering_forest"] #arenaVfx,
 body.scene-game #game.screen.active > .arena.arena-whispering_forest > #arenaVfx,
 body.scene-game #game.screen.active > .arena[data-vfx="whispering_forest"] > #arenaVfx {
-  background: url('/assets/backgrounds/arena_2_blaetter_overlay.webp') center center / cover no-repeat !important;
+  background:url('/assets/backgrounds/arena_2_blaetter_overlay.webp') center center / cover no-repeat !important;
 }
-
-/* ================= Arena 3 – Steampunk ================= */
 #game .arena.arena-steampunk_works,
 #game .arena[data-vfx="steampunk_works"],
 body.scene-game #game.screen.active > .arena.arena-steampunk_works,
 body.scene-game #game.screen.active > .arena[data-vfx="steampunk_works"] {
-  background: url('/assets/backgrounds/arena_3_steampunk_still.png') center center / cover no-repeat !important;
+  background:url('/assets/backgrounds/arena_3_steampunk_still.png') center center / cover no-repeat !important;
 }
 #game .arena.arena-steampunk_works #arenaVfx,
 #game .arena[data-vfx="steampunk_works"] #arenaVfx,
 body.scene-game #game.screen.active > .arena.arena-steampunk_works > #arenaVfx,
 body.scene-game #game.screen.active > .arena[data-vfx="steampunk_works"] > #arenaVfx {
-  background: url('/assets/backgrounds/arena_3_zahnraeder_overlay.webp') center center / cover no-repeat !important;
+  background:url('/assets/backgrounds/arena_3_zahnraeder_overlay.webp') center center / cover no-repeat !important;
 }
-
-/* ================= Arena 4 – Hexentisch ================= */
 #game .arena.arena-witchs_table,
 #game .arena[data-vfx="witchs_table"],
 body.scene-game #game.screen.active > .arena.arena-witchs_table,
 body.scene-game #game.screen.active > .arena[data-vfx="witchs_table"] {
-  background: url('/assets/backgrounds/arena_4_hexentisch_still.png') center center / cover no-repeat !important;
+  background:url('/assets/backgrounds/arena_4_hexentisch_still.png') center center / cover no-repeat !important;
 }
 #game .arena.arena-witchs_table #arenaVfx,
 #game .arena[data-vfx="witchs_table"] #arenaVfx,
 body.scene-game #game.screen.active > .arena.arena-witchs_table > #arenaVfx,
 body.scene-game #game.screen.active > .arena[data-vfx="witchs_table"] > #arenaVfx {
-  background: url('/assets/backgrounds/arena_4_hexenkessel_overlay.webp') center center / cover no-repeat !important;
+  background:url('/assets/backgrounds/arena_4_hexenkessel_overlay.webp') center center / cover no-repeat !important;
 }
+
+/* FIX: Keine dunkelblauen freien Flaechen um die Arena. */
+body.scene-game {margin:0 !important; width:100% !important; overflow-x:hidden !important}
+body.scene-game #game.screen.active {
+  position:relative !important;
+  display:block !important;
+  width:100% !important;
+  max-width:none !important;
+  min-height:100vh !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:visible !important;
+}
+body.scene-game #game.screen.active > .arena {
+  position:relative !important;
+  box-sizing:border-box !important;
+  width:100% !important;
+  max-width:none !important;
+  min-height:100vh !important;
+  min-height:100dvh !important;
+  margin:0 !important;
+  /* Kein Stretching des Bildes: cover erhaelt das Seitenverhaeltnis. */
+  background-attachment:scroll !important;
+}
+/* Die dunklen Platten aus dem Screenshot verdecken den Arenaboden. */
+body.scene-game #game .arena .opponents,
+body.scene-game #game .arena .opponent,
+body.scene-game #game .arena .center-stage {
+  background:transparent !important;
+  background-image:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  box-shadow:none !important;
+}
+body.scene-game #game .arena .opponents,
+body.scene-game #game .arena .opponent {
+  border-color:transparent !important;
+}
+body.scene-game #game .arena .center-stage {
+  border-color:transparent !important;
+}
+/* Lesbare Buttons, Karten, Namen, Artefakte bewusst nicht ausblenden. */

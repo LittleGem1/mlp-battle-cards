@@ -1,31 +1,27 @@
-MLP Battle Cards – Follow-up Arena Patch
+MLP BATTLE CARDS – ARENA FIX (10.10.2026)
 
-Dieses Paket ist fuer deinen AKTUELLEN Stand mit Arena-Auswahl-Button gedacht.
+Enthalten:
+  arena_visuals.css
 
-Es aendert nur:
-- hoehere Arena-Aufloesung
-- Zaubertisch weiter herausgezoomt
-- Magischer Wald = stilles Einzelbild + ein paar wehende Blaetter
+INSTALLATION AUF GITHUB
+1. ZIP entpacken.
+2. GitHub-Repository LittleGem1/mlp-battle-cards oeffnen.
+3. In den Ordner public wechseln.
+4. Die vorhandene Datei public/arena_visuals.css mit der neuen
+   arena_visuals.css aus dieser ZIP ERSETZEN (nicht die Datei im
+   Hauptordner ersetzen).
+5. Aenderung committen, Render-Deployment abwarten.
+6. Spiel mit STRG + F5 neu laden.
 
-NICHT geaendert:
-- Arena-Auswahl-Button
-- Zufallsauswahl
-- Spielmechanik
-- Kartenlayout
-- Lobby
+Wirkung:
+- Die bisherigen 4 Hintergrundbilder bleiben gleich (kein neues Bild).
+- Die Arena nimmt die gesamte verfuegbare Breite/Hoehe ein.
+- Blaue Flaechen hinter den Gegnern und im Spielfeld werden transparent.
+- Karten, Namen, Buttons und Overlay-Grafiken bleiben sichtbar.
 
-EINBAU:
-1. Diese 4 Dateien nach public/assets/backgrounds/ hochladen/ersetzen:
-   - arena_1_jade_palace.png
-   - arena_2_forest.png
-   - arena_3_steampunk.png
-   - arena_4_alchemy.png
-2. Datei NUR_DIESEN_BLOCK_AN_STYLE_CSS_ANHAENGEN.css oeffnen.
-3. Den kompletten Inhalt GANZ UNTEN an deine aktuelle public/style.css anhaengen.
-   WICHTIG: Nicht die ganze style.css durch eine aeltere Version ersetzen.
-4. Speichern, deploy abwarten, danach Strg+F5.
-
-Hinweis:
-- Fuer den Wald gibt es danach NUR noch das Einzelbild plus wenige Blaetter.
-- Das Wasserglitzern im Wald wird deaktiviert.
-- Der Zaubertisch nutzt ein neues, weiter herausgezoomtes Hintergrundbild.
+WICHTIG:
+Nicht die komplette ZIP als eine Datei nach GitHub hochladen:
+ZIP entpacken und die CSS-Datei an den genannten Pfad ersetzen.
+Diese Aenderung betrifft die Darstellung, keine Karten-/Serverlogik.
+Weil der laufende Render-Build nicht in dieser Umgebung gestartet werden
+konnte, ist die visuelle Wirkung noch nicht live getestet.
