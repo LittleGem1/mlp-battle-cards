@@ -1,0 +1,158 @@
+/* MLP Battle Cards | 5 Finisher Reparaturen – nur stage-heart / cookie / smolder / dust / meteor */
+/* Das Stylesheet wird automatisch aus der aktualisierten client.js geladen. */
+#finisherOverlay.v7-finisher.stage-heart .v7-heart-flask,
+#finisherOverlay.v7-finisher.stage-heart .v7-glass-fragment,
+#finisherOverlay.v7-finisher.stage-heart .v7-heart-crack,
+#finisherOverlay.v7-finisher.stage-meteor .v7-meteor-gif,
+#finisherOverlay.v7-finisher.stage-meteor .v7-meteor-trail,
+#finisherOverlay.v7-finisher.stage-smolder .v7-smolder-gif,
+#finisherOverlay.v7-finisher.stage-dust .v7-dust-particle {display:none!important}
+#finisherOverlay.v7-finisher .fx5-smolder-dragon,
+#finisherOverlay.v7-finisher .fx5-flame-particle,
+#finisherOverlay.v7-finisher .fx5-flame-core,
+#finisherOverlay.v7-finisher .fx5-flame-stream,
+#finisherOverlay.v7-finisher .fx5-flame-impact,
+#finisherOverlay.v7-finisher .fx5-meteor-fly,
+#finisherOverlay.v7-finisher .fx5-meteor-ring,
+#finisherOverlay.v7-finisher .fx5-meteor-flash,
+#finisherOverlay.v7-finisher .fx5-meteor-crater,
+#finisherOverlay.v7-finisher .fx5-impact-particle,
+#finisherOverlay.v7-finisher .fx5-dust-mote,
+#finisherOverlay.v7-finisher .fx5-heart-container,
+#finisherOverlay.v7-finisher .fx5-heart-shard,
+#finisherOverlay.v7-finisher .fx5-heart-flash {position:absolute;pointer-events:none}
+
+/* HEART: distinctly heart-shaped glass potion flask: cracks then splits into 2 halves. */
+#finisherOverlay.stage-heart .fx5-heart-container{z-index:20;left:-10%;top:-15%;width:120%;height:90%;filter:drop-shadow(0 0 20px #f34dbb);animation:fx5HeartEnter 3.8s both}
+#finisherOverlay.stage-heart .fx5-heart-container>div{position:absolute;inset:0;transform-origin:50% 45%}
+#finisherOverlay.stage-heart .fx5-heart-container svg{width:100%;height:100%;display:block}
+#finisherOverlay.stage-heart .fx5-heart-left{clip-path:inset(0 49% 0 0);animation:fx5HeartSplitL 3.8s both}
+#finisherOverlay.stage-heart .fx5-heart-right{clip-path:inset(0 0 0 49%);animation:fx5HeartSplitR 3.8s both}
+#finisherOverlay.stage-heart .fx5-heart-crack{position:absolute;inset:0;opacity:0;animation:fx5HeartCrack 3.8s both}
+#finisherOverlay.stage-heart .fx5-heart-flash{z-index:24;inset:-20%;border-radius:50%;background:radial-gradient(circle,#fff 0%,#ffc8ef 10%,#e44cca77 20%,transparent 53%);opacity:0;animation:fx5HeartLight 3.8s both}
+#finisherOverlay.stage-heart .fx5-heart-shard{z-index:28;left:49%;top:34%;width:14px;height:24px;opacity:0;background:linear-gradient(130deg,#fff,#f6a3fa 40%,#8749de 80%);clip-path:polygon(0 0,100% 12%,76% 100%,19% 68%);filter:drop-shadow(0 0 7px #ff98db);animation:fx5HeartFragment 1.5s calc(1.7s + var(--delay)) both}
+#finisherOverlay.v7-finisher.stage-heart .finisher-card-image{animation:fx5HeartCard 3.4s both!important}
+@keyframes fx5HeartEnter{0%{opacity:0;transform:translateY(-40px) scale(.7)}13%,55%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0}}
+@keyframes fx5HeartCrack{0%,32%{opacity:0}39%,65%{opacity:1}75%,100%{opacity:0}}
+@keyframes fx5HeartSplitL{0%,44%{transform:none;opacity:1}65%{transform:translate(-32%,-14%) rotate(-24deg);opacity:1}100%{transform:translate(-85%,95%) rotate(-94deg);opacity:0}}
+@keyframes fx5HeartSplitR{0%,44%{transform:none;opacity:1}65%{transform:translate(32%,-9%) rotate(25deg);opacity:1}100%{transform:translate(95%,93%) rotate(100deg);opacity:0}}
+@keyframes fx5HeartLight{0%,37%{opacity:0;transform:scale(.1)}44%{opacity:1;transform:scale(.9)}57%,100%{opacity:0;transform:scale(1.7)}}
+@keyframes fx5HeartFragment{0%{transform:none;opacity:0}14%,50%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(.25)}}
+@keyframes fx5HeartCard{0%,52%{opacity:1;filter:none}73%{opacity:.85;filter:brightness(1.7) sepia(.3)}100%{opacity:.02;filter:blur(12px);transform:scale(.7)}}
+
+/* COOKIE: visible upper/central bites; card lifted a little; canvas animates for all 7 bites. */
+#finisherOverlay.v7-finisher.stage-cookie .loser-card{transform:translateY(-18px)!important}
+#finisherOverlay.v7-finisher.stage-cookie .cake-bite-canvas{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;z-index:16!important;object-fit:contain!important;box-shadow:0 13px 30px #0009!important}
+#finisherOverlay.v7-finisher.stage-cookie .real-bite-crumbs{z-index:23!important;display:flex!important;position:absolute!important;transform:translate(-50%,-50%)}
+#finisherOverlay.v7-finisher.stage-cookie .real-bite-crumbs i{width:8px!important;height:8px!important;background:#ffd083!important;box-shadow:0 0 8px #d87b25;animation:fx5CookieCrumb .9s both!important}
+#finisherOverlay.v7-finisher.stage-cookie .real-bite-crumbs i:nth-child(2n){--cx:35px;--cy:-42px}
+#finisherOverlay.v7-finisher.stage-cookie .real-bite-crumbs i:nth-child(3n){--cx:-23px;--cy:24px}
+#finisherOverlay.v7-finisher.stage-cookie .real-bite-crumbs i:nth-child(5n){--cx:18px;--cy:16px}
+@keyframes fx5CookieCrumb{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--cx,-30px),var(--cy,-60px)) rotate(310deg)}}
+
+/* SMOLDER: cropped original dragon (no foreign card), continuously flowing FIRE. */
+#finisherOverlay.v7-finisher.stage-smolder .fx5-smolder-dragon{z-index:28;left:-139%;top:11%;width:133%;height:auto;max-width:none;filter:drop-shadow(0 7px 12px #000c);animation:fx5DragonBob 3.8s both!important}
+#finisherOverlay.v7-finisher.stage-smolder .fx5-flame-stream{z-index:19;left:-56%;top:43%;height:30%;width:195%;transform-origin:left center;background:linear-gradient(90deg,#ff790a,#ff3700 19%,#ffa32a 45%,#ffe978 65%,#ff4d06 85%,transparent);clip-path:polygon(0 26%,13% 3%,28% 35%,36% 0,49% 30%,64% 0,82% 35%,100% 46%,83% 73%,68% 59%,55% 100%,37% 73%,17% 95%);filter:drop-shadow(0 0 17px #ff6e00);animation:fx5FireStream 3.65s .15s both}
+#finisherOverlay.v7-finisher.stage-smolder .fx5-flame-core{z-index:22;left:-35%;top:48%;height:13%;width:160%;transform-origin:left;background:linear-gradient(90deg,#fff3ac,#ffec7c,#fff 43%,#fff5b0 62%,transparent);border-radius:55% 35% 50% 50%;filter:drop-shadow(0 0 13px #ffc600);animation:fx5FireCore 3.5s .3s both}
+#finisherOverlay.v7-finisher.stage-smolder .fx5-flame-impact{z-index:16;inset:8% -30%;opacity:0;background:radial-gradient(circle,#fff2a8 0 10%,#ff7e2f88 34%,transparent 72%);animation:fx5FireImpact 3.7s both}
+#finisherOverlay.v7-finisher.stage-smolder .fx5-flame-particle{z-index:25;left:-30%;top:48%;border-radius:46% 40% 50% 40%;width:var(--size);height:calc(var(--size) * 1.5);background:linear-gradient(#fff9c6,#ffae00 35%,#f64402 75%,transparent);filter:drop-shadow(0 0 7px #ff8b13);opacity:0;animation:fx5FireFlicker 1.05s calc(var(--delay) * -1) linear infinite}
+#finisherOverlay.v7-finisher.stage-smolder .finisher-card-image{animation:fx5SmolderBurn 3.7s .1s forwards!important}
+@keyframes fx5DragonBob{0%{opacity:0;transform:translate(-35px,13px) scale(.75)}13%{opacity:1;transform:translate(0,0) scale(1)}32%{transform:translate(0,-5px) scale(1.02)}66%{opacity:1;transform:translate(3px,4px)}100%{opacity:0;transform:translate(-30px,-14px)}}
+@keyframes fx5FireStream{0%,9%{opacity:0;transform:scaleX(.05) scaleY(.65)}19%{opacity:1;transform:scaleX(.4) scaleY(1.16)}43%{opacity:1;transform:scaleX(1.01) scaleY(.87)}63%{opacity:1;transform:scaleX(1.08) scaleY(1.13)}79%{opacity:.9;transform:scaleX(.95) scaleY(.8)}100%{opacity:0;transform:scaleX(1.25) scaleY(.45)}}
+@keyframes fx5FireCore{0%,14%{opacity:0;transform:scaleX(.1)}40%{opacity:1;transform:scaleX(.95)}64%{opacity:1;transform:scaleX(1.12)}100%{opacity:0;transform:scaleX(1.25)}}
+@keyframes fx5FireFlicker{0%{opacity:0;transform:translate(0,var(--offset)) scale(.35) rotate(20deg)}20%{opacity:1}75%{opacity:1}100%{opacity:0;transform:translate(300px,calc(var(--offset) * .6)) scale(1.65) rotate(240deg)}}
+@keyframes fx5FireImpact{0%,40%{opacity:0;transform:scale(.3)}55%{opacity:1;transform:scale(1.1)}100%{opacity:0;transform:scale(1.7)}}
+@keyframes fx5SmolderBurn{0%,30%{opacity:1;filter:none}57%{opacity:1;filter:sepia(1) saturate(7) brightness(1.35)}84%{opacity:.72;filter:brightness(.3) sepia(1) blur(2px)}100%{opacity:.03;filter:brightness(.1) blur(11px);transform:scale(.85)}}
+
+/* DUST: a real gradually erased image + bright motes; never fade-only invisible. */
+#finisherOverlay.v7-finisher.stage-dust .finisher-card-image{animation:none!important}
+#finisherOverlay.v7-finisher.stage-dust .fx5-dust-canvas{position:absolute!important;z-index:15!important;inset:0;width:100%!important;height:100%!important;object-fit:contain!important;box-shadow:0 13px 32px #0008}
+#finisherOverlay.v7-finisher.stage-dust .fx5-dust-finished{opacity:0}
+#finisherOverlay.v7-finisher.stage-dust .fx5-dust-mote{z-index:18;left:var(--x);top:var(--y);width:var(--size);height:var(--size);opacity:0;border-radius:100%;background:radial-gradient(circle,#fff 0%,#aaf8ff 28%,#fa8eff 65%,transparent 95%);box-shadow:0 0 8px #fff,0 0 19px #8b7cff;animation:fx5SparkDissolve 1.9s var(--delay) both}
+@keyframes fx5SparkDissolve{0%{opacity:0;transform:none}16%{opacity:1;transform:scale(1.2)}55%{opacity:1;transform:translate(calc(var(--dx) * .65),calc(var(--dy) * .65)) scale(1.75)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.2)}}
+
+/* METEOR: physically visible molten boulder crashes into center, 2 shockwaves. */
+#finisherOverlay.v7-finisher.stage-meteor .fx5-meteor-fly{z-index:30;left:50%;top:50%;width:160px;height:160px;filter:drop-shadow(0 0 20px #ff5000);animation:fx5MeteorFly 2.2s both!important}
+#finisherOverlay.v7-finisher.stage-meteor .fx5-meteor-core{z-index:2;position:absolute;left:60px;top:58px;width:78px;height:78px;border-radius:44% 53% 47% 43%;background:radial-gradient(circle at 32% 26%,#fffbc0 0 7%,#ffb734 13%,#e74c12 34%,#7c260b 72%,#270e0b 90%);box-shadow:inset -7px -9px 4px #4e1600,0 0 16px 10px #ff7f21;transform:rotate(30deg);animation:fx5MeteorRotate .55s linear infinite}
+#finisherOverlay.v7-finisher.stage-meteor .fx5-meteor-tail{position:absolute;left:-95px;top:-95px;width:230px;height:220px;transform:rotate(44deg);background:linear-gradient(45deg,transparent 0%,#ff4311 35%,#ffa225 62%,#fffabd 88%);clip-path:polygon(0 0,40% 58%,14% 42%,64% 81%,45% 43%,100% 100%,15% 78%);filter:drop-shadow(0 0 16px #ff8a00);animation:fx5MeteorTail .16s linear infinite alternate}
+#finisherOverlay.v7-finisher.stage-meteor .fx5-meteor-ring{z-index:33;left:50%;top:50%;width:160px;height:160px;border:14px solid #ffd881;box-shadow:0 0 23px #ff740a,inset 0 0 18px #ff6f00;border-radius:50%;opacity:0;animation:fx5MeteorShock 1.75s 1.4s both!important}
+#finisherOverlay.v7-finisher.stage-meteor .fx5-meteor-flash{z-index:37;inset:-65%;opacity:0;background:radial-gradient(circle,#fff 0 5%,#fff0a9 9%,#ff8526b0 20%,#ff370933 35%,transparent 60%);animation:fx5MeteorFlash 1.6s 1.36s both}
+#finisherOverlay.v7-finisher.stage-meteor .fx5-meteor-crater{z-index:32;left:50%;top:50%;width:132px;height:132px;border-radius:50%;background:radial-gradient(circle,#1d0707 0 20%,#b94208 28%,#ff9c25 35%,#421610 56%,transparent 70%);transform:translate(-50%,-50%) scale(.1);opacity:0;animation:fx5MeteorCrater 2s 1.42s both}
+#finisherOverlay.v7-finisher.stage-meteor .fx5-impact-particle{z-index:35;left:50%;top:50%;width:11px;height:17px;border-radius:40%;background:#ffe498;box-shadow:0 0 14px #ff8d02;opacity:0;animation:fx5ImpactParticle 1.3s calc(1.45s + var(--delay)) both}
+#finisherOverlay.v7-finisher.stage-meteor .finisher-card-image{animation:fx5MeteorCard 3.6s both!important}
+@keyframes fx5MeteorFly{0%{opacity:0;transform:translate(-350px,-440px) scale(.48)}13%{opacity:1}62%{opacity:1;transform:translate(-96px,-113px) scale(1.05)}71%{opacity:1;transform:translate(-80px,-80px) scale(1.12)}74%,100%{opacity:0;transform:translate(-80px,-80px) scale(1.16)}}
+@keyframes fx5MeteorRotate{to{transform:rotate(390deg)}}
+@keyframes fx5MeteorTail{from{opacity:.75;transform:rotate(42deg) scale(1)}to{opacity:1;transform:rotate(48deg) scale(1.12)}}
+@keyframes fx5MeteorShock{0%{opacity:1;transform:translate(-50%,-50%) scale(.1)}24%{opacity:.98}100%{opacity:0;transform:translate(-50%,-50%) scale(2.9)}}
+@keyframes fx5MeteorFlash{0%{opacity:0;transform:scale(.1)}15%{opacity:.98;transform:scale(.72)}100%{opacity:0;transform:scale(1.42)}}
+@keyframes fx5MeteorCrater{0%{opacity:0;transform:translate(-50%,-50%) scale(.1)}29%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}85%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(.6)}}
+@keyframes fx5ImpactParticle{0%{opacity:0;transform:rotate(var(--angle)) translateX(0) scale(.1)}18%{opacity:1}100%{opacity:0;transform:rotate(var(--angle)) translateX(var(--dist)) scale(.1)}}
+@keyframes fx5MeteorCard{0%,37%{opacity:1;filter:none;transform:none}47%{opacity:1;filter:brightness(3.8);transform:scale(1.12) rotate(-3deg)}67%{opacity:.9;filter:sepia(1) saturate(4) brightness(.6)}100%{opacity:.02;filter:blur(12px) brightness(.2);transform:scale(.65)}}
+
+
+/* ===== Originale Smolder- und Meteor-Versionen zurückgeholt ===== */
+#finisherOverlay.v7-finisher.stage-smolder .fx5-smolder-dragon,
+#finisherOverlay.v7-finisher.stage-smolder .fx5-flame-particle,
+#finisherOverlay.v7-finisher.stage-smolder .fx5-flame-core,
+#finisherOverlay.v7-finisher.stage-smolder .fx5-flame-stream,
+#finisherOverlay.v7-finisher.stage-smolder .fx5-flame-impact,
+#finisherOverlay.v7-finisher.stage-meteor .fx5-meteor-fly,
+#finisherOverlay.v7-finisher.stage-meteor .fx5-meteor-ring,
+#finisherOverlay.v7-finisher.stage-meteor .fx5-meteor-flash,
+#finisherOverlay.v7-finisher.stage-meteor .fx5-meteor-crater,
+#finisherOverlay.v7-finisher.stage-meteor .fx5-impact-particle{display:none!important}
+
+#finisherOverlay.v7-finisher.stage-smolder .loser-smolder-art,
+#finisherOverlay.v7-finisher.stage-smolder .loser-fire-stream,
+#finisherOverlay.v7-finisher.stage-smolder .loser-burn-glow,
+#finisherOverlay.v7-finisher.stage-meteor .loser-meteor-art,
+#finisherOverlay.v7-finisher.stage-meteor .loser-impact,
+#finisherOverlay.v7-finisher.stage-meteor .meteor-burn,
+#finisherOverlay.v7-finisher.stage-meteor .loser-ember{position:absolute;pointer-events:none}
+
+/* Smolder original: rechts, Feuer aus dem Gesicht nach links */
+#finisherOverlay.v7-finisher.stage-smolder .loser-smolder-art{z-index:28;position:absolute;width:260px;right:-125px;bottom:1px;opacity:0;transform-origin:70% 75%;filter:drop-shadow(0 9px 12px rgba(0,0,0,.65));animation:smolderAttack 2.25s cubic-bezier(.2,.75,.25,1) forwards}
+#finisherOverlay.v7-finisher.stage-smolder .loser-fire-stream{z-index:24;position:absolute;width:250px;right:82px;top:93px;opacity:0;transform-origin:100% 50%;filter:drop-shadow(0 0 16px rgba(255,109,28,.95));animation:smolderFireBreath 1.25s .57s ease-out forwards}
+#finisherOverlay.v7-finisher.stage-smolder .loser-burn-glow{z-index:23;position:absolute;left:50%;top:50%;width:110px;height:145px;transform:translate(-50%,-50%) scale(.15);border-radius:42%;opacity:0;background:radial-gradient(circle,#fff6a6 0 7%,#ffca3d 18%,#ff6d1d 44%,rgba(121,25,8,.85) 67%,transparent 75%);filter:blur(5px);animation:loserBurnBloom 1.3s .78s ease-out forwards}
+#finisherOverlay.v7-finisher.stage-smolder .finisher-card-image{animation:smolderCardBurn 2.15s .58s ease forwards!important}
+@keyframes smolderAttack{0%{opacity:0;transform:translateX(130px) translateY(16px) rotate(5deg) scale(.85)}14%{opacity:1}34%,70%{opacity:1;transform:translateX(-65px) translateY(0) rotate(-4deg) scale(1.02)}78%{transform:translateX(-70px) translateY(-4px) rotate(-7deg) scale(1.05)}100%{opacity:0;transform:translateX(-95px) translateY(8px) rotate(1deg) scale(.95)}}
+@keyframes smolderFireBreath{0%{opacity:0;transform:scaleX(.08) scaleY(.42) translateX(25px)}13%{opacity:1}34%{opacity:1;transform:scaleX(.78) scaleY(.85) translateX(-40px)}62%{opacity:1;transform:scaleX(1.22) scaleY(1.08) translateX(-82px)}100%{opacity:0;transform:scaleX(1.52) scaleY(1.18) translateX(-112px)}}
+@keyframes smolderCardBurn{0%,20%{filter:none;opacity:1}42%{filter:sepia(.45) saturate(1.6) brightness(.9)}63%{filter:sepia(1) saturate(2.1) brightness(.55) contrast(1.45);box-shadow:inset 0 0 28px #ff6c1f,0 0 24px rgba(255,86,19,.8)}82%{filter:brightness(.25) sepia(1);opacity:.82}100%{filter:brightness(.06);opacity:.05;transform:scale(.91)}}
+@keyframes loserBurnBloom{0%{opacity:.9;transform:translate(-50%,-50%) scale(.1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.6)}}
+
+/* Meteor original: echter Brocken, nur gespiegelt */
+#finisherOverlay.v7-finisher.stage-meteor .loser-meteor-art{z-index:30;position:absolute;width:240px;right:-100px;top:-130px;opacity:0;transform:scaleX(-1) rotate(18deg);filter:drop-shadow(0 0 18px rgba(255,115,25,.95));animation:realMeteorStrikeFlipped 1.05s cubic-bezier(.55,.03,.95,.4) forwards}
+#finisherOverlay.v7-finisher.stage-meteor .loser-impact{z-index:34;position:absolute;left:50%;top:50%;width:24px;height:24px;border-radius:50%;transform:translate(-50%,-50%) scale(.1);opacity:0;background:#fff8c1;box-shadow:0 0 16px 8px #ff9b2d,0 0 42px 18px rgba(255,64,0,.7);animation:meteorImpactFlash .7s .76s ease-out forwards}
+#finisherOverlay.v7-finisher.stage-meteor .meteor-burn{z-index:33;position:absolute;left:50%;top:50%;width:115px;height:150px;transform:translate(-50%,-50%) scale(.08);border-radius:45%;opacity:0;background:radial-gradient(circle,#090602 0 18%,#3e1008 25%,#ff5d1b 43%,#ffc43c 55%,transparent 68%);filter:blur(4px);animation:meteorBurnBloom 1.75s .82s ease-out forwards}
+#finisherOverlay.v7-finisher.stage-meteor .finisher-card-image{animation:meteorCardChar 2.25s .75s ease forwards!important}
+#finisherOverlay.v7-finisher.stage-meteor .loser-ember{z-index:35;position:absolute;width:8px;height:13px;border-radius:50% 50% 40% 40%;background:#ff7a18;opacity:0;box-shadow:0 0 8px #ff4e0e;left:50%;top:50%}
+#finisherOverlay.v7-finisher.stage-meteor .ember-a{animation:emberFlyA 1.1s .92s ease-out forwards}
+#finisherOverlay.v7-finisher.stage-meteor .ember-b{animation:emberFlyB 1.25s 1.02s ease-out forwards}
+#finisherOverlay.v7-finisher.stage-meteor .ember-c{animation:emberFlyC 1s 1.1s ease-out forwards}
+@keyframes realMeteorStrikeFlipped{0%{opacity:0;transform:translate(95px,-95px) scaleX(-1) rotate(18deg) scale(.72)}12%{opacity:1}88%{opacity:1;transform:translate(-102px,142px) scaleX(-1) rotate(18deg) scale(.96)}100%{opacity:0;transform:translate(-112px,150px) scaleX(-1) rotate(18deg) scale(.78)}}
+@keyframes meteorImpactFlash{0%{opacity:0;transform:translate(-50%,-50%) scale(.1)}25%{opacity:1;transform:translate(-50%,-50%) scale(3.6)}100%{opacity:0;transform:translate(-50%,-50%) scale(8)}}
+@keyframes meteorBurnBloom{0%{opacity:.95;transform:translate(-50%,-50%) scale(.05)}34%{opacity:1;transform:translate(-50%,-50%) scale(.85)}75%{opacity:.92;transform:translate(-50%,-50%) scale(1.45)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.95)}}
+@keyframes meteorCardChar{0%,18%{filter:none;opacity:1}35%{filter:sepia(.35) brightness(.86) saturate(1.4)}55%{filter:sepia(1) contrast(1.45) brightness(.55);box-shadow:inset 0 0 32px #ff6720,0 0 24px rgba(255,83,19,.76)}76%{filter:brightness(.24) sepia(1);opacity:.8}100%{filter:brightness(.03);opacity:.04;transform:scale(.88)}}
+@keyframes emberFlyA{0%{opacity:0}15%{opacity:1}100%{opacity:0;transform:translate(-75px,-105px) rotate(160deg) scale(.25)}}
+@keyframes emberFlyB{0%{opacity:0}15%{opacity:1}100%{opacity:0;transform:translate(82px,-88px) rotate(-140deg) scale(.3)}}
+@keyframes emberFlyC{0%{opacity:0}15%{opacity:1}100%{opacity:0;transform:translate(105px,35px) rotate(210deg) scale(.2)}}
+
+@media(max-width:760px){
+  #finisherOverlay.v7-finisher.stage-smolder .loser-smolder-art{width:210px}
+  #finisherOverlay.v7-finisher.stage-smolder .loser-fire-stream{width:205px;right:62px;top:78px}
+  #finisherOverlay.v7-finisher.stage-meteor .loser-meteor-art{width:190px}
+}
+
+/* Minifix zur alten, bestaetigten Vorschau: nur Smolder/Meteorit-Layer. */
+#finisherOverlay.v7-finisher.stage-smolder .v4-overlay-effect,
+#finisherOverlay.v7-finisher.stage-meteor .v4-overlay-effect {
+  inset:-115px -155px!important;
+  width:auto!important;
+  height:auto!important;
+}
+@media(max-width:760px){
+  #finisherOverlay.v7-finisher.stage-smolder .v4-overlay-effect,
+  #finisherOverlay.v7-finisher.stage-meteor .v4-overlay-effect {
+    inset:-85px -115px!important;
+  }
+}

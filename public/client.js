@@ -135,6 +135,16 @@ const ARENA_OVERLAYS={
 // Neue Cache-Version der sichtbaren Arenen 2-4 (Ansicht ohne Ausschnitt).
 const ARENA_VISUALS_VERSION='approved234-20261009-fit-v3';
 const ARENA_CLASS_IDS=Object.keys(ARENA_BACKGROUNDS);
+
+// Nur fuer die 5 ueberarbeiteten Verlierer-Animationen; kein Eingriff in die Arenen.
+(function loadFiveFinisherFix(){
+  if(document.getElementById('mlp-five-finishers-css'))return;
+  const link=document.createElement('link');
+  link.id='mlp-five-finishers-css';
+  link.rel='stylesheet';
+  link.href='/finisher_five_fix.css?v=original-smolder-meteorflip-3';
+  document.head.appendChild(link);
+})();
 const EXCLUSIVE_SFX_GROUPS={
   kristall:'crystalSpin', special:'special', smolder:'finisher', meteor:'finisher', cookie:'finisher',
   fall:'finisher', melt:'finisher', glass:'finisher', portal:'finisher', xmark:'finisher', shadow:'finisher',
@@ -1474,13 +1484,15 @@ function setupCakeBites(){
       img.style.visibility='hidden';
       shell.insertBefore(canvas,shell.querySelector('.finisher-fx'));
 
+      // Bisse sichtbar an OBEREN + mittleren Bereichen der Karte, nicht erst unten.
       const bites=[
-        {x:-w*.01,y:h*.18,r:.18,dx:1,xp:0,yp:18},
-        {x:w*1.01,y:h*.34,r:.19,dx:-1,xp:100,yp:34},
-        {x:-w*.01,y:h*.58,r:.20,dx:1,xp:0,yp:58},
-        {x:w*1.01,y:h*.72,r:.20,dx:-1,xp:100,yp:72},
-        {x:w*.45,y:-h*.01,r:.18,dx:0,xp:45,yp:0},
-        {x:w*.54,y:h*1.01,r:.21,dx:0,xp:54,yp:100}
+        {x:w*.02,  y:h*.13,r:.24,dx:1, xp:2, yp:13},
+        {x:w*.97,  y:h*.22,r:.23,dx:-1,xp:97,yp:22},
+        {x:w*.01,  y:h*.36,r:.25,dx:1, xp:1, yp:36},
+        {x:w*.99,  y:h*.45,r:.25,dx:-1,xp:99,yp:45},
+        {x:w*.45,  y:h*.01,r:.25,dx:0, xp:45,yp:1},
+        {x:w*.02,  y:h*.61,r:.26,dx:1, xp:2, yp:61},
+        {x:w*.99,  y:h*.66,r:.28,dx:-1,xp:99,yp:66}
       ];
       bites.forEach((b,i)=>{
         setTimeout(()=>{
@@ -1490,9 +1502,9 @@ function setupCakeBites(){
           canvas.classList.remove('bite-pulse');
           void canvas.offsetWidth;
           canvas.classList.add('bite-pulse');
-        },760+i*440+shellIndex*80);
+        },440+i*385+shellIndex*65);
       });
-      setTimeout(()=>canvas.classList.add('cake-final-crumble'),3840+shellIndex*80);
+      setTimeout(()=>canvas.classList.add('cake-final-crumble'),3370+shellIndex*65);
     };
     if(img.complete&&img.naturalWidth)start();
     else img.addEventListener('load',start,{once:true});
@@ -1500,33 +1512,70 @@ function setupCakeBites(){
 }
 
 
+function setupFiveDustDissolve(){
+  // Echtes Pixel-Zerfallen der Verliererkarte: nicht nur ein unsichtbarer Blur.
+  document.querySelectorAll('#finisherOverlay.stage-dust .v4-loser').forEach((shell,index)=>{
+    const img=shell.querySelector('.finisher-card-image');if(!img)return;
+    const start=()=>{
+      if(!shell.isConnected||shell.querySelector('.fx5-dust-canvas'))return;
+      const canvas=document.createElement('canvas');
+      canvas.className='fx5-dust-canvas';
+      const w=336,h=Math.round(w*(img.naturalHeight||1038)/(img.naturalWidth||744));
+      canvas.width=w;canvas.height=h;
+      const ctx=canvas.getContext('2d');if(!ctx)return;
+      try{ctx.drawImage(img,0,0,w,h)}catch(e){return}
+      shell.append(canvas);
+      img.style.visibility='hidden';
+      const cells=[],size=12;
+      for(let y=0;y<h;y+=size)for(let x=0;x<w;x+=size){
+        const ratio=y/h;
+        cells.push({x,y,at:.17+ratio*.57+((x*29+y*17)%101)/101*.22,done:false});
+      }
+      const began=performance.now()+350+index*80,duration=2630;
+      function tick(now){
+        if(!canvas.isConnected)return;
+        const p=Math.min(1,Math.max(0,(now-began)/duration));
+        for(const c of cells){if(!c.done && p>=c.at){ctx.clearRect(c.x,c.y,size+1,size+1);c.done=true;}}
+        if(p<1){requestAnimationFrame(tick)}else{canvas.classList.add('fx5-dust-finished');}
+      }
+      requestAnimationFrame(tick);
+    };
+    if(img.complete&&img.naturalWidth)start();
+    else img.addEventListener('load',start,{once:true});
+  });
+}
+
 function v7FinisherDecor(kind,layer){
   if(kind==='smolder'){
-    layer.innerHTML='<img class="v7-animated-gif v7-smolder-gif" src="/assets/animations/smolder-approved.gif?round='+Date.now()+'" alt="Smolder spuckt Feuer">';
+    layer.innerHTML=`<img class="loser-smolder-art" src="/assets/animations/smolder-fire.webp" alt="" aria-hidden="true"><img class="loser-fire-stream" src="/assets/animations/fire-stream.webp" alt="" aria-hidden="true"><span class="loser-burn-glow"></span>`;
   }else if(kind==='meteor'){
-    layer.innerHTML='<span class="v7-meteor-trail"></span><img class="v7-animated-gif v7-meteor-gif" src="/assets/animations/meteor-approved.gif?round='+Date.now()+'" alt="Einschlag des Meteoriten"><span class="v7-impact-flash"></span>';
+    layer.innerHTML=`<img class="loser-meteor-art meteor-flipped" src="/assets/animations/meteor.webp" alt="" aria-hidden="true"><span class="loser-impact"></span><span class="meteor-burn"></span><span class="loser-ember ember-a"></span><span class="loser-ember ember-b"></span><span class="loser-ember ember-c"></span>`;
   }else if(kind==='dust'){
-    for(let i=0;i<95;i++){
-      const p=document.createElement('i');p.className='v7-dust-particle';
-      const a=i*2.3999632297;const radius=65+(i%13)*12;
-      p.style.setProperty('--dx',`${Math.cos(a)*radius}px`);
-      p.style.setProperty('--dy',`${Math.sin(a)*radius-85}px`);
-      p.style.setProperty('--delay',`${.40+(i%12)*.027}s`);
-      p.style.setProperty('--hue',`${(i%4)*40+175}deg`);
-      p.style.left=`${15+(i*47)%70}%`;p.style.top=`${10+(i*59)%80}%`;
+    for(let i=0;i<135;i++){
+      const p=document.createElement('i');p.className='fx5-dust-mote';
+      p.style.setProperty('--x',`${5+(i*37)%91}%`);
+      p.style.setProperty('--y',`${7+(i*29)%86}%`);
+      p.style.setProperty('--dx',`${-95+(i*47)%192}px`);
+      p.style.setProperty('--dy',`${-65-(i*31)%135}px`);
+      p.style.setProperty('--delay',`${.35+(i%17)*.105}s`);
+      p.style.setProperty('--size',`${4+i%4*3}px`);
       layer.append(p);
     }
   }else if(kind==='heart'){
-    layer.innerHTML=`<div class="v7-heart-flask" aria-hidden="true"><svg viewBox="0 0 170 195" role="img"><defs><linearGradient id="hFlask" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff" stop-opacity=".88"/><stop offset=".5" stop-color="#ea8efa" stop-opacity=".72"/><stop offset="1" stop-color="#702ebb" stop-opacity=".64"/></linearGradient></defs><path d="M65 40 L65 18 L104 18 L104 40 C153 30 170 77 151 104 L88 167 L22 103 C3 66 30 27 65 40Z" fill="url(#hFlask)" stroke="#ffffff" stroke-width="6"/><path d="M85 30 L74 76 L99 93 L69 138" fill="none" stroke="#ffffff" stroke-width="6"/><path d="M43 91 L87 84 L120 49" fill="none" stroke="#ffc5fb" stroke-width="3"/></svg><span class="v7-heart-crack">✧</span></div>`;
-    for(let i=0;i<21;i++){
-      const p=document.createElement('i');p.className='v7-glass-fragment';
-      const a=i*Math.PI*2/21;
-      p.style.setProperty('--dx',`${Math.cos(a)*(100+(i%4)*28)}px`);
-      p.style.setProperty('--dy',`${Math.sin(a)*(120+(i%5)*24)+45}px`);
-      p.style.setProperty('--rot',`${i*43}deg`);layer.append(p);
+    const heartSvg=`<svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="fx5-heart-fill" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#ffbaf5"/><stop offset=".5" stop-color="#e44b9b"/><stop offset="1" stop-color="#6c21a9"/></linearGradient></defs><path d="M78 42V17H122V42C164 22 188 47 185 91C182 128 142 165 100 197C58 165 18 128 15 91C12 47 36 22 78 42Z" fill="url(#fx5-heart-fill)" fill-opacity=".87" stroke="#fff0fb" stroke-width="7" stroke-linejoin="round"/><path d="M72 17h56M59 59q-34 10-25 46" stroke="#fff" stroke-width="7" opacity=".8" stroke-linecap="round" fill="none"/><path d="M42 87q14-20 28-11" stroke="#ffefff" stroke-width="7" opacity=".55" fill="none"/></svg>`;
+    layer.innerHTML=`<div class="fx5-heart-container"><div class="fx5-heart-left">${heartSvg}</div><div class="fx5-heart-right">${heartSvg}</div><svg class="fx5-heart-crack" viewBox="0 0 200 220"><path d="M100 48 L80 89 L109 116 L83 151 L100 198" fill="none" stroke="#270b35" stroke-width="12" stroke-linejoin="round"/><path d="M101 48 L80 89 L109 116 L83 151 L100 198" fill="none" stroke="#fff9fe" stroke-width="4" stroke-linejoin="round"/></svg></div><span class="fx5-heart-flash"></span>`;
+    for(let i=0;i<24;i++){
+      const p=document.createElement('i');p.className='fx5-heart-shard';
+      const a=i*2.399963;
+      p.style.setProperty('--dx',`${Math.cos(a)*(55+(i%5)*28)}px`);
+      p.style.setProperty('--dy',`${Math.sin(a)*(62+(i%6)*31)+50}px`);
+      p.style.setProperty('--rot',`${i*49}deg`);
+      p.style.setProperty('--delay',`${i%5*.035}s`);
+      layer.append(p);
     }
   }
 }
+
 function playFinisher(e){
   const kind=BATTLE_SFX[e.finisher]?e.finisher:'dust';
   const overlay=$('#finisherOverlay'),winnerBox=$('#finisherWinner'),loserBox=$('#finisherLosers'),headline=$('#finisherHeadline'),impact=$('#finisherImpact');
@@ -1553,6 +1602,7 @@ function playFinisher(e){
     loserBox.querySelectorAll('.v4-cookie').forEach(x=>x.classList.add('finisher-cakebites'));
     setupCakeBites();
   }
+  if(kind==='dust')setupFiveDustDissolve();
   playSfx(kind,{gain:1,cooldown:350});
   const duration=Math.max(4400,e.duration||4200);
   setTimeout(()=>{playSfx('capture',{gain:.7,cooldown:350});flyFinisherCardsToWinner(e.winnerId)},duration-910);
