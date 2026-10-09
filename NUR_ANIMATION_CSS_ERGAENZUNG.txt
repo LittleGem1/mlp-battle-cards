@@ -1,0 +1,40 @@
+
+
+/* =====================================================
+   ARENA 1: SANFTER WIND UND BEWEGTE BLAETTER
+   Nur visuelles Overlay fuer den Jadepalast, keine Layoutaenderung.
+   Das hochaufgeloeste 4K-Bild bleibt UNBERUEHRT.
+   Animation ist eine echte animierte WebP-Datei, kein Spiel-JS noetig.
+   ===================================================== */
+#game.screen.active > .arena.arena-jade_palace > #arenaVfx,
+#game.screen.active > .arena:has(> #arenaVfx.vfx-jade_palace) > #arenaVfx,
+body.scene-game #game .arena.arena-jade_palace #arenaVfx {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: absolute !important;
+  inset: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+#game.screen.active > .arena.arena-jade_palace > #arenaVfx::after,
+#game.screen.active > .arena:has(> #arenaVfx.vfx-jade_palace) > #arenaVfx::after,
+body.scene-game #game .arena.arena-jade_palace #arenaVfx::after {
+  content: '' !important;
+  display: block !important;
+  visibility: visible !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  opacity: .95 !important;
+  background: url('/assets/backgrounds/jadepalast_blaetter_animation.webp') center center / cover no-repeat !important;
+  animation: none !important;
+  transform: none !important;
+}
+/* Dekoration darf niemals einen Klick auf eine Karte abfangen. */
+body.scene-game #game .arena.arena-jade_palace #arenaVfx,
+body.scene-game #game .arena.arena-jade_palace #arenaVfx * { pointer-events: none !important; }

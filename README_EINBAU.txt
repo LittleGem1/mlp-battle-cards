@@ -1,35 +1,23 @@
-MLP Battle Cards – ARENA 1 JADEPALAST – HOCHAUFLÖSUNG (4K)
+MLP BATTLE CARDS – JADEPALAST ANIMATION (NUR ARENA 1)
 
-Dieses Paket behebt NUR die verpixelte chinesische Arena.
-Es ändert KEINE Karten, KEINE Spielmechanik, KEINE Spielfeldgröße und
-KEINE anderen drei Arenen. Die Blätter-/Wind-Effekte bleiben wie vorher.
+Was neu ist:
+- Deutlich sichtbare, sanfte Blattbewegung im Wind (animiertes WebP, transparent).
+- Der bereits funktionierende 4K-Hintergrund bleibt EXAKT wie er ist.
+- Kein Eingriff in Spielmechanik, Kartenauswahl, Server oder andere Arenen.
 
-WARUM ES VORHER NICHT GEKLAPPT HAT
-Die zuletzt verwendete Arena-CSS enthielt ein altes Mini-Bild direkt
-als eingebettete Base64-Grafik. Diese CSS-Regel hat die neue PNG-Datei
-überlagert. Nur das Bild zu ersetzen konnte darum nichts ändern.
+WICHTIG: Dieses Paket baut DIREKT auf dem letzten
+MLP_BATTLE_CARDS_ARENA1_JADEPALAST_4K_FIX.zip auf.
 
-DATEIEN ZUM HOCHLADEN (beide!):
-  public/style.css
-  public/assets/backgrounds/arena_1_jade_palace.png
+Zum Hochladen / Ersetzen:
+1. public/style.css -> vorhandene CSS ersetzen (nur wenn du aktuell das 4K-Fix verwendest).
+2. public/assets/backgrounds/jadepalast_blaetter_animation.webp -> NEUE Datei hochladen.
 
-EINBAU
-1. ZIP entpacken.
-2. In deinem GitHub-Repository public/style.css durch DIESE Datei ersetzen.
-3. public/assets/backgrounds/arena_1_jade_palace.png hochladen/ersetzen.
-4. An anderen Dateien NICHTS ändern.
-5. Render-Deployment abwarten, dann im Browser Strg + F5 drücken.
-6. Eine neue Partie starten, bis die Arena Jadepalast ausgewählt wird.
+Die Datei arena_1_jade_palace.png NICHT ersetzen: sie bleibt deine scharfe 4K-Version!
 
-WICHTIG
-Die style.css baut auf dem zuletzt gelieferten Paket
-MLP_BATTLE_CARDS_PUNKT2_ARENEN_ROBUST.zip auf.
-Nur so bleibt der bestehende Aufbau identisch; falls du inzwischen
-andere Änderungen an style.css gemacht hast, ersetze sie nicht blind.
-Dann sollte der Eingriff stattdessen gezielt in deiner aktuellen
-style.css erfolgen.
+Nach Render-Deployment mit Strg+F5 neu laden.
+Ein neues Match starten, bis Jadepalast ausgewählt wird.
 
-Bilddatei: 3840 x 2160 Pixel (PNG, hochskaliert/geschärft von einer
-kleineren Vorlage; keine neue Illustration).
-Animation: bisherige CSS-Blätterbewegung aus deinem Spiel (kein GIF,
-kein neues Script nötig).
+Falls du style.css seit dem letzten 4K-Fix schon angepasst hast, vor dem Hochladen
+die CSS-Dateien nicht blind ersetzen, sondern die neuen Regeln am Ende deiner
+aktuellen style.css anfügen. Sie stehen zusätzlich separat in
+NUR_ANIMATION_CSS_ERGAENZUNG.txt.
