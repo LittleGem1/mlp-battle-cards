@@ -4232,3 +4232,56 @@ body.scene-game .special-burst::after {
 @media (prefers-reduced-motion: reduce) {
   body.scene-game #game .arena * {scroll-behavior:auto !important;}
 }
+
+
+/* === FIX: Kategorie-Kristall wieder sichtbar, ohne Arena-Flackern ===
+   Der Portal-Dialog liegt ausserhalb der Arena im body.
+   Daher darf nur die Kristall-Animation laufen, nicht die VFX-Ebenen. */
+#categoryCrystalPortal.round-crystal-portal {
+  position: fixed !important;
+  inset: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  z-index: 2147483000 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  isolation: isolate !important;
+  background: rgba(6, 8, 24, .72) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transition: opacity .18s ease !important;
+}
+#categoryCrystalPortal.round-crystal-portal.active {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+#categoryCrystalPortal.round-crystal-portal.leaving { opacity: 0 !important; }
+#categoryCrystalPortal .round-crystal-box {
+  position: relative !important;
+  z-index: 1 !important;
+  visibility: visible !important;
+}
+#categoryCrystalPortal .battle-crystal {
+  opacity: 1;
+  filter: none !important;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: no-preference) {
+  #categoryCrystalPortal.active .battle-crystal.spinning {
+    animation: battleCrystalSpin 2.72s cubic-bezier(.12,.75,.12,1) both !important;
+    animation-play-state: running !important;
+  }
+}
+#categoryCrystalPortal .round-crystal-result.show {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) scale(1) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  #categoryCrystalPortal.active .battle-crystal.spinning {
+    animation: none !important;
+    transform: none !important;
+  }
+  #categoryCrystalPortal.active .round-crystal-result { opacity: 1 !important; }
+}

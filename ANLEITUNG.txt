@@ -1,9 +1,20 @@
-MLP Battle Cards – ruhiger Arena-Hintergrund
+MLP BATTLE CARDS - KRISTALL-ANIMATION ZURUECK
 
+Enthalten: public/style.css
+
+BASIS: Letzter Anti-Flacker-Fix, erweitert um die sichtbare Kategorie-Kristall-Anzeige.
+
+EINBAU
 1. ZIP entpacken.
-2. In GitHub public/style.css mit dieser Datei ersetzen.
-3. Commit speichern und Render neu deployen lassen.
-4. Browser mit Strg+F5 aktualisieren.
+2. Die enthaltene public/style.css im GitHub-Repository im Ordner public ersetzen.
+3. Commit speichern und Render-Deployment abwarten.
+4. Mit Strg+F5 aktualisieren.
+5. Im Bot-Spiel eine neue Runde starten und Kristall pruefen.
 
-Basis: MLP_Arena_Originalaufbau_Fix_KLEIN.zip.
-Dieser Patch unterdrueckt visuelle Flackerquellen; Live-Test im Browser noch noetig.
+Die bestehende client.js steuert weiterhin den 2,7-Sekunden-Drehvorgang
+und die Kategorieauswahl. Keine Aenderung an den Spielregeln.
+Grossflaechige Blinkeffekte bleiben deaktiviert.
+Wenn im Betriebssystem reduzierte Bewegung eingestellt ist, bleibt die
+Kristall-Drehung aus Ruecksicht darauf aus, die Kategorieanzeige ist sichtbar.
+
+HINWEIS: Nicht im aktiven Online-Match getestet.
