@@ -1,108 +1,115 @@
 /* =========================================================
-   MLP Battle Cards – Nachfix nur für Arena 2, 3 und 4
-   Arena 1 NICHT angefasst (läuft bereits laut Nutzerin)
-   Ziel: NUR stilles Bild + NUR passendes Overlay
+   MLP Battle Cards – Harter Arena-Ersatz
+   DIESE EINE DATEI hochladen/ersetzen:
+   public/arena_visuals.css
+
+   Zweck:
+   - alte Arena-Hintergründe komplett überschreiben
+   - alte Arena-Pseudoeffekte deaktivieren
+   - alte in #arenaVfx erzeugte Einzelteile verstecken
+   - nur noch neue Stillbilder + neue Overlay-Dateien zeigen
    ========================================================= */
 
-/* Basis: VFX-Ebene darf nichts blockieren */
-#game .arena{isolation:isolate;}
-#game .arena #arenaVfx{
-  position:absolute !important;
-  inset:0 !important;
-  display:block !important;
-  visibility:visible !important;
-  opacity:1 !important;
-  width:100% !important;
-  height:100% !important;
-  pointer-events:none !important;
-  overflow:hidden !important;
-  background-position:center center !important;
-  background-size:cover !important;
-  background-repeat:no-repeat !important;
-  background-color:transparent !important;
-  filter:none !important;
+/* Arena-Container selbst immer als Hintergrundträger verwenden */
+#game.screen.active > .arena,
+body.scene-game #game.screen.active > .arena,
+#game .arena {
+  background-position: center center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
 }
 
-/* Alte von client.js erzeugte Einzelteile ausblenden, damit wirklich nur unser Overlay sichtbar ist */
-#game .arena.arena-whispering_forest #arenaVfx > *,
-#game .arena[data-vfx="whispering_forest"] #arenaVfx > *,
-#game .arena.arena-steampunk_works #arenaVfx > *,
-#game .arena[data-vfx="steampunk_works"] #arenaVfx > *,
-#game .arena.arena-witchs_table #arenaVfx > *,
-#game .arena[data-vfx="witchs_table"] #arenaVfx > * {
-  display:none !important;
+/* VFX-Ebene als reines Overlay */
+#game.screen.active > .arena > #arenaVfx,
+body.scene-game #game.screen.active > .arena > #arenaVfx,
+#game .arena #arenaVfx {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  filter: none !important;
+  box-shadow: none !important;
 }
 
-/* Alte CSS-Pseudoeffekte der 3 Arenen entfernen */
-#game .arena.arena-whispering_forest::before,
-#game .arena.arena-whispering_forest::after,
-#game .arena.arena-whispering_forest #arenaVfx::before,
-#game .arena.arena-whispering_forest #arenaVfx::after,
-#game .arena[data-vfx="whispering_forest"]::before,
-#game .arena[data-vfx="whispering_forest"]::after,
-#game .arena[data-vfx="whispering_forest"] #arenaVfx::before,
-#game .arena[data-vfx="whispering_forest"] #arenaVfx::after,
-#game .arena.arena-steampunk_works::before,
-#game .arena.arena-steampunk_works::after,
-#game .arena.arena-steampunk_works #arenaVfx::before,
-#game .arena.arena-steampunk_works #arenaVfx::after,
-#game .arena[data-vfx="steampunk_works"]::before,
-#game .arena[data-vfx="steampunk_works"]::after,
-#game .arena[data-vfx="steampunk_works"] #arenaVfx::before,
-#game .arena[data-vfx="steampunk_works"] #arenaVfx::after,
-#game .arena.arena-witchs_table::before,
-#game .arena.arena-witchs_table::after,
-#game .arena.arena-witchs_table #arenaVfx::before,
-#game .arena.arena-witchs_table #arenaVfx::after,
-#game .arena[data-vfx="witchs_table"]::before,
-#game .arena[data-vfx="witchs_table"]::after,
-#game .arena[data-vfx="witchs_table"] #arenaVfx::before,
-#game .arena[data-vfx="witchs_table"] #arenaVfx::after {
-  content:none !important;
-  display:none !important;
-  background:none !important;
-  background-image:none !important;
-  animation:none !important;
+/* Alles alte in arenaVfx verstecken */
+#game .arena #arenaVfx > * { display: none !important; }
+
+/* Alte Pseudoeffekte komplett aus */
+#game .arena::before,
+#game .arena::after,
+#game .arena #arenaVfx::before,
+#game .arena #arenaVfx::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+  filter: none !important;
 }
 
-/* ========== Arena 2: Magischer Wald ========== */
+/* ================= Arena 1 – Jadepalast ================= */
+#game .arena.arena-jade_palace,
+#game .arena[data-vfx="jade_palace"],
+body.scene-game #game.screen.active > .arena.arena-jade_palace,
+body.scene-game #game.screen.active > .arena[data-vfx="jade_palace"] {
+  background: url('/assets/backgrounds/arena_1_jadepalast_still.png') center center / cover no-repeat !important;
+}
+#game .arena.arena-jade_palace #arenaVfx,
+#game .arena[data-vfx="jade_palace"] #arenaVfx,
+body.scene-game #game.screen.active > .arena.arena-jade_palace > #arenaVfx,
+body.scene-game #game.screen.active > .arena[data-vfx="jade_palace"] > #arenaVfx {
+  background: url('/assets/backgrounds/arena_1_blaetter_overlay.webp') center center / cover no-repeat !important;
+}
+
+/* ================= Arena 2 – Magischer Wald ================= */
 #game .arena.arena-whispering_forest,
-#game .arena[data-vfx="whispering_forest"]{
-  background-image:url('/assets/backgrounds/arena_2_wald_still.png') !important;
-  background-position:center center !important;
-  background-size:cover !important;
-  background-repeat:no-repeat !important;
+#game .arena[data-vfx="whispering_forest"],
+body.scene-game #game.screen.active > .arena.arena-whispering_forest,
+body.scene-game #game.screen.active > .arena[data-vfx="whispering_forest"] {
+  background: url('/assets/backgrounds/arena_2_wald_still.png') center center / cover no-repeat !important;
 }
 #game .arena.arena-whispering_forest #arenaVfx,
-#game .arena[data-vfx="whispering_forest"] #arenaVfx{
-  z-index:1 !important;
-  background-image:url('/assets/backgrounds/arena_2_blaetter_overlay.webp') !important;
+#game .arena[data-vfx="whispering_forest"] #arenaVfx,
+body.scene-game #game.screen.active > .arena.arena-whispering_forest > #arenaVfx,
+body.scene-game #game.screen.active > .arena[data-vfx="whispering_forest"] > #arenaVfx {
+  background: url('/assets/backgrounds/arena_2_blaetter_overlay.webp') center center / cover no-repeat !important;
 }
 
-/* ========== Arena 3: Steampunk ========== */
+/* ================= Arena 3 – Steampunk ================= */
 #game .arena.arena-steampunk_works,
-#game .arena[data-vfx="steampunk_works"]{
-  background-image:url('/assets/backgrounds/arena_3_steampunk_still.png') !important;
-  background-position:center center !important;
-  background-size:cover !important;
-  background-repeat:no-repeat !important;
+#game .arena[data-vfx="steampunk_works"],
+body.scene-game #game.screen.active > .arena.arena-steampunk_works,
+body.scene-game #game.screen.active > .arena[data-vfx="steampunk_works"] {
+  background: url('/assets/backgrounds/arena_3_steampunk_still.png') center center / cover no-repeat !important;
 }
 #game .arena.arena-steampunk_works #arenaVfx,
-#game .arena[data-vfx="steampunk_works"] #arenaVfx{
-  z-index:1 !important;
-  background-image:url('/assets/backgrounds/arena_3_zahnraeder_overlay.webp') !important;
+#game .arena[data-vfx="steampunk_works"] #arenaVfx,
+body.scene-game #game.screen.active > .arena.arena-steampunk_works > #arenaVfx,
+body.scene-game #game.screen.active > .arena[data-vfx="steampunk_works"] > #arenaVfx {
+  background: url('/assets/backgrounds/arena_3_zahnraeder_overlay.webp') center center / cover no-repeat !important;
 }
 
-/* ========== Arena 4: Hexentisch ========== */
+/* ================= Arena 4 – Hexentisch ================= */
 #game .arena.arena-witchs_table,
-#game .arena[data-vfx="witchs_table"]{
-  background-image:url('/assets/backgrounds/arena_4_hexentisch_still.png') !important;
-  background-position:center center !important;
-  background-size:cover !important;
-  background-repeat:no-repeat !important;
+#game .arena[data-vfx="witchs_table"],
+body.scene-game #game.screen.active > .arena.arena-witchs_table,
+body.scene-game #game.screen.active > .arena[data-vfx="witchs_table"] {
+  background: url('/assets/backgrounds/arena_4_hexentisch_still.png') center center / cover no-repeat !important;
 }
 #game .arena.arena-witchs_table #arenaVfx,
-#game .arena[data-vfx="witchs_table"] #arenaVfx{
-  z-index:1 !important;
-  background-image:url('/assets/backgrounds/arena_4_hexenkessel_overlay.webp') !important;
+#game .arena[data-vfx="witchs_table"] #arenaVfx,
+body.scene-game #game.screen.active > .arena.arena-witchs_table > #arenaVfx,
+body.scene-game #game.screen.active > .arena[data-vfx="witchs_table"] > #arenaVfx {
+  background: url('/assets/backgrounds/arena_4_hexenkessel_overlay.webp') center center / cover no-repeat !important;
 }
