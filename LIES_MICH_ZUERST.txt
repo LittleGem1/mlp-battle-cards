@@ -1,33 +1,34 @@
-MLP BATTLE CARDS – ANZEIGE-FIX (09.10.2026)
-============================================
+MLP BATTLE CARDS – GEMEINSAMER FIX: LOBBY + LYRA
+===================================================
 
-Dieser Fix behebt die beiden Probleme aus dem Screenshot:
-1) Bei mehreren Gegnern rutschen Spielerfelder nach unten, sodass Namen,
-   drei Fragezeichen und Kartenrueckseiten abgeschnitten werden.
-   Die Arena erhaelt eine definierte Breite, die Gegner kompakte Spalten;
-   bei wenig Platz werden die Spalten responsiv umgebrochen.
-2) Unter dem Spielfeld wird das YouTube-Musikvideo gross eingeblendet.
-   Die YouTube-IFrame-API ersetzt den urspruenglichen DIV durch ein IFRAME
-   mit derselben ID. Der Fix verbirgt BEIDE Elementtypen gezielt in 1x1 px.
-   Die Musik-Funktion selbst wird nicht abgeschaltet.
+Dieser Fix korrigiert:
+1. KRISTALLHOEHLEN-HINTERGRUND der Home-/Wartelobby wieder sichtbar.
+   Er enthaelt auch die tatsaechliche Bilddatei, die bei CSS-only-Paketen fehlt.
+   Bisherige blickdichte #lobby-Hintergrundschichten werden deaktiviert.
+   Die normalen Arena-Hintergruende bleiben unveraendert.
+2. LYRA hat die gleiche Kartengroesse wie die anderen NORMALEN Karten.
+   Das Bild selbst wird NICHT veraendert oder verzerrt; das gemeinsame
+   Seitenverhaeltnis wird beim Darstellen angewendet.
+3. Die bisherigen Korrekturen fuer Gegner-Layout, Spezialkarten-Meldungen
+   und den versteckten YouTube-Musikplayer sind in style.css enthalten.
 
-GITHUB-EINBAU – VARIANTE A (empfohlen bei Verwendung des letzten Gesamtfixes):
+GITHUB INSTALLATION – NUR ZWEI DATEIEN
+-------------------------------------
 1. ZIP entpacken.
-2. Die enthaltene Datei public/style.css nach GitHub hochladen und dort
-   public/style.css ersetzen.
-3. Commit ausfuehren. Render neu deployen lassen.
-4. Spiel mit Strg+F5 aktualisieren.
+2. public/style.css in deinem GitHub-Repository durch die beigefuegte
+   public/style.css ERSETZEN (nicht bloss eine zweite CSS anlegen).
+3. public/assets/backgrounds/lobby_crystal_cave.png hochladen bzw. ersetzen.
+   ACHTUNG: Exakt diesen Ordnerpfad beibehalten!
+4. Beide Aenderungen committen.
+5. Render muss die neue Version deployen. Danach Spiel mit Strg+F5 laden.
+6. In der Wartelobby sollte wieder der Kristallhoehlen-Hintergrund erscheinen.
+   Teste ausserdem Lyras Karte neben einer anderen normalen Karte.
 
-VARIANTE B (sicher, falls die vorhandene style.css neuer/anders ist):
-1. In deinem GitHub-Repository public/style.css bearbeiten.
-2. Den GESAMTEN Text aus NUR_ANHAENGEN_LAYOUT_FIX.css ganz unten anhaengen.
-3. Commit, Deployment, Strg+F5.
-
-NICHT beide Varianten gleichzeitig anwenden.
-
-Es werden KEINE server.js, client.js, Spielerprofile, Datenbank,
-Kartenbilder, Arenen oder Spezialkarten geaendert.
-
-Pruefung: lokale Chromium-Layouttests bei 390, 690, 760, 900 und
-1100 Pixeln, 3, 4 und 7 Gegnern; 1x1-Pixel-IFrame und keine
-waagerechte Scrollleiste. Noch kein Live-Mehrspielertest auf Render.
+WICHTIG:
+- Kein server.js, client.js, index.html, Datenbank-Code oder Login-Code
+  wird durch dieses Paket ersetzt.
+- Accounts, gespeicherte Items/Rahmen, Animationen und Spielregeln bleiben
+  unveraendert.
+- Falls du eine andere CSS-Version als zuletzt installiert hast, erstelle
+  vorsichtshalber vorher eine Kopie deiner aktuellen GitHub-style.css.
+- Ein Browser-/Render-Integrationstest nach dem Deploy bleibt erforderlich.

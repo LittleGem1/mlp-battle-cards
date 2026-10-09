@@ -3873,3 +3873,107 @@ html body #ytAudioPlayer iframe {
 @media (max-width:400px){
   #game .arena #opponents.opponents {grid-template-columns:minmax(0,1fr) !important;}
 }
+
+
+/* ===================================================================
+   MLP BATTLE CARDS – KARTENHOEHE EINHEITLICH (LYRA-FIX 2026-10-09)
+   Ursache: auto-Hoehe nach Original-Bildseitenverhaeltnis.
+   Alle NORMALEN Karten erhalten dieselbe Bild-Box im Spiel.
+   object-fit:contain bewahrt die gesamte Zeichnung ohne Beschnitt.
+   Specials, Accounts, Arenen, Audio und Animationen unberuehrt.
+   =================================================================== */
+#game #hand .hand-card:not(.special) > img,
+#game #tableCards .played-card .card-front-face > img {
+  display: block !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 5 / 7 !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  flex: 0 0 auto !important;
+}
+
+
+/* =====================================================================
+   MLP BATTLE CARDS – KRISTALLHOEHLEN-LOBBY SICHTBAR (2026-10-09)
+   Warum: Aelteres Lobby-CSS zeichnet einen blickdichten Hintergrund ueber
+   das eigentliche Kristallhoehlen-Bild. Der Bildpfad muss ausserdem
+   tatsaechlich als Datei im Repository vorhanden sein.
+   Nur Home-/Wartelobby. Die Arenen werden nicht veraendert.
+   ===================================================================== */
+body.scene-home,
+body.scene-lobby {
+  background-color:#080c2a !important;
+  /* Sicherer Fallback, falls die separaten Lobby-Effekte nicht erzeugt sind. */
+  background-image:
+    linear-gradient(rgba(4,8,25,.20),rgba(4,8,25,.38)),
+    url('/assets/backgrounds/lobby_crystal_cave.png') !important;
+  background-position:center center !important;
+  background-repeat:no-repeat !important;
+  background-size:cover !important;
+  background-attachment:fixed !important;
+}
+body.scene-home #lobbySceneVfx,
+body.scene-lobby #lobbySceneVfx {
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  position:fixed !important;
+  inset:0 !important;
+  z-index:0 !important;
+  pointer-events:none !important;
+  background-image:
+    linear-gradient(rgba(4,8,25,.20),rgba(4,8,25,.36)),
+    url('/assets/backgrounds/lobby_crystal_cave.png') !important;
+  background-size:cover !important;
+  background-position:center center !important;
+  background-repeat:no-repeat !important;
+  filter:none !important;
+}
+body.scene-home #lobbySceneVfx::before,
+body.scene-home #lobbySceneVfx::after,
+body.scene-lobby #lobbySceneVfx::before,
+body.scene-lobby #lobbySceneVfx::after {
+  content:none !important;
+  display:none !important;
+}
+/* Alte #lobby-Hintergrundschichten waren blickdicht: abschalten. */
+body.scene-lobby #lobby.screen,
+body.scene-lobby #lobby.screen.active {
+  background:transparent !important;
+  background-image:none !important;
+  background-color:transparent !important;
+  isolation:auto !important;
+}
+body.scene-lobby #lobby.screen::before,
+body.scene-lobby #lobby.screen::after {
+  content:none !important;
+  display:none !important;
+  animation:none !important;
+  background:none !important;
+}
+body.scene-home #app,
+body.scene-lobby #app {
+  position:relative !important;
+  z-index:2 !important;
+  background:transparent !important;
+}
+/* Lesbare Lobby-Inhalte auf halbtransparenter Flaeche. */
+body.scene-lobby #lobby .lobby.crystal-panel {
+  background:linear-gradient(145deg,rgba(8,18,48,.78),rgba(19,13,53,.71)) !important;
+  border-color:rgba(192,233,255,.37) !important;
+  backdrop-filter:blur(5px) !important;
+}
+body.scene-lobby #lobby .lobby-player {
+  background:rgba(14,25,61,.72) !important;
+  border-color:rgba(177,229,255,.28) !important;
+}
+/* Keine Eingabeflaechen durch Deko ueberlagern. */
+body.scene-lobby #lobbySceneVfx,
+body.scene-lobby #lobbySceneVfx *,
+body.scene-lobby #crystalDrift,
+body.scene-lobby #crystalDrift * {
+  pointer-events:none !important;
+}
