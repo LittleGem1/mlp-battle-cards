@@ -1888,7 +1888,22 @@ socket.on('specialCopied',e=>toast(`♟ ${e.name} kopiert ${e.copied?.name||'ein
 socket.on('playerSkipped',e=>toast(`⏸ ${e.name} setzt durch ${e.sourceName} diese Runde aus.`));
 socket.on('specialBlocked',e=>{toast(`🛡 ${e.targetName} ist vor ${e.sourceName} geschützt.`);specialFxSound('sombra')});
 socket.on('specialCleansed',e=>{toast(`🎩 ${e.name} hebt negative Spezialeffekte auf.`);specialFxSound('trixie')});
+// Cockatrice addon is loaded separately to preserve all existing game effects.
+(function loadCockatriceAddon(){
+  if(!document.getElementById('cockatrice-addon-css')){
+    const link=document.createElement('link');link.id='cockatrice-addon-css';link.rel='stylesheet';link.href='/cockatrice_effect.css?v=20261009-2';document.head.append(link);
+  }
+  if(!document.getElementById('cockatrice-addon-js')){
+    const script=document.createElement('script');script.id='cockatrice-addon-js';script.src='/cockatrice_effect.js?v=20261009-2';document.head.append(script);
+  }
+})();
+
 socket.on('specialImpact',e=>{
+  if(e.effect==='cockatrice'){
+    const targetId=(e.targetIds||[])[0];
+    const targetName=state?.players?.find(p=>p.id===targetId)?.name||'Gegner';
+    window.CockatriceEffect?.play({targetId,targetName});
+  }
   (e.targetIds||[]).forEach(id=>{
     const target=document.querySelector(`.opponent[data-player-id="${id}"]`) || (id===myId?document.querySelector('.self-bar'):null);
     if(target){

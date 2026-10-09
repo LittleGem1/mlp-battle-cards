@@ -1,0 +1,34 @@
+/* Cockatrice: dedicated overlay, never modifies arena or finisher layout */
+.cockatricefx{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:2147482600;pointer-events:none;overflow:hidden;background:rgba(9,11,20,0);font-family:Georgia,serif;color:#fdf0ca;transition:background .3s;}
+.cockatricefx.active{background:rgba(9,11,20,.55)}
+.cockatricefx-stage{position:relative;width:min(94vw,790px);aspect-ratio:790/490;max-height:87vh;filter:drop-shadow(0 12px 22px #000a)}
+.cockatricefx-bird{position:absolute;left:-11%;top:8%;width:63%;height:76%;object-fit:contain;opacity:0;z-index:8;filter:drop-shadow(4px 12px 12px #070d19c0);transform:translateX(-50%) scale(.7) rotate(-8deg)}
+.cockatricefx.active .cockatricefx-bird{animation:cockatriceArrival 3.4s ease both}
+.cockatricefx-card{position:absolute;right:10%;top:14%;width:29%;height:64%;border-radius:13px;border:4px solid #f5c763;box-shadow:0 0 0 5px #48272d,0 18px 27px #000a;overflow:hidden;transform:perspective(500px) rotateY(-6deg);background:#24162b;z-index:5}
+.cockatricefx-card-picture{width:100%;height:100%;object-fit:fill;display:block}
+.cockatricefx.active .cockatricefx-card-picture{animation:cockatriceCardGrey 3.4s ease forwards}
+.cockatricefx-stone{position:absolute;inset:0;opacity:0;background:radial-gradient(ellipse at 25% 20%,#f4f2e7bd 0%,transparent 50%),repeating-linear-gradient(130deg,#737d86aa 0 3px,#a5aab0ba 4px 9px,#525e67ae 10px 12px),linear-gradient(140deg,#d9dad3,#757b82);mix-blend-mode:multiply;clip-path:inset(100% 0 0 0)}
+.cockatricefx.active .cockatricefx-stone{animation:cockatriceStoneSpread 3.4s ease forwards}
+.cockatricefx-cracks{position:absolute;inset:0;opacity:0;filter:drop-shadow(1px 2px 1px #333);}
+.cockatricefx-cracks svg{width:100%;height:100%;}
+.cockatricefx-cracks path{fill:none;stroke:#30353a;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:bevel}
+.cockatricefx.active .cockatricefx-cracks{animation:cockatriceCracks 3.4s linear forwards}
+.cockatricefx-gaze{position:absolute;left:35%;top:39%;width:43%;height:9%;z-index:7;opacity:0;transform-origin:left center;transform:rotate(-6deg) scaleX(.1);border-radius:100%;background:linear-gradient(90deg,#e8ffe7, #b0d7a7 17%,#faffbe 60%,#d0fdd7 100%);filter:blur(5px) drop-shadow(0 0 15px #c1ff99);box-shadow:0 0 24px 16px #aefc646d;}
+.cockatricefx.active .cockatricefx-gaze{animation:cockatriceGaze 3.4s ease forwards}
+.cockatricefx-card-label{position:absolute;bottom:5%;left:8%;right:8%;font:bold clamp(10px,2.1vw,21px) Georgia,serif;letter-spacing:1.8px;text-align:center;color:#e9e9e3;text-shadow:1px 2px 1px #131515;opacity:0}
+.cockatricefx.active .cockatricefx-card-label{animation:cockatriceLabel 3.4s both}
+.cockatricefx-headline{position:absolute;bottom:7%;left:0;right:0;text-align:center;font-size:clamp(27px,5.6vw,61px);line-height:1.1;font-weight:900;letter-spacing:4px;text-shadow:0 0 13px #faffca,3px 5px 2px #253323,0 0 28px #acffaa;opacity:0;z-index:15}
+.cockatricefx-subtitle{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:clamp(11px,2.1vw,21px);font-family:system-ui,sans-serif;font-weight:700;color:#f5f0d9;text-shadow:0 3px 6px #000b;opacity:0;z-index:16}
+.cockatricefx.active .cockatricefx-headline,.cockatricefx.active .cockatricefx-subtitle{animation:cockatriceTitle 3.4s both}
+.cockatricefx-shard{position:absolute;top:46%;left:76%;width:clamp(6px,1.8vw,17px);height:clamp(8px,2.6vw,25px);background:linear-gradient(45deg,#4c525c,#c7ced4,#707983);clip-path:polygon(20% 10%,100% 0,87% 77%,35% 100%,0 66%);opacity:0;z-index:9;transform:translate(-50%,-50%)}
+.cockatricefx.active .cockatricefx-shard{animation:cockatriceShards 1.55s calc(1.27s + var(--lag)) ease-out both}
+@keyframes cockatriceArrival{0%{opacity:0;transform:translateX(-47%) scale(.7) rotate(-8deg)}11%{opacity:1;transform:translateX(0) scale(1.02) rotate(1deg)}22%,70%{opacity:1;transform:translateX(0) scale(1)}91%{opacity:1}100%{opacity:0;transform:translateX(-17%) scale(.9) rotate(-7deg)}}
+@keyframes cockatriceCardGrey{0%,31%{filter:none}43%{filter:grayscale(.3) contrast(.97)}61%{filter:grayscale(1) sepia(.16) contrast(1.6) brightness(.74)}100%{filter:grayscale(1) contrast(1.5) brightness(.65)}}
+@keyframes cockatriceStoneSpread{0%,31%{opacity:0;clip-path:inset(100% 0 0)}39%{opacity:.45}65%,100%{opacity:.85;clip-path:inset(0 0 0)}}
+@keyframes cockatriceGaze{0%,20%{opacity:0;transform:scaleX(.05) rotate(-6deg)}27%{opacity:1;transform:scaleX(.95) rotate(-6deg)}44%{opacity:1;transform:scaleX(1.1) rotate(-6deg)}61%,100%{opacity:0;transform:scaleX(1.25) rotate(-6deg)}}
+@keyframes cockatriceCracks{0%,48%{opacity:0}52%{opacity:.7}64%,100%{opacity:1}}
+@keyframes cockatriceShards{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(0)}9%{opacity:.92}100%{opacity:0;transform:translate(-50%,-50%) rotate(var(--angle)) translateX(var(--radius)) scale(.4)}}
+@keyframes cockatriceLabel{0%,52%{opacity:0}65%,100%{opacity:1}}
+@keyframes cockatriceTitle{0%,50%{opacity:0;transform:translateY(11px) scale(.89)}61%,85%{opacity:1;transform:none}100%{opacity:0}}
+@media (max-width:650px){.cockatricefx-stage{width:96vw}.cockatricefx-card{right:5%;width:34%}.cockatricefx-bird{left:-12%;width:72%;}.cockatricefx-gaze{width:41%;}.cockatricefx-headline{letter-spacing:1px}}
+@media(prefers-reduced-motion:reduce){.cockatricefx.active .cockatricefx-bird,.cockatricefx.active .cockatricefx-gaze,.cockatricefx.active .cockatricefx-shard{animation:none;opacity:0}.cockatricefx.active .cockatricefx-stone,.cockatricefx.active .cockatricefx-cracks,.cockatricefx.active .cockatricefx-card-picture{animation:none;opacity:.9;clip-path:none;filter:grayscale(1)}.cockatricefx.active .cockatricefx-headline,.cockatricefx.active .cockatricefx-subtitle{animation:none;opacity:1}}

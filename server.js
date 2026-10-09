@@ -192,7 +192,7 @@ function discardPlayedEntry(r,pid){
   delete r.played[pid];
   const p=r.players.get(pid);if(p)p.selected=null;
 }
-function skipPlayerThisRound(r,targetId,sourceId,sourceName){
+function skipPlayerThisRound(r,targetId,sourceId,sourceName,effectType='skip'){
   const target=r.players.get(targetId);
   if(!target||target.surrendered)return false;
   if(isProtectedFrom(r,targetId,sourceId)){
@@ -203,7 +203,7 @@ function skipPlayerThisRound(r,targetId,sourceId,sourceName){
   fxAdd(r,'skipped',targetId);
   r.roundPlayerIds=(r.roundPlayerIds||[]).filter(id=>id!==targetId);
   io.to(r.code).emit('playerSkipped',{playerId:targetId,name:target.name,sourceName});
-  emitImpact(r,'skip',targetId,`${target.name} setzt diese Runde aus.`);
+  emitImpact(r,effectType,targetId,effectType==='cockatrice'?`${target.name}s Karte wurde versteinert und setzt diese Runde aus.`:`${target.name} setzt diese Runde aus.`);
   return true;
 }
 function markForcedLose(r,targetId,sourceId,sourceName,effect='shadow'){
@@ -397,6 +397,8 @@ function botApplySpecial(r,p,c){
     p.hand.length=0;
     for(const id of old)discardCard(r,id);
     p.hand.push(...drawNormalForHand(r,p,redrawCount));
+  }else if(effect==='cockatrice'){
+    const t=targetAny();if(t)skipPlayerThisRound(r,t.id,p.id,'Cockatrice','cockatrice');
   }else if(effect==='bugbear'){
     const t=targetAny();if(t)skipPlayerThisRound(r,t.id,p.id,'Bugbear');
   }else if(effect==='manticore'){
@@ -448,7 +450,7 @@ function botUsableSpecials(r,p){
     if(c.effect==='ahuizotl')return botTargets(r,p,'played').length>0;
     if(c.effect==='cozy')return botTargets(r,p,'hand').length>0 && p.hand.length>1;
     if(['sludge','maneiac','gilda'].includes(c.effect))return botTargets(r,p,'hand').length>0;
-    if(['tirek','bugbear','sombra','ponyshadows','lightningdust'].includes(c.effect))return botTargets(r,p,'any').length>0;
+    if(['tirek','bugbear','cockatrice','sombra','ponyshadows','lightningdust'].includes(c.effect))return botTargets(r,p,'any').length>0;
     if(c.effect==='timberwolves')return botNormalCards(p,r.category).length>=2;
     if(c.effect==='manticore')return r.normalDiscard.length+r.rewardDiscard.length>0;
     if(c.effect==='trixie')return botHasNegative(r,p);
@@ -1153,7 +1155,7 @@ io.on('connection',socket=>{
     if(effect==='applejack'&&r.category!=='strength')return socket.emit('errorMsg','Applejack kann nur bei Stärke eingesetzt werden.');
     if(effect==='stormking'&&r.category!=='speed')return socket.emit('errorMsg','Storm King wirkt nur bei Schnelligkeit.');
     if(effect==='ahuizotl'&&!availableTargets(r,p,'played').length)return socket.emit('errorMsg','Ahuizotl braucht einen Gegner, der seine Karte bereits gelegt hat.');
-    if(['tirek','cozy','sludge','bugbear','sombra','ponyshadows','maneiac','lightningdust','gilda'].includes(effect)){
+    if(['tirek','cozy','sludge','bugbear','cockatrice','sombra','ponyshadows','maneiac','lightningdust','gilda'].includes(effect)){
       const mode=['cozy','sludge','maneiac','gilda'].includes(effect)?'hand':'any';
       if(!availableTargets(r,p,mode).length)return socket.emit('errorMsg','Für diese Spezialkarte gibt es gerade kein gültiges Ziel.');
     }
@@ -1215,6 +1217,8 @@ io.on('connection',socket=>{
       const fresh=drawNormalForHand(r,p,redrawCount);
       p.hand.push(...fresh);
       socket.emit('specialDone',{text:fresh.length?`Hydra erneuert deine Hand: ${fresh.length} neue Karte(n).`:'Hydra hat deine übrigen Handkarten abgelegt.'});
+    }else if(effect==='cockatrice'){
+      requestTarget(socket,r,p,source,'cockatrice','any','Cockatrice: Welche gegnerische Karte wird versteinert?');
     }else if(effect==='bugbear'){
       requestTarget(socket,r,p,source,'bugbear','any','Bugbear: Wer setzt diese Runde aus?');
     }else if(effect==='manticore'){
@@ -1294,6 +1298,8 @@ io.on('connection',socket=>{
       socket.data.pendingSpecial={room:r.code,action:action==='sludge'?'sludge-card':'maneiac-card',sourceCardId:source.id,targetId:target.id};
       socket.emit('specialCardRequest',{title:`${action==='sludge'?'Sludge':'Mane-iac'}: Welche Karte von ${target.name} soll abgelegt werden?`,cards:target.hand.map(id=>byId[id]).filter(Boolean)});
       return;
+    }else if(action==='cockatrice'){
+      skipPlayerThisRound(r,target.id,p.id,'Cockatrice','cockatrice');maybeEvaluate(r);
     }else if(action==='bugbear'){
       skipPlayerThisRound(r,target.id,p.id,'Bugbear');maybeEvaluate(r);
     }else if(action==='sombra'){

@@ -58,7 +58,20 @@ const normal = [
   [57,'Fleetfoot',6,9,2,8],
   [58,'Lightning Dust',6,9,2,9],
   [59,'Misty Fly',5,9,2,8],
-  [60,'Cheerilee',4,5,4,8]
+  [60,'Cheerilee',4,5,4,8],
+  [94,'Inphenno',7,4,8,5],
+  [95,'Little Gem',5,5,8,3],
+  [96,'Mimsch',5,3,7,5],
+  [97,'Chandra',4,3,9,6],
+  [98,'Wisrana',3,4,7,6],
+  [99,'Kik',5,4,6,8],
+  [100,'Black Armor',9,5,3,7],
+  [101,'Glittershine',7,8,3,9],
+  [102,'Voleriton',5,7,6,6],
+  [103,'Lili',8,8,3,6],
+  [104,'Lucky Lucy',8,8,3,5],
+  [105,'Lyra',6,7,8,6],
+  [106,'Ruby Blood',3,8,8,5]
 ].map(([n,name,strength,speed,magic,energy]) => ({
   id:`n${String(n).padStart(2,'0')}`,
   type:'normal',
@@ -67,7 +80,7 @@ const normal = [
   speed,
   magic,
   energy,
-  image:n===17?'/assets/cards_fixes/17_Cozy_Glow.webp':`/assets/cards/${String(n).padStart(2,'0')}_${name.replaceAll(' ','_')}.webp`
+  image:n===17?'/assets/cards_fixes/17_Cozy_Glow.webp':n>=94&&n<=106?`/assets/cards_new/${String(n).padStart(3,'0')}_${name.replaceAll(' ','_')}.webp`:`/assets/cards/${String(n).padStart(2,'0')}_${name.replaceAll(' ','_')}.webp`
 }));
 
 const specials = [
@@ -104,6 +117,7 @@ const specials = [
   {id:'s90',type:'special',name:'The Mane-iac',effect:'maneiac',text:'Wähle einen Gegner und bestimme selbst, welche Handkarte er ablegt.',useIcon:'🟢',useLabel:'Totale Kontrolle',image:'/assets/specials_new/90_The_Mane_iac.png'},
   {id:'s91',type:'special',name:'Lightning Dust',effect:'lightningdust',text:'Wähle einen Gegner, der diese Runde automatisch verliert.',useIcon:'⚡',useLabel:'Rücksichtsloser Angriff',image:'/assets/specials_new/91_Lightning_Dust.png'},
   {id:'s92',type:'special',name:'Gilda Griffon',effect:'gilda',text:'Wähle einen Gegner und nimm zufällig 1 Karte aus seiner Hand.',useIcon:'🦅',useLabel:'Krallehieb',image:'/assets/specials_new/92_Gilda_Griffon.png'},
+  {id:'s93',type:'special',name:'Cockatrice',effect:'cockatrice',text:'Versteinert, wähle einen Gegner aus dessen Karte diese Runde aussetzt.',useIcon:'🪨',useLabel:'Versteinert',image:'/assets/specials_new/93_Cockatrice.png'},
 ];
 const artifacts = [
   {id:'a01',type:'artifact',artifactKey:'elements',name:'Elemente der Harmonie',image:'/assets/artifacts/01_Elemente_der_Harmonie.png'},
