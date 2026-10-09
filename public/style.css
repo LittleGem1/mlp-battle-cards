@@ -4176,3 +4176,59 @@ body.scene-lobby #crystalDrift * {
   body.scene-game #game .arena #hand {background:transparent !important;backdrop-filter:none !important;box-shadow:none !important;}
   body.scene-game #game .arena .center-stage #category.category{position:absolute !important;left:0 !important;top:0 !important;}
 }
+
+
+/* === MLP ARENA: RUHIGER BILDSCHIRM / KEIN GROSSFLAECHIGES FLACKERN ===
+   Aufbau aus dem funktionierenden Originalaufbau-Fix bleibt erhalten.
+   Nur die dekorativen Hintergrundeffekte und grossflaechigen Blitze ruhen. */
+body.scene-game #game .arena,
+body.scene-game #game .arena::before,
+body.scene-game #game .arena::after {
+  background-attachment: scroll !important;
+  animation: none !important;
+  transition: none !important;
+  filter: none !important;
+}
+body.scene-game #game .arena::before,
+body.scene-game #game .arena::after {
+  opacity: 0 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+body.scene-game #game #arenaVfx {
+  animation: none !important;
+  transition: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+  background-attachment: scroll !important;
+}
+/* Keine zusaetzlichen Licht-/Wetter-/Gitterebenen ueber dem Hintergrund. */
+body.scene-game #game #arenaVfx > *,
+body.scene-game #game .arena .arena-particle,
+body.scene-game #game .arena .arena-lightning,
+body.scene-game #game .arena .arena-rain {
+  display: none !important;
+  animation: none !important;
+}
+/* Verhindert teure, bei manchen Browsern blinkende Hintergrund-Blur-Layer. */
+body.scene-game #game .arena .opponent,
+body.scene-game #game .arena .center-stage,
+body.scene-game #game .arena #hand,
+body.scene-game #game .arena .self-bar {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+/* Vollbild-Blinkeffekte bei Kartenauflösung / Finisher verhindern,
+   ohne die Animationen der Spielkarten selbst zu deaktivieren. */
+body.scene-game .crystal-flash,
+body.scene-game .v7-impact-flash,
+body.scene-game .v7-heart-crack,
+body.scene-game .v4-crack,
+body.scene-game .special-burst::before,
+body.scene-game .special-burst::after {
+  animation: none !important;
+  opacity: 0 !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  body.scene-game #game .arena * {scroll-behavior:auto !important;}
+}

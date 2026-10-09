@@ -1,6 +1,9 @@
-MLP Battle Cards Arena Restore
+MLP Battle Cards – ruhiger Arena-Hintergrund
+
 1. ZIP entpacken.
-2. Dateien public/style.css und public/index.html in GitHub im Ordner public ersetzen.
-3. Aenderungen committen, Render-Deploy abwarten, Strg+F5.
-4. Sichere vorher die alten beiden Dateien.
-Dieses Update passt nur die Arena-Darstellung an.
+2. In GitHub public/style.css mit dieser Datei ersetzen.
+3. Commit speichern und Render neu deployen lassen.
+4. Browser mit Strg+F5 aktualisieren.
+
+Basis: MLP_Arena_Originalaufbau_Fix_KLEIN.zip.
+Dieser Patch unterdrueckt visuelle Flackerquellen; Live-Test im Browser noch noetig.
