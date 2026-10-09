@@ -1,18 +1,27 @@
-ARENA 1 – NUR WEHENDE BLAETTER (OHNE HINTERGRUNDAENDERUNG)
+MLP Battle Cards – Arena 2 MAGISCHER WALD (EINZELPATCH)
 
-Du moechtest den bestehenden 4K-Jadepalast unveraendert lassen.
-Diese Version fuegt NUR zwei transparente Ebenen mit langsam wehenden
-Blättern hinzu. Keine JavaScript-, Karten- oder Layout-Aenderungen.
+Dieses Paket enthält NUR:
+1. public/assets/backgrounds/arena_2_forest.png – die neue Waldarena (2896 x 2172 Pixel)
+2. NUR_DIESEN_WALD_BLOCK_AN_STYLE_CSS_ANHAENGEN.css – dezente Blatt- und Wasser-Animation.
 
-EINFACH (wenn du immer die zuletzt von uns erstellte style.css nutzt):
-- Nur die Datei public/style.css aus dieser ZIP auf GitHub ersetzen.
+EINBAU
+1. Das neue Wald-Bild unter public/assets/backgrounds/arena_2_forest.png bei GitHub hochladen/ersetzen.
+2. Die Datei NUR_DIESEN_WALD_BLOCK_AN_STYLE_CSS_ANHAENGEN.css öffnen.
+3. Ihren GESAMTEN INHALT GANZ UNTEN an DEINE AKTUELLE public/style.css ANHÄNGEN.
+   Die bestehende style.css NICHT vollständig durch eine ältere Version ersetzen!
+4. public/style.css in GitHub speichern, Render-Deployment abwarten, Strg + F5.
+5. Ein neues Match starten, bis zufällig Waldarena erscheint.
 
-SICHER (wenn du zwischenzeitlich deine style.css veraendert hast):
-- Oeffne die Datei NUR_DIESEN_BLOCK_AN_STYLE_CSS_ANHAENGEN.css aus dieser ZIP.
-- Fuege ihren GESAMTEN Inhalt ganz unten an DEINE aktuelle public/style.css an.
-- Speichere die Datei und lade sie auf GitHub hoch.
+NICHT ERSETZEN: server.js, client.js, index.html, Karten, Arena 1, Lobby usw.
+Die Zufallsauswahl der vier Arenen ist bereits in der vorhandenen Spiellogik vorhanden;
+diese ZIP verändert NICHTS daran.
 
-NICHT hochladen: andere Hintergrunddateien, JS, HTML oder Server-Dateien.
+GRAFIK
+Die Grundlage ist das bereits angefertigte hochauflösende Waldmotiv mit Tieren,
+Steinzirkel und Bach (Original: 1448 x 1086 Pixel). Für große Displays
+ist es sorgfältig auf 2896 x 2172 hochskaliert, aber nicht nativ in 4K erzeugt.
+Die Landschaft selbst bleibt still; nur wenige Blätter und Wasserreflexe bewegen sich.
+Keine zusätzlichen Soundeffekte.
 
-Danach auf das Render-Deployment warten, Strg+F5 und Arena 1 starten.
-Das Blattwerk hat KEINE eigene Bilddatei – es steckt in der CSS-Datei.
+WENN ZURÜCKSETZEN: Den angehängten Wald-CSS-Block wieder entfernen und bei Bedarf
+das vorherige arena_2_forest.png zurückspielen. Andere Arena-Dateien bleiben unberührt.

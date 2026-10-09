@@ -1,0 +1,71 @@
+/* === EINZELFIX ARENA 2: Magischer Wald ===
+   Nur ganz unten an die BESTEHENDE public/style.css anhängen.
+   Keine Regeln für andere Arenen, keine Handkarten-/Layout-/JS-Regeln. */
+body.scene-game #game.screen.active > .arena.arena-whispering_forest,
+body.scene-game #game.screen.active > .arena:has(#arenaVfx.vfx-whispering_forest) {
+  --p2-arena-bg: url('/assets/backgrounds/arena_2_forest.png') !important;
+  background-image: linear-gradient(rgba(5,17,12,.13),rgba(5,17,12,.16)), url('/assets/backgrounds/arena_2_forest.png') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Eine Hintergrund-Ebene statt zwei konkurrierender Waldgrafiken. */
+body.scene-game #game.screen.active > .arena.arena-whispering_forest #arenaVfx,
+body.scene-game #game.screen.active > .arena:has(#arenaVfx.vfx-whispering_forest) #arenaVfx {
+  background-image: none !important;
+  background-color: transparent !important;
+  pointer-events: none !important;
+}
+
+/* Wenige leichte Blätter; kein Verschieben oder Animieren des Wald-Bildes. */
+body.scene-game #game.screen.active > .arena.arena-whispering_forest #arenaVfx::before,
+body.scene-game #game.screen.active > .arena:has(#arenaVfx.vfx-whispering_forest) #arenaVfx::before {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 2 !important;
+  pointer-events: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2242%22%20height%3D%2236%22%20viewBox%3D%220%200%2042%2036%22%3E%3Cpath%20d%3D%22M2%2024%20Q7%202%2040%205%20Q34%2029%2012%2033%20Q6%2031%202%2024Z%22%20fill%3D%22%2396bd61%22%20stroke%3D%22%23527344%22%20stroke-width%3D%221.7%22%2F%3E%3Cpath%20d%3D%22M5%2029%20Q21%2018%2038%207%22%20fill%3D%22none%22%20stroke%3D%22%23d5e6ab%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E"), url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2242%22%20height%3D%2236%22%20viewBox%3D%220%200%2042%2036%22%3E%3Cpath%20d%3D%22M2%2024%20Q7%202%2040%205%20Q34%2029%2012%2033%20Q6%2031%202%2024Z%22%20fill%3D%22%23d9b271%22%20stroke%3D%22%23977345%22%20stroke-width%3D%221.7%22%2F%3E%3Cpath%20d%3D%22M5%2029%20Q21%2018%2038%207%22%20fill%3D%22none%22%20stroke%3D%22%23ffdf9e%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E"), url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2242%22%20height%3D%2236%22%20viewBox%3D%220%200%2042%2036%22%3E%3Cpath%20d%3D%22M2%2024%20Q7%202%2040%205%20Q34%2029%2012%2033%20Q6%2031%202%2024Z%22%20fill%3D%22%2396bd61%22%20stroke%3D%22%23527344%22%20stroke-width%3D%221.7%22%2F%3E%3Cpath%20d%3D%22M5%2029%20Q21%2018%2038%207%22%20fill%3D%22none%22%20stroke%3D%22%23d5e6ab%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E"), url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2242%22%20height%3D%2236%22%20viewBox%3D%220%200%2042%2036%22%3E%3Cpath%20d%3D%22M2%2024%20Q7%202%2040%205%20Q34%2029%2012%2033%20Q6%2031%202%2024Z%22%20fill%3D%22%23d9b271%22%20stroke%3D%22%23977345%22%20stroke-width%3D%221.7%22%2F%3E%3Cpath%20d%3D%22M5%2029%20Q21%2018%2038%207%22%20fill%3D%22none%22%20stroke%3D%22%23ffdf9e%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E"), url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2242%22%20height%3D%2236%22%20viewBox%3D%220%200%2042%2036%22%3E%3Cpath%20d%3D%22M2%2024%20Q7%202%2040%205%20Q34%2029%2012%2033%20Q6%2031%202%2024Z%22%20fill%3D%22%2396bd61%22%20stroke%3D%22%23527344%22%20stroke-width%3D%221.7%22%2F%3E%3Cpath%20d%3D%22M5%2029%20Q21%2018%2038%207%22%20fill%3D%22none%22%20stroke%3D%22%23d5e6ab%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E"), url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2242%22%20height%3D%2236%22%20viewBox%3D%220%200%2042%2036%22%3E%3Cpath%20d%3D%22M2%2024%20Q7%202%2040%205%20Q34%2029%2012%2033%20Q6%2031%202%2024Z%22%20fill%3D%22%23d9b271%22%20stroke%3D%22%23977345%22%20stroke-width%3D%221.7%22%2F%3E%3Cpath%20d%3D%22M5%2029%20Q21%2018%2038%207%22%20fill%3D%22none%22%20stroke%3D%22%23ffdf9e%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E") !important;
+  background-size: 27px 23px, 23px 19px, 32px 27px, 21px 18px, 26px 22px, 19px 16px !important;
+  background-repeat: no-repeat !important;
+  animation: mlpForestLeafFloat 22s linear infinite !important;
+  opacity: .72 !important;
+}
+@keyframes mlpForestLeafFloat {
+  0%   {background-position: 12% -35px, 29% 21%, 48% -26px, 67% 14%, 78% -42px, 91% 39%;}
+  100% {background-position: 26% calc(100% + 55px), 41% calc(124% + 20px), 57% calc(100% + 80px), 74% calc(130% + 20px), 89% calc(100% + 45px), 97% calc(133% + 20px);}
+}
+
+/* Dezentes Wasserglitzern nur im unteren Bach-Bereich. */
+body.scene-game #game.screen.active > .arena.arena-whispering_forest #arenaVfx::after,
+body.scene-game #game.screen.active > .arena:has(#arenaVfx.vfx-whispering_forest) #arenaVfx::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  left: 5% !important;
+  right: 5% !important;
+  top: auto !important;
+  bottom: 1% !important;
+  width: auto !important;
+  height: 26% !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+  background: repeating-linear-gradient(175deg, transparent 0 29px, rgba(211,246,255,.17) 30px 32px, transparent 33px 71px) !important;
+  mix-blend-mode: screen !important;
+  animation: mlpForestWaterShimmer 8s ease-in-out infinite alternate !important;
+  opacity: .4 !important;
+}
+@keyframes mlpForestWaterShimmer {
+  from {background-position: -60px 0; opacity:.25;}
+  to   {background-position: 80px 0; opacity:.42;}
+}
+
+/* Kein Eingriff in die Spielmechanik; Animationen dürfen nie Mausklicks abfangen. */
+@media (prefers-reduced-motion: reduce) {
+  body.scene-game #game.screen.active > .arena.arena-whispering_forest #arenaVfx::before,
+  body.scene-game #game.screen.active > .arena.arena-whispering_forest #arenaVfx::after {animation:none!important;}
+}
