@@ -252,7 +252,7 @@ function availableTargets(r,p,mode='any'){
 function requestTarget(socket,r,p,sourceCard,action,mode='any',title='Wähle einen Gegner'){
   const targets=availableTargets(r,p,mode);
   if(!targets.length){socket.emit('errorMsg','Für diesen Effekt gibt es gerade kein gültiges Ziel.');return false;}
-  socket.data.pendingSpecial={room:r.code,action,sourceCardId:sourceCard.id};
+  socket.data.pendingSpecial={room:r.code,round:r.round,action,sourceCardId:sourceCard.id};
   socket.emit('specialTargetRequest',{title,card:sourceCard,targets:targets.map(t=>({id:t.id,name:t.name,selected:!!t.selected,handCount:t.hand.length}))});
   return true;
 }
@@ -260,6 +260,51 @@ function cozyGiveChoiceOptions(r,p){
   const cards=(p?.hand||[]).map(id=>byId[id]).filter(Boolean);
   const normals=cards.filter(c=>c.type==='normal');
   return normals.length?normals:cards;
+}
+// Chrysalis copies the RESOLVED effect, not Chrysalis again if her target
+// previously copied something. Each round has a separate history.
+function lastEnemySpecialEffect(r,p){
+  for(const item of [...(r.specialHistory||[])].reverse()){
+    if(item.playerId===p.id)continue;
+    const card=byId[item.resolvedCardId||item.cardId];
+    if(card?.type==='special'&&card.effect!=='chrysalis')return card;
+  }
+  return null;
+}
+// Selection dialogs are transient. They must never survive a new round,
+// timeout, surrender, cancel, or disconnect and lock later turns.
+function returnUnchosenSpecialCards(r,pending){
+  if(!pending?.choices?.length)return;
+  if(pending.action==='sunset')r.normalDeck.unshift(...pending.choices);
+  else if(pending.action==='diamonddogs')r.normalDiscard.push(...pending.choices);
+}
+function clearSpecialChoice(socket,r,notify=false){
+  if(!socket)return false;
+  const pending=socket.data.pendingSpecial;
+  if(pending?.room===r.code && pending.round===r.round)returnUnchosenSpecialCards(r,pending);
+  const flutter=socket.data.pendingFlutter;
+  if(flutter?.room===r.code && flutter.round===r.round){r.normalDeck.unshift(...flutter.choices);}
+  const had=!!(socket.data.pendingSpecial||socket.data.pendingFlutter||socket.data.pendingRarity);
+  socket.data.pendingSpecial=null;
+  socket.data.pendingFlutter=null;
+  socket.data.pendingRarity=null;
+  if(had&&notify)socket.emit('specialChoicesCancelled');
+  return had;
+}
+function clearRoomSpecialChoices(r){
+  for(const p of roomPlayers(r)){
+    if(p.isBot)continue;
+    const socket=io.sockets.sockets.get(p.id);
+    if(socket)clearSpecialChoice(socket,r,true);
+  }
+}
+function pendingForCurrentSelection(socket,r){
+  const q=socket.data.pendingSpecial;
+  if(!q||!r||r.phase!=='select'||q.room!==r.code||q.round!==r.round){
+    if(q)clearSpecialChoice(socket,r,true);
+    return null;
+  }
+  return q;
 }
 function consumeSpecial(r,p,c){
   const i=p.hand.indexOf(c.id);
@@ -442,7 +487,7 @@ function botApplySpecial(r,p,c){
   }
 }
 function botUsableSpecials(r,p){
-  const history=(r.specialHistory||[]).some(x=>x.playerId!==p.id&&x.effect!=='chrysalis');
+  const history=!!lastEnemySpecialEffect(r,p);
   return p.hand.map(id=>byId[id]).filter(c=>c?.type==='special').filter(c=>{
     if(c.effect==='rainbow'||c.effect==='stormking')return r.category==='speed';
     if(c.effect==='applejack')return r.category==='strength';
@@ -470,11 +515,16 @@ function botMaybeUseSpecial(r,p,forced=false){
   if(!source)return false;
   let effective=source;
   if(source.effect==='chrysalis'){
-    const last=[...(r.specialHistory||[])].reverse().find(x=>x.playerId!==p.id&&x.effect!=='chrysalis');
-    if(last&&byId[last.cardId])effective=byId[last.cardId];
+    const copy=lastEnemySpecialEffect(r,p);
+    if(!copy)return false;
+    effective=copy;
   }
   if(!consumeSpecial(r,p,source))return false;
-  if(source.effect==='chrysalis')io.to(r.code).emit('specialCopied',{playerId:p.id,name:p.name,copied:effective});
+  if(source.effect==='chrysalis'){
+    const latest=r.specialHistory[r.specialHistory.length-1];
+    if(latest)latest.resolvedCardId=effective.id;
+    io.to(r.code).emit('specialCopied',{playerId:p.id,name:p.name,copied:effective});
+  }
   botApplySpecial(r,p,effective);
   sendState(r);
   if(source.effect==='changeling'&&mayUseSpecial(p))botLater(r,()=>botMaybeUseSpecial(r,p,true),260);
@@ -742,6 +792,7 @@ function requiredPlayers(r){ return (r.roundPlayerIds||[]).map(id=>r.players.get
 
 function resetToLobby(r){
   clearTimers(r);
+  clearRoomSpecialChoices(r);
   r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;r.arenaSelection='random';
   r.round=0;r.played={};r.dice={};r.tieIds=[];r.roundBuff={};r.roundPlayerIds=[];
   r.postGameReady=new Set();r.forceNextCategoryDifferent=false;r.forcedNextCategory=null;resetRoundFX(r);
@@ -807,6 +858,7 @@ function gameOverIfNeeded(r){
 }
 function handleSelectionTimeout(r){
   if(!r||r.phase!=='select')return;
+  clearRoomSpecialChoices(r);
   r.selectionTimer=null;r.selectionDeadline=null;
   const req=requiredPlayers(r),late=req.filter(p=>!p.selected);
   if(!late.length){maybeEvaluate(r);return;}
@@ -839,6 +891,7 @@ function startRound(r,delay=900){
   if(r.selectionTimer)clearTimeout(r.selectionTimer);
   r.roundTimer=setTimeout(()=>{
     if(!rooms.has(r.code))return;
+    clearRoomSpecialChoices(r);
     r.roundTimer=null;r.round++;r.phase='roundintro';r.played={};r.dice={};r.tieIds=[];r.roundBuff={};resetRoundFX(r);
     for(const p of roomPlayers(r)){if(p.pendingForcedDiscard?.timer)clearTimeout(p.pendingForcedDiscard.timer);p.pendingForcedDiscard=null;p.selected=null;p.specialUsed=0;p.specialExtra=0;}
     nextCategory(r);
@@ -1101,6 +1154,9 @@ io.on('connection',socket=>{
     if(p?.surrendered)return socket.emit('errorMsg','Du hast aufgegeben und schaust nur noch zu.');
     if(!p||!c||c.type!=='normal'||!p.hand.includes(cardId))return socket.emit('errorMsg','Diese Karte kann nicht gespielt werden.');
     if(p.selected)return socket.emit('errorMsg','Du hast bereits alle Karten für diese Runde gewählt.');
+    if(socket.data.pendingSpecial||socket.data.pendingFlutter||socket.data.pendingRarity){
+      return socket.emit('errorMsg','Bitte die Spezialkarten-Auswahl zuerst abschließen oder über „Schließen“ abbrechen.');
+    }
 
     const entry=r.played[socket.id]||{cardIds:[]};
     const needed=fxHas(r,'doubleNormal',p.id)?2:1;
@@ -1136,16 +1192,19 @@ io.on('connection',socket=>{
     if(p?.surrendered)return socket.emit('errorMsg','Du hast aufgegeben und schaust nur noch zu.');
     if(!p||!source||source.type!=='special'||!p.hand.includes(cardId))return;
     if(p.selected)return socket.emit('errorMsg','Du hast schon deine normale Karte vollständig gelegt.');
-    if(socket.data.pendingSpecial)return socket.emit('errorMsg','Beende zuerst die aktuelle Spezialkarten-Auswahl.');
+    if(socket.data.pendingSpecial||socket.data.pendingFlutter||socket.data.pendingRarity){
+      const old=socket.data.pendingSpecial||socket.data.pendingFlutter||socket.data.pendingRarity;
+      if(old.round!==r.round||old.room!==r.code)clearSpecialChoice(socket,r,true);
+      else return socket.emit('errorMsg','Beende zuerst die aktuelle Spezialkarten-Auswahl oder schließe das Fenster.');
+    }
     if(!mayUseSpecial(p))return socket.emit('errorMsg','Du kannst in dieser Runde nur 1 Spezialkarte einsetzen. Changeling erlaubt eine zusätzliche.');
 
     let effectCard=source;
 
     // Chrysalis kopiert die zuletzt von einem Gegner ausgespielte Spezialkarte.
     if(source.effect==='chrysalis'){
-      const last=[...(r.specialHistory||[])].reverse().find(x=>x.playerId!==p.id&&x.effect!=='chrysalis');
-      if(!last)return socket.emit('errorMsg','Es wurde noch keine gegnerische Spezialkarte gespielt, die Chrysalis kopieren kann.');
-      effectCard=byId[last.cardId]||source;
+      effectCard=lastEnemySpecialEffect(r,p);
+      if(!effectCard)return socket.emit('errorMsg','Chrysalis kann erst eingesetzt werden, nachdem ein Gegner in DIESER Runde eine Spezialkarte aktiviert hat. Chrysalis bleibt auf deiner Hand.');
     }
 
     const effect=effectCard.effect;
@@ -1166,7 +1225,9 @@ io.on('connection',socket=>{
 
     // Bei Chrysalis wird visuell Chrysalis gezeigt, aber mechanisch der kopierte Effekt ausgeführt.
     if(source.effect==='chrysalis'){
-      socket.emit('specialDone',{text:`Chrysalis kopiert: ${effectCard.name}.`});
+      const latest=r.specialHistory[r.specialHistory.length-1];
+      if(latest)latest.resolvedCardId=effectCard.id;
+      socket.emit('specialDone',{text:`Chrysalis kopiert ${effectCard.name}. Folge der Auswahl (falls erforderlich), danach lege deine normale Karte.`});
       io.to(r.code).emit('specialCopied',{playerId:p.id,name:p.name,copied:effectCard});
     }
 
@@ -1181,11 +1242,14 @@ io.on('connection',socket=>{
     }else if(effect==='twilight'){
       const d=drawNormalForHand(r,p,2);p.hand.push(...d);socket.emit('specialDone',{text:`${d.length} normale Karten gezogen.`});
     }else if(effect==='fluttershy'){
-      const d=drawNormal(r,2);socket.data.pendingFlutter={room:r.code,choices:d};
-      socket.emit('flutterChoices',{cards:d.map(id=>byId[id]).filter(Boolean)});
+      const d=drawNormal(r,2);socket.data.pendingFlutter={room:r.code,round:r.round,choices:d};
+      if(d.length)socket.emit('flutterChoices',{cards:d.map(id=>byId[id]).filter(Boolean)});
+      else {socket.data.pendingFlutter=null;socket.emit('specialDone',{text:'Keine Karte zum Auswählen verfügbar.'});}
     }else if(effect==='rarity'){
-      socket.data.pendingRarity={room:r.code};
-      socket.emit('rarityChoose',{cards:p.hand.map(id=>byId[id]).filter(Boolean)});
+      if(p.hand.length){
+        socket.data.pendingRarity={room:r.code,round:r.round};
+        socket.emit('rarityChoose',{cards:p.hand.map(id=>byId[id]).filter(Boolean)});
+      }else socket.emit('specialDone',{text:'Keine Karte zum Tauschen verfügbar.'});
     }else if(effect==='tirek'){
       requestTarget(socket,r,p,source,'tirek','any','Tirek: Welchen Gegner willst du schwächen?');
     }else if(effect==='stormking'){
@@ -1200,7 +1264,7 @@ io.on('connection',socket=>{
       requestTarget(socket,r,p,source,'sludge','hand','Sludge: Wähle den Gegner, dessen Karte du bestimmst.');
     }else if(effect==='diamonddogs'){
       const d=drawNormal(r,2);
-      socket.data.pendingSpecial={room:r.code,action:'diamonddogs',sourceCardId:source.id,choices:d};
+      socket.data.pendingSpecial={room:r.code,round:r.round,action:'diamonddogs',sourceCardId:source.id,choices:d};
       socket.emit('specialCardRequest',{title:'Diamond Dogs: Behalte 1 der 2 Karten',cards:d.map(id=>byId[id]).filter(Boolean)});
     }else if(effect==='changeling'){
       p.specialExtra=(p.specialExtra||0)+1;
@@ -1223,12 +1287,12 @@ io.on('connection',socket=>{
       requestTarget(socket,r,p,source,'bugbear','any','Bugbear: Wer setzt diese Runde aus?');
     }else if(effect==='manticore'){
       const pool=[...r.normalDiscard.map(id=>({id,zone:'normal'})),...r.rewardDiscard.map(id=>({id,zone:'reward'}))];
-      socket.data.pendingSpecial={room:r.code,action:'manticore',sourceCardId:source.id,choices:pool};
+      socket.data.pendingSpecial={room:r.code,round:r.round,action:'manticore',sourceCardId:source.id,choices:pool};
       socket.emit('specialCardRequest',{title:'Manticore: Nimm 1 Karte aus dem Ablagestapel zurück',cards:pool.map(x=>byId[x.id]).filter(Boolean)});
     }else if(effect==='timberwolves'){
       fxAdd(r,'doubleNormal',p.id);socket.emit('specialDone',{text:'Lege diese Runde 2 normale Karten. Der höhere Kategorienwert zählt.'});
     }else if(effect==='grogar'){
-      socket.data.pendingSpecial={room:r.code,action:'grogar',sourceCardId:source.id};
+      socket.data.pendingSpecial={room:r.code,round:r.round,action:'grogar',sourceCardId:source.id};
       socket.emit('specialCategoryRequest',{title:'Grogar: Wähle die Kategorie',categories:CATEGORIES.map(id=>({id,label:CATEGORY_LABEL[id],icon:CATEGORY_ICON[id]}))});
     }else if(effect==='sombra'){
       fxAdd(r,'protected',p.id);
@@ -1248,7 +1312,7 @@ io.on('connection',socket=>{
       maybeEvaluate(r);
     }else if(effect==='sunset'){
       const d=drawNormal(r,3);
-      socket.data.pendingSpecial={room:r.code,action:'sunset',sourceCardId:source.id,choices:d};
+      socket.data.pendingSpecial={room:r.code,round:r.round,action:'sunset',sourceCardId:source.id,choices:d};
       socket.emit('specialCardRequest',{title:'Sunset Shimmer: Behalte 1 der obersten 3 normalen Karten',cards:d.map(id=>byId[id]).filter(Boolean)});
     }else if(effect==='starlight'){
       for(const t of roomPlayers(r)){
@@ -1272,13 +1336,27 @@ io.on('connection',socket=>{
     }
 
     sendState(r);
+    maybeEvaluate(r);
+  });
+
+  socket.on('cancelSpecialChoice',()=>{
+    const r=getRoom(socket);
+    if(!r)return;
+    const had=clearSpecialChoice(socket,r,false);
+    if(had){
+      socket.emit('specialDone',{text:'Spezialkarten-Auswahl abgebrochen. Die Runde kann normal weitergehen.'});
+      sendState(r);maybeEvaluate(r);
+    }
   });
 
   socket.on('specialTargetChoice',({targetId})=>{
-    const pending=socket.data.pendingSpecial,r=getRoom(socket),p=r?.players.get(socket.id);
-    if(!pending||!r||pending.room!==r.code||!p)return;
+    const r=getRoom(socket),pending=pendingForCurrentSelection(socket,r),p=r?.players.get(socket.id);
+    if(!pending||!p)return;
     const target=r.players.get(targetId),action=pending.action,source=byId[pending.sourceCardId];
-    if(!target||target.id===p.id||target.surrendered){socket.data.pendingSpecial=null;return socket.emit('errorMsg','Ungültiges Ziel.');}
+    if(!target||target.id===p.id||target.surrendered){
+      socket.emit('errorMsg','Ungültiges Ziel. Auswahl beendet; du kannst die Runde fortsetzen.');
+      clearSpecialChoice(socket,r,true);return;
+    }
     socket.data.pendingSpecial=null;
 
     if(action==='tirek'){
@@ -1290,12 +1368,12 @@ io.on('connection',socket=>{
       // Bis die eigene Tauschkarte ausgewählt ist, bleibt die gegnerische Karte
       // auf ihrer Hand. So verliert niemand Karten, wenn das Fenster schließt.
       const stolenId=target.hand[Math.floor(Math.random()*target.hand.length)];
-      socket.data.pendingSpecial={room:r.code,action:'cozy-exchange',sourceCardId:source.id,targetId:target.id,stolenId,choices:giveChoices.map(c=>c.id)};
+      socket.data.pendingSpecial={room:r.code,round:r.round,action:'cozy-exchange',sourceCardId:source.id,targetId:target.id,stolenId,choices:giveChoices.map(c=>c.id)};
       socket.emit('specialCardRequest',{title:`Cozy Glow: Welche deiner Karten gibst du ${target.name} im Tausch?`,cards:giveChoices});
       return;
     }else if(action==='sludge'||action==='maneiac'){
       if(!target.hand.length)return socket.emit('errorMsg','Dieser Gegner hat keine Handkarte.');
-      socket.data.pendingSpecial={room:r.code,action:action==='sludge'?'sludge-card':'maneiac-card',sourceCardId:source.id,targetId:target.id};
+      socket.data.pendingSpecial={room:r.code,round:r.round,action:action==='sludge'?'sludge-card':'maneiac-card',sourceCardId:source.id,targetId:target.id};
       socket.emit('specialCardRequest',{title:`${action==='sludge'?'Sludge':'Mane-iac'}: Welche Karte von ${target.name} soll abgelegt werden?`,cards:target.hand.map(id=>byId[id]).filter(Boolean)});
       return;
     }else if(action==='cockatrice'){
@@ -1317,12 +1395,12 @@ io.on('connection',socket=>{
       target.hand.splice(target.hand.indexOf(id),1);p.hand.push(id);
       emitImpact(r,'steal',[target.id,p.id],`${p.name} nimmt eine zufällige Karte von ${target.name}.`);
     }
-    sendState(r);
+    sendState(r);maybeEvaluate(r);
   });
 
   socket.on('specialCategoryChoice',({category})=>{
-    const pending=socket.data.pendingSpecial,r=getRoom(socket);
-    if(!pending||!r||pending.room!==r.code||pending.action!=='grogar'||!CATEGORIES.includes(category))return;
+    const r=getRoom(socket),pending=pendingForCurrentSelection(socket,r);
+    if(!pending||pending.action!=='grogar'||!CATEGORIES.includes(category))return;
     socket.data.pendingSpecial=null;
     r.category=category;
     if(Array.isArray(r.categoryHistory)&&r.categoryHistory.length)r.categoryHistory[r.categoryHistory.length-1]=category;
@@ -1332,8 +1410,8 @@ io.on('connection',socket=>{
   });
 
   socket.on('specialCardChoice',({cardId})=>{
-    const pending=socket.data.pendingSpecial,r=getRoom(socket),p=r?.players.get(socket.id);
-    if(!pending||!r||pending.room!==r.code||!p)return;
+    const r=getRoom(socket),pending=pendingForCurrentSelection(socket,r),p=r?.players.get(socket.id);
+    if(!pending||!p)return;
     const action=pending.action;
 
     if(action==='sludge-card'||action==='maneiac-card'){
@@ -1416,11 +1494,11 @@ io.on('connection',socket=>{
     }
   });
 
-  socket.on('flutterKeep',({cardId})=>{const x=socket.data.pendingFlutter,r=getRoom(socket);if(!x||!r||x.room!==r.code||!x.choices.includes(cardId))return;const p=r.players.get(socket.id);
+  socket.on('flutterKeep',({cardId})=>{const x=socket.data.pendingFlutter,r=getRoom(socket);if(!x||!r||r.phase!=='select'||x.room!==r.code||x.round!==r.round||!x.choices.includes(cardId))return;const p=r.players.get(socket.id);
     const other=x.choices.filter(id=>id!==cardId);
     r.normalDiscard.push(...other);
     p.hand.push(cardId);socket.data.pendingFlutter=null;socket.emit('specialDone',{text:`${byId[cardId].name} behalten.`});sendState(r);});
-  socket.on('raritySwap',({cardId})=>{const x=socket.data.pendingRarity,r=getRoom(socket);if(!x||!r||x.room!==r.code)return;const p=r.players.get(socket.id);if(!p.hand.includes(cardId))return;p.hand.splice(p.hand.indexOf(cardId),1);discardCard(r,cardId);const d=drawFromPool(r,1,[cardId],'normal');if(d.length)p.hand.push(d[0]);socket.data.pendingRarity=null;socket.emit('specialDone',{text:d.length?`${byId[cardId].name} getauscht.`:'Keine freie Karte.'});sendState(r);});
+  socket.on('raritySwap',({cardId})=>{const x=socket.data.pendingRarity,r=getRoom(socket);if(!x||!r||r.phase!=='select'||x.room!==r.code||x.round!==r.round)return;const p=r.players.get(socket.id);if(!p.hand.includes(cardId))return;p.hand.splice(p.hand.indexOf(cardId),1);discardCard(r,cardId);const d=drawFromPool(r,1,[cardId],'normal');if(d.length)p.hand.push(d[0]);socket.data.pendingRarity=null;socket.emit('specialDone',{text:d.length?`${byId[cardId].name} getauscht.`:'Keine freie Karte.'});sendState(r);});
 
   socket.on('giveUp',()=>{
     const r=getRoom(socket),p=r?.players.get(socket.id);

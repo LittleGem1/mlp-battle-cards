@@ -426,6 +426,7 @@ function renderPostGameLobby(){
 }
 
 socket.on('roomState',s=>{
+  if(s.phase!=='select' || (state&&s.round!==state.round))dismissOldSpecialChoices();
   if(finisherDemoActive && s.phase!=='ready')stopFinisherDemo();
   state=s;
 
@@ -822,28 +823,34 @@ function ensureSpecialChoiceDialog(){
   </div>`;
   document.body.append(d);
   $('#specialChoiceClose').addEventListener('click',()=>d.close());
+  d.addEventListener('close',()=>{
+    if(d.dataset.selectionResolved!=='1')socket.emit('cancelSpecialChoice');
+    d.dataset.selectionResolved='0';
+  });
   return d;
 }
 function showPlayerChoices(title,targets,onChoose){
   const d=ensureSpecialChoiceDialog(),g=$('#specialChoiceGrid');
+  d.dataset.selectionResolved='0';
   $('#specialChoiceTitle').textContent=title;$('#specialChoiceHint').textContent='Wähle einen Mitspieler.';
   g.innerHTML='';
   (targets||[]).forEach(t=>{
     const b=document.createElement('button');b.type='button';b.className='special-player-choice';
     b.innerHTML=`<strong>${escapeHtml(t.name)}</strong><small>${t.selected?'✓ Karte liegt':'wartet'} · ${t.handCount} Handkarten</small>`;
-    b.addEventListener('click',()=>{d.close();onChoose(t.id)});
+    b.addEventListener('click',()=>{d.dataset.selectionResolved='1';d.close();onChoose(t.id)});
     g.append(b);
   });
   d.showModal();
 }
 function showCategoryChoices(title,categories,onChoose){
   const d=ensureSpecialChoiceDialog(),g=$('#specialChoiceGrid');
+  d.dataset.selectionResolved='0';
   $('#specialChoiceTitle').textContent=title;$('#specialChoiceHint').textContent='Diese Kategorie gilt sofort für die laufende Runde.';
   g.innerHTML='';
   (categories||[]).forEach(c=>{
     const b=document.createElement('button');b.type='button';b.className='special-category-choice';
     b.innerHTML=`<span>${c.icon}</span><strong>${escapeHtml(c.label)}</strong>`;
-    b.addEventListener('click',()=>{d.close();onChoose(c.id)});
+    b.addEventListener('click',()=>{d.dataset.selectionResolved='1';d.close();onChoose(c.id)});
     g.append(b);
   });
   d.showModal();
@@ -1873,6 +1880,13 @@ socket.on('postGameReadyState',e=>{
 });
 socket.on('backToLobby',()=>{if(finisherDemoActive)stopFinisherDemo();waitingForLobbyReset=false;stopCountdown();stopSelectionTimer();hideTieAlert();try{$('#gameOverDialog').close()}catch{};try{$('#giftDialog').close()}catch{};clearTable();show('lobby');setMusicMode('lobby');if(state?.phase==='lobby')renderLobby();toast('Lobby ist bereit für die nächste Runde.')});
 socket.on('roomLeft',()=>{if(finisherDemoActive)stopFinisherDemo();waitingForLobbyReset=false;stopCountdown();stopSelectionTimer();hideTieAlert();state=null;hand=[];clearTable();renderHand();show('home');setMusicMode('lobby');toast('Du hast den Raum verlassen.')});
+function dismissOldSpecialChoices(){
+  for(const id of ['specialChoiceDialog','choiceDialog']){
+    const d=document.getElementById(id);
+    if(d?.open){d.dataset.selectionResolved='1';d.close();}
+  }
+}
+socket.on('specialChoicesCancelled',dismissOldSpecialChoices);
 socket.on('specialTargetRequest',e=>showPlayerChoices(e.title,e.targets,id=>socket.emit('specialTargetChoice',{targetId:id})));
 socket.on('specialCategoryRequest',e=>showCategoryChoices(e.title,e.categories,id=>socket.emit('specialCategoryChoice',{category:id})));
 socket.on('specialCardRequest',e=>showChoices(e.title,e.cards,c=>socket.emit('specialCardChoice',{cardId:c.id})));
@@ -1916,7 +1930,27 @@ socket.on('specialImpact',e=>{
 
 socket.on('flutterChoices',e=>showChoices('Fluttershy: Welche Karte möchtest du behalten?',e.cards,c=>socket.emit('flutterKeep',{cardId:c.id})));
 socket.on('rarityChoose',e=>showChoices('Rarity: Welche Karte möchtest du austauschen?',e.cards,c=>socket.emit('raritySwap',{cardId:c.id})));
-function showChoices(title,cards,cb){$('#choiceTitle').textContent=title;const g=$('#choiceCards');g.innerHTML='';cards.forEach(c=>{const b=document.createElement('button');b.type='button';b.innerHTML=`<img src="${c.image}" alt="${escapeHtml(c.name)}">`;b.addEventListener('click',()=>{$('#choiceDialog').close();cb(c)});g.append(b)});$('#choiceDialog').showModal()}
+function showChoices(title,cards,cb){
+  const d=$('#choiceDialog');
+  if(!d.dataset.cancelHandler){
+    d.dataset.cancelHandler='1';
+    d.addEventListener('close',()=>{
+      if(d.dataset.selectionResolved!=='1')socket.emit('cancelSpecialChoice');
+      d.dataset.selectionResolved='0';
+    });
+  }
+  d.dataset.selectionResolved='0';
+  $('#choiceTitle').textContent=title;
+  const g=$('#choiceCards');g.innerHTML='';
+  (cards||[]).forEach(c=>{
+    const b=document.createElement('button');b.type='button';
+    b.innerHTML=`<img src="${c.image}" alt="${escapeHtml(c.name)}">`;
+    b.addEventListener('click',()=>{d.dataset.selectionResolved='1';d.close();cb(c)});
+    g.append(b);
+  });
+  if((cards||[]).length)d.showModal();
+  else {socket.emit('cancelSpecialChoice');toast('Keine Karte für diese Auswahl verfügbar. Du kannst die Runde fortsetzen.');}
+}
 
 $('#giftBox').addEventListener('click',()=>{if(!pendingGift)return;pendingGift=false;playSfx('geschenk',{gain:.95,cooldown:200});const lockedItems=ITEM_KEYS.filter(x=>!STARTER_KEYS.includes(x)&&!unlocks.includes(x));const lockedFrames=FRAME_KEYS.filter(x=>!STARTER_FRAME_KEYS.includes(x)&&!frameUnlocks.includes(x));const kinds=[];if(lockedItems.length)kinds.push('item');if(lockedFrames.length)kinds.push('frame');$('#giftBox').style.display='none';if(!kinds.length){$('#giftResult').innerHTML='<div class="gift-item"><strong>Sammlung vollständig! ✨</strong><small>Du hast alle Items und Rahmen entdeckt.</small></div>';return;}const kind=kinds[Math.floor(Math.random()*kinds.length)];if(kind==='item'){const key=lockedItems[Math.floor(Math.random()*lockedItems.length)];unlocks.push(key);localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));const a=ITEMS[key];$('#giftResult').innerHTML=`<div class="gift-item"><span class="reward-type">✨ NEUES ITEM</span><span class="item-art"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><small>${a.desc||'Neues Namens-Item freigeschaltet.'}</small></div>`;}else{const key=lockedFrames[Math.floor(Math.random()*lockedFrames.length)];frameUnlocks.push(key);localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));const a=FRAMES[key];$('#giftResult').innerHTML=`<div class="gift-item"><span class="reward-type">🖼 NEUER RAHMEN</span><span class="reward-frame"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><small>Neuer Namensrahmen freigeschaltet.</small></div>`;}renderAccessoryGrid();specialSound();});
 

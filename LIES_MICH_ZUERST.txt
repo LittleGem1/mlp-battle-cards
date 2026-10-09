@@ -1,63 +1,41 @@
-MLP BATTLE CARDS – NEUE KARTEN + COCKATRICE + DEIN SOUND
-========================================================
-FERTIGES PATCH-PAKET für GitHub, KEIN eigenständiges Vollspiel.
+MLP Battle Cards – CHRYSALIS BUGFIX (2026-10-09)
+================================================
 
-1. ZIP ENTpacken.
-2. Die Dateien MIT ihren relativen Pfaden nach GitHub hochladen.
-3. Folgende drei Dateien ERSETZEN (sie gehören ins Hauptverzeichnis bzw. public):
-   cards.js            (Hauptverzeichnis)
-   server.js           (Hauptverzeichnis)
-   public/client.js    (Ordner public/)
-4. NEUE Dateien HOCHLADEN:
-   public/cockatrice_effect.js
-   public/cockatrice_effect.css
-   public/assets/animations/cockatrice_sprite.png
-   public/assets/sounds/cockatrice_steinbruch.mp3
-   public/assets/specials_new/93_Cockatrice.png
-   public/assets/cards_new/094_Inphenno.webp bis 106_Ruby_Blood.webp (13 Dateien)
+WICHTIG: Dieses Mini-Patch baut auf dem zuletzt von uns erstellten Paket
+'MLP_BATTLE_CARDS_13_KARTEN_COCKATRICE_MIT_SOUND_KOMPAKT.zip' auf.
 
-Nicht ersetzen / nicht löschen:
-   public/style.css, public/index.html, public/arena_visuals.css,
-   public/arena_selector.js, bestehende Arenen, vorhandene 12 Finisher,
-   alte Kartenbilder oder andere Tondateien.
+Nur zwei Dateien in GitHub ERSETZEN:
+- server.js               (im Hauptverzeichnis)
+- public/client.js        (im Ordner public/)
 
-Neu im NORMALEN Kartendeck:
-094: Inphenno        Stärke 7, Geschwindigkeit 4, Magie 8, Energy 5
-095: Little Gem      Stärke 5, Geschwindigkeit 5, Magie 8, Energy 3
-096: Mimsch          Stärke 5, Geschwindigkeit 3, Magie 7, Energy 5
-097: Chandra         Stärke 4, Geschwindigkeit 3, Magie 9, Energy 6
-098: Wisrana         Stärke 3, Geschwindigkeit 4, Magie 7, Energy 6
-099: Kik             Stärke 5, Geschwindigkeit 4, Magie 6, Energy 8
-100: Black Armor     Stärke 9, Geschwindigkeit 5, Magie 3, Energy 7
-101: Glittershine    Stärke 7, Geschwindigkeit 8, Magie 3, Energy 9
-102: Voleriton       Stärke 5, Geschwindigkeit 7, Magie 6, Energy 6
-103: Lili            Stärke 8, Geschwindigkeit 8, Magie 3, Energy 6
-104: Lucky Lucy      Stärke 8, Geschwindigkeit 8, Magie 3, Energy 5
-105: Lyra            Stärke 6, Geschwindigkeit 7, Magie 8, Energy 6
-106: Ruby Blood      Stärke 3, Geschwindigkeit 8, Magie 8, Energy 5
+Weder Kartenbilder und Kartendaten noch Cockatrice-Sound, Cockatrice-Animation,
+Arenen, Musik, Kristall-Lobby oder die 12 Verlierer-Animationen werden verändert.
 
-Cockatrice ist eine neue SPEZIALKARTE (s93), aus dem Spezialkarten/Goldpool.
-Die Spezialkarte wird eingesetzt, Spieler/Gegner als Ziel gewählt, dessen
-Karte zählt dann diese Runde nicht (wie Bugbear, eigener Stone-Effekt).
-Beim Versteinern spielt der VON DIR HOCHGELADENE Sound
-'Rock Crumbling Punch Sound Effect _ Breaking Stone Impact & Debris SFX (Free).mp3'
-in public/assets/sounds/cockatrice_steinbruch.mp3 (unverändert).
-Beim lokalen Testen im Browser den Startknopf in der HTML-Vorschau benutzen.
-Vollständiges Spiel ist ausschließlich online nach Render-Deployment testbar.
+Was wurde repariert?
+- Chrysalis kopiert den wirksamen Effekt der zuletzt in derselben Runde
+  von einem Gegner aktivierten Spezialkarte; kopierte Effekte eines
+  gegnerischen Chrysalis werden korrekt aufgelöst, ohne Rekursion.
+- Keine gegnerische Spezialkarte in der laufenden Runde: Chrysalis bleibt
+  auf der Hand und der Spieler erhält eine klare Erklärung.
+- Auswahlfenster für Gegner, Kategorie und Handkarten können mit
+  'Schließen'/Escape abgebrochen werden; der Server gibt die Aktion frei.
+- Nicht gewählte aufgedeckte Karten werden bei Abbruch korrekt in den
+  Kartenpool zurückgelegt und verschwinden nicht.
+- Alte Auswahlen werden bei Ablauf der 30-Sekunden-Frist sowie beim
+  Rundenwechsel automatisch verworfen und blockieren keine neuen Züge.
+- Nach bestätigter Gegnerauswahl erfolgt sofort eine mögliche Rundenauswertung.
+- Die Auswahl für Chrysalis wird vor dem Ausspielen der normalen Karte
+  abgeschlossen; danach geht das Spiel regulär weiter.
 
-HINWEIS:
-- Diese Aktualisierung basiert auf der zuvor von uns erstellten
-  'MLP_BATTLE_CARDS_COCKATRICE_VERSTEINERUNG_GITHUB.zip' Version, welche
-  auf dem bereits funktionierenden Karten-/Artefakt- und Arenastand beruhte.
-- Wenn du später DIREKT im GitHub-Code manuell etwas anderes geändert hast,
-  überschreiben die drei auszutauschenden JS-Dateien möglicherweise eigene
-  Änderungen. Dafür besser vor Upload einen GitHub-Commit/Backup sichern.
-- Bei einer öffentlichen Veröffentlichung bitte die Lizenz des hochgeladenen
-  Sounds überprüfen. 'Free' im Dateinamen ist keine vollständige Lizenzzusage.
+So testen:
+1) In einer Partie setzt Spieler A eine Spezialkarte ein, z.B. Tirek.
+2) Spieler B setzt Chrysalis in derselben Runde ein.
+3) Bei Tirek fragt Chrysalis nach einem Ziel. Ziel wählen, dann normale
+   Karte spielen. Danach normale Runde/Auswertung prüfen.
+4) Wiederholen mit Pinkie (sofortiger Effekt) und Diamond Dogs
+   (Kartenauswahl). Zum Test einmal die Auswahl abbrechen und spielen.
+5) Ohne gegnerische Spezialkarte muss Chrysalis auf der Hand bleiben.
+6) Nach Rundenwechsel muss eine neue Chrysalis-Auswahl funktionieren.
 
-WICHTIG: Bitte ZIP entpacken. Nicht ZIP als einzelnen Dateiinhalt in GitHub
-hinzufügen, sonst findet der Server die einzelnen Karten/Assets nicht.
-
-KOMPAKT-VERSION: Alle 13 neuen Normal-Kartenbilder wurden in hochwertiges
-WebP umgewandelt, damit die ZIP leichter herunterzuladen ist.
-Die große Version enthält die Original-PNGs bytegenau.
+HINWEIS: Der Server ist nur vollständig spielbar, wenn alle übrigen Dateien
+bereits im Repository vorhanden sind. Kein eigenständiges Vollspiel.
