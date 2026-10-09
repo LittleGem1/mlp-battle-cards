@@ -132,8 +132,8 @@ const ARENA_OVERLAYS={
   steampunk_works:'/assets/backgrounds/arena_3_zahnraeder_overlay.webp',
   witchs_table:'/assets/backgrounds/arena_4_hexenkessel_overlay.webp'
 };
-// Neues URL-Suffix verhindert, dass Browser/Render eine alte Bildversion zwischenspeichern.
-const ARENA_VISUALS_VERSION='approved234-20261009-client-v2';
+// Neue Cache-Version der sichtbaren Arenen 2-4 (Ansicht ohne Ausschnitt).
+const ARENA_VISUALS_VERSION='approved234-20261009-fit-v3';
 const ARENA_CLASS_IDS=Object.keys(ARENA_BACKGROUNDS);
 const EXCLUSIVE_SFX_GROUPS={
   kristall:'crystalSpin', special:'special', smolder:'finisher', meteor:'finisher', cookie:'finisher',
@@ -229,7 +229,8 @@ function ensureApprovedArenaStyle(){
       position:absolute!important;inset:0!important;
       width:100%!important;height:100%!important;
       max-width:none!important;max-height:none!important;
-      object-fit:cover!important;object-position:center center!important;
+      /* Das gesamte WebP zeigen; nichts an den Raendern abschneiden. */
+      object-fit:contain!important;object-position:center top!important;
       z-index:1!important;opacity:1!important;
       pointer-events:none!important;user-select:none!important;
       transform:none!important;filter:none!important;
@@ -275,8 +276,11 @@ function buildArenaVfx(id){
   arena.dataset.approvedScene='yes';
   arena.dataset.approvedByClient=id;
   important(arena,'background-image',`url("${background}")`);
-  important(arena,'background-position','center center');
-  important(arena,'background-size','cover');
+  // Die Bildflaeche ist groesser als ein normaler 16:9-Bildschirm.
+  // 'cover' hat das Bild in der hohen Spielarena vergroessert und die Raender abgeschnitten.
+  // 'contain' zeigt das komplette Stillbild ohne Verzerrung.
+  important(arena,'background-position','center top');
+  important(arena,'background-size','contain');
   important(arena,'background-repeat','no-repeat');
 
   // Die alte #arenaVfx-Ebene ist eine zweite Hintergrundquelle: ausschalten.
