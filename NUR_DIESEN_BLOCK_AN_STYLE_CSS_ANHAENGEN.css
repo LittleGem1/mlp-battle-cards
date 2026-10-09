@@ -1,0 +1,46 @@
+/* ARENA 1 – NUR SANFT WEHENDE BLAETTER
+   Bestehende Hintergrundbilder und Spielmechanik werden NICHT geaendert.
+   Dieser Block gehoert ganz ans ENDE deiner public/style.css. */
+body.scene-game #game.screen.active > .arena.arena-jade_palace,
+body.scene-game #game.screen.active > .arena[data-vfx="jade_palace"] {
+  --jade-leaf-0: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2042%22%3E%3Cpath%20d%3D%22M3%2029%20Q10%206%2044%205%20Q36%2032%2013%2037%20Q7%2038%203%2029Z%22%20fill%3D%22%23d69c43%22%20stroke%3D%22%23875728%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M8%2034%20Q23%2018%2042%208%22%20fill%3D%22none%22%20stroke%3D%22%23f5cc78%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M22%2022%20L17%2014%20M28%2017%20L32%2027%22%20fill%3D%22none%22%20stroke%3D%22%23f5cc78%22%20stroke-width%3D%221.2%22%2F%3E%3C%2Fsvg%3E");
+  --jade-leaf-1: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2042%22%3E%3Cpath%20d%3D%22M3%2029%20Q10%206%2044%205%20Q36%2032%2013%2037%20Q7%2038%203%2029Z%22%20fill%3D%22%2383b45c%22%20stroke%3D%22%23507538%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M8%2034%20Q23%2018%2042%208%22%20fill%3D%22none%22%20stroke%3D%22%23bcdd8e%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M22%2022%20L17%2014%20M28%2017%20L32%2027%22%20fill%3D%22none%22%20stroke%3D%22%23bcdd8e%22%20stroke-width%3D%221.2%22%2F%3E%3C%2Fsvg%3E");
+}
+body.scene-game #game.screen.active > .arena.arena-jade_palace::before,
+body.scene-game #game.screen.active > .arena[data-vfx="jade_palace"]::before,
+body.scene-game #game.screen.active > .arena.arena-jade_palace::after,
+body.scene-game #game.screen.active > .arena[data-vfx="jade_palace"]::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 3 !important;
+  pointer-events: none !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,.20));
+}
+body.scene-game #game.screen.active > .arena.arena-jade_palace::before,
+body.scene-game #game.screen.active > .arena[data-vfx="jade_palace"]::before {
+  opacity: .79 !important;
+  background-image: var(--jade-leaf-0),var(--jade-leaf-1),var(--jade-leaf-0),var(--jade-leaf-1),var(--jade-leaf-0),var(--jade-leaf-1),var(--jade-leaf-0),var(--jade-leaf-1) !important;
+  background-size: 28px 25px,39px 35px,25px 23px,35px 32px,29px 27px,33px 30px,24px 22px,30px 27px !important;
+  animation: jadeGentleWindOne 20s linear infinite !important;
+}
+body.scene-game #game.screen.active > .arena.arena-jade_palace::after,
+body.scene-game #game.screen.active > .arena[data-vfx="jade_palace"]::after {
+  opacity: .64 !important;
+  background-image: var(--jade-leaf-1),var(--jade-leaf-0),var(--jade-leaf-1),var(--jade-leaf-0),var(--jade-leaf-1),var(--jade-leaf-0),var(--jade-leaf-1) !important;
+  background-size: 25px 23px,32px 30px,28px 26px,40px 36px,24px 22px,29px 27px,33px 31px !important;
+  animation: jadeGentleWindTwo 27s linear infinite -9s !important;
+}
+@keyframes jadeGentleWindOne {
+  0% {background-position: 8% -25px, 22% 16%, 37% 52%, 51% -50px, 66% 70%, 79% 33%, 92% -30px, 57% 82%;}
+  100% {background-position: 19% calc(100% + 70px), 35% calc(120% + 20px), 45% calc(150% + 20px), 58% calc(100% + 80px), 78% calc(167% + 40px), 88% calc(130% + 30px), 97% calc(110% + 40px), 63% calc(174% + 20px);}
+}
+@keyframes jadeGentleWindTwo {
+  0% {background-position: 17% 28%, 33% -45px, 48% 80%, 63% 30%, 76% -35px, 88% 60%, 5% -35px;}
+  100% {background-position: 26% calc(128% + 15px), 39% calc(100% + 60px), 56% calc(180% + 35px), 71% calc(130% + 40px), 82% calc(100% + 50px), 95% calc(158% + 20px), 11% calc(107% + 50px);}
+}

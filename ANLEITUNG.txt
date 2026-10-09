@@ -1,0 +1,18 @@
+ARENA 1 – NUR WEHENDE BLAETTER (OHNE HINTERGRUNDAENDERUNG)
+
+Du moechtest den bestehenden 4K-Jadepalast unveraendert lassen.
+Diese Version fuegt NUR zwei transparente Ebenen mit langsam wehenden
+Blättern hinzu. Keine JavaScript-, Karten- oder Layout-Aenderungen.
+
+EINFACH (wenn du immer die zuletzt von uns erstellte style.css nutzt):
+- Nur die Datei public/style.css aus dieser ZIP auf GitHub ersetzen.
+
+SICHER (wenn du zwischenzeitlich deine style.css veraendert hast):
+- Oeffne die Datei NUR_DIESEN_BLOCK_AN_STYLE_CSS_ANHAENGEN.css aus dieser ZIP.
+- Fuege ihren GESAMTEN Inhalt ganz unten an DEINE aktuelle public/style.css an.
+- Speichere die Datei und lade sie auf GitHub hoch.
+
+NICHT hochladen: andere Hintergrunddateien, JS, HTML oder Server-Dateien.
+
+Danach auf das Render-Deployment warten, Strg+F5 und Arena 1 starten.
+Das Blattwerk hat KEINE eigene Bilddatei – es steckt in der CSS-Datei.
