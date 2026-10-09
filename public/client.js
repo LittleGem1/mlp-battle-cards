@@ -53,6 +53,12 @@ const ACCESSORY_KEYS=ITEM_KEYS;
 const STARTER_KEYS=['changeling','balloon','candy'];
 
 let state=null, hand=[], myId=null;
+// 12-Finisher-Vorschau (rein lokal, ohne Server-Nachrichten oder Kartenverlust).
+let finisherDemoActive=false;
+let finisherDemoIndex=0;
+let finisherDemoStageTimer=null;
+let finisherDemoGapTimer=null;
+let finisherDemoToken=0;
 
 /* Die drei Start-Accessoires sind IMMER sofort verfügbar.
    Das repariert auch alte Browser-Spielstände, in denen nur eins freigeschaltet war. */
@@ -411,6 +417,7 @@ function renderPostGameLobby(){
 }
 
 socket.on('roomState',s=>{
+  if(finisherDemoActive && s.phase!=='ready')stopFinisherDemo();
   state=s;
 
   // WICHTIG:
@@ -628,6 +635,21 @@ function ensureMatchActionButtons(){
     });
   }
 
+  // Der Test ist nur in der Kampf-Vorbereitung verfügbar, nicht während echter Runden.
+  let demoButton=$('#finisherDemoBtn');
+  if(!demoButton){
+    demoButton=document.createElement('button');
+    demoButton.id='finisherDemoBtn';
+    demoButton.type='button';
+    demoButton.className='soft-btn finisher-demo-button';
+    demoButton.textContent='🎬 Alle 12 Animationen testen';
+    demoButton.hidden=true;
+    const readyActions=document.querySelector('.arena-ready-actions');
+    if(readyActions)readyActions.append(demoButton);
+    else{const music=actions.querySelector('.music-controls');actions.insertBefore(demoButton,music||actions.lastChild);}
+    demoButton.addEventListener('click',startFinisherDemo);
+  }
+
   let quickLobby=$('#quickLobbyBtn');
   if(!quickLobby){
     quickLobby=document.createElement('button');
@@ -714,6 +736,9 @@ function renderGame(){
     }
   }
   ensureMatchActionButtons();
+  const demoButton=$('#finisherDemoBtn');
+  if(demoButton)demoButton.hidden=state.phase!=='ready';
+  if(finisherDemoActive && state.phase!=='ready')stopFinisherDemo();
   $('#abortBtn').style.display=myId===state.hostId&&state.phase!=='gameover'?'inline-block':'none';
 
   const surrenderBtn=$('#surrenderBtn');
@@ -1580,7 +1605,7 @@ function playFinisher(e){
   const kind=BATTLE_SFX[e.finisher]?e.finisher:'dust';
   const overlay=$('#finisherOverlay'),winnerBox=$('#finisherWinner'),loserBox=$('#finisherLosers'),headline=$('#finisherHeadline'),impact=$('#finisherImpact');
   if(!overlay||!winnerBox||!loserBox)return animateCapture(e.winnerId);
-  const available=lastReveal.length ? lastReveal : (e.revealEntries||[]);
+  const available=e.demo ? (e.revealEntries||[]) : (lastReveal.length ? lastReveal : (e.revealEntries||[]));
   const winnerEntry=available.find(x=>x.pid===e.winnerId);
   const losers=available.filter(x=>x.pid!==e.winnerId);
   const labels={fall:'KARTE FÄLLT',melt:'REGEN & ZERFLIESSEN',glass:'GLASBRUCH',portal:'PORTAL',xmark:'ROTES X',shadow:'SCHATTEN',spin:'WEGWIRBELN',meteor:'METEORIT',dust:'MAGISCHER STAUB',heart:'GEBROCHENES GLASHERZ',smolder:'SMOLDERS FEUER',cookie:'KEKS-BISSE'};
@@ -1605,16 +1630,121 @@ function playFinisher(e){
   if(kind==='dust')setupFiveDustDissolve();
   playSfx(kind,{gain:1,cooldown:350});
   const duration=Math.max(4400,e.duration||4200);
-  setTimeout(()=>{playSfx('capture',{gain:.7,cooldown:350});flyFinisherCardsToWinner(e.winnerId)},duration-910);
-  setTimeout(()=>{
+  if(!e.demo){
+    setTimeout(()=>{playSfx('capture',{gain:.7,cooldown:350});flyFinisherCardsToWinner(e.winnerId)},duration-910);
+  }
+  const finish=()=>{
+    // Bei abgebrochener Vorschau darf kein alter Timer die nächste Animation löschen.
+    if(e.demo && (!finisherDemoActive || e.demoToken!==finisherDemoToken))return;
     overlay.className='finisher-overlay';overlay.setAttribute('aria-hidden','true');
     winnerBox.innerHTML='';loserBox.innerHTML='';impact.className='finisher-impact';
-    document.body.classList.remove('finisher-running');$('#tableCards').innerHTML='';
-  },duration+80);
+    document.body.classList.remove('finisher-running');
+    if(!e.demo)$('#tableCards').innerHTML='';
+    if(e.demo && typeof e.onFinished==='function')e.onFinished();
+  };
+  const timer=setTimeout(finish,duration+80);
+  if(e.demo)finisherDemoStageTimer=timer;
+}
+
+// 🎬 In-Game-Test aller zwölf echten Verlierer-Animationen, ohne Match-Eingriffe.
+const FINISHER_DEMO_TYPES=[
+  ['fall','Karte fällt'],['melt','Regen & Zerfließen'],['glass','Glasbruch'],
+  ['portal','Portal'],['xmark','Rotes X'],['shadow','Schatten'],
+  ['spin','Wegwirbeln'],['meteor','Meteorit'],['dust','Magischer Staub'],
+  ['heart','Herzbrechen'],['smolder','Smolders Feuer'],['cookie','Keks-Bisse']
+];
+function ensureFinisherDemoControls(){
+  if(!document.getElementById('finisherDemoStyles')){
+    const style=document.createElement('style');
+    style.id='finisherDemoStyles';
+    style.textContent=`
+      #finisherDemoBtn[hidden]{display:none!important}
+      #finisherDemoBtn{font-weight:800;white-space:nowrap;border:1px solid #d9b5ff;background:linear-gradient(120deg,#5c319f,#9142cf);color:white;border-radius:13px;padding:12px 15px;cursor:pointer}
+      #finisherDemoBtn:hover{filter:brightness(1.15)}
+      #finisherDemoControls{position:fixed;z-index:2147483000;top:12px;left:50%;transform:translateX(-50%);width:min(96vw,650px);padding:11px 14px;border:1px solid #b898ff;border-radius:18px;box-shadow:0 6px 36px #000b;background:#17102feF;color:white;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;font-family:system-ui,Arial,sans-serif;pointer-events:auto}
+      #finisherDemoControls strong{font-size:15px;min-width:165px;text-align:center}
+      #finisherDemoControls button{border:1px solid #c3a7ff;border-radius:10px;background:#6e40b7;color:#fff;font-weight:800;font-size:14px;cursor:pointer;padding:9px 13px}
+      #finisherDemoControls button:hover{background:#8e55de}
+      #finisherDemoControls button.demo-stop{background:#922b47;border-color:#e78ca0}
+      @media(max-width:640px){#finisherDemoControls{top:5px;padding:7px;gap:6px}#finisherDemoControls strong{font-size:12px}#finisherDemoControls button{padding:7px;font-size:12px}}
+    `;
+    document.head.append(style);
+  }
+  let controls=document.getElementById('finisherDemoControls');
+  if(!controls){
+    controls=document.createElement('div');
+    controls.id='finisherDemoControls';
+    controls.setAttribute('role','group');
+    controls.setAttribute('aria-label','Verlierer-Animationen testen');
+    controls.innerHTML='<strong id="finisherDemoStatus">🎬 1 / 12</strong><button id="finisherDemoNext" type="button">⏭ Nächste</button><button id="finisherDemoStop" class="demo-stop" type="button">⏹ Test beenden</button>';
+    document.body.append(controls);
+    controls.querySelector('#finisherDemoNext').addEventListener('click',nextFinisherDemo);
+    controls.querySelector('#finisherDemoStop').addEventListener('click',stopFinisherDemo);
+  }
+  return controls;
+}
+function clearFinisherDemoStage(){
+  if(finisherDemoStageTimer!==null){clearTimeout(finisherDemoStageTimer);finisherDemoStageTimer=null;}
+  if(finisherDemoGapTimer!==null){clearTimeout(finisherDemoGapTimer);finisherDemoGapTimer=null;}
+  const overlay=$('#finisherOverlay');
+  if(overlay){
+    overlay.className='finisher-overlay';
+    overlay.setAttribute('aria-hidden','true');
+    for(const id of ['#finisherWinner','#finisherLosers']){const el=$(id);if(el)el.innerHTML='';}
+    const impact=$('#finisherImpact');if(impact)impact.className='finisher-impact';
+  }
+  document.body.classList.remove('finisher-running');
+}
+function stopFinisherDemo(){
+  if(!finisherDemoActive)return;
+  finisherDemoActive=false;
+  finisherDemoToken++;
+  clearFinisherDemoStage();
+  document.getElementById('finisherDemoControls')?.remove();
+}
+function runFinisherDemoStep(){
+  if(!finisherDemoActive)return;
+  if(state?.phase!=='ready'){stopFinisherDemo();return;}
+  if(finisherDemoIndex>=FINISHER_DEMO_TYPES.length){
+    stopFinisherDemo();
+    toast('🎬 Alle 12 Verlierer-Animationen abgespielt!');
+    return;
+  }
+  clearFinisherDemoStage();
+  const [kind,label]=FINISHER_DEMO_TYPES[finisherDemoIndex];
+  const controls=ensureFinisherDemoControls();
+  controls.querySelector('#finisherDemoStatus').textContent=`🎬 ${finisherDemoIndex+1}/12 · ${label}`;
+  const token=finisherDemoToken;
+  playFinisher({
+    demo:true,demoToken:token,finisher:kind,duration:4600,
+    winnerId:'finisher-demo-sieger',
+    revealEntries:[{pid:'finisher-demo-verlierer',name:'Testkarte',card:{name:'Testkarte',image:'/assets/cards/01_Applejack.webp'}}],
+    onFinished:()=>{
+      if(!finisherDemoActive||token!==finisherDemoToken)return;
+      finisherDemoIndex++;
+      finisherDemoGapTimer=setTimeout(runFinisherDemoStep,450);
+    }
+  });
+}
+function nextFinisherDemo(){
+  if(!finisherDemoActive)return;
+  finisherDemoToken++;
+  clearFinisherDemoStage();
+  finisherDemoIndex++;
+  runFinisherDemoStep();
+}
+function startFinisherDemo(){
+  if(finisherDemoActive)return;
+  if(state?.phase!=='ready')return toast('Die Animationen kannst du während der Kampf-Vorbereitung testen.');
+  finisherDemoIndex=0;
+  finisherDemoToken++;
+  finisherDemoActive=true;
+  ensureFinisherDemoControls();
+  runFinisherDemoStep();
 }
 
 socket.on('playerGaveUp',e=>{toast(`🏳 ${e.name} hat aufgegeben und schaut jetzt zu.`);beep(180,.14)});
-socket.on('roundWinner',e=>{stopSelectionTimer();$('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;beep(1040,.22);playFinisher(e)});
+socket.on('roundWinner',e=>{if(finisherDemoActive)stopFinisherDemo();stopSelectionTimer();$('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;beep(1040,.22);playFinisher(e)});
 
 let rewardChoiceToken=null,rewardChoiceClock=null;
 function closeRewardChoice(){
@@ -1732,8 +1862,8 @@ socket.on('postGameReadyState',e=>{
     renderPostGameLobby();
   }
 });
-socket.on('backToLobby',()=>{waitingForLobbyReset=false;stopCountdown();stopSelectionTimer();hideTieAlert();try{$('#gameOverDialog').close()}catch{};try{$('#giftDialog').close()}catch{};clearTable();show('lobby');setMusicMode('lobby');if(state?.phase==='lobby')renderLobby();toast('Lobby ist bereit für die nächste Runde.')});
-socket.on('roomLeft',()=>{waitingForLobbyReset=false;stopCountdown();stopSelectionTimer();hideTieAlert();state=null;hand=[];clearTable();renderHand();show('home');setMusicMode('lobby');toast('Du hast den Raum verlassen.')});
+socket.on('backToLobby',()=>{if(finisherDemoActive)stopFinisherDemo();waitingForLobbyReset=false;stopCountdown();stopSelectionTimer();hideTieAlert();try{$('#gameOverDialog').close()}catch{};try{$('#giftDialog').close()}catch{};clearTable();show('lobby');setMusicMode('lobby');if(state?.phase==='lobby')renderLobby();toast('Lobby ist bereit für die nächste Runde.')});
+socket.on('roomLeft',()=>{if(finisherDemoActive)stopFinisherDemo();waitingForLobbyReset=false;stopCountdown();stopSelectionTimer();hideTieAlert();state=null;hand=[];clearTable();renderHand();show('home');setMusicMode('lobby');toast('Du hast den Raum verlassen.')});
 socket.on('specialTargetRequest',e=>showPlayerChoices(e.title,e.targets,id=>socket.emit('specialTargetChoice',{targetId:id})));
 socket.on('specialCategoryRequest',e=>showCategoryChoices(e.title,e.categories,id=>socket.emit('specialCategoryChoice',{category:id})));
 socket.on('specialCardRequest',e=>showChoices(e.title,e.cards,c=>socket.emit('specialCardChoice',{cardId:c.id})));
