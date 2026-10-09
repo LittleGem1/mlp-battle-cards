@@ -121,11 +121,19 @@ const battleSoundCooldowns=new Map();
 let battleSoundVolume=Math.max(0,Math.min(1,Number(localStorage.getItem('mlp_sfx_volume')||0.55)));
 const LOBBY_BACKGROUND='/assets/backgrounds/lobby_crystal_cave.png';
 const ARENA_BACKGROUNDS={
+  // Arena 1 bleibt exakt wie bisher, da sie bereits funktioniert.
   jade_palace:'/assets/backgrounds/arena_1_jade_palace.png',
-  whispering_forest:'/assets/backgrounds/arena_2_forest.png',
-  steampunk_works:'/assets/backgrounds/arena_3_steampunk.png',
-  witchs_table:'/assets/backgrounds/arena_4_alchemy.png'
+  whispering_forest:'/assets/backgrounds/arena_2_wald_still.png',
+  steampunk_works:'/assets/backgrounds/arena_3_steampunk_still.png',
+  witchs_table:'/assets/backgrounds/arena_4_hexentisch_still.png'
 };
+const ARENA_OVERLAYS={
+  whispering_forest:'/assets/backgrounds/arena_2_blaetter_overlay.webp',
+  steampunk_works:'/assets/backgrounds/arena_3_zahnraeder_overlay.webp',
+  witchs_table:'/assets/backgrounds/arena_4_hexenkessel_overlay.webp'
+};
+// Neues URL-Suffix verhindert, dass Browser/Render eine alte Bildversion zwischenspeichern.
+const ARENA_VISUALS_VERSION='approved234-20261009-client-v2';
 const ARENA_CLASS_IDS=Object.keys(ARENA_BACKGROUNDS);
 const EXCLUSIVE_SFX_GROUPS={
   kristall:'crystalSpin', special:'special', smolder:'finisher', meteor:'finisher', cookie:'finisher',
@@ -202,26 +210,95 @@ function buildLobbyScene(scene='crystal_cave'){
 }
 buildLobbyScene();
 
+// Nur für Arena 2–4: Die Grafik wird DIREKT aus client.js gesetzt.
+// Damit schlagen alte style.css-Regeln mit !important und alte VFX-Elemente nicht mehr durch.
+function ensureApprovedArenaStyle(){
+  if(document.getElementById('mlp-approved-arenas-234'))return;
+  const css=document.createElement('style');
+  css.id='mlp-approved-arenas-234';
+  css.textContent=`
+    #game .arena[data-approved-scene="yes"]::before,
+    #game .arena[data-approved-scene="yes"]::after,
+    #game .arena[data-approved-scene="yes"] #arenaVfx::before,
+    #game .arena[data-approved-scene="yes"] #arenaVfx::after{
+      content:none!important;display:none!important;animation:none!important;
+      background:none!important;
+    }
+    #game .arena[data-approved-scene="yes"] > .approved-arena-overlay{
+      display:block!important;visibility:visible!important;
+      position:absolute!important;inset:0!important;
+      width:100%!important;height:100%!important;
+      max-width:none!important;max-height:none!important;
+      object-fit:cover!important;object-position:center center!important;
+      z-index:1!important;opacity:1!important;
+      pointer-events:none!important;user-select:none!important;
+      transform:none!important;filter:none!important;
+      margin:0!important;padding:0!important;
+    }
+  `;
+  document.head.appendChild(css);
+}
+
 function buildArenaVfx(id){
   const root=$('#arenaVfx');if(!root)return;
+  const arena=document.querySelector('#game .arena');
+
+  if(id==='jade_palace' || !ARENA_OVERLAYS[id]){
+    // Die bestehende, funktionierende Jadepalast-Darstellung unverändert lassen.
+    // Nur eventuell zuvor angelegte Arena-2–4-Einstellungen zurücksetzen.
+    if(arena && arena.dataset.approvedByClient){
+      delete arena.dataset.approvedByClient;
+      delete arena.dataset.approvedScene;
+      ['background-image','background-size','background-position','background-repeat']
+        .forEach(prop=>arena.style.removeProperty(prop));
+      arena.querySelector('.approved-arena-overlay')?.remove();
+      root.style.removeProperty('display');
+      root.style.removeProperty('visibility');
+    }
+    root.innerHTML='';
+    root.className='arena-vfx vfx-'+id;
+    root.style.backgroundImage=`linear-gradient(rgba(8,12,30,.28),rgba(8,12,30,.34)), url(${ARENA_BACKGROUNDS[id]||ARENA_BACKGROUNDS.jade_palace})`;
+    if(id==='jade_palace'){
+      for(let i=0;i<18;i++)root.append(makeEl('arena-leaf',{'--x':`${(i*17)%101}%`,'--y':`${(i*11)%70}%`,'--delay':`${-(i%8)*.9}s`,'--dur':`${7+(i%5)}s`,'--drift':`${-60+(i*13)%120}px`}));
+    }
+    return;
+  }
+
+  if(!arena)return;
+  ensureApprovedArenaStyle();
+  const important=(node,property,value)=>node.style.setProperty(property,value,'important');
+  const withVersion=url=>url+'?v='+ARENA_VISUALS_VERSION;
+  const background=withVersion(ARENA_BACKGROUNDS[id]);
+  const animation=withVersion(ARENA_OVERLAYS[id]);
+
+  // Statt der alten Arena-Bilder/Animationen NUR das freigegebene stille Bild.
+  arena.dataset.approvedScene='yes';
+  arena.dataset.approvedByClient=id;
+  important(arena,'background-image',`url("${background}")`);
+  important(arena,'background-position','center center');
+  important(arena,'background-size','cover');
+  important(arena,'background-repeat','no-repeat');
+
+  // Die alte #arenaVfx-Ebene ist eine zweite Hintergrundquelle: ausschalten.
   root.innerHTML='';
   root.className='arena-vfx vfx-'+id;
-  root.style.backgroundImage=`linear-gradient(rgba(8,12,30,.28),rgba(8,12,30,.34)), url(${ARENA_BACKGROUNDS[id]||ARENA_BACKGROUNDS.jade_palace})`;
-  if(id==='jade_palace' || id==='whispering_forest'){
-    for(let i=0;i<18;i++)root.append(makeEl('arena-leaf',{ '--x':`${(i*17)%101}%`,'--y':`${(i*11)%70}%`,'--delay':`${-(i%8)*.9}s`,'--dur':`${7+(i%5)}s`,'--drift':`${-60+(i*13)%120}px` }));
+  root.style.removeProperty('background-image');
+  important(root,'display','none');
+  important(root,'visibility','hidden');
+
+  // Die Animation ist ein eigenes transparentes Bild und kann keine Klicks blockieren.
+  let overlay=arena.querySelector('img.approved-arena-overlay');
+  if(!overlay){
+    overlay=document.createElement('img');
+    overlay.className='approved-arena-overlay';
+    overlay.alt='';
+    overlay.setAttribute('aria-hidden','true');
+    overlay.draggable=false;
+    arena.appendChild(overlay);
   }
-  if(id==='whispering_forest'){
-    for(let i=0;i<4;i++)root.append(makeEl('forest-crown',{ '--x':`${i*28}%`,'--delay':`${-i*.8}s` }));
-    root.append(makeEl('forest-water-sheen'));
-  }
-  if(id==='steampunk_works'){
-    for(let i=0;i<6;i++)root.append(makeEl('gear-wheel',{ '--x':`${6+i*16}%`,'--y':`${12+(i%3)*18}%`,'--size':`${84+(i%3)*34}px`,'--dur':`${8+(i%4)*2}s` }));
-    for(let i=0;i<10;i++)root.append(makeEl('forge-spark',{ '--x':`${(i*29)%102}%`,'--delay':`${-(i%13)*.22}s`,'--dur':`${2.8+(i%6)*.35}s` }));
-  }
-  if(id==='witchs_table'){
-    for(let i=0;i<16;i++)root.append(makeEl('alchemy-bubble',{ '--x':`${22+(i*4)%55}%`,'--y':`${64+(i%5)*4}%`,'--delay':`${-(i%10)*.5}s`,'--dur':`${3.6+(i%5)*.4}s` }));
-    for(let i=0;i<12;i++)root.append(makeEl('witch-spark',{ '--x':`${10+(i*7)%78}%`,'--y':`${16+(i*11)%65}%`,'--delay':`${-(i%9)*.35}s` }));
-  }
+  important(overlay,'pointer-events','none');
+  important(overlay,'z-index','1');
+  if(!overlay.src.endsWith(animation))overlay.src=animation;
 }
 
 const CATEGORY_UI={strength:['🏋️','STÄRKE'],speed:['⚡','SCHNELLIGKEIT'],energy:['🔋','ENERGIE'],magic:['⭐','MAGIE']};
@@ -617,7 +694,10 @@ function renderGame(){
     ARENA_CLASS_IDS.forEach(id=>arena.classList.remove('arena-'+id));
     const arenaId=state.arenaId||'jade_palace';
     arena.classList.add('arena-'+arenaId);
-    if(arena.dataset.vfx!==arenaId){arena.dataset.vfx=arenaId;buildArenaVfx(arenaId);}
+    if(arena.dataset.vfx!==arenaId || (arenaId!=='jade_palace' && arena.dataset.approvedByClient!==arenaId)){
+      arena.dataset.vfx=arenaId;
+      buildArenaVfx(arenaId);
+    }
   }
   ensureMatchActionButtons();
   $('#abortBtn').style.display=myId===state.hostId&&state.phase!=='gameover'?'inline-block':'none';
