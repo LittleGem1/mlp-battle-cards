@@ -1,27 +1,16 @@
-MLP BATTLE CARDS – ARENA FIX (10.10.2026)
+MLP Battle Cards – kleines Arena-Update
 
-Enthalten:
-  arena_visuals.css
+Dieses Update enthält NUR die beiden bearbeiteten Dateien aus dem Spiel:
+public/index.html
+public/style.css
 
-INSTALLATION AUF GITHUB
-1. ZIP entpacken.
-2. GitHub-Repository LittleGem1/mlp-battle-cards oeffnen.
-3. In den Ordner public wechseln.
-4. Die vorhandene Datei public/arena_visuals.css mit der neuen
-   arena_visuals.css aus dieser ZIP ERSETZEN (nicht die Datei im
-   Hauptordner ersetzen).
-5. Aenderung committen, Render-Deployment abwarten.
-6. Spiel mit STRG + F5 neu laden.
+ANLEITUNG:
+1. ZIP herunterladen und entpacken.
+2. Im GitHub-Repository LittleGem1/mlp-battle-cards in den Ordner public gehen.
+3. Dort index.html und style.css mit den Dateien aus diesem ZIP ersetzen.
+4. Änderungen committen und das Deployment abwarten.
+5. Spielseite mit Strg + F5 neu laden.
 
-Wirkung:
-- Die bisherigen 4 Hintergrundbilder bleiben gleich (kein neues Bild).
-- Die Arena nimmt die gesamte verfuegbare Breite/Hoehe ein.
-- Blaue Flaechen hinter den Gegnern und im Spielfeld werden transparent.
-- Karten, Namen, Buttons und Overlay-Grafiken bleiben sichtbar.
-
-WICHTIG:
-Nicht die komplette ZIP als eine Datei nach GitHub hochladen:
-ZIP entpacken und die CSS-Datei an den genannten Pfad ersetzen.
-Diese Aenderung betrifft die Darstellung, keine Karten-/Serverlogik.
-Weil der laufende Render-Build nicht in dieser Umgebung gestartet werden
-konnte, ist die visuelle Wirkung noch nicht live getestet.
+Bitte nicht versehentlich die index.html und style.css im Projekt-Hauptordner ersetzen; betroffen ist public/.
+Originalgrafiken bleiben im Repository; sie müssen NICHT neu hochgeladen werden.
+Hinweis: Live-Multiplayer-Test auf Render wurde nicht durchgeführt.
