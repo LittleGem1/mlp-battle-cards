@@ -59,6 +59,7 @@ function botLater(r,fn,delay=650){
   return t;
 }
 function clearTimers(r){
+  r.roundTransitionToken=(r.roundTransitionToken||0)+1;
   for(const key of ['roundTimer','selectionTimer','countdownTimer','readyTimer','rewardChoiceTimer']){
     if(r[key]){clearTimeout(r[key]);r[key]=null;}
   }
@@ -79,7 +80,8 @@ function publicState(r){
       artifacts:(p.artifacts||[]).map(id=>byId[id]).filter(Boolean),
       artifactCount:new Set(p.artifacts||[]).size,timeoutPenaltyCount:p.timeoutPenaltyCount||0,normalRefillTarget:Math.max(0,NORMAL_HAND_TARGET-(p.timeoutPenaltyCount||0)),
       selected:!!p.selected,ready:!!p.ready,surrendered:!!p.surrendered,isBot:!!p.isBot,connected:!!p.isBot||!p.disconnectedAt,
-      eliminated:!!p.surrendered,lastPlayedCardId:p.lastPlayedCardId||null
+      eliminated:!!p.surrendered,lastPlayedCardId:p.lastPlayedCardId||null,
+      skipped:fxHas(r,'skipped',p.id),hasPlayedCard:playedCardIds(r.played?.[p.id]).length>0
     }))
   };
 }
@@ -207,10 +209,12 @@ function skipPlayerThisRound(r,targetId,sourceId,sourceName,effectType='skip'){
     io.to(r.code).emit('specialBlocked',{targetId,targetName:target.name,sourceName});
     return false;
   }
-  discardPlayedEntry(r,targetId);
+  // Preserve any already placed card. It remains visible when the cards are revealed,
+  // even though its owner may not win this round. Never discard it a second time.
+  const hadPlayedCard=playedCardIds(r.played?.[targetId]).length>0;
   fxAdd(r,'skipped',targetId);
   r.roundPlayerIds=(r.roundPlayerIds||[]).filter(id=>id!==targetId);
-  io.to(r.code).emit('playerSkipped',{playerId:targetId,name:target.name,sourceName});
+  io.to(r.code).emit('playerSkipped',{playerId:targetId,name:target.name,sourceName,hadPlayedCard,round:r.round});
   emitImpact(r,effectType,targetId,effectType==='cockatrice'?`${target.name}s Karte wurde versteinert und setzt diese Runde aus.`:`${target.name} setzt diese Runde aus.`);
   return true;
 }
@@ -465,7 +469,7 @@ function botApplySpecial(r,p,c){
     let best='strength',bestVal=-1;
     for(const cat of CATEGORIES){const v=Math.max(0,...botNormalCards(p,cat).map(x=>x[cat]||0));if(v>bestVal){bestVal=v;best=cat;}}
     r.category=best;if(Array.isArray(r.categoryHistory)&&r.categoryHistory.length)r.categoryHistory[r.categoryHistory.length-1]=best;
-    io.to(r.code).emit('categoryOverride',{category:best,label:CATEGORY_LABEL[best],icon:CATEGORY_ICON[best],source:'Grogar'});
+    io.to(r.code).emit('categoryOverride',{round:r.round,category:best,label:CATEGORY_LABEL[best],icon:CATEGORY_ICON[best],source:'Grogar'});
   }else if(effect==='sombra'){
     fxAdd(r,'protected',p.id);const t=targetAny();if(t)addDebuff(r,t.id,-2,p.id,'King Sombra','strength');
   }else if(effect==='daybreaker'){
@@ -789,7 +793,9 @@ function nextCategory(r){
   const last3=r.categoryHistory.slice(-3);
   const blocked=last3.length===3&&last3.every(c=>c===last3[0])?last3[0]:null;
   let choices=blocked?CATEGORIES.filter(c=>c!==blocked):[...CATEGORIES];
-  if(r.forceNextCategoryDifferent&&previous&&choices.length>1){
+  // Every genuinely new round receives a different category; a forced category
+  // selected by Grogar remains the explicit exception handled above.
+  if(previous&&choices.length>1){
     const different=choices.filter(c=>c!==previous);
     if(different.length)choices=different;
   }
@@ -994,14 +1000,40 @@ function handleSelectionTimeout(r){
   if(gameOverIfNeeded(r))return;
   r.phase='result';refillNormalHands(r);sendState(r);startRound(r,1700);
 }
-function startRound(r,delay=900){
-  if(r.roundTimer)clearTimeout(r.roundTimer);
+// One authoritative transition from the crystal animation to card selection.
+// Can safely be called by the timer, the watchdog or after a reconnect.
+function advanceRoundIntro(r){
+  if(!r||!rooms.has(r.code)||r.phase!=='roundintro')return false;
+  if(r.roundTimer){clearTimeout(r.roundTimer);r.roundTimer=null;}
+  r.roundIntroUntil=null;r.phase='select';
+  r.selectionDeadline=Date.now()+30000;
+  io.to(r.code).emit('roundStart',{
+    round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],deadline:r.selectionDeadline
+  });
+  sendState(r);scheduleBotsForSelect(r);
+  const match=r.matchId,round=r.round;
   if(r.selectionTimer)clearTimeout(r.selectionTimer);
+  r.selectionTimer=setTimeout(()=>{
+    if(rooms.has(r.code)&&r.matchId===match&&r.round===round&&r.phase==='select')handleSelectionTimeout(r);
+  },30050);
+  return true;
+}
+function startRound(r,delay=900){
+  if(!r||!rooms.has(r.code)||r.phase==='gameover'||r.phase==='lobby')return;
+  if(r.roundTimer)clearTimeout(r.roundTimer);
+  if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
+  const token=r.roundTransitionToken=(r.roundTransitionToken||0)+1;
+  const match=r.matchId;
   r.roundTimer=setTimeout(()=>{
-    if(!rooms.has(r.code))return;
+    // Ignore callbacks from an aborted match, old round or a newer transition.
+    if(!rooms.has(r.code)||r.matchId!==match||r.roundTransitionToken!==token||['lobby','gameover'].includes(r.phase))return;
     clearRoomSpecialChoices(r);
     r.roundTimer=null;r.round++;r.phase='roundintro';r.played={};r.dice={};r.tieIds=[];r.roundBuff={};resetRoundFX(r);
-    for(const p of roomPlayers(r)){if(p.pendingForcedDiscard?.timer)clearTimeout(p.pendingForcedDiscard.timer);p.pendingForcedDiscard=null;p.selected=null;p.specialUsed=0;p.specialExtra=0;}
+    r.pendingRoundWinner=null;
+    for(const p of roomPlayers(r)){
+      if(p.pendingForcedDiscard?.timer)clearTimeout(p.pendingForcedDiscard.timer);
+      p.pendingForcedDiscard=null;p.selected=null;p.specialUsed=0;p.specialExtra=0;
+    }
     nextCategory(r);
     r.roundPlayerIds=roomPlayers(r).filter(p=>!p.surrendered&&p.hand.length>0&&hasNormalCard(p)).map(p=>p.id);
     if(!r.roundPlayerIds.length){
@@ -1011,22 +1043,17 @@ function startRound(r,delay=900){
         const ranked=activePlayers(r).sort((a,b)=>(new Set(b.artifacts||[]).size-new Set(a.artifacts||[]).size)||(b.hand.length-a.hand.length));
         if(ranked.length){io.to(r.code).emit('notice','Keine normalen Karten mehr spielbar. Die Partie endet nach Artefakten und Handkarten.');endGame(r,ranked[0],'no-playable-cards');}
         else resetToLobby(r);
-      }else{
-        r.phase='result';startRound(r,1100);
-      }
+      }else{r.phase='result';startRound(r,1100);}
       return;
     }
     r.roundIntroUntil=Date.now()+4000;
-    io.to(r.code).emit('roundIntro',{round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],until:r.roundIntroUntil});
+    io.to(r.code).emit('roundIntro',{
+      round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],until:r.roundIntroUntil
+    });
     sendState(r);
+    const enteringRound=r.round;
     r.roundTimer=setTimeout(()=>{
-      if(!rooms.has(r.code)||r.phase!=='roundintro')return;
-      r.roundTimer=null;r.roundIntroUntil=null;r.phase='select';
-      r.selectionDeadline=Date.now()+30000;
-      io.to(r.code).emit('roundStart',{round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],deadline:r.selectionDeadline});
-      sendState(r);
-      scheduleBotsForSelect(r);
-      r.selectionTimer=setTimeout(()=>handleSelectionTimeout(r),30050);
+      if(rooms.has(r.code)&&r.matchId===match&&r.round===enteringRound)advanceRoundIntro(r);
     },4000);
   },delay);
 }
@@ -1114,7 +1141,8 @@ function evaluate(r){
 
     vals.push({
       pid,cardId:c.id,value,base,bonus:value-base,cards:cards.map(x=>x.id),
-      forcedLose:fxHas(r,'forcedLose',pid)
+      forcedLose:fxHas(r,'forcedLose',pid)||fxHas(r,'skipped',pid),
+      skipped:fxHas(r,'skipped',pid)
     });
   }
 
@@ -1123,7 +1151,25 @@ function evaluate(r){
   // Daybreaker: Nur Daybreaker-Nutzer mit einer gelegten normalen Karte können gewinnen.
   const auto=vals.filter(x=>fxHas(r,'autoWinner',x.pid)&&!x.forcedLose);
   let contenders=auto.length?auto:vals.filter(x=>!x.forcedLose);
-  if(!contenders.length)contenders=vals;
+  if(!contenders.length){
+    // Everyone with a visible card was disabled. Reveal them all as inactive,
+    // discard once and continue cleanly without awarding an undeserved win.
+    r.phase='reveal';
+    io.to(r.code).emit('reveal',{
+      round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],
+      entries:vals.map(x=>({...x,card:byId[x.cardId],name:r.players.get(x.pid)?.name||'?'}))
+    });
+    sendState(r);
+    const match=r.matchId,round=r.round;
+    setTimeout(()=>{
+      if(!rooms.has(r.code)||r.matchId!==match||r.round!==round||r.phase!=='reveal')return;
+      for(const id of Object.values(r.played).flatMap(playedCardIds))discardCard(r,id);
+      r.played={};for(const p of roomPlayers(r))p.selected=null;
+      refillNormalHands(r);r.phase='result';sendState(r);
+      if(!gameOverIfNeeded(r))startRound(r,950);
+    },2200);
+    return;
+  }
 
   // Storm King: Nur bei Schnelligkeit und nur wenn er tatsächlich im höchsten
   // Gleichstand liegt, bekommt er +2 und kann den Gleichstand brechen.
@@ -1142,7 +1188,7 @@ function evaluate(r){
 
   r.phase='reveal';
   io.to(r.code).emit('reveal',{
-    category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],
+    round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],
     entries:vals.map(x=>({...x,card:byId[x.cardId],name:r.players.get(x.pid)?.name||'?'}))
   });
   sendState(r);
@@ -1248,14 +1294,19 @@ function maybeStartWhenReady(r){
 // All deadlines are LONGER than the normal animations/round timeouts.
 function guardRoomProgress(r,now=Date.now()){
   if(!rooms.has(r.code)||['lobby','gameover'].includes(r.phase))return;
-  const tag=`${r.round}:${r.phase}`;
+  const tag=`${r.matchId||'no-match'}:${r.round}:${r.phase}`;
   if(r.watchdogTag!==tag){r.watchdogTag=tag;r.watchdogSince=now;return;}
   const age=now-r.watchdogSince;
   if(['ready','countdown'].includes(r.phase)&&r.players.size<2){resetToLobby(r);return;}
   if(['roundintro','select','reveal','tie','result','rewardchoice'].includes(r.phase)&&gameOverIfNeeded(r))return;
   if(r.phase==='select'){
     if(!requiredPlayers(r).length){maybeEvaluate(r);return;}
-    if(r.selectionDeadline&&now>r.selectionDeadline+1800){handleSelectionTimeout(r);return;}
+    if(!r.selectionDeadline){
+      r.selectionDeadline=now+15000;
+      io.to(r.code).emit('notice','Kartenauswahl wiederhergestellt: 15 Sekunden Restzeit.');
+      sendState(r);
+    }
+    if(now>r.selectionDeadline+1800){handleSelectionTimeout(r);return;}
     maybeEvaluate(r);return;
   }
   if(r.phase==='tie'&&age>14000){
@@ -1286,7 +1337,7 @@ function guardRoomProgress(r,now=Date.now()){
     io.to(r.code).emit('notice','Die Aufdeckung wurde automatisch fortgesetzt.');
     startRound(r,900);return;
   }
-  if(r.phase==='roundintro'&&age>9000){startRound(r,500);return;}
+  if(r.phase==='roundintro'&&age>9000){advanceRoundIntro(r);return;}
   if(r.phase==='countdown'&&age>9000){startRound(r,500);return;}
   if(r.phase==='ready'&&age>65000){
     io.to(r.code).emit('notice','Bereitschaftsphase abgelaufen. Ihr könnt erneut starten.');
@@ -1692,7 +1743,7 @@ io.on('connection',socket=>{
     socket.data.pendingSpecial=null;
     r.category=category;
     if(Array.isArray(r.categoryHistory)&&r.categoryHistory.length)r.categoryHistory[r.categoryHistory.length-1]=category;
-    io.to(r.code).emit('categoryOverride',{category,label:CATEGORY_LABEL[category],icon:CATEGORY_ICON[category],source:'Grogar'});
+    io.to(r.code).emit('categoryOverride',{round:r.round,category,label:CATEGORY_LABEL[category],icon:CATEGORY_ICON[category],source:'Grogar'});
     io.to(socket.id).emit('specialDone',{text:`Grogar bestimmt: ${CATEGORY_LABEL[category]}.`});
     sendState(r);
   });

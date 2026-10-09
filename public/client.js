@@ -194,6 +194,9 @@ const playerName=$('#playerName'); playerName.value=localStorage.getItem('cc_nam
 
 let currentScreen='home';
 function show(name){
+  // Server updates may arrive dozens of times during a special/finisher animation.
+  // Never hide and re-show an already visible screen: that causes full-frame flicker.
+  if(currentScreen===name && screens[name]?.classList.contains('active'))return;
   Object.values(screens).forEach(x=>x.classList.remove('active'));
   screens[name].classList.add('active');
   document.body.classList.remove('scene-home','scene-lobby','scene-game');
@@ -663,7 +666,14 @@ socket.on('roomState',s=>{
   else if(s.phase==='select')startSelectionTimer(s.selectionDeadline);
 });
 let newlyDrawn=new Set();
-socket.on('hand',h=>{const before=new Set(hand.map(c=>c.id));newlyDrawn=new Set(h.filter(c=>!before.has(c.id)).map(c=>c.id));hand=h;renderHand();if(state)renderGame();if(newlyDrawn.size)setTimeout(()=>newlyDrawn.clear(),1000)});
+socket.on('hand',h=>{
+  const oldIds=hand.map(c=>c.id).join('|'),newIds=h.map(c=>c.id).join('|');
+  if(oldIds===newIds)return;
+  const before=new Set(hand.map(c=>c.id));newlyDrawn=new Set(h.filter(c=>!before.has(c.id)).map(c=>c.id));hand=h;
+  renderGame._lastHandSignature=null;
+  if(state)renderGame();else renderHand();
+  if(newlyDrawn.size)setTimeout(()=>newlyDrawn.clear(),1000);
+});
 
 function hideArenaReady(){
   const panel=$('#arenaReadyPanel');
@@ -937,7 +947,7 @@ function renderGame(){
   $('#selfNameplate').innerHTML=nameplateHTML(me.name,me.accessory,true,me.frame);
 
   const others=state.players.filter(p=>p.id!==myId);
-  $('#opponents').innerHTML=others.length?others.map((p,i)=>{
+  const opponentHtml=others.length?others.map((p,i)=>{
     const status=p.surrendered
       ? '<span class="surrendered-mark">🏳 Aufgegeben</span>'
       : (p.selected?'<span class="selected-mark">✓ Karte liegt</span>':`<span>${p.isBot?'🤖 überlegt …':'wartet …'}</span>`);
@@ -948,8 +958,28 @@ function renderGame(){
       ${fan}
     </div>`;
   }).join(''):'<div class="opponent-empty">Warte auf Mitspieler …</div>';
+  const opponentElement=$('#opponents');
+  if(opponentElement&&opponentElement.dataset.lastHtml!==opponentHtml){
+    opponentElement.innerHTML=opponentHtml;
+    opponentElement.dataset.lastHtml=opponentHtml;
+  }
+  // Category is authoritative server state, including reconnects and lost roundStart packets.
+  if(['select','reveal','tie','result'].includes(state.phase)&&state.category){
+    const label=({strength:'Stärke',speed:'Schnelligkeit',energy:'Energie',magic:'Magie'})[state.category]||state.category;
+    const icon=({strength:'🏋️',speed:'⚡',energy:'🔋',magic:'⭐'})[state.category]||'💎';
+    const cat=$('#category');
+    if(cat&&cat.dataset.currentCategory!==state.category){
+      cat.dataset.currentCategory=state.category;
+      $('#categoryIcon').textContent=icon;$('#categoryText').textContent=label;
+    }
+  }
 
-  renderHand();updateMusicUI();
+  // A new room state is not a new hand: don't rebuild the entire card DOM
+  // (images, hover state and CSS transitions) on every spectator/status packet.
+  const handSignature=JSON.stringify({ids:hand.map(c=>c.id),phase:state.phase,selected:me.selected,
+    surrendered:me.surrendered,last:me.lastPlayedCardId,category:state.category});
+  if(renderGame._lastHandSignature!==handSignature){renderGame._lastHandSignature=handSignature;renderHand();}
+  updateMusicUI();
 }
 
 function specialUseInfo(c){
@@ -1320,12 +1350,14 @@ document.addEventListener('keydown',()=>{if(!userInteracted)directMusicGesture()
 function clearTable(){lastReveal=[];$('#tableCards').innerHTML=''}
 function addCommitGhost(e){const t=$('#tableCards');if(t.querySelector(`[data-player-id="${e.playerId}"]`))return;const d=document.createElement('div');d.className='played-card ghost-card card-commit';d.dataset.playerId=e.playerId;d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-back-face"><img src="/assets/card_back.webp" alt="verdeckte Karte"></div></div><div class="who">${escapeHtml(e.name)}</div>`;t.append(d);const source=e.playerId===myId?document.querySelector('.hand-card[data-pending-play="1"]'):document.querySelector(`.opponent[data-player-id="${e.playerId}"] .back-fan`);if(source){const sr=source.getBoundingClientRect(),tr=d.getBoundingClientRect();const clone=document.createElement('img');clone.src='/assets/card_back.webp';clone.className='flying-card';clone.style.left=`${sr.left+sr.width/2-40}px`;clone.style.top=`${sr.top+sr.height/2-56}px`;document.body.append(clone);d.style.opacity='0';requestAnimationFrame(()=>{clone.style.transform=`translate(${tr.left+tr.width/2-(sr.left+sr.width/2)}px,${tr.top+tr.height/2-(sr.top+sr.height/2)}px) rotate(${e.playerId===myId?-10:10}deg) scale(.9)`;clone.style.opacity='.25'});setTimeout(()=>{clone.remove();d.style.opacity='1';playSfx('landen',{gain:.82,cooldown:70})},560)}playSfx('ausspielen',{gain:.9,cooldown:80})}
 function revealCards(e){
+  if(state&&Number.isInteger(e.round)&&e.round!==state.round)return; // Ignore old reveal packets.
   lastReveal=e.entries;const t=$('#tableCards');
   e.entries.forEach((x,i)=>{
     let d=t.querySelector(`[data-player-id="${x.pid}"]`);
     if(!d){d=document.createElement('div');t.append(d)}
-    d.className='played-card reveal-flip';d.dataset.playerId=x.pid;d.style.animationDelay=`${i*.07}s`;
-    d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-front-face"><img src="${x.card.image}" alt="${escapeHtml(x.card.name)}"><span class="value">${x.value}${x.bonus?` (+${x.bonus})`:''}</span></div></div><div class="who">${escapeHtml(x.name)}</div>`;bindCardInspector(d,x.card);
+    d.className='played-card reveal-flip'+(x.skipped?' skipped-visible':'');d.dataset.playerId=x.pid;d.style.animationDelay=`${i*.07}s`;
+    const value=x.skipped?'⏸ AUSSETZEN':`${x.value}${x.bonus?` (+${x.bonus})`:''}`;
+    d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-front-face"><img src="${x.card.image}" alt="${escapeHtml(x.card.name)}"><span class="value">${value}</span></div></div><div class="who">${escapeHtml(x.name)}</div>`;bindCardInspector(d,x.card);
   });
   $('#roundMessage').textContent='Karten werden verglichen …';playSfx('aufdecken',{gain:.85,cooldown:100});setTimeout(()=>playSfx('vergleich',{gain:.65,cooldown:100}),500);
 }
@@ -1380,8 +1412,20 @@ function stopDiceAnimation(e){
   const d=diceTile(e.playerId,e.name),face=d.querySelector('.dice-face');d.classList.remove('rolling-live');face.textContent=['⚀','⚁','⚂','⚃','⚄','⚅'][e.value-1];d.classList.add('dice-landed');toast(`${e.name} würfelt ${e.value}`);diceLandSound(e.value)
 }
 
+let specialNoticeTimer=null;
+function showSpecialNotice({name,source,target='',effect='',detail=''}={}){
+  let bar=document.getElementById('mlpSpecialNotice');
+  if(!bar){bar=document.createElement('div');bar.id='mlpSpecialNotice';bar.setAttribute('role','status');bar.setAttribute('aria-live','polite');document.body.append(bar);}
+  const heading=[name||'Spezialkarte',source?`von ${source}`:''].filter(Boolean).join(' ');
+  const targetText=target?` 🎯 Ziel: ${target}`:'';
+  bar.innerHTML=`<strong>✨ ${escapeHtml(heading)}</strong><span>${escapeHtml(detail||effect||'Spezialeffekt aktiviert')}${escapeHtml(targetText)}</span>`;
+  bar.classList.add('visible');
+  if(specialNoticeTimer)clearTimeout(specialNoticeTimer);
+  specialNoticeTimer=setTimeout(()=>bar.classList.remove('visible'),5500);
+}
 function showSpecialBurst(e){
   const effect=e.card?.effect||'',theme=specialTheme(effect);
+  showSpecialNotice({name:e.card?.name,source:e.name,detail:e.card?.text||e.card?.useLabel});
   specialFxSound(effect);
   const icons={ice:'❄',fire:'☀',storm:'⚡',shadow:'☾',magic:'✦',impact:'✹',sparkle:'✨'};
   const overlay=document.createElement('div');
@@ -1395,8 +1439,8 @@ function showSpecialBurst(e){
   </div>`;
   document.body.append(overlay);
   setTimeout(()=>overlay.classList.add('active'),20);
-  setTimeout(()=>overlay.classList.add('fade'),1450);
-  setTimeout(()=>overlay.remove(),2050);
+  setTimeout(()=>overlay.classList.add('fade'),1750);
+  setTimeout(()=>overlay.remove(),2500);
 }
 socket.on('specialPlayed',showSpecialBurst);
 
@@ -1456,6 +1500,7 @@ function closeCategoryCrystal(){
   roundIntroActiveKey='';
 }
 function showRoundIntro(e){
+  if(state&&e.round&&e.round<state.round)return;
   stopCountdown();
   const key=`${e.round||state?.round||1}:${e.until||state?.roundIntroUntil||''}`;
   const portal=categoryCrystalPortal();
@@ -1506,7 +1551,7 @@ function showRoundIntro(e){
   roundIntroTimer=setTimeout(()=>{
     if(roundIntroActiveKey!==key)return;
     portal.classList.add('leaving');
-    setTimeout(closeCategoryCrystal,260);
+    setTimeout(()=>{if(roundIntroActiveKey===key)closeCategoryCrystal();},260);
   },3850);
 }
 
@@ -1568,6 +1613,7 @@ socket.on('countdown',({seconds,until})=>{hideArenaReady();show('game');setMusic
 socket.on('allReady',e=>{toast(e.message||'Alle sind bereit!');beep(880,.18)});
 socket.on('roundIntro',showRoundIntro);
 socket.on('roundStart',e=>{
+  if(state&&e.round&&e.round<state.round)return;
   stopCountdown();
   closeCategoryCrystal();
   const cat=$('#category');
@@ -2064,12 +2110,19 @@ socket.on('forcedDiscardRequest',e=>showChoices(e.title,e.cards,c=>socket.emit('
 socket.on('extraNormalNeeded',e=>toast(`🌲 ${e.source}: Lege noch ${e.remaining} normale Karte${e.remaining===1?'':'n'}.`));
 socket.on('bonusDraw',e=>{cardShuffleSound();toast(`🐲 ${e.source}: Du erhältst 1 zusätzliche normale Karte.`)});
 socket.on('categoryOverride',e=>{
+  if(state&&e.round&&e.round!==state.round)return;
+  if(state&&e.category)state.category=e.category;
+  const categoryEl=$('#category');if(categoryEl)categoryEl.dataset.currentCategory=e.category||'';
   toast(`🔔 ${e.source} bestimmt: ${e.icon} ${e.label}`);
   const cat=$('#category');if(cat)cat.innerHTML=`${e.icon} <strong>${escapeHtml(e.label)}</strong>`;
   specialFxSound('grogar');
 });
 socket.on('specialCopied',e=>toast(`♟ ${e.name} kopiert ${e.copied?.name||'eine Spezialkarte'}.`));
-socket.on('playerSkipped',e=>toast(`⏸ ${e.name} setzt durch ${e.sourceName} diese Runde aus.`));
+socket.on('playerSkipped',e=>{
+  const detail=e.hadPlayedCard?'Die bereits gelegte Karte bleibt beim Aufdecken sichtbar, zählt aber nicht.':'Diese Runde darf keine Karte mehr gelegt werden.';
+  showSpecialNotice({name:e.sourceName,detail:`⏸ ${e.name} setzt aus. ${detail}`,target:e.name});
+  toast(`⏸ ${e.name} setzt durch ${e.sourceName} diese Runde aus.`);
+});
 socket.on('specialBlocked',e=>{toast(`🛡 ${e.targetName} ist vor ${e.sourceName} geschützt.`);specialFxSound('sombra')});
 socket.on('specialCleansed',e=>{toast(`🎩 ${e.name} hebt negative Spezialeffekte auf.`);specialFxSound('trixie')});
 // Cockatrice addon is loaded separately to preserve all existing game effects.
@@ -2083,6 +2136,8 @@ socket.on('specialCleansed',e=>{toast(`🎩 ${e.name} hebt negative Spezialeffek
 })();
 
 socket.on('specialImpact',e=>{
+  const names=(e.targetIds||[]).map(id=>state?.players?.find(p=>p.id===id)?.name).filter(Boolean);
+  showSpecialNotice({name:'Spezialeffekt',detail:e.text||'Effekt ausgelöst',target:names.join(', ')});
   if(e.effect==='cockatrice'){
     const targetId=(e.targetIds||[])[0];
     const targetName=state?.players?.find(p=>p.id===targetId)?.name||'Gegner';

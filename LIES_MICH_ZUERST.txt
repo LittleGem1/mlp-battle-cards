@@ -1,114 +1,74 @@
-MLP BATTLE CARDS – DAUERHAFTE ACCOUNTS MIT BENUTZERNAME + PASSWORT
-===============================================================
+MLP BATTLE CARDS – GEMEINSAMER FIX (09.10.2026)
+=============================================
 
-DAS IST EIN KLEINES UPDATE AUF DEIN JETZIGES SPIEL.
-Es setzt den bisherigen Stand mit funktionierenden Karten und Rundenfix voraus.
+Dieses Update behebt zusammen die 5 zuletzt genannten Probleme.
+Es baut auf dem bisherigen Spiel mit Benutzername-/Passwort-Accounts,
+Cockatrice, Chrysalis, Arenen und dem Mehrspieler-Layout auf.
 
-BEIM HOCHLADEN NUR DIESE DREI DATEIEN ERSETZEN:
-  server.js
-  player_profiles.js
-  public/client.js
+WAS IST REPARIERT?
+------------------
+1. BILDSCHIRMFLACKERN:
+   Die gleiche Spielansicht wird bei Servermeldungen nicht mehr kurz
+   ausgeblendet und eingeblendet. Unveränderte Handkarten und Gegner-
+   felder werden nicht ständig neu aufgebaut. Der Hintergrund der
+   Spezialkarten-Animation verdunkelt nicht mehr flackernd das ganze Bild.
 
-Ordner tests/ NICHT hochladen – nur interne Tests.
-ACHTUNG: Deine restlichen Kartenbilder, cards.js, public/index.html, CSS, Sounds,
-Animationen und Arenen NICHT ersetzen oder löschen.
+2. SPEZIALKARTEN VERSTÄNDLICH:
+   Nach dem Ausspielen erscheint eine gut sichtbare, länger lesbare
+   Meldung mit Kartenname, Spieler, Beschreibung und – bei Ziel-Effekten –
+   betroffenem Spieler. Die bestehenden Spezialeffekte bleiben erhalten.
 
-WAS ES KANN
------------
-- Registrierung mit Benutzername (3–24 Zeichen) und Passwort (10–128 Zeichen).
-- Anmeldung mit denselben Daten auf jedem Gerät.
-- Automatisches Wiederanmelden auf demselben Gerät (Sitzung 180 Tage,
-  danach weiterhin jederzeit mit Benutzername/Passwort anmelden).
-- Jeder Spieler hat seine EIGENE Sammlung an freigeschalteten Rahmen und Items.
-- Gewinne werden vom Server in derselben persistenten Datenbank gespeichert.
-- Die Rahmen-/Item-Auswahl wird automatisch gespeichert.
-- Bei der Registrierung Übernahme der bestehenden lokalen Sammlung bzw.
-  mit bisherigem geheimen Profil-Schlüssel Übernahme des bisherigen Serverprofils.
-- Passwörter werden gesalzen und mittels scrypt gehasht; Sitzungs-Token
-  werden in der Datenbank nur als SHA-256-Hash gespeichert.
-- Abmelden widerruft die Sitzung auf dem aktuellen Gerät.
+3. LYRA:
+   Ihre Karte liegt im normalen 1024 x 1536-Format vor und ersetzt
+   public/assets/cards_new/105_Lyra.webp. Die Kartenwerte bleiben gleich.
 
-WICHTIG: EINE DATENBANK IST UNVERZICHTBAR!
------------------------------------------
-Ohne dauerhaft betriebene PostgreSQL-Datenbank kann KEIN Webspiel
-Accounts über Render-Neustarts hinweg zuverlässig speichern. Die
-Daten dürfen nicht nur in einer lokalen Render-Datei liegen.
+4. AUSSETZEN:
+   Hat jemand bereits eine normale Karte gelegt und wird danach durch
+   Cockatrice, Bugbear oder Windigos ausgesetzt, bleibt diese Karte
+   beim Aufdecken SICHTBAR und ist als „AUSSETZEN“ gekennzeichnet.
+   Sie darf den Rundensieg nicht erhalten. Ungespielte Karten werden
+   dadurch natürlich nicht versehentlich offengelegt.
 
-EINMALIG AUF RENDER EINRICHTEN (NUR DIE SPIELBETREIBERIN):
-1. Öffne dashboard.render.com.
-2. Erstelle eine Postgres-Datenbank ODER benutze eine bereits vorhandene.
-   Wähle möglichst die gleiche Region und den gleichen Workspace wie
-   dein MLP-Battle-Cards-Web-Service.
-3. Kopiere die INTERNE Verbindungsadresse der Datenbank (Internal URL).
-4. Öffne den Web Service des Spiels > Environment > Add Environment Variable.
-   Key: DATABASE_URL
-   Value: [hier die interne Datenbank-Verbindungsadresse einfügen]
-   DIESE ADRESSE NICHT AUF GITHUB EINFÜGEN ODER WEITERGEBEN!
-5. Dein package.json muss die Node-Abhängigkeit 'pg' enthalten.
-   Falls noch nicht vorhanden, im Block "dependencies" ergänzen:
-      "pg": "^8.16.3"
-   Kommata in JSON korrekt setzen. Bestehende Bibliotheken nicht löschen.
-6. Änderungen speichern und auf Render neu deployen. Ggf. Build command:
-   npm install
-7. Website mit Strg+F5 neu laden.
-8. Nun sieht jeder im Startmenü "Dein MLP-Spieleraccount" mit
-   "Neu registrieren" und "Anmelden". ERST Registrieren wählen.
-9. Gewählten Benutzernamen und Passwort aufschreiben/Passwortmanager
-   benutzen. Danach genügt immer dieselbe Anmeldung.
+5. RUNDEN/KRISTALL:
+   Der Server kann einen feststeckenden Kristall-Intro-Übergang in der
+   GLEICHEN Runde beenden. Alte, verspätete Runden-Timer und Meldungen
+   werden ignoriert. Fehlt der Auswahl-Timer, wird eine Restzeit gesetzt.
+   Die nächste zufällige Kategorie unterscheidet sich von der vorherigen;
+   ausdrücklich durch Effekte vorgegebene Kategorien bleiben gültig.
+   Ein neu verbundenes Gerät bekommt die aktuelle Kategorie vom Server.
 
-WIE ES FÜR SPIELER FUNKTIONIERT
------------------------------
-ERSTER BESUCH:
-  Benutzername eingeben > Passwort eingeben > "Neu registrieren".
-WEITERE BESUCHE:
-  Normalerweise automatisch angemeldet; falls nicht, "Anmelden" mit
-  identischem Benutzernamen und Passwort.
-ANDERES GERÄT:
-  "Anmelden" mit denselben Daten – keine Exportdatei, kein Schlüssel nötig.
-NEUER SPIELER:
-  "Neu registrieren" mit einem anderen Benutzernamen.
+SO AUF GITHUB HOCHLADEN
+----------------------
+1. Vorher zur Sicherheit deine aktuellen GitHub-Dateien sichern.
+2. Diese ZIP auf deinem Computer entpacken.
+3. Im GitHub-Repository EXAKT DIESE vier Dateien ersetzen:
 
-ÜBERNAHME DER ALTEN SAMMLUNG
-----------------------------
-Wenn der Browser schon alte Items/Rahmen gespeichert hat, werden sie
-beim Erstellen seines ERSTEN Accounts übernommen. Hat dieser Browser
-bereits einen funktionierenden 64-stelligen Profil-Schlüssel, versucht
-es dessen bestehendes Serverprofil zu verknüpfen.
-Falls alter Schlüssel nicht mehr zur vorhandenen DB gehört, kannst du
-im Registrierungsformular das Häkchen bei "Vorhandenes Profil …"
-wegnehmen und neu registrieren; dann werden lokale Werte übernommen.
-Bestehende Datenbankkonten werden beim Update NICHT gelöscht.
+   server.js
+   public/client.js
+   public/style.css
+   public/assets/cards_new/105_Lyra.webp
 
-ACHTUNG bei der einmaligen Alt-Daten-Übernahme: Alte Freischaltungen
-kommen aus dem Browser und sind nicht fälschungssicher. Wenn alle
-bisherigen Nutzer ihre Accounts registriert haben, kannst du
-  MLP_ALLOW_LEGACY_IMPORT=false
-als zusätzliche Render-Umgebungsvariable setzen, damit keine neuen
-Browser-Freischaltungen importiert werden. Schlüsselbasierte Migration
-vorhandener Serverprofile bleibt davon unberührt.
+4. Änderungen committen und das Render-Deployment abwarten.
+5. Auf beiden PCs das Spiel mit STRG + F5 neu laden.
+6. Zusammen mit mindestens einem weiteren Spieler testen.
 
-WICHTIGE GRENZEN
-----------------
-- KEINE Accounts, wenn DATABASE_URL fehlt oder die DB abgeschaltet wird.
-- Accounts sind dauerhaft, solange PostgreSQL verfügbar und gesichert
-  bleibt. Regelmäßige Backups und ein nicht auslaufender Datenbankplan
-  sind nötig; es gibt keine Garantie gegen Datenbankverlust.
-- Ohne E-Mail-System gibt es noch keinen automatischen Passwort-Reset.
-- Bei vergessenem Passwort und keinem angemeldeten Gerät ist eine
-  separate Admin-Wiederherstellung erforderlich.
-- Sitzungen im Browser werden in localStorage gespeichert. Niemals
-  Zugangsdaten oder Sitzungs-Token weitergeben. HTTPS ist erforderlich.
-- Laufende Spiele können bei einem Render-Server-Neustart weiterhin
-  unterbrochen werden; die Accountspeicherung verhindert das nicht.
-- Es wurde keine Änderung an Cockatrice, Chrysalis, Cozy Glow,
-  Chandra, Kik, den Arenen und den 12 Finisher-Animationen vorgenommen.
+WICHTIG
+-------
+- KEIN Löschen der Datenbank oder Ändern von DATABASE_URL nötig.
+- player_profiles.js, cards.js, package.json und alle bisherigen
+  Kartenbilder, Sounds, Arenen, Cockatrice-, Chrysalis- und
+  Verlierer-Animationsdateien NICHT ersetzen oder löschen.
+- Falls seit dem letzten Account-/Layout-Fix jemand anders den
+  aktuellen Servercode verändert hat, die Änderungen vor dem Ersetzen
+  abgleichen; dies ist ein Datei-Ersatz, kein automatischer Merge.
+- Render-Neustarts und anhaltende Verbindungsprobleme können weiter
+  laufende Matches abbrechen; Account-Daten bleiben in PostgreSQL.
 
-GETESTET
---------
-- Node.js-Syntaxkontrolle: server.js, player_profiles.js, public/client.js.
-- Simulierte PostgreSQL-Anmeldung: 2 Nutzer, Trennung der Sammlungen,
-  Passwortvergleich, Wiederanmeldung nach Store-Neustart, Anmeldung
-  mit anderem Gerät, logout/ungültige Session, Alt-Profil-Migration,
-  Doppelregistrierung, Auswahl und Gewinn-Belohnung.
-- Browser-Rendering konnte in dieser Umgebung nicht zusätzlich
-  geprüft werden; ein Test auf dem Render-Deployment ist notwendig.
+PRÜFUNGEN
+---------
+- Beide JavaScript-Dateien: node --check erfolgreich.
+- Simulierte Mehrspieler-Logik: Kristallphase, Timer-Wiederherstellung,
+  sichtbare ausgesetzte Karte, Sieg-Ausschluss, Rundennummer,
+  Kategorie-Wechsel, veraltete Callback-Abwehr erfolgreich.
+- Bild: Lyra 1024 x 1536.
+- Live-Test auf deinem Render-Server ist nach dem Upload noch nötig.
