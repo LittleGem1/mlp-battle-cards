@@ -1,15 +1,24 @@
-MLP Battle Cards – Postgame-Lobby Fix
+ARENA 1 – CHINESISCHER JADEPALAST
 
-Ersetzen:
-- public/client.js
-- public/style.css
+Enthalten:
+- public/assets/backgrounds/arena_1_jade_palace.png   -> hochwertiger Hintergrund
+- public/assets/backgrounds/arena_1_leaf.png          -> transparentes Blatt für die Wind-Animation
+- public/assets/arena_fx/arena_1_jade_palace.css      -> CSS für Hintergrund und Blätter
+- public/assets/arena_fx/arena_1_jade_palace.js       -> JS zum Erzeugen der Blätter
+- DEMO_ARENA1.html                                    -> kleine Vorschau zum Testen
 
-Fix:
-- Nach Klick auf "Zur Lobby" bleibt DIESER Spieler wirklich in der Lobby.
-- Ein späteres roomState mit phase=gameover zieht ihn nicht wieder in die Arena.
-- Kein Champion-Text, keine 0-Karten-Anzeige und kein Spielfeld mehr.
-- Stattdessen sieht man in der Lobby:
-  ✓ In der Lobby
-  ⏳ Noch im Ergebnis
-- Die anderen Spieler können Geschenk/Endscreen weiter ansehen.
-- Sobald alle zurück sind, setzt der Server den Raum normal auf Lobby zurück und die nächste Runde kann starten.
+So fügst du es ein:
+1. arena_1_jade_palace.png und arena_1_leaf.png in deinen Ordner public/assets/backgrounds/ kopieren.
+2. Den Inhalt von arena_1_jade_palace.css in deine style.css übernehmen ODER die Datei separat einbinden.
+3. Den Inhalt von arena_1_jade_palace.js in deine client.js übernehmen ODER die Datei separat einbinden.
+4. Stelle sicher, dass deine Arena das HTML enthält:
+   <div class="arena arena-jade_palace">
+     <div id="arenaVfx" class="arena-vfx"></div>
+   </div>
+5. Beim Laden der Arena 1 aufrufen:
+   buildJadePalaceArenaVfx(document.getElementById('arenaVfx'));
+
+Wichtig:
+- Dieses Paket ändert nicht dein ganzes Spiel.
+- Es liefert nur Arena 1 als einsetzbares Paket mit Animation.
+- Keine Sounddatei enthalten.

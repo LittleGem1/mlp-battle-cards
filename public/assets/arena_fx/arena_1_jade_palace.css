@@ -1,0 +1,53 @@
+/* Arena 1 – Chinesischer Jadepalast */
+.arena.arena-jade_palace{
+  position: relative;
+  overflow: hidden;
+  background-image:
+    linear-gradient(rgba(7,12,28,.18), rgba(7,12,28,.28)),
+    url('/assets/backgrounds/arena_1_jade_palace.png');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+#arenaVfx.vfx-jade_palace,
+.arena-vfx.vfx-jade_palace{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+#arenaVfx.vfx-jade_palace .jade-leaf,
+.arena-vfx.vfx-jade_palace .jade-leaf{
+  position: absolute;
+  width: var(--size, 38px);
+  height: auto;
+  opacity: 0;
+  filter: drop-shadow(0 3px 5px rgba(0,0,0,.18));
+  animation: jadeLeafDrift var(--dur, 12s) linear infinite;
+  animation-delay: var(--delay, 0s);
+  transform-origin: center center;
+}
+
+#arenaVfx.vfx-jade_palace::before,
+.arena-vfx.vfx-jade_palace::before{
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,220,140,.08), rgba(255,255,255,0) 22%, rgba(255,255,255,0) 70%, rgba(40,17,5,.08));
+  pointer-events: none;
+}
+
+@keyframes jadeLeafDrift {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(0deg) scale(.9);
+    opacity: 0;
+  }
+  10% { opacity: .85; }
+  100% {
+    transform: translate3d(var(--driftX, 120px), 115vh, 0) rotate(var(--spin, 240deg)) scale(1.1);
+    opacity: 0;
+  }
+}
