@@ -67,7 +67,7 @@ const normal = [
   speed,
   magic,
   energy,
-  image:`/assets/cards/${String(n).padStart(2,'0')}_${name.replaceAll(' ','_')}.webp`
+  image:n===17?'/assets/cards_fixes/17_Cozy_Glow.webp':`/assets/cards/${String(n).padStart(2,'0')}_${name.replaceAll(' ','_')}.webp`
 }));
 
 const specials = [
@@ -82,12 +82,12 @@ const specials = [
   {id:'s68',type:'special',name:'Königin Chrysalis',effect:'chrysalis',text:'Kopiere die zuletzt von einem Gegner ausgespielte Spezialkarte dieser Runde.',useIcon:'♟',useLabel:'Effekt kopieren',image:'/assets/specials_new/68_Koenigin_Chrysalis.png'},
   {id:'s69',type:'special',name:'Storm King',effect:'stormking',text:'Bei einem Gleichstand in Schnelligkeit erhält deine Karte +2.',useIcon:'⚡',useLabel:'Schnelligkeits-Gleichstand',image:'/assets/specials_new/69_Storm_King.png'},
   {id:'s70',type:'special',name:'Flim und Flam',effect:'flimflam',text:'Ziehe 1 normale Karte und lege danach 1 Handkarte ab.',useIcon:'🎩',useLabel:'Doppelter Deal',image:'/assets/specials_new/70_Flim_und_Flam.png'},
-  {id:'s71',type:'special',name:'Cozy Glow',effect:'cozy',text:'Wähle einen Gegner: Er legt zufällig 1 Handkarte ab und zieht 1 normale Karte.',useIcon:'🎀',useLabel:'Falsches Lächeln',image:'/assets/specials_new/71_Cozy_Glow.png'},
+  {id:'s71',type:'special',name:'Cozy Glow',effect:'cozy',text:'Du wählst einen Spieler, klaust ihm zufällig 1 Karte und tauschst sie mit 1 gewählten Karte aus deiner Hand.',useIcon:'🎀',useLabel:'Falsches Lächeln',image:'/assets/specials_new/71_Cozy_Glow.png'},
   {id:'s72',type:'special',name:'Sludge',effect:'sludge',text:'Wähle einen Gegner und bestimme selbst 1 Karte aus seiner Hand, die er ablegen muss.',useIcon:'🐉',useLabel:'Karte bestimmen',image:'/assets/specials_new/72_Sludge.png'},
   {id:'s73',type:'special',name:'Diamond Dogs',effect:'diamonddogs',text:'Ziehe 2 normale Karten und behalte 1 davon.',useIcon:'💎',useLabel:'Graben nach Schätzen',image:'/assets/specials_new/73_Diamond_Dogs.png'},
   {id:'s74',type:'special',name:'Changeling',effect:'changeling',text:'Du darfst in dieser Runde sofort 1 weitere Spezialkarte einsetzen.',useIcon:'🪽',useLabel:'Schwarmruf',image:'/assets/specials_new/74_Changeling.png'},
   {id:'s75',type:'special',name:'Nightmare Moon',effect:'nightmare',text:'Die Kategorie der nächsten Runde ist automatisch Magie.',useIcon:'🌙',useLabel:'Ewige Nacht',image:'/assets/specials_new/75_Nightmare_Moon.png'},
-  {id:'s76',type:'special',name:'Hydra',effect:'hydra',text:'Wenn du diese Runde verlierst, ziehst du danach 1 zusätzliche normale Karte.',useIcon:'🐲',useLabel:'Viele Köpfe',image:'/assets/specials_new/76_Hydra.png'},
+  {id:'s76',type:'special',name:'Hydra',effect:'hydra',text:'Wenn diese Karte gespielt wird, kannst du deine gesamten Handkarten ablegen und neu ziehen.',useIcon:'🐲',useLabel:'Viele Köpfe',image:'/assets/specials_new/76_Hydra.png'},
   {id:'s77',type:'special',name:'Bugbear',effect:'bugbear',text:'Ein Gegner deiner Wahl setzt diese Runde aus.',useIcon:'🐝',useLabel:'Runde aussetzen',image:'/assets/specials_new/77_Bugbear.png'},
   {id:'s78',type:'special',name:'Manticore',effect:'manticore',text:'Nimm 1 Karte aus einem Ablagestapel zurück auf deine Hand.',useIcon:'🦁',useLabel:'Karte zurückholen',image:'/assets/specials_new/78_Manticore.png'},
   {id:'s79',type:'special',name:'Timberwolves',effect:'timberwolves',text:'Spiele diese Runde 2 normale Karten. Der höhere Wert der Kategorie zählt.',useIcon:'🌲',useLabel:'Zweite normale Karte',image:'/assets/specials_new/79_Timberwolves.png'},

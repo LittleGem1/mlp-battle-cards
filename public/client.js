@@ -1,6 +1,15 @@
 const socket=io();
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const screens={home:$('#home'),lobby:$('#lobby'),game:$('#game')};
+// Darstellungs-Fix für 3 Karten und Artefaktleiste (keine Spielregeln geändert).
+(()=>{
+  if(document.getElementById('mlp-cards-layout-fix'))return;
+  const style=document.createElement('style');
+  style.id='mlp-cards-layout-fix';
+  style.textContent="\n/* MLP Battle Cards – Minimaler Layoutfix: Artefakte rechts, Aktionen unter Cozy Glow. */\n#game.screen.active .arena #artifactShelf.artifact-shelf {\n  position:fixed !important;\n  top:50vh !important;\n  right:12px !important;\n  left:auto !important;\n  bottom:auto !important;\n  transform:translateY(-50%) !important;\n  margin:0 !important;\n  width:168px !important;\n  max-width:calc(100vw - 24px) !important;\n  padding:9px !important;\n  z-index:68 !important;\n  display:block !important;\n  visibility:visible !important;\n  opacity:1 !important;\n}\n#game.screen.active .arena #artifactShelf .artifact-shelf-slots {\n  display:grid !important;\n  grid-template-columns:1fr !important;\n  gap:6px !important;\n}\n#game.screen.active .arena #artifactShelf .artifact-slot {\n  min-height:44px !important;\n}\n/* Cozy benutzt dieselben 'Lesen'/'Ausspielen'-Schaltflächen wie jede Spezialkarte.\n   Beide bleiben UNTER dem Bild und der Beschreibung, nicht darüber. */\n#game.screen.active .arena #hand .hand-card.special.effect-cozy {\n  display:flex !important;\n  flex-direction:column !important;\n}\n#game.screen.active .arena #hand .hand-card.special.effect-cozy > img {order:0 !important;}\n#game.screen.active .arena #hand .hand-card.special.effect-cozy .special-text-strip {\n  position:static !important;\n  inset:auto !important;\n  transform:none !important;\n  display:block !important;\n  order:1 !important;\n  margin:4px 0 !important;\n}\n#game.screen.active .arena #hand .hand-card.special.effect-cozy .special-actions {\n  position:static !important;\n  inset:auto !important;\n  transform:none !important;\n  order:2 !important;\n  display:flex !important;\n  flex-direction:column !important;\n  width:100% !important;\n  margin:5px 0 0 !important;\n  padding:0 !important;\n  gap:5px !important;\n  pointer-events:auto !important;\n}\n#game.screen.active .arena #hand .hand-card.special.effect-cozy .special-actions button {\n  position:static !important;\n  inset:auto !important;\n  transform:none !important;\n  width:100% !important;\n  margin:0 !important;\n  pointer-events:auto !important;\n}\n@media (max-width:700px) {\n  #game.screen.active .arena #artifactShelf.artifact-shelf {\n    width:146px !important;\n    top:29vh !important;\n    right:6px !important;\n    padding:7px !important;\n  }\n}\n";
+  document.head.appendChild(style);
+})();
+
 
 const ACCESSORIES={
   changeling:{image:'/assets/accessories/changeling-wings.png',name:'Changeling-Flügel',desc:'Leuchtende Changeling-Flügel hinter deinem Namen.'},

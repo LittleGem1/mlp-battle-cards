@@ -256,6 +256,11 @@ function requestTarget(socket,r,p,sourceCard,action,mode='any',title='Wähle ein
   socket.emit('specialTargetRequest',{title,card:sourceCard,targets:targets.map(t=>({id:t.id,name:t.name,selected:!!t.selected,handCount:t.hand.length}))});
   return true;
 }
+function cozyGiveChoiceOptions(r,p){
+  const cards=(p?.hand||[]).map(id=>byId[id]).filter(Boolean);
+  const normals=cards.filter(c=>c.type==='normal');
+  return normals.length?normals:cards;
+}
 function consumeSpecial(r,p,c){
   const i=p.hand.indexOf(c.id);
   if(i<0)return false;
@@ -359,9 +364,17 @@ function botApplySpecial(r,p,c){
   }else if(effect==='flimflam'){
     p.hand.push(...drawNormal(r,1));botDiscardWorst(r,p);
   }else if(effect==='cozy'){
-    const t=targetHand();if(t&&t.hand.length){
-      const id=t.hand[Math.floor(Math.random()*t.hand.length)];t.hand.splice(t.hand.indexOf(id),1);discardCard(r,id);t.hand.push(...drawNormal(r,1));
-      emitImpact(r,'cozy',t.id,`${t.name} verliert zufällig 1 Handkarte und zieht 1 normale Karte.`);
+    const t=targetHand();
+    if(t&&t.hand.length&&p.hand.length){
+      const stolenId=t.hand[Math.floor(Math.random()*t.hand.length)];
+      t.hand.splice(t.hand.indexOf(stolenId),1);
+      const givePool=p.hand.filter(id=>byId[id]?.type==='normal');
+      const pickFrom=(givePool.length?givePool:p.hand);
+      const giveId=[...pickFrom].sort((a,b)=>(byId[a]?.[r.category]||0)-(byId[b]?.[r.category]||0))[0]||pickFrom[0];
+      p.hand.splice(p.hand.indexOf(giveId),1);
+      p.hand.push(stolenId);
+      t.hand.push(giveId);
+      emitImpact(r,'cozy',[t.id,p.id],`${p.name} stiehlt ${t.name} zufällig 1 Karte und tauscht sie aus.`);
     }
   }else if(effect==='sludge'||effect==='maneiac'){
     const t=targetHand();if(t&&t.hand.length){
@@ -379,7 +392,11 @@ function botApplySpecial(r,p,c){
   }else if(effect==='nightmare'){
     r.forcedNextCategory='magic';io.to(r.code).emit('specialImpact',{effect:'nightmare',targetIds:[],text:'Die nächste Runde wird automatisch Magie.'});
   }else if(effect==='hydra'){
-    fxAdd(r,'hydra',p.id);
+    const redrawCount=p.hand.length;
+    const old=[...p.hand];
+    p.hand.length=0;
+    for(const id of old)discardCard(r,id);
+    p.hand.push(...drawNormalForHand(r,p,redrawCount));
   }else if(effect==='bugbear'){
     const t=targetAny();if(t)skipPlayerThisRound(r,t.id,p.id,'Bugbear');
   }else if(effect==='manticore'){
@@ -429,7 +446,8 @@ function botUsableSpecials(r,p){
     if(c.effect==='applejack')return r.category==='strength';
     if(c.effect==='chrysalis')return history;
     if(c.effect==='ahuizotl')return botTargets(r,p,'played').length>0;
-    if(['cozy','sludge','maneiac','gilda'].includes(c.effect))return botTargets(r,p,'hand').length>0;
+    if(c.effect==='cozy')return botTargets(r,p,'hand').length>0 && p.hand.length>1;
+    if(['sludge','maneiac','gilda'].includes(c.effect))return botTargets(r,p,'hand').length>0;
     if(['tirek','bugbear','sombra','ponyshadows','lightningdust'].includes(c.effect))return botTargets(r,p,'any').length>0;
     if(c.effect==='timberwolves')return botNormalCards(p,r.category).length>=2;
     if(c.effect==='manticore')return r.normalDiscard.length+r.rewardDiscard.length>0;
@@ -848,18 +866,6 @@ function finishRoundCycle(r,winnerId,playedIds){
 
   refillNormalHands(r);
 
-  // Hydra: Wer Hydra eingesetzt und die Runde NICHT gewonnen hat, erhält danach
-  // zusätzlich 1 normale Karte. Diese kommt extra zur normalen Auffüllung dazu.
-  for(const pid of (r.roundFX?.hydra||[])){
-    if(pid===winnerId)continue;
-    const p=r.players.get(pid);
-    if(!p||p.surrendered)continue;
-    const bonus=drawNormal(r,1);
-    if(bonus.length){
-      p.hand.push(...bonus);
-      io.to(pid).emit('bonusDraw',{source:'Hydra',cards:bonus.map(id=>byId[id]).filter(Boolean)});
-    }
-  }
   sendState(r);
 
   setTimeout(()=>{
@@ -1151,6 +1157,7 @@ io.on('connection',socket=>{
       const mode=['cozy','sludge','maneiac','gilda'].includes(effect)?'hand':'any';
       if(!availableTargets(r,p,mode).length)return socket.emit('errorMsg','Für diese Spezialkarte gibt es gerade kein gültiges Ziel.');
     }
+    if(effect==='cozy' && p.hand.filter(id=>id!==cardId).length<1)return socket.emit('errorMsg','Cozy Glow braucht noch mindestens 1 weitere Handkarte zum Tauschen.');
     if(effect==='manticore'&&!r.normalDiscard.length&&!r.rewardDiscard.length)return socket.emit('errorMsg','Die Ablagestapel sind noch leer.');
 
     if(!consumeSpecial(r,p,source))return;
@@ -1186,7 +1193,7 @@ io.on('connection',socket=>{
       forceDiscardChoice(r,p,'Flim und Flam');
       socket.emit('specialDone',{text:'1 normale Karte gezogen – jetzt 1 Handkarte ablegen.'});
     }else if(effect==='cozy'){
-      requestTarget(socket,r,p,source,'cozy','hand','Cozy Glow: Wer soll eine zufällige Handkarte verlieren?');
+      requestTarget(socket,r,p,source,'cozy','hand','Cozy Glow: Von welchem Spieler willst du zufällig 1 Karte klauen?');
     }else if(effect==='sludge'){
       requestTarget(socket,r,p,source,'sludge','hand','Sludge: Wähle den Gegner, dessen Karte du bestimmst.');
     }else if(effect==='diamonddogs'){
@@ -1201,7 +1208,13 @@ io.on('connection',socket=>{
       socket.emit('specialDone',{text:'Die nächste Runde wird automatisch Magie.'});
       io.to(r.code).emit('specialImpact',{effect:'nightmare',targetIds:[],text:'Die nächste Runde gehört der Magie.'});
     }else if(effect==='hydra'){
-      fxAdd(r,'hydra',p.id);socket.emit('specialDone',{text:'Bei einer Niederlage erhältst du nach der Runde 1 zusätzliche normale Karte.'});
+      const redrawCount=p.hand.length;
+      const old=[...p.hand];
+      p.hand.length=0;
+      for(const id of old)discardCard(r,id);
+      const fresh=drawNormalForHand(r,p,redrawCount);
+      p.hand.push(...fresh);
+      socket.emit('specialDone',{text:fresh.length?`Hydra erneuert deine Hand: ${fresh.length} neue Karte(n).`:'Hydra hat deine übrigen Handkarten abgelegt.'});
     }else if(effect==='bugbear'){
       requestTarget(socket,r,p,source,'bugbear','any','Bugbear: Wer setzt diese Runde aus?');
     }else if(effect==='manticore'){
@@ -1268,10 +1281,14 @@ io.on('connection',socket=>{
       addDebuff(r,target.id,-2,p.id,'Tirek');
     }else if(action==='cozy'){
       if(!target.hand.length)return socket.emit('errorMsg','Dieser Gegner hat keine Handkarte.');
-      const id=target.hand[Math.floor(Math.random()*target.hand.length)];
-      target.hand.splice(target.hand.indexOf(id),1);discardCard(r,id);
-      const d=drawNormal(r,1);target.hand.push(...d);
-      emitImpact(r,'cozy',target.id,`${target.name} verliert zufällig 1 Handkarte und zieht 1 normale Karte.`);
+      const giveChoices=cozyGiveChoiceOptions(r,p);
+      if(!giveChoices.length)return socket.emit('errorMsg','Du brauchst eine eigene Handkarte zum Tauschen.');
+      // Bis die eigene Tauschkarte ausgewählt ist, bleibt die gegnerische Karte
+      // auf ihrer Hand. So verliert niemand Karten, wenn das Fenster schließt.
+      const stolenId=target.hand[Math.floor(Math.random()*target.hand.length)];
+      socket.data.pendingSpecial={room:r.code,action:'cozy-exchange',sourceCardId:source.id,targetId:target.id,stolenId,choices:giveChoices.map(c=>c.id)};
+      socket.emit('specialCardRequest',{title:`Cozy Glow: Welche deiner Karten gibst du ${target.name} im Tausch?`,cards:giveChoices});
+      return;
     }else if(action==='sludge'||action==='maneiac'){
       if(!target.hand.length)return socket.emit('errorMsg','Dieser Gegner hat keine Handkarte.');
       socket.data.pendingSpecial={room:r.code,action:action==='sludge'?'sludge-card':'maneiac-card',sourceCardId:source.id,targetId:target.id};
@@ -1319,6 +1336,25 @@ io.on('connection',socket=>{
       target.hand.splice(target.hand.indexOf(cardId),1);discardCard(r,cardId);
       emitImpact(r,action==='sludge-card'?'sludge':'maneiac',target.id,`${target.name} muss ${byId[cardId]?.name||'eine Karte'} ablegen.`);
       socket.data.pendingSpecial=null;sendState(r);return;
+    }
+
+    if(action==='cozy-exchange'){
+      const target=r.players.get(pending.targetId);
+      const stolenId=pending.stolenId;
+      if(!target||!stolenId||target.surrendered||!target.hand.includes(stolenId)){
+        socket.data.pendingSpecial=null;
+        return socket.emit('errorMsg','Der Tausch ist nicht mehr möglich.');
+      }
+      if(!pending.choices?.includes(cardId)||!p.hand.includes(cardId)){
+        return socket.emit('errorMsg','Diese Tauschkarte ist nicht mehr verfügbar.');
+      }
+      // Beidseitiger Kartentausch in einem Schritt: keine Karten gehen verloren.
+      p.hand.splice(p.hand.indexOf(cardId),1,stolenId);
+      target.hand.splice(target.hand.indexOf(stolenId),1,cardId);
+      socket.data.pendingSpecial=null;
+      socket.emit('specialDone',{text:`Du stiehlst ${byId[stolenId]?.name||'1 Karte'} und gibst ${byId[cardId]?.name||'1 Karte'} an ${target.name}.`});
+      emitImpact(r,'cozy',[target.id,p.id],`${p.name} stiehlt ${target.name} zufällig 1 Karte und tauscht sie aus.`);
+      sendState(r);return;
     }
 
     if(action==='diamonddogs'||action==='sunset'){
