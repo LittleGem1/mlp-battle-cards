@@ -1,95 +1,99 @@
-MLP BATTLE CARDS – DAUERHAFT GESPEICHERTE RAHMEN & ITEMS
-=========================================================
-Version: 09.10.2026
+MLP BATTLE CARDS – KARTENBILDER & RUNDEN-STABILITÄT
+==================================================
+Update vom 09.10.2026
 
-WICHTIG: Ohne eine echte dauerhafte Postgres-Datenbank gibt es
-KEINE garantierte Speicherung nach Render-Neustarts. Deshalb bleibt die
-Spielanmeldung absichtlich gesperrt, wenn kein Profil geladen wurde.
-
-DAS IST EIN PATCH – kein komplettes Spiel!
-Ausgangspunkt: der letzte Chrysalis-Bugfix (server.js und public/client.js)
-auf Basis der 13 Karten inkl. Cockatrice. Der Cozy-Glow-Bildfix bleibt bestehen.
+WAS DIESES UPDATE ÄNDERT
+-----------------------
+A) Normale Cozy Glow: exakt die vom Nutzer hochgeladene Bilddatei,
+   ohne Änderungen an der SPECIAL-Karte Cozy Glow.
+B) Chandra und Kik: ersetzt durch die beiden zuletzt neu gestalteten
+   Karten mit bereinigtem Kartenrand. Die Zahlenwerte bleiben gleich.
+C) Stabilitäts-Fix für die Runden:
+   - Runden ohne noch aktive Kartenwahl werden automatisch fortgesetzt.
+   - Kein Stillstand bei ausbleibenden Würfelwürfen im Gleichstand:
+     ab ca. 14 Sekunden greift die automatische Würfel-Auswertung.
+   - Auswahl- und Gewinnphasen haben serverseitige Schutzmechanismen.
+   - Verzögerte Gewinner-/Aufdeck-Rückmeldungen dürfen keine neue Runde
+     mehr überschreiben, z.B. nach einem Spielabbruch.
+   - Bei kurzfristigem Verbindungsverlust bleibt der Spielerplatz
+     für 2 Minuten reserviert. Der Browser tritt mit einem geheimen
+     Raum-Schlüssel automatisch wieder bei. Hand/Karten/Spielrunde
+     bleiben beim Wiederbeitritt erhalten.
+   - Verwaiste Spezialkarten-Auswahlfenster werden beim Wiederbeitritt
+     auf dem Client geschlossen.
+   - Hat niemand mehr spielbare normale Karten, wird die Partie anhand
+     Artefakten und verbleibenden Handkarten entschieden, statt endlos
+     in der Startphase festzustecken.
+   - Gewinne können auch bei kurzzeitig unterbrochener Verbindung über
+     das zuvor verknüpfte Profil gespeichert werden (Postgres nötig).
 
 DATEIEN FÜR GITHUB
-==================
-server.js            ERSETZEN, im Hauptverzeichnis
-public/client.js     ERSETZEN, unter public/
-player_profiles.js   NEU, im Hauptverzeichnis
-package.json         MÖGLICHKEIT A: ersetzen (enthält express, socket.io, pg),
-                     falls dein bisheriges package.json nichts Besonderes enthält.
-                     MÖGLICHKEIT B: sicherer: in dein bestehendes package.json
-                     unter dependencies nur "pg": "^8.16.3" ergänzen.
-                     Das bestehende npm-Skript "start" weiterbenutzen.
+------------------
+Die ZIP-Datei entpacken und diese DATEIEN IN DEN GLEICHEN PFADEN auf
+GitHub HOCHLADEN bzw. ERSETZEN:
 
-KEINE BILDER, SOUNDS, KARTEN ODER ARENEN WERDEN ANGEFASST.
-Insbesondere Cockatrice-Sound, Chrysalis-Fix, Cozy Glow, alle 13 Karten
-und die Verlierer-Animationen bleiben erhalten.
+server.js
+public/client.js
+public/assets/cards_fixes/17_Cozy_Glow.webp
+public/assets/cards_new/097_Chandra.webp
+public/assets/cards_new/099_Kik.webp
 
-RENDER EINMALIG EINRICHTEN – UNBEDINGT NÖTIG
-==========================================
-1) Im Render-Dashboard eine PostgreSQL-Datenbank anlegen bzw. eine
-   bereits bestehende langlebige Postgres-Datenbank verwenden.
-   WICHTIG: Render Free Postgres ist KEINE dauerhafte Lösung,
-   denn es läuft nach 30 Tagen ab. Wähle eine längerfristig betriebene
-   Datenbank und sorge für Backups.
-2) Datenbank und Render-Webservice möglichst in derselben Region.
-3) Auf der Datenbank-Seite unter Connect die INTERNAL DATABASE URL kopieren.
-4) Im Render-Webservice: Environment -> Add Environment Variable.
-      Key:   DATABASE_URL
-      Value: postgres://...  [hier die URL der Datenbank]
-   KEINE echte URL oder Passwörter in GitHub hochladen!
-5) Im Render-Webservice für Node als Build Command 'npm install' verwenden,
-   damit das neue Paket 'pg' installiert wird (v.a. falls package-lock.json
-   noch nicht aktualisiert ist). Start Command bleibt 'npm start'.
-6) Patch-Dateien nach GitHub hochladen und Deployment abwarten.
-   Die zwei Tabellen werden automatisch beim ersten Profilzugriff erzeugt.
+Den Ordner 'tests' musst du NICHT auf GitHub hochladen; er ist nur zur
+lokalen Überprüfung dabei. 'LIES_MICH_ZUERST.txt' ebenfalls optional.
 
-BEDIENUNG FÜR SPIELER
-=====================
-- Beim ersten Laden wird automatisch EIN persönliches Profil erstellt.
-- Bereits freigeschaltete Items und Rahmen aus dem bisherigen Browser
-  werden EINMALIG in dieses Profil übernommen. Deswegen unbedingt das
-  Update zuerst im bisher benutzten Browser öffnen!
-- Danach sind die Server-Daten die Wahrheit; ein alter Browser-Cache
-  kann den Serverbestand nicht zurücksetzen.
-- Neben dem Spielernamen: 'Profil-Schlüssel sichern' anklicken.
-  Den 64-stelligen GEHEIMEN Schlüssel sicher privat aufheben.
-  Wer ihn kennt, kann das Profil übernehmen!
-- Auf einem anderen Gerät 'Profil wiederherstellen' wählen und den
-  gleichen Schlüssel eintragen. Gleiche Namen allein genügen nicht.
-- Nach einem Match-Sieg bestimmt DER SERVER genau eine neue Freischaltung
-  und schreibt sie EINMAL in Postgres. Das Geschenk zeigt danach die
-  bereits gespeicherte Belohnung.
-- Die drei ersten Items (Changeling-Flügel, Ballon, Süßigkeiten) und
-  die zwei Start-Rahmen (Sakura und Candy) sind immer verfügbar.
-- Bereits erhaltene Preise werden auf einem anderen Gerät angezeigt.
-- Geladener Status: 'Rahmen & Items serverseitig gespeichert'.
+WICHTIG
+-------
+Dieses Paket baut auf der zuletzt entwickelten Version MIT
+- 13 neuen Charakterkarten, Cockatrice und Sound,
+- reparierter Chrysalis-Effekt,
+- dauerhaften Spielerprofilen ('player_profiles.js')
+auf. Es enthält deswegen nur die ersetzten Dateien. Bitte das
+vorhandene 'cards.js', 'player_profiles.js' und die Datenbankverbindung
+unverändert lassen.
 
-WAS TUN, WENN NICHTS GESPEICHERT WIRD?
-====================================
-- Meldung 'DATABASE_URL fehlt': Datenbank nicht verbunden -> Schritt 1–6.
-- Meldung 'pg' fehlt: package.json/Build Command prüfen.
-- Meldung 'Profil nicht gefunden': NICHT einfach neuen Account erstellen;
-  Profil-Schlüssel/Datenbank prüfen (z.B. abgelaufene Free-Datenbank).
-- Darauf achten, dass die Datenbank selbst existiert und Daten aufbewahrt.
-  Ein Update allein kann Serverausfälle, die komplette Löschung einer
-  Datenbank oder verlorene Schlüssel nicht heilen.
+Die Datei 'public/assets/cards_fixes/17_Cozy_Glow.webp' ist die
+ungeänderte Datei, die du hier hochgeladen hast. Der Kartenkatalog
+enthält bereits den korrekten Bildpfad für die NORMALE Cozy Glow.
 
-TESTEN
-======
-A) Bisherige Site vor dem Update im üblichen Browser öffnen und aktuelle
-   Sammlung überprüfen, Browserdaten NICHT löschen.
-B) Update veröffentlichen; Site neu laden und auf das grüne Profilstatus-
-   Symbol warten. Geheime Kennung sichern.
-C) Eine Partie gewinnen, Geschenk öffnen, Rahmen/Item anzeigen lassen.
-D) STRG+F5 neu laden und dieselbe Sammlung prüfen.
-E) Auf einem zweiten Gerät mit Schlüssel wiederherstellen und prüfen.
-F) Render Webservice neu deployen – Sammlung muss erhalten bleiben.
-G) Namen ändern und wieder zurück – persönliches Profil bleibt unverändert.
+Alle anderen Karten, 12 Finisher, Arenen, Cockatrice-Animation/Sound,
+Chrysalis, Musik und kosmetische Freischaltungen bleiben im Code
+bestehen. Keine alten Dateien löschen.
 
-TESTS IM ZIP
-============
-tests/test-profiles.js: 13 zusammengefasste Assertions mit einer simulierten
-Postgres-Schicht für Login, Import, Isolation zweier Spieler, 1x Gewinn,
-keine Doppelgewinne und Wiederherstellung. Die echte Render-Datenbank kann
-nur nach dem Deployment mit dem obigen Ende-zu-Ende-Test geprüft werden.
+NACH DEM UPLOAD
+---------------
+1) Alle fünf Dateien mit ihren Ordnerpfaden auf GitHub hochladen.
+2) Render neu deployen lassen.
+3) Browser mit STRG+F5 aktualisieren.
+4) Normale Cozy Glow sowie Chandra/Kik in einer Partie prüfen.
+5) Zwei Browser / Geräte verwenden, Partie beginnen, einmal Verbindung
+   kurz unterbrechen und wiederherstellen; der Spieler sollte in
+   denselben Raum zurückkehren. Auch Gleichstand, Spezialeffekte,
+   Auslaufen der 30-Sekunden-Zeitauswahl und Spielende testen.
+
+GRENZEN
+-------
+Dieses Update kann Netzwerk- und Serverausfälle nicht verhindern.
+Der Wiederbeitritt funktioniert bei einer kurzfristigen
+Socket-Unterbrechung, solange der Spielserver den Raum noch im
+Arbeitsspeicher hat. Bei einem Render-Neustart/Deployment gehen
+bereits laufende Partien weiterhin verloren: dafür wäre eine
+zusätzliche dauerhafte Speicherung des gesamten laufenden Matches
+in der Datenbank erforderlich. Verbindungsverluste über 2 Minuten
+beenden die Reservierung des Sitzplatzes.
+
+Die Spielregeln für 30 Sekunden Auswahlzeit und den Verlust einer
+Karte beim Zeitablauf bleiben erhalten. Die neuen Schutzmechanismen
+laufen nur, wenn ein regulärer Ablauf stecken bleibt.
+
+GEPRÜFT
+-------
+- node --check server.js und public/client.js
+- simulierte Tests für Raumbeitritt, Sitzplatzreservierung,
+  Wiederbeitritt, Kartenerhalt, Zeitauswahl, leere Spielerwahl,
+  Würfel-Automatik, alte Callback-Ereignisse und erzwungenes Spielende
+- Cozy Glow bytegenau identisch mit der hochgeladenen Bilddatei
+- Chandra/Kik aus den zuletzt erzeugten Kartenbildern als WebP
+
+Ein echter Mehrspieler-Test auf Render ist erst NACH dem Deployment
+möglich. Diese Tests sind keine Garantie, dass jede Netzwerkstörung
+abgefangen werden kann.

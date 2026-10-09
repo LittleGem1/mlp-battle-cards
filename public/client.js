@@ -455,7 +455,23 @@ function setupProfileUI(){
   });
 }
 setupProfileUI();
-socket.on('connect',()=>{myId=socket.id;updateHomePreview();requestProfileLogin();});
+socket.on('connect',()=>{
+  myId=socket.id;updateHomePreview();requestProfileLogin();
+  try{const t=JSON.parse(localStorage.getItem('cc_room_resume_v1')||'null');
+    if(t?.code&&/^[0-9a-f]{64}$/.test(t.token))socket.emit('resumeRoom',t);
+  }catch(e){}
+});
+socket.on('roomResumeToken',data=>{
+  if(data?.code&&data?.token)localStorage.setItem('cc_room_resume_v1',JSON.stringify({code:data.code,token:data.token}));
+});
+socket.on('roomResumed',e=>{dismissOldSpecialChoices();toast('🔌 Wieder verbunden! Du bist zurück in Raum '+e.code+'.');});
+socket.on('roomResumeFailed',message=>{
+  localStorage.removeItem('cc_room_resume_v1');
+  state=null;hand=[];renderHand();show('home');
+  toast('Wiederbeitritt nicht möglich: '+message);
+});
+socket.on('roomTakenOver',()=>toast('Die Partie wurde auf einem anderen Fenster wiederhergestellt.'));
+socket.on('disconnect',()=>{if(state)toast('Verbindung unterbrochen – das Spiel versucht automatisch, dich wieder zu verbinden.');});
 socket.on('profileData',data=>{
   if(data.token){
     profileToken=data.token;
@@ -1957,7 +1973,7 @@ socket.on('postGameReadyState',e=>{
   }
 });
 socket.on('backToLobby',()=>{if(finisherDemoActive)stopFinisherDemo();waitingForLobbyReset=false;stopCountdown();stopSelectionTimer();hideTieAlert();try{$('#gameOverDialog').close()}catch{};try{$('#giftDialog').close()}catch{};clearTable();show('lobby');setMusicMode('lobby');if(state?.phase==='lobby')renderLobby();toast('Lobby ist bereit für die nächste Runde.')});
-socket.on('roomLeft',()=>{if(finisherDemoActive)stopFinisherDemo();waitingForLobbyReset=false;stopCountdown();stopSelectionTimer();hideTieAlert();state=null;hand=[];clearTable();renderHand();show('home');setMusicMode('lobby');toast('Du hast den Raum verlassen.')});
+socket.on('roomLeft',()=>{localStorage.removeItem('cc_room_resume_v1');if(finisherDemoActive)stopFinisherDemo();waitingForLobbyReset=false;stopCountdown();stopSelectionTimer();hideTieAlert();state=null;hand=[];clearTable();renderHand();show('home');setMusicMode('lobby');toast('Du hast den Raum verlassen.')});
 function dismissOldSpecialChoices(){
   for(const id of ['specialChoiceDialog','choiceDialog']){
     const d=document.getElementById(id);

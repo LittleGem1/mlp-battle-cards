@@ -23,6 +23,9 @@ const NORMAL_COPIES = 3;
 const REWARD_SPECIAL_COPIES = 2;
 const REWARD_ARTIFACT_COPIES = 2;
 const ARTIFACT_REWARD_COOLDOWN = 1;
+const RECONNECT_GRACE_MS = 120000; // Reserve a disconnected player's seat for two minutes.
+const ROUND_WATCHDOG_PERIOD_MS = 2500;
+
 
 // Test-Einstellung der Arena: Nur Host; nur die naechste Partie.
 const ARENA_IDS = Object.freeze(['jade_palace','whispering_forest','steampunk_works','witchs_table']);
@@ -74,7 +77,7 @@ function publicState(r){
       specialCount:p.hand.filter(id=>byId[id]?.type==='special').length,
       artifacts:(p.artifacts||[]).map(id=>byId[id]).filter(Boolean),
       artifactCount:new Set(p.artifacts||[]).size,timeoutPenaltyCount:p.timeoutPenaltyCount||0,normalRefillTarget:Math.max(0,NORMAL_HAND_TARGET-(p.timeoutPenaltyCount||0)),
-      selected:!!p.selected,ready:!!p.ready,surrendered:!!p.surrendered,isBot:!!p.isBot,
+      selected:!!p.selected,ready:!!p.ready,surrendered:!!p.surrendered,isBot:!!p.isBot,connected:!!p.isBot||!p.disconnectedAt,
       eliminated:!!p.surrendered,lastPlayedCardId:p.lastPlayedCardId||null
     }))
   };
@@ -652,6 +655,7 @@ function returnRewardCandidate(r,id){
   r.rewardDeck=shuffle(r.rewardDeck);
 }
 function beginRewardChoice(r,winnerId){
+  winnerId=resolveResumedId(r,winnerId);
   const p=r.players.get(winnerId);
   if(!p||p.surrendered){
     startRound(r,1200);
@@ -681,6 +685,7 @@ function beginRewardChoice(r,winnerId){
   r.phase='rewardchoice';
   const token=`reward:${r.round}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
   r.pendingReward={winnerId,cards:candidates,token};
+  r.rewardChoiceDeadline=Date.now()+18000;
   sendState(r);
 
   const publicInfo={winnerId,playerName:p.name,count:candidates.length};
@@ -799,7 +804,9 @@ function resetToLobby(r){
   clearRoomSpecialChoices(r);
   r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;r.arenaSelection='random';
   r.round=0;r.played={};r.dice={};r.tieIds=[];r.roundBuff={};r.roundPlayerIds=[];
+  r.pendingRoundWinner=null;
   r.postGameReady=new Set();r.forceNextCategoryDifferent=false;r.forcedNextCategory=null;resetRoundFX(r);
+  r.watchdogTag=null;r.watchdogSince=0;r.resumedIds=Object.create(null);
   r.normalDeck=[];r.normalDiscard=[];r.rewardDeck=[];r.rewardDiscard=[];r.pendingReward=null;r.artifactRewardCooldown=0;
   for(const p of roomPlayers(r)){
     p.hand=[];p.artifacts=[];p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.pendingForcedDiscard=null;
@@ -807,9 +814,77 @@ function resetToLobby(r){
   sendState(r);
   io.to(r.code).emit('backToLobby');
 }
+function resolveResumedId(r,id){
+  if(!r)return id;
+  for(let i=0;i<8&&r.resumedIds?.[id];i++)id=r.resumedIds[id];
+  return id;
+}
+function offerRoomTicket(socket,r,p){
+  if(!p.resumeToken)p.resumeToken=crypto.randomBytes(32).toString('hex');
+  socket.emit('roomResumeToken',{code:r.code,token:p.resumeToken});
+}
+function restoreSeat(socket,roomCode,ticket){
+  if(socket.data.room)return socket.emit('roomResumeFailed','Du bist bereits in einem Raum.');
+  const r=rooms.get(String(roomCode||'').toUpperCase());
+  if(!r)return socket.emit('roomResumeFailed','Der bisherige Raum existiert nicht mehr (etwa nach einem Server-Neustart).');
+  const p=roomPlayers(r).find(x=>!x.isBot&&x.resumeToken&&x.resumeToken===ticket);
+  if(!p)return socket.emit('roomResumeFailed','Der Wiederbeitritts-Schlüssel passt nicht zu diesem Raum.');
+  const oldId=p.id,newId=socket.id;
+  const oldSocket=io.sockets.sockets.get(oldId);
+  if(oldSocket&&oldId!==newId){
+    oldSocket.data.room=null;oldSocket.emit('roomTakenOver');oldSocket.disconnect(true);
+  }
+  if(p.disconnectTimer){clearTimeout(p.disconnectTimer);p.disconnectTimer=null;}
+  p.disconnectedAt=null;
+  r.players.delete(oldId);p.id=newId;r.players.set(newId,p);
+  r.resumedIds ||= Object.create(null);
+  if(oldId!==newId)r.resumedIds[oldId]=newId;
+  if(r.hostId===oldId)r.hostId=newId;
+  const ids=xs=>(xs||[]).map(id=>id===oldId?newId:id);
+  r.roundPlayerIds=ids(r.roundPlayerIds);
+  r.tieIds=ids(r.tieIds);
+  for(const key of ['played','roundBuff','dice']){
+    const obj=r[key];if(obj&&Object.prototype.hasOwnProperty.call(obj,oldId)){obj[newId]=obj[oldId];delete obj[oldId];}
+  }
+  if(r.roundFX){
+    for(const key of ['skipped','forcedLose','protected','autoWinner','hydra','stormKing','doubleNormal'])r.roundFX[key]=ids(r.roundFX[key]);
+    for(const key of ['debuff','strengthDebuff']){
+      const obj=r.roundFX[key];if(obj&&Object.prototype.hasOwnProperty.call(obj,oldId)){obj[newId]=obj[oldId];delete obj[oldId];}
+    }
+  }
+  for(const h of r.specialHistory||[])if(h.playerId===oldId)h.playerId=newId;
+  if(r.pendingReward?.winnerId===oldId)r.pendingReward.winnerId=newId;
+  if(r.pendingRoundWinner===oldId)r.pendingRoundWinner=newId;
+  if(r.postGameReady?.has(oldId)){r.postGameReady.delete(oldId);r.postGameReady.add(newId);}
+  socket.data.room=r.code;socket.join(r.code);
+  offerRoomTicket(socket,r,p);
+  socket.emit('roomResumed',{code:r.code,phase:r.phase});
+  sendState(r);
+  if(r.phase==='select'){
+    socket.emit('notice','Du bist wieder in deiner laufenden Partie. Die Auswahl läuft weiter.');
+    if(!p.selected&&Date.now()>=(r.selectionDeadline||Infinity))handleSelectionTimeout(r);
+  }else if(r.phase==='rewardchoice'&&r.pendingReward?.winnerId===newId){
+    socket.emit('rewardChoice',{token:r.pendingReward.token,cards:r.pendingReward.cards.map(id=>byId[id]).filter(Boolean),seconds:Math.max(1,Math.ceil((r.rewardChoiceDeadline-Date.now())/1000))});
+  }else if(r.phase==='tie'&&r.tieIds.includes(newId))socket.emit('tieStart',{playerIds:r.tieIds,names:r.tieIds.map(id=>r.players.get(id)?.name)});
+  if(r.phase==='ready')maybeStartWhenReady(r);
+}
+function reserveDisconnectedSeat(socket){
+  const r=getRoom(socket),p=r?.players.get(socket.id);
+  if(!r||!p)return;
+  p.disconnectedAt=Date.now();
+  clearSpecialChoice(socket,r,false);
+  sendState(r);
+  io.to(r.code).emit('notice',`${p.name} hat die Verbindung verloren und kann innerhalb von 2 Minuten zurückkehren.`);
+  p.disconnectTimer=setTimeout(()=>{
+    if(!rooms.has(r.code)||r.players.get(p.id)!==p||!p.disconnectedAt)return;
+    removePlayerFromRoom(socket,false);
+  },RECONNECT_GRACE_MS);
+}
 function removePlayerFromRoom(socket,notify=true){
   const r=getRoom(socket);if(!r)return;
-  const leaving=r.players.get(socket.id);if(leaving?.pendingForcedDiscard?.timer)clearTimeout(leaving.pendingForcedDiscard.timer);
+  const leaving=r.players.get(socket.id);
+  if(leaving?.disconnectTimer){clearTimeout(leaving.disconnectTimer);leaving.disconnectTimer=null;}
+  if(leaving?.pendingForcedDiscard?.timer)clearTimeout(leaving.pendingForcedDiscard.timer);
   if(r.phase==='rewardchoice'&&r.pendingReward?.winnerId===socket.id){
     if(r.rewardChoiceTimer){clearTimeout(r.rewardChoiceTimer);r.rewardChoiceTimer=null;}
     for(const id of (r.pendingReward.cards||[]))returnRewardCandidate(r,id);
@@ -818,7 +893,11 @@ function removePlayerFromRoom(socket,notify=true){
   }
   r.players.delete(socket.id);socket.leave(r.code);socket.data.room=null;socket.emit('roomLeft');
   const humans=roomPlayers(r).filter(p=>!p.isBot);
-  if(!humans.length){clearTimers(r);rooms.delete(r.code);return;}
+  if(!humans.length){
+    clearTimers(r);
+    for(const old of roomPlayers(r))if(old.disconnectTimer)clearTimeout(old.disconnectTimer);
+    rooms.delete(r.code);return;
+  }
   if(r.hostId===socket.id)r.hostId=humans[0].id;
   r.roundPlayerIds=(r.roundPlayerIds||[]).filter(id=>id!==socket.id);
   if(notify)io.to(r.code).emit('notice','Ein Spieler hat den Raum verlassen.');
@@ -835,7 +914,15 @@ function maybeEvaluate(r){
   // Effekte wie Starlight / Flim & Flam müssen erst vollständig abgearbeitet
   // sein, bevor die Karten aufgedeckt werden.
   if(req.some(p=>p.pendingForcedDiscard && p.hand.length>0))return;
-  if(req.length&&req.every(p=>p.selected)){
+  if(!req.length){
+    if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
+    r.selectionDeadline=null;
+    r.phase='result';
+    io.to(r.code).emit('notice','In dieser Runde kann keine Karte mehr ausgespielt werden. Nächste Runde.');
+    startRound(r,1100);
+    return;
+  }
+  if(req.every(p=>p.selected)){
     if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
     r.selectionDeadline=null;
     evaluate(r);
@@ -847,14 +934,14 @@ function endGame(r,champion,reason='artifacts'){
   // Rewards are awarded by the SERVER, once per completed match, and committed
   // in Postgres before informing the winner. No browser-generated win claims.
   const winnerSocket=io.sockets.sockets.get(champion.id);
-  const profileId=winnerSocket?.data?.profile?.id;
+  const profileId=winnerSocket?.data?.profile?.id||champion.profileId;
   if(profileStore && profileId){
     profileStore.awardWin(profileId,r.matchId||crypto.randomUUID()).then(result=>{
-      winnerSocket.emit('profileData',{profile:result.profile});
-      winnerSocket.emit('profileWinReward',result.reward);
+      winnerSocket?.emit('profileData',{profile:result.profile});
+      winnerSocket?.emit('profileWinReward',result.reward);
     }).catch(err=>{
       console.error('[MLP] Speichern der Belohnung fehlgeschlagen:',err);
-      winnerSocket.emit('profileSaveError','Dein Gewinn konnte nicht gespeichert werden. Bitte den Server/die Datenbank prüfen.');
+      winnerSocket?.emit('profileSaveError','Dein Gewinn konnte nicht gespeichert werden. Bitte den Server/die Datenbank prüfen.');
     });
   }else if(!champion.isBot){
     winnerSocket?.emit('profileSaveError','Gewinn nicht dauerhaft speicherbar: kein verbundenes Spielerprofil / DATABASE_URL fehlt.');
@@ -916,7 +1003,18 @@ function startRound(r,delay=900){
     for(const p of roomPlayers(r)){if(p.pendingForcedDiscard?.timer)clearTimeout(p.pendingForcedDiscard.timer);p.pendingForcedDiscard=null;p.selected=null;p.specialUsed=0;p.specialExtra=0;}
     nextCategory(r);
     r.roundPlayerIds=roomPlayers(r).filter(p=>!p.surrendered&&p.hand.length>0&&hasNormalCard(p)).map(p=>p.id);
-    if(!r.roundPlayerIds.length){gameOverIfNeeded(r);return;}
+    if(!r.roundPlayerIds.length){
+      if(gameOverIfNeeded(r))return;
+      const eligible=activePlayers(r).filter(p=>hasNormalCard(p));
+      if(!eligible.length){
+        const ranked=activePlayers(r).sort((a,b)=>(new Set(b.artifacts||[]).size-new Set(a.artifacts||[]).size)||(b.hand.length-a.hand.length));
+        if(ranked.length){io.to(r.code).emit('notice','Keine normalen Karten mehr spielbar. Die Partie endet nach Artefakten und Handkarten.');endGame(r,ranked[0],'no-playable-cards');}
+        else resetToLobby(r);
+      }else{
+        r.phase='result';startRound(r,1100);
+      }
+      return;
+    }
     r.roundIntroUntil=Date.now()+4000;
     io.to(r.code).emit('roundIntro',{round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],until:r.roundIntroUntil});
     sendState(r);
@@ -932,8 +1030,17 @@ function startRound(r,delay=900){
   },delay);
 }
 function finishRoundCycle(r,winnerId,playedIds){
-  if(!r||r.phase==='gameover')return;
-  const winner=r.players.get(winnerId);if(!winner)return;
+  if(!r||r.phase!=='result'||!rooms.has(r.code))return;
+  const winner=r.players.get(resolveResumedId(r,winnerId));
+  if(!winner){
+    for(const id of playedIds)discardCard(r,id);
+    r.played={};
+    for(const p of roomPlayers(r))p.selected=null;
+    refillNormalHands(r);sendState(r);
+    if(gameOverIfNeeded(r))return;
+    startRound(r,900);
+    return;
+  }
 
   for(const id of playedIds)discardCard(r,id);
   r.played={};
@@ -943,9 +1050,10 @@ function finishRoundCycle(r,winnerId,playedIds){
 
   sendState(r);
 
+  const capturedMatch=r.matchId,capturedRound=r.round;
   setTimeout(()=>{
-    if(!rooms.has(r.code)||r.phase==='gameover')return;
-    beginRewardChoice(r,winnerId);
+    if(!rooms.has(r.code)||r.phase!=='result'||r.round!==capturedRound||r.matchId!==capturedMatch)return;
+    beginRewardChoice(r,winner.id);
   },900);
 }
 const FINISHERS=['fall','melt','glass','portal','xmark','shadow','spin','meteor','dust','heart','smolder','cookie'];
@@ -955,7 +1063,14 @@ function pickFinisher(r){
   r.lastFinisher=f;return f;
 }
 function settleRound(r,winnerId){
-  const ids=Object.values(r.played).flatMap(playedCardIds),winner=r.players.get(winnerId);if(!winner)return;
+  if(!r||!rooms.has(r.code)||!['reveal','tie'].includes(r.phase))return;
+  winnerId=resolveResumedId(r,winnerId);
+  const ids=Object.values(r.played).flatMap(playedCardIds),winner=r.players.get(winnerId);
+  if(!winner){
+    if(gameOverIfNeeded(r))return;
+    r.phase='result';startRound(r,1000);return;
+  }
+  r.pendingRoundWinner=winnerId;
   r.phase='result';
   const finisher=pickFinisher(r),duration=4200;
   io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:ids.map(id=>byId[id]).filter(Boolean),finisher,duration,
@@ -964,7 +1079,11 @@ function settleRound(r,winnerId){
       return {pid,name:p?.name||'Spieler',card:byId[cardId]};
     }).filter(x=>x.card)});
   sendState(r);
-  setTimeout(()=>finishRoundCycle(r,winnerId,ids),duration+220);
+  const settledMatch=r.matchId,settledRound=r.round;
+  setTimeout(()=>{
+    if(!rooms.has(r.code)||r.matchId!==settledMatch||r.round!==settledRound||r.phase!=='result')return;
+    finishRoundCycle(r,winnerId,ids);
+  },duration+220);
 }
 function evaluate(r){
   if(r.phase!=='select')return;
@@ -1027,9 +1146,16 @@ function evaluate(r){
   });
   sendState(r);
 
-  if(tied.length===1)setTimeout(()=>settleRound(r,tied[0].pid),2100);
+  const revealMatch=r.matchId,revealRound=r.round;
+  const stillRevealing=()=>rooms.has(r.code)&&r.phase==='reveal'&&r.round===revealRound&&r.matchId===revealMatch;
+  if(tied.length===1)setTimeout(()=>{if(stillRevealing())settleRound(r,tied[0].pid);},2100);
   else setTimeout(()=>{
-    r.phase='tie';r.tieIds=tied.map(x=>x.pid);r.dice={};
+    if(!stillRevealing())return;
+    r.phase='tie';r.tieIds=tied.map(x=>resolveResumedId(r,x.pid)).filter(id=>r.players.has(id));r.dice={};
+    if(r.tieIds.length<=1){
+      if(r.tieIds.length)settleRound(r,r.tieIds[0]);else startRound(r,900);
+      return;
+    }
     io.to(r.code).emit('tieStart',{playerIds:r.tieIds,names:r.tieIds.map(id=>r.players.get(id)?.name)});
     sendState(r);scheduleBotDice(r);
   },1700);
@@ -1044,6 +1170,7 @@ function drawFromPool(r,count,exclude=[],kind='any'){
   return [];
 }
 function completeDiceRoll(r,pid){
+  pid=resolveResumedId(r,pid);
   if(!r||r.phase!=='tie'||r.dice[pid]!=='rolling'||!r.tieIds.includes(pid))return;
   const value=1+Math.floor(Math.random()*6);r.dice[pid]=value;
   io.to(r.code).emit('diceRolled',{playerId:pid,name:r.players.get(pid)?.name,value});
@@ -1053,7 +1180,15 @@ function completeDiceRoll(r,pid){
       r.forceNextCategoryDifferent=true;
       setTimeout(()=>settleRound(r,top[0]),1300);
     }
-    else setTimeout(()=>{r.tieIds=top;r.dice={};io.to(r.code).emit('tieAgain',{playerIds:top,names:top.map(id=>r.players.get(id)?.name)});sendState(r);scheduleBotDice(r);},1300);
+    else {
+      const rolledMatch=r.matchId,rolledRound=r.round;
+      setTimeout(()=>{
+        if(!rooms.has(r.code)||r.phase!=='tie'||r.matchId!==rolledMatch||r.round!==rolledRound)return;
+        const stillHere=top.map(id=>resolveResumedId(r,id)).filter(id=>r.players.has(id));
+        if(stillHere.length<=1){if(stillHere.length)settleRound(r,stillHere[0]);else startRound(r,900);return;}
+        r.tieIds=stillHere;r.dice={};io.to(r.code).emit('tieAgain',{playerIds:stillHere,names:stillHere.map(id=>r.players.get(id)?.name)});sendState(r);scheduleBotDice(r);
+      },1300);
+    }
   }
 }
 
@@ -1107,7 +1242,65 @@ function maybeStartWhenReady(r){
   }
 }
 
+
+// Last-resort server-side protection against abandoned phases and endless ties.
+// All deadlines are LONGER than the normal animations/round timeouts.
+function guardRoomProgress(r,now=Date.now()){
+  if(!rooms.has(r.code)||['lobby','gameover'].includes(r.phase))return;
+  const tag=`${r.round}:${r.phase}`;
+  if(r.watchdogTag!==tag){r.watchdogTag=tag;r.watchdogSince=now;return;}
+  const age=now-r.watchdogSince;
+  if(['ready','countdown'].includes(r.phase)&&r.players.size<2){resetToLobby(r);return;}
+  if(['roundintro','select','reveal','tie','result','rewardchoice'].includes(r.phase)&&gameOverIfNeeded(r))return;
+  if(r.phase==='select'){
+    if(!requiredPlayers(r).length){maybeEvaluate(r);return;}
+    if(r.selectionDeadline&&now>r.selectionDeadline+1800){handleSelectionTimeout(r);return;}
+    maybeEvaluate(r);return;
+  }
+  if(r.phase==='tie'&&age>14000){
+    const valid=(r.tieIds||[]).filter(id=>r.players.has(id)&&!r.players.get(id).surrendered);
+    if(valid.length<=1){if(valid.length)settleRound(r,valid[0]);else startRound(r,900);return;}
+    for(const id of valid){
+      if(r.dice[id]===undefined){r.dice[id]='rolling';io.to(r.code).emit('diceRolling',{playerId:id,name:r.players.get(id)?.name});}
+    }
+    for(const id of valid)if(r.dice[id]==='rolling')completeDiceRoll(r,id);
+    r.watchdogSince=now;
+    return;
+  }
+  if(r.phase==='rewardchoice'&&age>24000){
+    const q=r.pendingReward;
+    if(q?.cards?.length){resolveRewardChoice(r,q.winnerId,q.cards[0],q.token);}
+    else startRound(r,900);
+    return;
+  }
+  if(r.phase==='result'&&age>9000){
+    // A timed callback may have lost its winner during a disconnect.
+    const winner=r.players.get(resolveResumedId(r,r.pendingRoundWinner));
+    if(winner&&Object.keys(r.played||{}).length){finishRoundCycle(r,winner.id,Object.values(r.played).flatMap(playedCardIds));}
+    else startRound(r,900);
+    return;
+  }
+  if(r.phase==='reveal'&&age>6000){
+    // Re-evaluate safely next round rather than leave the whole room blocked.
+    io.to(r.code).emit('notice','Die Aufdeckung wurde automatisch fortgesetzt.');
+    startRound(r,900);return;
+  }
+  if(r.phase==='roundintro'&&age>9000){startRound(r,500);return;}
+  if(r.phase==='countdown'&&age>9000){startRound(r,500);return;}
+  if(r.phase==='ready'&&age>65000){
+    io.to(r.code).emit('notice','Bereitschaftsphase abgelaufen. Ihr könnt erneut starten.');
+    resetToLobby(r);return;
+  }
+}
+const roundGuardInterval=setInterval(()=>{
+  for(const r of rooms.values()){
+    try{guardRoomProgress(r);}catch(e){console.error('[MLP] Rundenwächter:',e);}
+  }
+},ROUND_WATCHDOG_PERIOD_MS);
+roundGuardInterval.unref?.();
+
 io.on('connection',socket=>{
+  socket.on('resumeRoom',({code,token}={})=>restoreSeat(socket,code,token));
   // A private 256-bit profile key ties cosmetics to a PERSON, not a name or socket ID.
   socket.on('profileLogin',async ({token,legacy}={})=>{
     if(socket.data.room)return socket.emit('profileSaveError','Profilwechsel nur außerhalb einer Partie möglich.');
@@ -1117,6 +1310,8 @@ io.on('connection',socket=>{
     try{
       const result=await profileStore.login({token,legacy});
       socket.data.profile=result.profile;
+      const r=getRoom(socket),p=r?.players.get(socket.id);
+      if(p)p.profileId=result.profile.id;
       socket.emit('profileData',result);
     }catch(err){
       console.error('[MLP] Profilanmeldung:',err.message);
@@ -1141,15 +1336,15 @@ io.on('connection',socket=>{
     if(profileStore&&!socket.data.profile)return socket.emit('errorMsg','Bitte zuerst dein dauerhaftes Spielerprofil laden.');
     let c;do c=code();while(rooms.has(c));
     const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,arenaSelection:'random',lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null,artifactRewardCooldown:0};
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
-    rooms.set(c,r);socket.join(c);socket.data.room=c;sendState(r);
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),profileId:socket.data.profile?.id||null,hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
+    rooms.set(c,r);socket.join(c);socket.data.room=c;offerRoomTicket(socket,r,r.players.get(socket.id));sendState(r);
   });
   socket.on('createBotRoom',({name,accessory,frame})=>{
     if(profileStore&&!socket.data.profile)return socket.emit('errorMsg','Bitte zuerst dein dauerhaftes Spielerprofil laden.');
     let c;do c=code();while(rooms.has(c));
     const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,arenaSelection:'random',lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null,artifactRewardCooldown:0};
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
-    rooms.set(c,r);socket.join(c);socket.data.room=c;addBotToRoom(r);sendState(r);
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),profileId:socket.data.profile?.id||null,hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
+    rooms.set(c,r);socket.join(c);socket.data.room=c;addBotToRoom(r);offerRoomTicket(socket,r,r.players.get(socket.id));sendState(r);
     socket.emit('notice','🤖 PonyBot wurde als Testgegner hinzugefügt.');
   });
   socket.on('toggleBot',()=>{
@@ -1167,10 +1362,10 @@ io.on('connection',socket=>{
     if(!r)return socket.emit('errorMsg','Raum nicht gefunden.');
     if(r.phase!=='lobby')return socket.emit('errorMsg','Die Partie läuft bereits.');
     if(r.players.size>=8)return socket.emit('errorMsg','Der Raum ist voll.');
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),profileId:socket.data.profile?.id||null,hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     if(r.readyTimer){clearTimeout(r.readyTimer);r.readyTimer=null;r.readyLock=false;}
     for(const p of roomPlayers(r))p.ready=false;
-    socket.join(c);socket.data.room=c;sendState(r);
+    socket.join(c);socket.data.room=c;offerRoomTicket(socket,r,r.players.get(socket.id));sendState(r);
   });
   socket.on('setAccessory',({accessory})=>{
     const r=getRoom(socket),p=r?.players.get(socket.id);
@@ -1611,7 +1806,7 @@ io.on('connection',socket=>{
   });
   socket.on('abortGame',()=>{const r=getRoom(socket);if(!r)return socket.emit('errorMsg','Du bist in keinem Raum.');if(r.hostId!==socket.id)return socket.emit('errorMsg','Nur der Host kann abbrechen.');if(r.phase==='lobby')return;io.to(r.code).emit('notice','Die Partie wurde abgebrochen.');resetToLobby(r);});
   socket.on('leaveRoom',()=>removePlayerFromRoom(socket));
-  socket.on('disconnect',()=>removePlayerFromRoom(socket,false));
+  socket.on('disconnect',()=>reserveDisconnectedSeat(socket));
 });
 
 const PORT=process.env.PORT||3000;
