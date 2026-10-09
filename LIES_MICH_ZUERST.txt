@@ -1,41 +1,95 @@
-MLP Battle Cards – CHRYSALIS BUGFIX (2026-10-09)
-================================================
+MLP BATTLE CARDS – DAUERHAFT GESPEICHERTE RAHMEN & ITEMS
+=========================================================
+Version: 09.10.2026
 
-WICHTIG: Dieses Mini-Patch baut auf dem zuletzt von uns erstellten Paket
-'MLP_BATTLE_CARDS_13_KARTEN_COCKATRICE_MIT_SOUND_KOMPAKT.zip' auf.
+WICHTIG: Ohne eine echte dauerhafte Postgres-Datenbank gibt es
+KEINE garantierte Speicherung nach Render-Neustarts. Deshalb bleibt die
+Spielanmeldung absichtlich gesperrt, wenn kein Profil geladen wurde.
 
-Nur zwei Dateien in GitHub ERSETZEN:
-- server.js               (im Hauptverzeichnis)
-- public/client.js        (im Ordner public/)
+DAS IST EIN PATCH – kein komplettes Spiel!
+Ausgangspunkt: der letzte Chrysalis-Bugfix (server.js und public/client.js)
+auf Basis der 13 Karten inkl. Cockatrice. Der Cozy-Glow-Bildfix bleibt bestehen.
 
-Weder Kartenbilder und Kartendaten noch Cockatrice-Sound, Cockatrice-Animation,
-Arenen, Musik, Kristall-Lobby oder die 12 Verlierer-Animationen werden verändert.
+DATEIEN FÜR GITHUB
+==================
+server.js            ERSETZEN, im Hauptverzeichnis
+public/client.js     ERSETZEN, unter public/
+player_profiles.js   NEU, im Hauptverzeichnis
+package.json         MÖGLICHKEIT A: ersetzen (enthält express, socket.io, pg),
+                     falls dein bisheriges package.json nichts Besonderes enthält.
+                     MÖGLICHKEIT B: sicherer: in dein bestehendes package.json
+                     unter dependencies nur "pg": "^8.16.3" ergänzen.
+                     Das bestehende npm-Skript "start" weiterbenutzen.
 
-Was wurde repariert?
-- Chrysalis kopiert den wirksamen Effekt der zuletzt in derselben Runde
-  von einem Gegner aktivierten Spezialkarte; kopierte Effekte eines
-  gegnerischen Chrysalis werden korrekt aufgelöst, ohne Rekursion.
-- Keine gegnerische Spezialkarte in der laufenden Runde: Chrysalis bleibt
-  auf der Hand und der Spieler erhält eine klare Erklärung.
-- Auswahlfenster für Gegner, Kategorie und Handkarten können mit
-  'Schließen'/Escape abgebrochen werden; der Server gibt die Aktion frei.
-- Nicht gewählte aufgedeckte Karten werden bei Abbruch korrekt in den
-  Kartenpool zurückgelegt und verschwinden nicht.
-- Alte Auswahlen werden bei Ablauf der 30-Sekunden-Frist sowie beim
-  Rundenwechsel automatisch verworfen und blockieren keine neuen Züge.
-- Nach bestätigter Gegnerauswahl erfolgt sofort eine mögliche Rundenauswertung.
-- Die Auswahl für Chrysalis wird vor dem Ausspielen der normalen Karte
-  abgeschlossen; danach geht das Spiel regulär weiter.
+KEINE BILDER, SOUNDS, KARTEN ODER ARENEN WERDEN ANGEFASST.
+Insbesondere Cockatrice-Sound, Chrysalis-Fix, Cozy Glow, alle 13 Karten
+und die Verlierer-Animationen bleiben erhalten.
 
-So testen:
-1) In einer Partie setzt Spieler A eine Spezialkarte ein, z.B. Tirek.
-2) Spieler B setzt Chrysalis in derselben Runde ein.
-3) Bei Tirek fragt Chrysalis nach einem Ziel. Ziel wählen, dann normale
-   Karte spielen. Danach normale Runde/Auswertung prüfen.
-4) Wiederholen mit Pinkie (sofortiger Effekt) und Diamond Dogs
-   (Kartenauswahl). Zum Test einmal die Auswahl abbrechen und spielen.
-5) Ohne gegnerische Spezialkarte muss Chrysalis auf der Hand bleiben.
-6) Nach Rundenwechsel muss eine neue Chrysalis-Auswahl funktionieren.
+RENDER EINMALIG EINRICHTEN – UNBEDINGT NÖTIG
+==========================================
+1) Im Render-Dashboard eine PostgreSQL-Datenbank anlegen bzw. eine
+   bereits bestehende langlebige Postgres-Datenbank verwenden.
+   WICHTIG: Render Free Postgres ist KEINE dauerhafte Lösung,
+   denn es läuft nach 30 Tagen ab. Wähle eine längerfristig betriebene
+   Datenbank und sorge für Backups.
+2) Datenbank und Render-Webservice möglichst in derselben Region.
+3) Auf der Datenbank-Seite unter Connect die INTERNAL DATABASE URL kopieren.
+4) Im Render-Webservice: Environment -> Add Environment Variable.
+      Key:   DATABASE_URL
+      Value: postgres://...  [hier die URL der Datenbank]
+   KEINE echte URL oder Passwörter in GitHub hochladen!
+5) Im Render-Webservice für Node als Build Command 'npm install' verwenden,
+   damit das neue Paket 'pg' installiert wird (v.a. falls package-lock.json
+   noch nicht aktualisiert ist). Start Command bleibt 'npm start'.
+6) Patch-Dateien nach GitHub hochladen und Deployment abwarten.
+   Die zwei Tabellen werden automatisch beim ersten Profilzugriff erzeugt.
 
-HINWEIS: Der Server ist nur vollständig spielbar, wenn alle übrigen Dateien
-bereits im Repository vorhanden sind. Kein eigenständiges Vollspiel.
+BEDIENUNG FÜR SPIELER
+=====================
+- Beim ersten Laden wird automatisch EIN persönliches Profil erstellt.
+- Bereits freigeschaltete Items und Rahmen aus dem bisherigen Browser
+  werden EINMALIG in dieses Profil übernommen. Deswegen unbedingt das
+  Update zuerst im bisher benutzten Browser öffnen!
+- Danach sind die Server-Daten die Wahrheit; ein alter Browser-Cache
+  kann den Serverbestand nicht zurücksetzen.
+- Neben dem Spielernamen: 'Profil-Schlüssel sichern' anklicken.
+  Den 64-stelligen GEHEIMEN Schlüssel sicher privat aufheben.
+  Wer ihn kennt, kann das Profil übernehmen!
+- Auf einem anderen Gerät 'Profil wiederherstellen' wählen und den
+  gleichen Schlüssel eintragen. Gleiche Namen allein genügen nicht.
+- Nach einem Match-Sieg bestimmt DER SERVER genau eine neue Freischaltung
+  und schreibt sie EINMAL in Postgres. Das Geschenk zeigt danach die
+  bereits gespeicherte Belohnung.
+- Die drei ersten Items (Changeling-Flügel, Ballon, Süßigkeiten) und
+  die zwei Start-Rahmen (Sakura und Candy) sind immer verfügbar.
+- Bereits erhaltene Preise werden auf einem anderen Gerät angezeigt.
+- Geladener Status: 'Rahmen & Items serverseitig gespeichert'.
+
+WAS TUN, WENN NICHTS GESPEICHERT WIRD?
+====================================
+- Meldung 'DATABASE_URL fehlt': Datenbank nicht verbunden -> Schritt 1–6.
+- Meldung 'pg' fehlt: package.json/Build Command prüfen.
+- Meldung 'Profil nicht gefunden': NICHT einfach neuen Account erstellen;
+  Profil-Schlüssel/Datenbank prüfen (z.B. abgelaufene Free-Datenbank).
+- Darauf achten, dass die Datenbank selbst existiert und Daten aufbewahrt.
+  Ein Update allein kann Serverausfälle, die komplette Löschung einer
+  Datenbank oder verlorene Schlüssel nicht heilen.
+
+TESTEN
+======
+A) Bisherige Site vor dem Update im üblichen Browser öffnen und aktuelle
+   Sammlung überprüfen, Browserdaten NICHT löschen.
+B) Update veröffentlichen; Site neu laden und auf das grüne Profilstatus-
+   Symbol warten. Geheime Kennung sichern.
+C) Eine Partie gewinnen, Geschenk öffnen, Rahmen/Item anzeigen lassen.
+D) STRG+F5 neu laden und dieselbe Sammlung prüfen.
+E) Auf einem zweiten Gerät mit Schlüssel wiederherstellen und prüfen.
+F) Render Webservice neu deployen – Sammlung muss erhalten bleiben.
+G) Namen ändern und wieder zurück – persönliches Profil bleibt unverändert.
+
+TESTS IM ZIP
+============
+tests/test-profiles.js: 13 zusammengefasste Assertions mit einer simulierten
+Postgres-Schicht für Login, Import, Isolation zweier Spieler, 1x Gewinn,
+keine Doppelgewinne und Wiederherstellung. Die echte Render-Datenbank kann
+nur nach dem Deployment mit dem obigen Ende-zu-Ende-Test geprüft werden.

@@ -1,16 +1,18 @@
 {
-  "name": "crystal-clash-multiplayer",
+  "name": "mlp-battle-cards",
   "version": "1.0.0",
   "private": true,
-  "description": "Multiplayer pony card game prototype",
-  "main": "server.js",
+  "description": "MLP Battle Cards, durable player profiles",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "test:profiles": "node tests/test-profiles.js"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18.17.0"
+  },
   "dependencies": {
     "express": "^4.21.2",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "pg": "^8.16.3"
   }
 }

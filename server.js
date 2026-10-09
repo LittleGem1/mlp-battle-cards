@@ -3,6 +3,10 @@ const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
 const { normal, specials, artifacts, byId } = require('./cards');
+const crypto = require('crypto');
+const {createProfileStore} = require('./player_profiles');
+const profileStore = createProfileStore(process.env.DATABASE_URL);
+if(!profileStore) console.warn('[MLP] Kein DATABASE_URL: Rahmen/Items sind NICHT dauerhaft gespeichert. Bitte Datenbank verbinden!');
 
 const app = express();
 const server = http.createServer(app);
@@ -840,6 +844,22 @@ function maybeEvaluate(r){
 function endGame(r,champion,reason='artifacts'){
   if(!r||r.phase==='gameover'||!champion)return true;
   clearTimers(r);r.phase='gameover';r.postGameReady=new Set(roomPlayers(r).filter(p=>p.isBot).map(p=>p.id));
+  // Rewards are awarded by the SERVER, once per completed match, and committed
+  // in Postgres before informing the winner. No browser-generated win claims.
+  const winnerSocket=io.sockets.sockets.get(champion.id);
+  const profileId=winnerSocket?.data?.profile?.id;
+  if(profileStore && profileId){
+    profileStore.awardWin(profileId,r.matchId||crypto.randomUUID()).then(result=>{
+      winnerSocket.emit('profileData',{profile:result.profile});
+      winnerSocket.emit('profileWinReward',result.reward);
+    }).catch(err=>{
+      console.error('[MLP] Speichern der Belohnung fehlgeschlagen:',err);
+      winnerSocket.emit('profileSaveError','Dein Gewinn konnte nicht gespeichert werden. Bitte den Server/die Datenbank prüfen.');
+    });
+  }else if(!champion.isBot){
+    winnerSocket?.emit('profileSaveError','Gewinn nicht dauerhaft speicherbar: kein verbundenes Spielerprofil / DATABASE_URL fehlt.');
+  }
+
   io.to(r.code).emit('gameOver',{
     winnerId:champion.id,winnerName:champion.name,reason,
     artifacts:(champion.artifacts||[]).map(id=>byId[id]).filter(Boolean),
@@ -1044,6 +1064,7 @@ function beginMatch(r){
   // Eine Test-Auswahl wird nach genau einem gestarteten Match wieder aufgehoben.
   r.arenaSelection='random';
   const ps=roomPlayers(r);
+  r.matchId=crypto.randomUUID();
   initDecks(r);
 
   for(const p of ps){
@@ -1087,16 +1108,47 @@ function maybeStartWhenReady(r){
 }
 
 io.on('connection',socket=>{
+  // A private 256-bit profile key ties cosmetics to a PERSON, not a name or socket ID.
+  socket.on('profileLogin',async ({token,legacy}={})=>{
+    if(socket.data.room)return socket.emit('profileSaveError','Profilwechsel nur außerhalb einer Partie möglich.');
+    if(!profileStore)return socket.emit('profileSaveError','Dauerhafte Profilspeicherung nicht eingerichtet: DATABASE_URL fehlt auf Render.');
+    if(socket.data.profileLoginBusy)return;
+    socket.data.profileLoginBusy=true;
+    try{
+      const result=await profileStore.login({token,legacy});
+      socket.data.profile=result.profile;
+      socket.emit('profileData',result);
+    }catch(err){
+      console.error('[MLP] Profilanmeldung:',err.message);
+      socket.emit('profileSaveError',err.message.startsWith('Profil nicht gefunden')||err.message.startsWith('Ungültiger')?err.message:'Profil-Datenbank derzeit nicht erreichbar. Bitte später erneut versuchen.');
+    }finally{socket.data.profileLoginBusy=false}
+  });
+  socket.on('profileChoose',async ({accessory,frame}={})=>{
+    if(!profileStore||!socket.data.profile)return socket.emit('profileSaveError','Profil nicht verbunden; Auswahl nicht dauerhaft gespeichert.');
+    const a=String(accessory||'changeling'),f=String(frame??'');
+    // Reflect locally only after checking ownership.
+    const owns=socket.data.profile.items.includes(a)&&(f===''||socket.data.profile.frames.includes(f));
+    if(!owns)return socket.emit('profileSaveError','Dieses Item oder dieser Rahmen ist noch gesperrt.');
+    socket.data.profile={...socket.data.profile,accessory:a,frame:f};
+    try{
+      const result=await profileStore.choose(socket.data.profile.id,a,f);
+      socket.emit('profileSaved',{accessory:result.accessory,frame:result.frame});
+      const r=getRoom(socket),p=r?.players.get(socket.id);
+      if(r&&p&&['lobby','ready'].includes(r.phase)){p.accessory=a;p.frame=f;sendState(r)}
+    }catch(err){console.error('[MLP] Kosmetik speichern:',err);socket.emit('profileSaveError','Item-/Rahmen-Auswahl konnte nicht gespeichert werden.');}
+  });
   socket.on('createRoom',({name,accessory,frame})=>{
+    if(profileStore&&!socket.data.profile)return socket.emit('errorMsg','Bitte zuerst dein dauerhaftes Spielerprofil laden.');
     let c;do c=code();while(rooms.has(c));
     const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,arenaSelection:'random',lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null,artifactRewardCooldown:0};
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     rooms.set(c,r);socket.join(c);socket.data.room=c;sendState(r);
   });
   socket.on('createBotRoom',({name,accessory,frame})=>{
+    if(profileStore&&!socket.data.profile)return socket.emit('errorMsg','Bitte zuerst dein dauerhaftes Spielerprofil laden.');
     let c;do c=code();while(rooms.has(c));
     const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,arenaSelection:'random',lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null,artifactRewardCooldown:0};
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     rooms.set(c,r);socket.join(c);socket.data.room=c;addBotToRoom(r);sendState(r);
     socket.emit('notice','🤖 PonyBot wurde als Testgegner hinzugefügt.');
   });
@@ -1110,17 +1162,31 @@ io.on('connection',socket=>{
     sendState(r);
   });
   socket.on('joinRoom',({code:rc,name,accessory,frame})=>{
+    if(profileStore&&!socket.data.profile)return socket.emit('errorMsg','Bitte zuerst dein dauerhaftes Spielerprofil laden.');
     const c=String(rc||'').trim().toUpperCase(),r=rooms.get(c);
     if(!r)return socket.emit('errorMsg','Raum nicht gefunden.');
     if(r.phase!=='lobby')return socket.emit('errorMsg','Die Partie läuft bereits.');
     if(r.players.size>=8)return socket.emit('errorMsg','Der Raum ist voll.');
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:accessory||'changeling',frame:frame||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     if(r.readyTimer){clearTimeout(r.readyTimer);r.readyTimer=null;r.readyLock=false;}
     for(const p of roomPlayers(r))p.ready=false;
     socket.join(c);socket.data.room=c;sendState(r);
   });
-  socket.on('setAccessory',({accessory})=>{const r=getRoom(socket),p=r?.players.get(socket.id);if(!r||!['lobby','ready'].includes(r.phase)||!p)return;p.accessory=String(accessory||'changeling');sendState(r);});
-  socket.on('setCosmetics',({accessory,frame})=>{const r=getRoom(socket),p=r?.players.get(socket.id);if(!r||!['lobby','ready'].includes(r.phase)||!p)return;p.accessory=String(accessory||'changeling');p.frame=String(frame||'');sendState(r);});
+  socket.on('setAccessory',({accessory})=>{
+    const r=getRoom(socket),p=r?.players.get(socket.id);
+    if(!r||!['lobby','ready'].includes(r.phase)||!p)return;
+    const a=String(accessory||'changeling');
+    if(socket.data.profile&&!socket.data.profile.items.includes(a))return socket.emit('errorMsg','Item noch gesperrt.');
+    p.accessory=a;sendState(r);
+  });
+  socket.on('setCosmetics',({accessory,frame})=>{
+    const r=getRoom(socket),p=r?.players.get(socket.id);
+    if(!r||!['lobby','ready'].includes(r.phase)||!p)return;
+    const a=String(accessory||'changeling'),f=String(frame??'');
+    if(socket.data.profile && (!socket.data.profile.items.includes(a)||!(f===''||socket.data.profile.frames.includes(f))))
+      return socket.emit('errorMsg','Item oder Rahmen noch gesperrt.');
+    p.accessory=a;p.frame=f;sendState(r);
+  });
   socket.on('toggleReady',()=>{
     const r=getRoom(socket),p=r?.players.get(socket.id);
     if(!r||r.phase!=='ready'||!p||r.readyLock)return;

@@ -93,6 +93,8 @@ localStorage.setItem('cc_frame',selectedFrame);
 localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));
 
 let pendingGift=false, lastReveal=[];
+let profileReady=false, profileToken=localStorage.getItem('cc_profile_token_v1')||'';
+let profileWinReward=null, giftOpened=false;
 let musicEnabled=localStorage.getItem('mlp_music')!=='off', musicMode='home';
 if(localStorage.getItem('mlp_music_fix_v3')!=='1'){musicEnabled=true;localStorage.setItem('mlp_music','on');localStorage.setItem('mlp_music_fix_v3','1');}
 let musicVolume=Math.max(0,Math.min(100,Number(localStorage.getItem('mlp_music_volume')||30)));
@@ -202,7 +204,7 @@ function show(name){
 }
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2600)}
 function remember(){const n=playerName.value.trim();if(n)localStorage.setItem('cc_name',n)}
-function ensureStarter(){ return true; }
+function ensureStarter(){if(!profileReady){toast('⚠ Dein dauerhaftes Spielerprofil ist noch nicht verbunden. Bitte Datenbank/Profil prüfen.');return false;}return true;}
 function escapeHtml(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function buildCrystalDrift(){
   const root=$('#crystalDrift');if(!root||root.children.length)return;
@@ -344,6 +346,7 @@ $$('.starter-grid button').forEach(b=>b.addEventListener('click',()=>{
   unlocks=[...new Set([...unlocks,...STARTER_KEYS])];
   localStorage.setItem('cc_accessory',b.value);
   localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));
+  persistProfileCosmetics();
   $('#starterDialog').close();
   renderAccessoryGrid(); updateHomePreview();
 }));
@@ -354,6 +357,7 @@ $$('[data-starter-frame]').forEach(b=>b.addEventListener('click',()=>{
   localStorage.setItem('cc_frame',selectedFrame);
   localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));
   localStorage.setItem('cc_starter_frame_chosen','1');
+  persistProfileCosmetics();
   try{$('#starterFrameDialog').close()}catch{}
   renderAccessoryGrid();updateHomePreview();
 }));
@@ -370,10 +374,10 @@ function renderAccessoryGrid(){
   $('#accessoryPreview').innerHTML=nameplateHTML(playerName.value.trim()||'Little Gem',selectedAccessory,false,selectedFrame);
   $('#itemsTabBtn')?.classList.toggle('active',cosmeticTab==='items');$('#framesTabBtn')?.classList.toggle('active',cosmeticTab==='frames');
   if(cosmeticTab==='items'){
-    for(const key of ITEM_KEYS){const a=ITEMS[key],unlocked=unlocks.includes(key);const b=document.createElement('button');b.type='button';b.className=`accessory-card ${unlocked?'unlocked':'locked'} ${key===selectedAccessory?'selected':''}`;b.innerHTML=unlocked?`<span class="item-art"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${key===selectedAccessory?'Ausgewählt':'Freigeschaltet'}</span>`:`<span class="mystery-art">?</span><strong>Unentdecktes Item</strong><span class="status">🔒 Durch einen Sieg entdecken</span>`;b.disabled=!unlocked;if(unlocked)b.addEventListener('click',()=>{selectedAccessory=key;localStorage.setItem('cc_accessory',key);renderAccessoryGrid();updateHomePreview();if(['lobby','ready'].includes(state?.phase))socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame});if(state&&state.phase!=='lobby')renderGame()});g.append(b)}
+    for(const key of ITEM_KEYS){const a=ITEMS[key],unlocked=unlocks.includes(key);const b=document.createElement('button');b.type='button';b.className=`accessory-card ${unlocked?'unlocked':'locked'} ${key===selectedAccessory?'selected':''}`;b.innerHTML=unlocked?`<span class="item-art"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${key===selectedAccessory?'Ausgewählt':'Freigeschaltet'}</span>`:`<span class="mystery-art">?</span><strong>Unentdecktes Item</strong><span class="status">🔒 Durch einen Sieg entdecken</span>`;b.disabled=!unlocked;if(unlocked)b.addEventListener('click',()=>{selectedAccessory=key;localStorage.setItem('cc_accessory',key);persistProfileCosmetics();renderAccessoryGrid();updateHomePreview();if(['lobby','ready'].includes(state?.phase))socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame});if(state&&state.phase!=='lobby')renderGame()});g.append(b)}
   }else{
-    const none=document.createElement('button');none.type='button';none.className=`accessory-card unlocked ${!selectedFrame?'selected':''}`;none.innerHTML='<span class="mystery-art">∅</span><strong>Kein Rahmen</strong><span class="status">Immer verfügbar</span>';none.addEventListener('click',()=>{selectedFrame='';localStorage.setItem('cc_frame','');renderAccessoryGrid();updateHomePreview();if(['lobby','ready'].includes(state?.phase))socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame})});g.append(none);
-    for(const key of FRAME_KEYS){const a=FRAMES[key],unlocked=frameUnlocks.includes(key);const b=document.createElement('button');b.type='button';b.className=`accessory-card frame-card ${unlocked?'unlocked':'locked'} ${key===selectedFrame?'selected':''}`;b.innerHTML=unlocked?`<span class="frame-thumb"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${key===selectedFrame?'Ausgewählt':'Freigeschaltet'}</span>`:`<span class="mystery-art">?</span><strong>Unentdeckter Rahmen</strong><span class="status">🔒 Durch einen Sieg entdecken</span>`;b.disabled=!unlocked;if(unlocked)b.addEventListener('click',()=>{selectedFrame=key;localStorage.setItem('cc_frame',key);renderAccessoryGrid();updateHomePreview();if(['lobby','ready'].includes(state?.phase))socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame});if(state&&state.phase!=='lobby')renderGame()});g.append(b)}
+    const none=document.createElement('button');none.type='button';none.className=`accessory-card unlocked ${!selectedFrame?'selected':''}`;none.innerHTML='<span class="mystery-art">∅</span><strong>Kein Rahmen</strong><span class="status">Immer verfügbar</span>';none.addEventListener('click',()=>{selectedFrame='';localStorage.setItem('cc_frame','');persistProfileCosmetics();renderAccessoryGrid();updateHomePreview();if(['lobby','ready'].includes(state?.phase))socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame})});g.append(none);
+    for(const key of FRAME_KEYS){const a=FRAMES[key],unlocked=frameUnlocks.includes(key);const b=document.createElement('button');b.type='button';b.className=`accessory-card frame-card ${unlocked?'unlocked':'locked'} ${key===selectedFrame?'selected':''}`;b.innerHTML=unlocked?`<span class="frame-thumb"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${key===selectedFrame?'Ausgewählt':'Freigeschaltet'}</span>`:`<span class="mystery-art">?</span><strong>Unentdeckter Rahmen</strong><span class="status">🔒 Durch einen Sieg entdecken</span>`;b.disabled=!unlocked;if(unlocked)b.addEventListener('click',()=>{selectedFrame=key;localStorage.setItem('cc_frame',key);persistProfileCosmetics();renderAccessoryGrid();updateHomePreview();if(['lobby','ready'].includes(state?.phase))socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame});if(state&&state.phase!=='lobby')renderGame()});g.append(b)}
   }
 }
 $('#itemsTabBtn')?.addEventListener('click',()=>{cosmeticTab='items';renderAccessoryGrid()});
@@ -397,7 +401,81 @@ $('#arenaReadyBtn')?.addEventListener('click',()=>{directMusicGesture('game');en
 $('#arenaAccessoryBtn')?.addEventListener('click',()=>{renderAccessoryGrid();$('#accessoryDialog').showModal()});
 $('#arenaReadyLeaveBtn')?.addEventListener('click',()=>leaveRoomNow());
 
-socket.on('connect',()=>{myId=socket.id;updateHomePreview();});
+// Dauerhaftes, persoenliches Spielerprofil. Browser speichert nur den geheimen
+// Wiederherstellungsschluessel; Postgres enthaelt die eigentliche Sammlung.
+function persistProfileCosmetics(){
+  if(profileReady&&socket.connected)socket.emit('profileChoose',{accessory:selectedAccessory,frame:selectedFrame});
+}
+function requestProfileLogin(key=profileToken){
+  profileReady=false;
+  const legacy={items:unlocks,frames:frameUnlocks,accessory:selectedAccessory,frame:selectedFrame};
+  socket.emit('profileLogin',{token:key||null,legacy});
+  updateProfileStatus('Profil wird geladen …');
+}
+function updateProfileStatus(status){
+  const el=document.getElementById('mlpProfileStatus');if(el)el.textContent=status;
+}
+function applyServerProfile(profile){
+  if(!profile)return;
+  // NEVER overwrite server unlocks with a stale browser cache.
+  unlocks=[...new Set([...(profile.items||[]),...STARTER_KEYS])].filter(x=>ITEMS[x]);
+  frameUnlocks=[...new Set([...(profile.frames||[]),...STARTER_FRAME_KEYS])].filter(x=>FRAMES[x]);
+  selectedAccessory=ITEMS[profile.accessory]&&unlocks.includes(profile.accessory)?profile.accessory:'changeling';
+  selectedFrame=profile.frame===''?'':(FRAMES[profile.frame]&&frameUnlocks.includes(profile.frame)?profile.frame:'sakura');
+  localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));
+  localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));
+  localStorage.setItem('cc_accessory',selectedAccessory);
+  localStorage.setItem('cc_frame',selectedFrame);
+  updateHomePreview();
+  if(document.querySelector('#accessoryGrid'))renderAccessoryGrid();
+}
+function setupProfileUI(){
+  if(document.getElementById('mlpProfileControls'))return;
+  const target=playerName.closest('label')||playerName;
+  const box=document.createElement('div');
+  box.id='mlpProfileControls';
+  box.style.cssText='display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0;padding:9px;border:1px solid rgba(135,210,230,.45);border-radius:10px;background:rgba(10,20,38,.48);font-size:12px;';
+  box.innerHTML='<span id="mlpProfileStatus" style="flex-basis:100%">🔐 Profil wird geladen …</span><button type="button" id="mlpShowProfileKey" class="soft-btn">🔑 Profil-Schlüssel sichern</button><button type="button" id="mlpRestoreProfile" class="soft-btn">♻ Profil wiederherstellen</button>';
+  target.after(box);
+  document.getElementById('mlpShowProfileKey').addEventListener('click',()=>{
+    if(!profileToken)return toast('Noch kein gespeichertes Profil vorhanden.');
+    // Deliberately show secret ONLY on explicit user action.
+    window.prompt('GEHEIMER PROFIL-SCHLÜSSEL – nur für dich! Kopiere ihn als Backup. Wer ihn kennt, kann dein Profil laden:',profileToken);
+  });
+  document.getElementById('mlpRestoreProfile').addEventListener('click',()=>{
+    const key=window.prompt('Bitte deinen 64-stelligen Profil-Schlüssel eingeben (aus deiner Sicherung):','');
+    if(key===null)return;
+    const normalized=key.trim().toLowerCase();
+    if(!/^[a-f0-9]{64}$/.test(normalized))return toast('Profil-Schlüssel muss aus 64 Zeichen (0–9, a–f) bestehen.');
+    if(state)return toast('Profil bitte erst nach Verlassen der Partie wechseln.');
+    if(profileToken&&normalized!==profileToken&&!window.confirm('Dein bisheriger Schlüssel wird auf diesem Gerät ersetzt. Hast du ihn gesichert?'))return;
+    // Save the new key only after the server confirms it exists.
+    updateProfileStatus('Anderes Profil wird geprüft …');
+    requestProfileLogin(normalized);
+  });
+}
+setupProfileUI();
+socket.on('connect',()=>{myId=socket.id;updateHomePreview();requestProfileLogin();});
+socket.on('profileData',data=>{
+  if(data.token){
+    profileToken=data.token;
+    localStorage.setItem('cc_profile_token_v1',profileToken);
+  }
+  profileReady=true;
+  applyServerProfile(data.profile);
+  updateProfileStatus('✅ Rahmen & Items serverseitig gespeichert · Schlüssel sichern!');
+  if(!starterFrameChosen)maybeShowStarterFrame();
+});
+socket.on('profileSaved',()=>{updateProfileStatus('✅ Profil gespeichert');});
+socket.on('profileSaveError',message=>{
+  // Invalid tokens are deliberately NOT silently replaced with a new account.
+  if(!profileReady)updateProfileStatus('⚠ '+message);
+  toast('⚠ '+message);
+});
+socket.on('profileWinReward',reward=>{
+  profileWinReward=reward||{kind:'complete',key:null};
+  if(giftOpened)showPersistedGiftResult(profileWinReward);
+});
 socket.on('matchLoadout',e=>toast(`🃏 Start: ${e.normalCards} normale Karten + ${e.specialCards} Spezialkarte · Ziel: 3 Artefakte`));
 socket.on('errorMsg',toast); socket.on('notice',toast); socket.on('specialDone',e=>toast(e.text));
 
@@ -1846,7 +1924,7 @@ socket.on('gameOver',e=>{
   $('#roundMessage').textContent=`👑 ${e.winnerName} ist Champion!`;
   $('#gameOverTitle').textContent=`👑 ${e.winnerName} gewinnt!`;
   $('#gameOverText').textContent='Die Partie ist beendet. Jeder entscheidet selbst, wann er zurück in die Lobby geht. Es gibt keine zusätzliche Bestätigung. Sobald alle zurück sind, kann der Host direkt die nächste Runde vorbereiten.';
-  pendingGift=e.winnerId===myId;$('#rewardBtn').style.display=pendingGift?'inline-block':'none';
+  pendingGift=e.winnerId===myId;profileWinReward=null;giftOpened=false;$('#rewardBtn').style.display=pendingGift?'inline-block':'none';
   if(!$('#gameOverDialog').open)$('#gameOverDialog').showModal();
 });
 socket.on('postGameWaiting',e=>{
@@ -1952,7 +2030,27 @@ function showChoices(title,cards,cb){
   else {socket.emit('cancelSpecialChoice');toast('Keine Karte für diese Auswahl verfügbar. Du kannst die Runde fortsetzen.');}
 }
 
-$('#giftBox').addEventListener('click',()=>{if(!pendingGift)return;pendingGift=false;playSfx('geschenk',{gain:.95,cooldown:200});const lockedItems=ITEM_KEYS.filter(x=>!STARTER_KEYS.includes(x)&&!unlocks.includes(x));const lockedFrames=FRAME_KEYS.filter(x=>!STARTER_FRAME_KEYS.includes(x)&&!frameUnlocks.includes(x));const kinds=[];if(lockedItems.length)kinds.push('item');if(lockedFrames.length)kinds.push('frame');$('#giftBox').style.display='none';if(!kinds.length){$('#giftResult').innerHTML='<div class="gift-item"><strong>Sammlung vollständig! ✨</strong><small>Du hast alle Items und Rahmen entdeckt.</small></div>';return;}const kind=kinds[Math.floor(Math.random()*kinds.length)];if(kind==='item'){const key=lockedItems[Math.floor(Math.random()*lockedItems.length)];unlocks.push(key);localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));const a=ITEMS[key];$('#giftResult').innerHTML=`<div class="gift-item"><span class="reward-type">✨ NEUES ITEM</span><span class="item-art"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><small>${a.desc||'Neues Namens-Item freigeschaltet.'}</small></div>`;}else{const key=lockedFrames[Math.floor(Math.random()*lockedFrames.length)];frameUnlocks.push(key);localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));const a=FRAMES[key];$('#giftResult').innerHTML=`<div class="gift-item"><span class="reward-type">🖼 NEUER RAHMEN</span><span class="reward-frame"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><small>Neuer Namensrahmen freigeschaltet.</small></div>`;}renderAccessoryGrid();specialSound();});
+function showPersistedGiftResult(reward){
+  const result=$('#giftResult'),box=$('#giftBox');
+  if(!reward){result.textContent='🔄 Deine Belohnung wird sicher auf dem Server gespeichert …';return;}
+  if(reward.kind==='complete'){
+    result.innerHTML='<div class="gift-item"><strong>Sammlung vollständig! ✨</strong><small>Alle Rahmen und Items sind freigeschaltet.</small></div>';
+  }else if(reward.kind==='item'&&ITEMS[reward.key]){
+    const item=ITEMS[reward.key];
+    result.innerHTML=`<div class="gift-item"><span class="reward-type">✨ NEUES ITEM · GESPEICHERT</span><span class="item-art"><img src="${item.image}" alt=""></span><strong>${escapeHtml(item.name)}</strong><small>Für dein persönliches Spielerprofil gespeichert.</small></div>`;
+  }else if(reward.kind==='frame'&&FRAMES[reward.key]){
+    const frame=FRAMES[reward.key];
+    result.innerHTML=`<div class="gift-item"><span class="reward-type">🖼 NEUER RAHMEN · GESPEICHERT</span><span class="reward-frame"><img src="${frame.image}" alt=""></span><strong>${escapeHtml(frame.name)}</strong><small>Dauerhaft freigeschaltet!</small></div>`;
+  }else {result.textContent='Belohnungsdaten konnten nicht gelesen werden.';return;}
+  box.style.display='none';
+  renderAccessoryGrid();specialSound();
+}
+$('#giftBox').addEventListener('click',()=>{
+  if(!pendingGift)return;
+  giftOpened=true;
+  playSfx('geschenk',{gain:.95,cooldown:200});
+  showPersistedGiftResult(profileWinReward);
+});
 
 
 function leaveRoomNow(){ socket.emit('leaveRoom'); toast('Zurück zum Hauptmenü …'); }
@@ -1969,7 +2067,6 @@ document.querySelectorAll('.music-toggle').forEach(b=>b.addEventListener('click'
 document.querySelectorAll('.music-volume').forEach(s=>s.addEventListener('input',e=>setMusicVolume(e.target.value)));
 updateMusicUI();
 updateHomePreview();
-maybeShowStarterFrame();
 
 let tutorialStep=0;
 const tutorialSteps=[...document.querySelectorAll('.tutorial-step')];
