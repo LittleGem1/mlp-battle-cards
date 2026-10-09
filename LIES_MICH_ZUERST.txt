@@ -1,20 +1,35 @@
-MLP BATTLE CARDS – V5 Bugfix-Paket (8. Oktober 2026)
+MLP BATTLE CARDS – ARENA-TESTAUSWAHL (EINMALIG)
+===========================================
 
-Basis: V4 Komplettupdate. V5 enthaelt alle fuer die aktuelle Vollversion benoetigten Dateien.
+ZWECK
+  In der Wartelobby sieht nur der HOST den Button "🏞️ Arena auswählen".
+  Optionen: 🎲 Zufällig / Jadepalast / Wald / Steampunk / Hexentisch.
+  Die gewählte Einstellung ist für alle im Raum sichtbar.
+  Beim Start des nächsten Matches übernimmt der Server exakt diese Arena.
+  Nach diesem Match ist wieder "🎲 Zufällig" eingestellt.
+  Alle Spieler sehen dieselbe Arena.
 
-Behoben / bearbeitet:
-- Spezialkarten: eigener deutlich sichtbarer AUSSPIELEN-Knopf UNTER der Karte (vor der normalen Karte waehrend Auswahl).
-- Handlimit: hoechstens 7 Karten INSGESAMT, einschliesslich Spezialkarten. Normale Nachziehfunktion respektiert dieses Limit.
-- Kristall: zugelassenes V3-Geräusch in einer Schleife, die exakt beim Stoppen des Kristalls endet.
-- Verliereranimationen: zusaetzliche Absicherung gegen fehlende Kartendaten; Keks-Bisse animieren die aktuell verlorene Karte schrittweise mit Canvas.
-- Smolder-/Meteor-/Keks-Original-GIFs liegen als Vergleich unter public/assets/animations/originale-vorschau (zeigen Demo-Karten, nicht fuer den direkten Einsatz als Overlay geeignet).
-- Alle zuvor freigegebenen V3-Audiodateien und Artefakte bleiben enthalten.
+GITHUB EINBAU (drei Dateien):
+  1. server.js                -> im GitHub-Hauptordner ERSETZEN
+  2. public/index.html       -> im public-Ordner ERSETZEN
+  3. public/arena_selector.js -> im public-Ordner NEU HINZUFÜGEN
 
-Installation:
-1. Beide V5-Teile herunterladen und ENTpacken (nicht die Zips hochladen).
-2. Beider Inhalte in einen gemeinsamen Ordner legen.
-3. Alle enthaltenen Dateien an den gleichen relativen Pfaden im GitHub-Repository hochladen/ersetzen.
-4. Andere vorhandene Assets in GitHub nicht loeschen.
-5. GitHub committen, Render neu starten und Spiel im Browser aktualisieren.
+NICHT ändern: client.js, style.css, Karten, Grafiken, Sounds, Animationen.
 
-Hinweis: Das sind Code-/Browsertests, keine Garantie fuer alle Szenarien im produktiven Mehrspielermodus.
+ACHTUNG: index.html basiert auf der bestehenden V7-Seite. Falls du deine
+index.html selbst seitdem bearbeitet hast, ersetze sie nicht blind:
+Fuege stattdessen NUR diese eine Zeile nach dem vorhandenen client.js-Script ein:
+  <script src="/arena_selector.js?v=1.0"></script>
+
+server.js basiert auf der letzten V8-Bugfix-Version und überträgt deren
+bestehende Runden-Absicherungen. Falls du server.js seitdem selbst geändert
+hast, müssen deine Änderungen mit dieser Datei zusammengeführt werden.
+
+TESTEN
+  1. Deployment auf Render abwarten, Seite mit Strg+F5 neu laden.
+  2. Raum mit PonyBot erstellen.
+  3. "🏞️ Arena auswählen" klicken → "🌲 Magischer Wald" wählen.
+  4. "In die Arena" klicken. Die WALD-Arena muss sofort erscheinen.
+  5. Nach Ende/Abbruch zurück in die Wartelobby → "🎲 Zufällig" ist Standard.
+
+Für normale Partien einfach "🎲 Zufällig" eingestellt lassen.
