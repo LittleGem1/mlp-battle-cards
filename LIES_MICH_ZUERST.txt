@@ -1,56 +1,49 @@
-MLP BATTLE CARDS – KRISTALL / KATEGORIE / ARTEFAKT FIX
-===================================================
+MLP BATTLE CARDS – GESAMTFIX 2026-10-10
+===========================================
 
-DIESER FIX IST FÜR DIE AKTUELLE SPIELVERSION NACH DEM GROßEN FLICKER-/SPEZIAL-/LYRA-/KRISTALL-FIX.
+ENTHALTEN
+1. Kristall-/Langzeit-Rundenfix (server.js, public/client.js)
+   - Server synchronisiert aktuelle Runde + Kategorie regelmaessig.
+   - Grogar darf Kategorie-HTML nicht zerstoeren.
+   - Rundenwaechter faengt verlorene Timer/Callbacks auf.
+   - 150 aufeinanderfolgende Rundenstarts lokal simuliert.
 
-INSTALLATION AUF GITHUB
-1. ZIP entpacken.
-2. server.js im Hauptverzeichnis deines GitHub-Repositories ersetzen.
-3. public/client.js im Ordner public deines Repositories ersetzen.
-4. Auf GitHub speichern, auf das Render-Deployment warten und die Spielseite
-   mit Strg+F5 neu laden. Vorhandene laufende Matches beim Deploy werden beendet.
+2. Artefakte werden im Goldstapel moderat haeufiger angeboten.
+   - Drei statt zwei Kopien jedes Artefakts im Stapel.
+   - Rechnerisch ca. 23 statt 16 Prozent bei zwei Goldkarten, wenn
+     alle Artefakte noch fehlen und kein Cooldown aktiv ist.
+   - Sie bleiben zufaellig und muessen gewaehlt werden.
 
-WICHTIG: Keine anderen Dateien aus dem Repo löschen. Die bestehende Datenbank,
-player_profiles.js, public/style.css, Kartenbilder, Lobby-Hintergrund, Arenen,
-Sounds und Animationen bleiben unverändert. DATABASE_URL auf Render NICHT löschen.
+3. Kategorie seitlich links – ARENA SONST GENAU WIE ZUVOR
+   - Die vier bisherigen Arenen und Spielerpositionen bleiben gleich.
+   - Namen und Fragezeichen-Artefakte bleiben unveraendert.
+   - Kategorie erscheint links anstelle ueber den Spielern.
+   - Auf kleinen Bildschirmen links kompakt im Kampffeld.
+   - Die Kristall-Drehung selbst bleibt erhalten.
 
-BEHOBENE FEHLER
-- Grogar-Spezialkarte entfernte versehentlich die beiden HTML-Elemente
-  #categoryIcon und #categoryText. Danach konnte die nächste Kristall-
-  Animation abbrechen und eine alte Kategorie stehen bleiben.
-- Kategorie wird nach jeder Spielstandsmeldung am Serverzustand ausgerichtet.
-  Eine kompakte roundSync-Meldung ermöglicht auch nach verpassten
-  Einzelereignissen eine Wiederherstellung der Runde/Kategorie.
-- Wenn ein verzögerter Callback während der Aufdeckung ausfällt,
-  schließt der Rundenwächter die laufende Runde ab (mit richtigem Sieger,
-  Gleichstand oder ohne Gewinner bei ausschließlich ausgesetzten Karten),
-  statt den Sieg und die Belohnung einfach zu überspringen.
-- Wenn niemand eine normale Karte aufgedeckt hat, läuft die Partie
-  mit neuer Runde weiter, ohne in der Auswahlphase festzustecken.
-- Eine verlorene Kristall-Zeitsteuerung wird weiterhin vom Rundenwächter
-  aufgefangen.
+GITHUB-INSTALLATION (DIE FOLGENDEN 3 DATEIEN ERSETZEN)
+1. server.js               im Hauptverzeichnis
+2. public/client.js        im public-Ordner
+3. public/style.css        im public-Ordner
 
-ARTEFAKT-CHANCEN
-- Im Goldkartenstapel sind nun 3 statt 2 Kopien jedes Artefakts.
-- Unter zwei angebotenen Goldkarten beträgt die rechnerische Chance,
-  mindestens ein Artefakt angeboten zu bekommen, ungefähr 22-23 %
-  statt bisher ungefähr 16 %, sofern noch kein Artefakt gesammelt wurde,
-  keine Karteneffekte blockieren und kein Artefakt-Cooldown aktiv ist.
-- Es ist weiter zufällig, der Spieler muss die Karte bewusst wählen.
-- Nach einem tatsächlichen Artefaktfund bleibt weiterhin eine
-  anschließende Goldauswahl artefaktfrei (Cooldown von 1).
-- Bereits gesammelte Artefakte werden nicht doppelt angeboten.
+Andere Dateien NICHT loeschen oder ersetzen! Die Datenbank, Account-Login,
+player_profiles.js, Lobby-Hintergrund, alle Karten, Audio, Cockatrice,
+Finisher und Arena-Hintergruende bleiben unveraendert.
 
-LOKALE TESTS
-- 150 aufeinanderfolgende Rundeneinstiege und neue Kategorien: OK.
-- Ausgefallener Kristall-Callback, automatische Auswahlphase: OK.
-- Ausgefallener Reveal-Callback, Sieger bleibt erhalten: OK.
-- Ausschließlich ausgesetzte Spieler, Aufdeckung ohne Phantomsieg: OK.
-- Statische Kontrolle Grogar-Kategorieanzeige: OK.
-- 10.000 simulierte Goldauswahlen: höhere, aber nicht garantierte Artefaktchance.
-- node --check server.js und public/client.js: OK.
+ALTERNATIVE, WENN DU DAS AKTUELLE STYLE.CSS BEHALTEN MOECHTEST:
+Statt public/style.css zu ersetzen, den Inhalt von
+NUR_ANHAENGEN_KATEGORIE_LINKS.css GANZ UNTEN an die vorhandene
+public/style.css anfuegen. NICHT beides gleichzeitig anwenden.
 
-HINWEIS
-Ein vollständiger Mehrspielertest über viele Runden auf deiner Render-Seite
-konnte hier nicht durchgeführt werden. Falls der Fehler dort weiter vorkommt,
-sind Render-Logs und Browser-Konsole wichtig, um eine weitere Ursache zu finden.
+Render danach automatisch neu deployen lassen und Browser Strg+F5.
+WICHTIG: Eine laufende Partie wird durch den Deploy unterbrochen.
+
+TESTS
+- node --check beider JS-Dateien: bestanden.
+- CSS-Patch und vorhandene Kategorie-Elemente: geprueft.
+- Kristall- und Rundenwaechtertests aus dem vorigen Logikfix: bestanden.
+- Anzeige auf realem Render-Multiplayer muss weiterhin getestet werden.
+
+ACHTUNG: Die 23 % sind kein garantierter Artefakt-Drop pro Runde.
+Die Wahrscheinlichkeit gilt nur fuer eine Goldauswahl mit zwei Karten
+unter genannten Voraussetzungen.

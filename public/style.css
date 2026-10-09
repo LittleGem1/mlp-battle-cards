@@ -3977,3 +3977,72 @@ body.scene-lobby #crystalDrift,
 body.scene-lobby #crystalDrift * {
   pointer-events:none !important;
 }
+
+
+/* ====================================================================
+   MLP BATTLE CARDS – KATEGORIE LINKS NEBEN DER ARENA
+   Die alte Arena, alle Spielerfelder, die drei Artefakte, Handkarten,
+   Ziehstapel, Hintergrund/Animationen und Kristallphase bleiben gleich.
+   Verschiebt NUR das bestehende Element #category (keine DOM-Ersetzung).
+   ==================================================================== */
+#game.screen.active .arena .center-stage #category.category {
+  /* Die Mitte ist wieder frei; Position wird vom alten Arena-Layout
+     automatisch an den sichtbaren linken Rand angepasst. */
+  position:absolute !important;
+  top:24px !important;
+  left:calc(50% - min(50vw, 640px) + 16px) !important;
+  right:auto !important;
+  bottom:auto !important;
+  transform:none !important;
+  margin:0 !important;
+  min-width:0 !important;
+  width:180px !important;
+  max-width:180px !important;
+  box-sizing:border-box !important;
+  padding:11px 13px !important;
+  gap:6px !important;
+  display:flex !important;
+  flex-wrap:wrap !important;
+  justify-content:center !important;
+  align-items:center !important;
+  z-index:30 !important;
+  white-space:normal !important;
+  text-align:center !important;
+  font-size:16px !important;
+  flex-direction:column !important;
+  line-height:1.2 !important;
+  pointer-events:none !important;
+  box-shadow:0 8px 28px rgba(0,0,0,.45),0 0 14px rgba(129,219,255,.2) !important;
+}
+#game.screen.active .arena .center-stage #category.category strong,
+#game.screen.active .arena .center-stage #category.category #categoryText {
+  white-space:nowrap !important;
+  overflow-wrap:normal !important;
+}
+/* Die alte Pop-Animation verschiebt das Etikett sonst fuer Sekunden
+   zur Mitte, weil sie noch translateX(-50%) erwartet. */
+#game.screen.active .arena .center-stage #category.category-visible {
+  animation:none !important;
+}
+/* Schmale Displays: links am Tischrand, kompakt und ohne Abschneiden.
+   Die Gegnerzeile und die Kartenaufstellung werden NICHT veraendert. */
+@media(max-width:760px) {
+  #game.screen.active .arena .center-stage #category.category {
+    left:8px !important;
+    top:9px !important;
+    width:116px !important;
+    max-width:min(116px,31vw) !important;
+    padding:7px 8px !important;
+    gap:3px !important;
+    font-size:clamp(12px,2.2vw,15px) !important;
+    flex-direction:column !important;
+  }
+  #game.screen.active .arena .center-stage #category.category strong,
+  #game.screen.active .arena .center-stage #category.category #categoryText {
+    white-space:normal !important;
+    overflow-wrap:anywhere !important;
+  }
+  #game.screen.active .arena .center-stage #category.category #categoryIcon {
+    font-size:21px !important;
+  }
+}
