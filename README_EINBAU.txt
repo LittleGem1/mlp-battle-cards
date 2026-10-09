@@ -1,23 +1,24 @@
-MLP BATTLE CARDS – JADEPALAST ANIMATION (NUR ARENA 1)
+MLP BATTLE CARDS – ARENA 1: SICHTBARE BLÄTTER-ANIMATION
 
-Was neu ist:
-- Deutlich sichtbare, sanfte Blattbewegung im Wind (animiertes WebP, transparent).
-- Der bereits funktionierende 4K-Hintergrund bleibt EXAKT wie er ist.
-- Kein Eingriff in Spielmechanik, Kartenauswahl, Server oder andere Arenen.
+Dies ist ein reiner Arena-1-Animationsfix. Der 4K-Jadepalast bleibt bestehen.
 
-WICHTIG: Dieses Paket baut DIREKT auf dem letzten
-MLP_BATTLE_CARDS_ARENA1_JADEPALAST_4K_FIX.zip auf.
+Auf GitHub hochladen und ersetzen:
+1) public/style.css
+2) public/assets/backgrounds/jadepalast_sichtbarer_blattwind.webp   (neu)
 
-Zum Hochladen / Ersetzen:
-1. public/style.css -> vorhandene CSS ersetzen (nur wenn du aktuell das 4K-Fix verwendest).
-2. public/assets/backgrounds/jadepalast_blaetter_animation.webp -> NEUE Datei hochladen.
+WICHTIG:
+- Lade beide Dateien im angegebenen Ordner hoch.
+- public/assets/backgrounds/arena_1_jade_palace.png BLEIBT unverändert.
+- Keine client.js, keine server.js, keine index.html überschreiben.
+- Die ZIP-style.css basiert auf deinem letzten Arena-1-Blätter-Fix.
+  Wenn du dazwischen CSS von Hand verändert hast: Statt der gesamten Datei
+  nur den letzten Block 'Arena 1, punktueller Blattwind-Fix' ans Ende deiner
+  aktuellen public/style.css anhängen.
+- Ein neues Match starten, bis der Jadepalast ausgewählt wird.
+- Nach Deployment Strg + F5 oder Cache leeren.
 
-Die Datei arena_1_jade_palace.png NICHT ersetzen: sie bleibt deine scharfe 4K-Version!
-
-Nach Render-Deployment mit Strg+F5 neu laden.
-Ein neues Match starten, bis Jadepalast ausgewählt wird.
-
-Falls du style.css seit dem letzten 4K-Fix schon angepasst hast, vor dem Hochladen
-die CSS-Dateien nicht blind ersetzen, sondern die neuen Regeln am Ende deiner
-aktuellen style.css anfügen. Sie stehen zusätzlich separat in
-NUR_ANIMATION_CSS_ERGAENZUNG.txt.
+WARUM DIESE VERSION ANDERS IST:
+Die Animation wird direkt als oberste Arena-Hintergrundebene angezeigt.
+Sie hängt nicht vom pseudo-Element #arenaVfx::after oder Spiel-JavaScript ab.
+Die Blätter sind bewusst größer, leuchtender und sichtbarer.
+Die Hintergrundanimation fängt keine Klicks ab.

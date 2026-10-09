@@ -3691,3 +3691,26 @@ body.scene-game #game .arena.arena-jade_palace #arenaVfx::after {
 /* Dekoration darf niemals einen Klick auf eine Karte abfangen. */
 body.scene-game #game .arena.arena-jade_palace #arenaVfx,
 body.scene-game #game .arena.arena-jade_palace #arenaVfx * { pointer-events: none !important; }
+
+
+/* ============================================================
+   Arena 1, punktueller Blattwind-Fix. Animation liegt DIREKT
+   im Arena-Hintergrund (nicht in der verdeckbaren #arenaVfx).
+   Kein Eingriff in Layout, Karten, Buttons oder Spiellogik.
+   ============================================================ */
+body.scene-game #game.screen.active > .arena.arena-jade_palace,
+body.scene-game #game.screen.active > .arena[data-vfx="jade_palace"] {
+  background-image:
+    url('/assets/backgrounds/jadepalast_sichtbarer_blattwind.webp'),
+    url('/assets/backgrounds/arena_1_jade_palace.png') !important;
+  background-repeat: no-repeat, no-repeat !important;
+  background-size: 100% 100%, cover !important;
+  background-position: center center, center top !important;
+  background-attachment: scroll, scroll !important;
+}
+/* Alte Blatt-Ebene ausschalten, um doppelte Effekte zu vermeiden. */
+body.scene-game #game.screen.active > .arena.arena-jade_palace #arenaVfx::after,
+body.scene-game #game.screen.active > .arena[data-vfx="jade_palace"] #arenaVfx::after {
+  display:none !important;
+  content:none !important;
+}
