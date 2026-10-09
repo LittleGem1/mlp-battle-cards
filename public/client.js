@@ -93,7 +93,8 @@ localStorage.setItem('cc_frame',selectedFrame);
 localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));
 
 let pendingGift=false, lastReveal=[];
-let profileReady=false, profileToken=localStorage.getItem('cc_profile_token_v1')||'';
+let profileReady=false, accountSession=localStorage.getItem('mlp_account_session_v1')||'';
+let accountUsername=localStorage.getItem('mlp_account_name_v1')||'';
 let profileWinReward=null, giftOpened=false;
 let musicEnabled=localStorage.getItem('mlp_music')!=='off', musicMode='home';
 if(localStorage.getItem('mlp_music_fix_v3')!=='1'){musicEnabled=true;localStorage.setItem('mlp_music','on');localStorage.setItem('mlp_music_fix_v3','1');}
@@ -204,7 +205,7 @@ function show(name){
 }
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2600)}
 function remember(){const n=playerName.value.trim();if(n)localStorage.setItem('cc_name',n)}
-function ensureStarter(){if(!profileReady){toast('⚠ Dein dauerhaftes Spielerprofil ist noch nicht verbunden. Bitte Datenbank/Profil prüfen.');return false;}return true;}
+function ensureStarter(){if(!profileReady){toast('⚠ Bitte melde dich zuerst mit deinem Spieleraccount an. Ohne Datenbank sind Freischaltungen nicht dauerhaft gespeichert.');return false;}return true;}
 function escapeHtml(x){return String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function buildCrystalDrift(){
   const root=$('#crystalDrift');if(!root||root.children.length)return;
@@ -401,23 +402,16 @@ $('#arenaReadyBtn')?.addEventListener('click',()=>{directMusicGesture('game');en
 $('#arenaAccessoryBtn')?.addEventListener('click',()=>{renderAccessoryGrid();$('#accessoryDialog').showModal()});
 $('#arenaReadyLeaveBtn')?.addEventListener('click',()=>leaveRoomNow());
 
-// Dauerhaftes, persoenliches Spielerprofil. Browser speichert nur den geheimen
-// Wiederherstellungsschluessel; Postgres enthaelt die eigentliche Sammlung.
+// Accounts: username/password backed by Postgres; the browser retains only a session token.
 function persistProfileCosmetics(){
   if(profileReady&&socket.connected)socket.emit('profileChoose',{accessory:selectedAccessory,frame:selectedFrame});
-}
-function requestProfileLogin(key=profileToken){
-  profileReady=false;
-  const legacy={items:unlocks,frames:frameUnlocks,accessory:selectedAccessory,frame:selectedFrame};
-  socket.emit('profileLogin',{token:key||null,legacy});
-  updateProfileStatus('Profil wird geladen …');
 }
 function updateProfileStatus(status){
   const el=document.getElementById('mlpProfileStatus');if(el)el.textContent=status;
 }
 function applyServerProfile(profile){
   if(!profile)return;
-  // NEVER overwrite server unlocks with a stale browser cache.
+  // The database is authoritative AFTER login; never merge old device state over it.
   unlocks=[...new Set([...(profile.items||[]),...STARTER_KEYS])].filter(x=>ITEMS[x]);
   frameUnlocks=[...new Set([...(profile.frames||[]),...STARTER_FRAME_KEYS])].filter(x=>FRAMES[x]);
   selectedAccessory=ITEMS[profile.accessory]&&unlocks.includes(profile.accessory)?profile.accessory:'changeling';
@@ -429,34 +423,83 @@ function applyServerProfile(profile){
   updateHomePreview();
   if(document.querySelector('#accessoryGrid'))renderAccessoryGrid();
 }
-function setupProfileUI(){
+function setupAccountUI(){
   if(document.getElementById('mlpProfileControls'))return;
-  const target=playerName.closest('label')||playerName;
-  const box=document.createElement('div');
+  const target=playerName.closest('.profile-row')||playerName.closest('label')||playerName;
+  const box=document.createElement('section');
   box.id='mlpProfileControls';
-  box.style.cssText='display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0;padding:9px;border:1px solid rgba(135,210,230,.45);border-radius:10px;background:rgba(10,20,38,.48);font-size:12px;';
-  box.innerHTML='<span id="mlpProfileStatus" style="flex-basis:100%">🔐 Profil wird geladen …</span><button type="button" id="mlpShowProfileKey" class="soft-btn">🔑 Profil-Schlüssel sichern</button><button type="button" id="mlpRestoreProfile" class="soft-btn">♻ Profil wiederherstellen</button>';
+  box.style.cssText='display:flex;flex-direction:column;gap:8px;margin:10px 0;padding:13px;border:1px solid rgba(135,210,230,.5);border-radius:12px;background:rgba(10,20,38,.77);color:#f0f5ff;font-size:13px;';
+  box.innerHTML=`<strong>🔐 Dein MLP-Spieleraccount</strong>
+    <span id="mlpProfileStatus" role="status">Bitte registrieren oder anmelden.</span>
+    <form id="mlpAccountForm" autocomplete="on" style="display:grid;gap:8px;">
+      <label style="display:grid;gap:3px;">Benutzername
+        <input id="mlpAccountUsername" name="username" autocomplete="username" minlength="3" maxlength="24" required placeholder="z. B. LittleGem" style="color:#171a29;background:#fff;padding:9px;border-radius:7px;border:0;">
+      </label>
+      <label style="display:grid;gap:3px;">Passwort (mindestens 10 Zeichen)
+        <input id="mlpAccountPassword" name="password" type="password" autocomplete="current-password" minlength="10" maxlength="128" required placeholder="Dein persönliches Passwort" style="color:#171a29;background:#fff;padding:9px;border-radius:7px;border:0;">
+      </label>
+      <label id="mlpImportOldProfileLabel" style="display:none;align-items:center;gap:6px;">
+        <input id="mlpImportOldProfile" type="checkbox" checked style="width:auto;"> Vorhandenes Profil mit altem Schlüssel übernehmen
+      </label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <button type="submit" id="mlpAccountLoginBtn" class="soft-btn">🔓 Anmelden</button>
+        <button type="button" id="mlpAccountRegisterBtn" class="soft-btn">✨ Neu registrieren</button>
+      </div>
+      <small>Beim ersten Registrieren werden die bisherigen Freischaltungen dieses Browsers übernommen, wenn möglich.</small>
+    </form>
+    <div id="mlpAccountSignedIn" style="display:none;gap:8px;align-items:center;flex-wrap:wrap;">
+      <strong id="mlpAccountCurrentName"></strong>
+      <button type="button" id="mlpAccountLogoutBtn" class="soft-btn">Abmelden</button>
+    </div>`;
   target.after(box);
-  document.getElementById('mlpShowProfileKey').addEventListener('click',()=>{
-    if(!profileToken)return toast('Noch kein gespeichertes Profil vorhanden.');
-    // Deliberately show secret ONLY on explicit user action.
-    window.prompt('GEHEIMER PROFIL-SCHLÜSSEL – nur für dich! Kopiere ihn als Backup. Wer ihn kennt, kann dein Profil laden:',profileToken);
-  });
-  document.getElementById('mlpRestoreProfile').addEventListener('click',()=>{
-    const key=window.prompt('Bitte deinen 64-stelligen Profil-Schlüssel eingeben (aus deiner Sicherung):','');
-    if(key===null)return;
-    const normalized=key.trim().toLowerCase();
-    if(!/^[a-f0-9]{64}$/.test(normalized))return toast('Profil-Schlüssel muss aus 64 Zeichen (0–9, a–f) bestehen.');
-    if(state)return toast('Profil bitte erst nach Verlassen der Partie wechseln.');
-    if(profileToken&&normalized!==profileToken&&!window.confirm('Dein bisheriger Schlüssel wird auf diesem Gerät ersetzt. Hast du ihn gesichert?'))return;
-    // Save the new key only after the server confirms it exists.
-    updateProfileStatus('Anderes Profil wird geprüft …');
-    requestProfileLogin(normalized);
+  const accountForm=document.getElementById('mlpAccountForm');
+  const usernameField=document.getElementById('mlpAccountUsername');
+  const passwordField=document.getElementById('mlpAccountPassword');
+  usernameField.value=accountUsername;
+  const oldKey=localStorage.getItem('cc_profile_token_v1')||'';
+  if(oldKey)document.getElementById('mlpImportOldProfileLabel').style.display='flex';
+  function credentials(){return {username:usernameField.value.trim(),password:passwordField.value}}
+  function submit(type){
+    if(state)return toast('Bitte erst die laufende Partie verlassen.');
+    if(!socket.connected)return toast('Noch keine Verbindung zum Spielserver.');
+    if(!accountForm.reportValidity())return;
+    const data=credentials();
+    if(type==='accountRegister'){
+      // If an old server profile exists, prove ownership with its old secret.
+      const oldProfileToken=document.getElementById('mlpImportOldProfile').checked
+        ? (localStorage.getItem('cc_profile_token_v1')||'') : '';
+      // Existing profile secret wins; for users without an old server profile,
+      // import the existing local collection once at registration.
+      const legacy={items:unlocks,frames:frameUnlocks,accessory:selectedAccessory,frame:selectedFrame};
+      socket.emit(type,{...data,oldProfileToken:oldProfileToken||null,legacy});
+    }else socket.emit(type,data);
+    updateProfileStatus(type==='accountRegister'?'Account wird erstellt …':'Anmeldung wird geprüft …');
+  }
+  accountForm.addEventListener('submit',e=>{e.preventDefault();submit('accountLogin')});
+  document.getElementById('mlpAccountRegisterBtn').addEventListener('click',()=>submit('accountRegister'));
+  document.getElementById('mlpAccountLogoutBtn').addEventListener('click',()=>{
+    if(state)return toast('Bitte zuerst die Partie verlassen.');
+    socket.emit('accountLogout');
   });
 }
-setupProfileUI();
+function showAccountUI(){
+  document.getElementById('mlpAccountForm').style.display=profileReady?'none':'grid';
+  const signed=document.getElementById('mlpAccountSignedIn');
+  signed.style.display=profileReady?'flex':'none';
+  document.getElementById('mlpAccountCurrentName').textContent=profileReady?'✅ Angemeldet als '+accountUsername:'';
+}
+setupAccountUI();
 socket.on('connect',()=>{
-  myId=socket.id;updateHomePreview();requestProfileLogin();
+  myId=socket.id;updateHomePreview();
+  // Login restored by session rather than creating a new empty profile.
+  if(accountSession){
+    profileReady=false;showAccountUI();
+    updateProfileStatus('🔐 Account wird automatisch angemeldet …');
+    socket.emit('accountResume',{sessionToken:accountSession});
+  }else{
+    profileReady=false;showAccountUI();
+    updateProfileStatus('🃏 Erstelle einen Account oder melde dich an.');
+  }
   try{const t=JSON.parse(localStorage.getItem('cc_room_resume_v1')||'null');
     if(t?.code&&/^[0-9a-f]{64}$/.test(t.token))socket.emit('resumeRoom',t);
   }catch(e){}
@@ -472,20 +515,53 @@ socket.on('roomResumeFailed',message=>{
 });
 socket.on('roomTakenOver',()=>toast('Die Partie wurde auf einem anderen Fenster wiederhergestellt.'));
 socket.on('disconnect',()=>{if(state)toast('Verbindung unterbrochen – das Spiel versucht automatisch, dich wieder zu verbinden.');});
-socket.on('profileData',data=>{
-  if(data.token){
-    profileToken=data.token;
-    localStorage.setItem('cc_profile_token_v1',profileToken);
-  }
+socket.on('accountData',data=>{
+  if(!data?.sessionToken||!data.profile)return;
+  accountSession=data.sessionToken;
+  accountUsername=data.username||'';
+  localStorage.setItem('mlp_account_session_v1',accountSession);
+  localStorage.setItem('mlp_account_name_v1',accountUsername);
+  // Old profile key is superseded by username/password and renewable session.
+  localStorage.removeItem('cc_profile_token_v1');
+  document.getElementById('mlpImportOldProfileLabel').style.display='none';
   profileReady=true;
   applyServerProfile(data.profile);
-  updateProfileStatus('✅ Rahmen & Items serverseitig gespeichert · Schlüssel sichern!');
+  document.getElementById('mlpAccountPassword').value='';
+  showAccountUI();
+  updateProfileStatus('✅ Account gespeichert – Rahmen & Items werden automatisch synchronisiert.');
   if(!starterFrameChosen)maybeShowStarterFrame();
 });
-socket.on('profileSaved',()=>{updateProfileStatus('✅ Profil gespeichert');});
+socket.on('accountLoggedOut',()=>{
+  profileReady=false;accountSession='';accountUsername='';
+  localStorage.removeItem('mlp_account_session_v1');
+  localStorage.removeItem('mlp_account_name_v1');
+  localStorage.removeItem('cc_room_resume_v1');
+  // Do not accidentally carry unlocks from one signed-out user to another.
+  unlocks=[...STARTER_KEYS];frameUnlocks=[...STARTER_FRAME_KEYS];
+  selectedAccessory='changeling';selectedFrame='sakura';
+  localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));
+  localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));
+  localStorage.setItem('cc_accessory',selectedAccessory);
+  localStorage.setItem('cc_frame',selectedFrame);
+  updateHomePreview();renderAccessoryGrid();
+  showAccountUI();
+  updateProfileStatus('Abgemeldet. Melde dich erneut mit Benutzernamen und Passwort an.');
+});
+socket.on('accountError',message=>{
+  if(String(message).includes('abgelaufen')){
+    accountSession='';localStorage.removeItem('mlp_account_session_v1');
+  }
+  if(!profileReady)showAccountUI();
+  updateProfileStatus('⚠ '+message);
+  toast('⚠ '+message);
+});
+socket.on('profileData',data=>{
+  // After a win the server sends the up-to-date inventory, never a new account.
+  if(data?.profile){applyServerProfile(data.profile);if(!starterFrameChosen)maybeShowStarterFrame();}
+});
+socket.on('profileSaved',()=>{updateProfileStatus('✅ Account gespeichert · Änderungen synchronisiert');});
 socket.on('profileSaveError',message=>{
-  // Invalid tokens are deliberately NOT silently replaced with a new account.
-  if(!profileReady)updateProfileStatus('⚠ '+message);
+  updateProfileStatus('⚠ '+message);
   toast('⚠ '+message);
 });
 socket.on('profileWinReward',reward=>{

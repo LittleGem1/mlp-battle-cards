@@ -1,99 +1,114 @@
-MLP BATTLE CARDS – KARTENBILDER & RUNDEN-STABILITÄT
-==================================================
-Update vom 09.10.2026
+MLP BATTLE CARDS – DAUERHAFTE ACCOUNTS MIT BENUTZERNAME + PASSWORT
+===============================================================
 
-WAS DIESES UPDATE ÄNDERT
------------------------
-A) Normale Cozy Glow: exakt die vom Nutzer hochgeladene Bilddatei,
-   ohne Änderungen an der SPECIAL-Karte Cozy Glow.
-B) Chandra und Kik: ersetzt durch die beiden zuletzt neu gestalteten
-   Karten mit bereinigtem Kartenrand. Die Zahlenwerte bleiben gleich.
-C) Stabilitäts-Fix für die Runden:
-   - Runden ohne noch aktive Kartenwahl werden automatisch fortgesetzt.
-   - Kein Stillstand bei ausbleibenden Würfelwürfen im Gleichstand:
-     ab ca. 14 Sekunden greift die automatische Würfel-Auswertung.
-   - Auswahl- und Gewinnphasen haben serverseitige Schutzmechanismen.
-   - Verzögerte Gewinner-/Aufdeck-Rückmeldungen dürfen keine neue Runde
-     mehr überschreiben, z.B. nach einem Spielabbruch.
-   - Bei kurzfristigem Verbindungsverlust bleibt der Spielerplatz
-     für 2 Minuten reserviert. Der Browser tritt mit einem geheimen
-     Raum-Schlüssel automatisch wieder bei. Hand/Karten/Spielrunde
-     bleiben beim Wiederbeitritt erhalten.
-   - Verwaiste Spezialkarten-Auswahlfenster werden beim Wiederbeitritt
-     auf dem Client geschlossen.
-   - Hat niemand mehr spielbare normale Karten, wird die Partie anhand
-     Artefakten und verbleibenden Handkarten entschieden, statt endlos
-     in der Startphase festzustecken.
-   - Gewinne können auch bei kurzzeitig unterbrochener Verbindung über
-     das zuvor verknüpfte Profil gespeichert werden (Postgres nötig).
+DAS IST EIN KLEINES UPDATE AUF DEIN JETZIGES SPIEL.
+Es setzt den bisherigen Stand mit funktionierenden Karten und Rundenfix voraus.
 
-DATEIEN FÜR GITHUB
-------------------
-Die ZIP-Datei entpacken und diese DATEIEN IN DEN GLEICHEN PFADEN auf
-GitHub HOCHLADEN bzw. ERSETZEN:
+BEIM HOCHLADEN NUR DIESE DREI DATEIEN ERSETZEN:
+  server.js
+  player_profiles.js
+  public/client.js
 
-server.js
-public/client.js
-public/assets/cards_fixes/17_Cozy_Glow.webp
-public/assets/cards_new/097_Chandra.webp
-public/assets/cards_new/099_Kik.webp
+Ordner tests/ NICHT hochladen – nur interne Tests.
+ACHTUNG: Deine restlichen Kartenbilder, cards.js, public/index.html, CSS, Sounds,
+Animationen und Arenen NICHT ersetzen oder löschen.
 
-Den Ordner 'tests' musst du NICHT auf GitHub hochladen; er ist nur zur
-lokalen Überprüfung dabei. 'LIES_MICH_ZUERST.txt' ebenfalls optional.
+WAS ES KANN
+-----------
+- Registrierung mit Benutzername (3–24 Zeichen) und Passwort (10–128 Zeichen).
+- Anmeldung mit denselben Daten auf jedem Gerät.
+- Automatisches Wiederanmelden auf demselben Gerät (Sitzung 180 Tage,
+  danach weiterhin jederzeit mit Benutzername/Passwort anmelden).
+- Jeder Spieler hat seine EIGENE Sammlung an freigeschalteten Rahmen und Items.
+- Gewinne werden vom Server in derselben persistenten Datenbank gespeichert.
+- Die Rahmen-/Item-Auswahl wird automatisch gespeichert.
+- Bei der Registrierung Übernahme der bestehenden lokalen Sammlung bzw.
+  mit bisherigem geheimen Profil-Schlüssel Übernahme des bisherigen Serverprofils.
+- Passwörter werden gesalzen und mittels scrypt gehasht; Sitzungs-Token
+  werden in der Datenbank nur als SHA-256-Hash gespeichert.
+- Abmelden widerruft die Sitzung auf dem aktuellen Gerät.
 
-WICHTIG
--------
-Dieses Paket baut auf der zuletzt entwickelten Version MIT
-- 13 neuen Charakterkarten, Cockatrice und Sound,
-- reparierter Chrysalis-Effekt,
-- dauerhaften Spielerprofilen ('player_profiles.js')
-auf. Es enthält deswegen nur die ersetzten Dateien. Bitte das
-vorhandene 'cards.js', 'player_profiles.js' und die Datenbankverbindung
-unverändert lassen.
+WICHTIG: EINE DATENBANK IST UNVERZICHTBAR!
+-----------------------------------------
+Ohne dauerhaft betriebene PostgreSQL-Datenbank kann KEIN Webspiel
+Accounts über Render-Neustarts hinweg zuverlässig speichern. Die
+Daten dürfen nicht nur in einer lokalen Render-Datei liegen.
 
-Die Datei 'public/assets/cards_fixes/17_Cozy_Glow.webp' ist die
-ungeänderte Datei, die du hier hochgeladen hast. Der Kartenkatalog
-enthält bereits den korrekten Bildpfad für die NORMALE Cozy Glow.
+EINMALIG AUF RENDER EINRICHTEN (NUR DIE SPIELBETREIBERIN):
+1. Öffne dashboard.render.com.
+2. Erstelle eine Postgres-Datenbank ODER benutze eine bereits vorhandene.
+   Wähle möglichst die gleiche Region und den gleichen Workspace wie
+   dein MLP-Battle-Cards-Web-Service.
+3. Kopiere die INTERNE Verbindungsadresse der Datenbank (Internal URL).
+4. Öffne den Web Service des Spiels > Environment > Add Environment Variable.
+   Key: DATABASE_URL
+   Value: [hier die interne Datenbank-Verbindungsadresse einfügen]
+   DIESE ADRESSE NICHT AUF GITHUB EINFÜGEN ODER WEITERGEBEN!
+5. Dein package.json muss die Node-Abhängigkeit 'pg' enthalten.
+   Falls noch nicht vorhanden, im Block "dependencies" ergänzen:
+      "pg": "^8.16.3"
+   Kommata in JSON korrekt setzen. Bestehende Bibliotheken nicht löschen.
+6. Änderungen speichern und auf Render neu deployen. Ggf. Build command:
+   npm install
+7. Website mit Strg+F5 neu laden.
+8. Nun sieht jeder im Startmenü "Dein MLP-Spieleraccount" mit
+   "Neu registrieren" und "Anmelden". ERST Registrieren wählen.
+9. Gewählten Benutzernamen und Passwort aufschreiben/Passwortmanager
+   benutzen. Danach genügt immer dieselbe Anmeldung.
 
-Alle anderen Karten, 12 Finisher, Arenen, Cockatrice-Animation/Sound,
-Chrysalis, Musik und kosmetische Freischaltungen bleiben im Code
-bestehen. Keine alten Dateien löschen.
+WIE ES FÜR SPIELER FUNKTIONIERT
+-----------------------------
+ERSTER BESUCH:
+  Benutzername eingeben > Passwort eingeben > "Neu registrieren".
+WEITERE BESUCHE:
+  Normalerweise automatisch angemeldet; falls nicht, "Anmelden" mit
+  identischem Benutzernamen und Passwort.
+ANDERES GERÄT:
+  "Anmelden" mit denselben Daten – keine Exportdatei, kein Schlüssel nötig.
+NEUER SPIELER:
+  "Neu registrieren" mit einem anderen Benutzernamen.
 
-NACH DEM UPLOAD
----------------
-1) Alle fünf Dateien mit ihren Ordnerpfaden auf GitHub hochladen.
-2) Render neu deployen lassen.
-3) Browser mit STRG+F5 aktualisieren.
-4) Normale Cozy Glow sowie Chandra/Kik in einer Partie prüfen.
-5) Zwei Browser / Geräte verwenden, Partie beginnen, einmal Verbindung
-   kurz unterbrechen und wiederherstellen; der Spieler sollte in
-   denselben Raum zurückkehren. Auch Gleichstand, Spezialeffekte,
-   Auslaufen der 30-Sekunden-Zeitauswahl und Spielende testen.
+ÜBERNAHME DER ALTEN SAMMLUNG
+----------------------------
+Wenn der Browser schon alte Items/Rahmen gespeichert hat, werden sie
+beim Erstellen seines ERSTEN Accounts übernommen. Hat dieser Browser
+bereits einen funktionierenden 64-stelligen Profil-Schlüssel, versucht
+es dessen bestehendes Serverprofil zu verknüpfen.
+Falls alter Schlüssel nicht mehr zur vorhandenen DB gehört, kannst du
+im Registrierungsformular das Häkchen bei "Vorhandenes Profil …"
+wegnehmen und neu registrieren; dann werden lokale Werte übernommen.
+Bestehende Datenbankkonten werden beim Update NICHT gelöscht.
 
-GRENZEN
--------
-Dieses Update kann Netzwerk- und Serverausfälle nicht verhindern.
-Der Wiederbeitritt funktioniert bei einer kurzfristigen
-Socket-Unterbrechung, solange der Spielserver den Raum noch im
-Arbeitsspeicher hat. Bei einem Render-Neustart/Deployment gehen
-bereits laufende Partien weiterhin verloren: dafür wäre eine
-zusätzliche dauerhafte Speicherung des gesamten laufenden Matches
-in der Datenbank erforderlich. Verbindungsverluste über 2 Minuten
-beenden die Reservierung des Sitzplatzes.
+ACHTUNG bei der einmaligen Alt-Daten-Übernahme: Alte Freischaltungen
+kommen aus dem Browser und sind nicht fälschungssicher. Wenn alle
+bisherigen Nutzer ihre Accounts registriert haben, kannst du
+  MLP_ALLOW_LEGACY_IMPORT=false
+als zusätzliche Render-Umgebungsvariable setzen, damit keine neuen
+Browser-Freischaltungen importiert werden. Schlüsselbasierte Migration
+vorhandener Serverprofile bleibt davon unberührt.
 
-Die Spielregeln für 30 Sekunden Auswahlzeit und den Verlust einer
-Karte beim Zeitablauf bleiben erhalten. Die neuen Schutzmechanismen
-laufen nur, wenn ein regulärer Ablauf stecken bleibt.
+WICHTIGE GRENZEN
+----------------
+- KEINE Accounts, wenn DATABASE_URL fehlt oder die DB abgeschaltet wird.
+- Accounts sind dauerhaft, solange PostgreSQL verfügbar und gesichert
+  bleibt. Regelmäßige Backups und ein nicht auslaufender Datenbankplan
+  sind nötig; es gibt keine Garantie gegen Datenbankverlust.
+- Ohne E-Mail-System gibt es noch keinen automatischen Passwort-Reset.
+- Bei vergessenem Passwort und keinem angemeldeten Gerät ist eine
+  separate Admin-Wiederherstellung erforderlich.
+- Sitzungen im Browser werden in localStorage gespeichert. Niemals
+  Zugangsdaten oder Sitzungs-Token weitergeben. HTTPS ist erforderlich.
+- Laufende Spiele können bei einem Render-Server-Neustart weiterhin
+  unterbrochen werden; die Accountspeicherung verhindert das nicht.
+- Es wurde keine Änderung an Cockatrice, Chrysalis, Cozy Glow,
+  Chandra, Kik, den Arenen und den 12 Finisher-Animationen vorgenommen.
 
-GEPRÜFT
--------
-- node --check server.js und public/client.js
-- simulierte Tests für Raumbeitritt, Sitzplatzreservierung,
-  Wiederbeitritt, Kartenerhalt, Zeitauswahl, leere Spielerwahl,
-  Würfel-Automatik, alte Callback-Ereignisse und erzwungenes Spielende
-- Cozy Glow bytegenau identisch mit der hochgeladenen Bilddatei
-- Chandra/Kik aus den zuletzt erzeugten Kartenbildern als WebP
-
-Ein echter Mehrspieler-Test auf Render ist erst NACH dem Deployment
-möglich. Diese Tests sind keine Garantie, dass jede Netzwerkstörung
-abgefangen werden kann.
+GETESTET
+--------
+- Node.js-Syntaxkontrolle: server.js, player_profiles.js, public/client.js.
+- Simulierte PostgreSQL-Anmeldung: 2 Nutzer, Trennung der Sammlungen,
+  Passwortvergleich, Wiederanmeldung nach Store-Neustart, Anmeldung
+  mit anderem Gerät, logout/ungültige Session, Alt-Profil-Migration,
+  Doppelregistrierung, Auswahl und Gewinn-Belohnung.
+- Browser-Rendering konnte in dieser Umgebung nicht zusätzlich
+  geprüft werden; ein Test auf dem Render-Deployment ist notwendig.

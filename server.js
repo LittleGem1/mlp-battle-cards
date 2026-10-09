@@ -13,6 +13,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 app.use(express.static(path.join(__dirname, 'public')));
 
+const accountAttemptLimits = new Map();
 const rooms = new Map();
 const CATEGORIES = ['strength','speed','energy','magic'];
 const CATEGORY_LABEL = { strength:'Stärke', speed:'Schnelligkeit', energy:'Energie', magic:'Magie' };
@@ -1301,22 +1302,48 @@ roundGuardInterval.unref?.();
 
 io.on('connection',socket=>{
   socket.on('resumeRoom',({code,token}={})=>restoreSeat(socket,code,token));
-  // A private 256-bit profile key ties cosmetics to a PERSON, not a name or socket ID.
-  socket.on('profileLogin',async ({token,legacy}={})=>{
-    if(socket.data.room)return socket.emit('profileSaveError','Profilwechsel nur außerhalb einer Partie möglich.');
-    if(!profileStore)return socket.emit('profileSaveError','Dauerhafte Profilspeicherung nicht eingerichtet: DATABASE_URL fehlt auf Render.');
-    if(socket.data.profileLoginBusy)return;
-    socket.data.profileLoginBusy=true;
+  // Account login: server-side profiles, salted password hashes and revocable sessions.
+  // Limit attempted registrations/logins per connection AND address.
+  const replyAccountError=(err)=>{
+    console.error('[MLP] Account:',err.message);
+    const publicErrors=['Benutzername:','Passwort muss','Dieser Benutzername','Dieser Benutzername oder','Benutzername oder Passwort',
+      'Deine Anmeldung','Altes Profil','Dieses Profil','Dein alter Profil-Schlüssel'];
+    const friendly=publicErrors.some(prefix=>String(err.message).startsWith(prefix));
+    socket.emit('accountError',friendly?err.message:'Account-Datenbank nicht erreichbar. Prüfe DATABASE_URL bei Render.');
+  };
+  function accountAllowed(){
+    if(socket.data.room){socket.emit('accountError','Accountwechsel ist während einer Partie nicht möglich.');return false}
+    if(!profileStore){socket.emit('accountError','Accounts benötigen eine PostgreSQL-Datenbank. Bitte DATABASE_URL bei Render einrichten.');return false}
+    const now=Date.now();
+    const key=socket.handshake.address||socket.id;
+    const previous=accountAttemptLimits.get(key)||[];
+    const recent=previous.filter(time=>now-time<60000);
+    if(recent.length>=12){socket.emit('accountError','Zu viele Versuche. Bitte in einer Minute erneut probieren.');accountAttemptLimits.set(key,recent);return false}
+    recent.push(now);accountAttemptLimits.set(key,recent);
+    if(accountAttemptLimits.size>2000){for(const [k,v] of accountAttemptLimits)if(v.every(t=>now-t>60000))accountAttemptLimits.delete(k)}
+    if(socket.data.accountBusy)return false;
+    socket.data.accountBusy=true;
+    return true;
+  }
+  async function useAccount(type,args){
+    if(!accountAllowed())return;
     try{
-      const result=await profileStore.login({token,legacy});
+      const result=await profileStore[type](args);
       socket.data.profile=result.profile;
-      const r=getRoom(socket),p=r?.players.get(socket.id);
-      if(p)p.profileId=result.profile.id;
-      socket.emit('profileData',result);
-    }catch(err){
-      console.error('[MLP] Profilanmeldung:',err.message);
-      socket.emit('profileSaveError',err.message.startsWith('Profil nicht gefunden')||err.message.startsWith('Ungültiger')?err.message:'Profil-Datenbank derzeit nicht erreichbar. Bitte später erneut versuchen.');
-    }finally{socket.data.profileLoginBusy=false}
+      socket.data.accountSession=result.sessionToken;
+      socket.emit('accountData',result);
+    }catch(err){replyAccountError(err)}finally{socket.data.accountBusy=false}
+  }
+  socket.on('accountRegister',data=>useAccount('accountRegister',data));
+  socket.on('accountLogin',data=>useAccount('accountLogin',data));
+  socket.on('accountResume',data=>useAccount('accountResume',data));
+  socket.on('accountLogout',async ()=>{
+    if(socket.data.room)return socket.emit('accountError','Bitte zuerst die Partie verlassen.');
+    try{if(profileStore&&socket.data.accountSession)
+      await profileStore.accountLogout({sessionToken:socket.data.accountSession});
+    }catch(err){return replyAccountError(err)}
+    socket.data.profile=null;socket.data.accountSession=null;
+    socket.emit('accountLoggedOut');
   });
   socket.on('profileChoose',async ({accessory,frame}={})=>{
     if(!profileStore||!socket.data.profile)return socket.emit('profileSaveError','Profil nicht verbunden; Auswahl nicht dauerhaft gespeichert.');
