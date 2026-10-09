@@ -1,34 +1,56 @@
-MLP BATTLE CARDS – GEMEINSAMER FIX: LOBBY + LYRA
+MLP BATTLE CARDS – KRISTALL / KATEGORIE / ARTEFAKT FIX
 ===================================================
 
-Dieser Fix korrigiert:
-1. KRISTALLHOEHLEN-HINTERGRUND der Home-/Wartelobby wieder sichtbar.
-   Er enthaelt auch die tatsaechliche Bilddatei, die bei CSS-only-Paketen fehlt.
-   Bisherige blickdichte #lobby-Hintergrundschichten werden deaktiviert.
-   Die normalen Arena-Hintergruende bleiben unveraendert.
-2. LYRA hat die gleiche Kartengroesse wie die anderen NORMALEN Karten.
-   Das Bild selbst wird NICHT veraendert oder verzerrt; das gemeinsame
-   Seitenverhaeltnis wird beim Darstellen angewendet.
-3. Die bisherigen Korrekturen fuer Gegner-Layout, Spezialkarten-Meldungen
-   und den versteckten YouTube-Musikplayer sind in style.css enthalten.
+DIESER FIX IST FÜR DIE AKTUELLE SPIELVERSION NACH DEM GROßEN FLICKER-/SPEZIAL-/LYRA-/KRISTALL-FIX.
 
-GITHUB INSTALLATION – NUR ZWEI DATEIEN
--------------------------------------
+INSTALLATION AUF GITHUB
 1. ZIP entpacken.
-2. public/style.css in deinem GitHub-Repository durch die beigefuegte
-   public/style.css ERSETZEN (nicht bloss eine zweite CSS anlegen).
-3. public/assets/backgrounds/lobby_crystal_cave.png hochladen bzw. ersetzen.
-   ACHTUNG: Exakt diesen Ordnerpfad beibehalten!
-4. Beide Aenderungen committen.
-5. Render muss die neue Version deployen. Danach Spiel mit Strg+F5 laden.
-6. In der Wartelobby sollte wieder der Kristallhoehlen-Hintergrund erscheinen.
-   Teste ausserdem Lyras Karte neben einer anderen normalen Karte.
+2. server.js im Hauptverzeichnis deines GitHub-Repositories ersetzen.
+3. public/client.js im Ordner public deines Repositories ersetzen.
+4. Auf GitHub speichern, auf das Render-Deployment warten und die Spielseite
+   mit Strg+F5 neu laden. Vorhandene laufende Matches beim Deploy werden beendet.
 
-WICHTIG:
-- Kein server.js, client.js, index.html, Datenbank-Code oder Login-Code
-  wird durch dieses Paket ersetzt.
-- Accounts, gespeicherte Items/Rahmen, Animationen und Spielregeln bleiben
-  unveraendert.
-- Falls du eine andere CSS-Version als zuletzt installiert hast, erstelle
-  vorsichtshalber vorher eine Kopie deiner aktuellen GitHub-style.css.
-- Ein Browser-/Render-Integrationstest nach dem Deploy bleibt erforderlich.
+WICHTIG: Keine anderen Dateien aus dem Repo löschen. Die bestehende Datenbank,
+player_profiles.js, public/style.css, Kartenbilder, Lobby-Hintergrund, Arenen,
+Sounds und Animationen bleiben unverändert. DATABASE_URL auf Render NICHT löschen.
+
+BEHOBENE FEHLER
+- Grogar-Spezialkarte entfernte versehentlich die beiden HTML-Elemente
+  #categoryIcon und #categoryText. Danach konnte die nächste Kristall-
+  Animation abbrechen und eine alte Kategorie stehen bleiben.
+- Kategorie wird nach jeder Spielstandsmeldung am Serverzustand ausgerichtet.
+  Eine kompakte roundSync-Meldung ermöglicht auch nach verpassten
+  Einzelereignissen eine Wiederherstellung der Runde/Kategorie.
+- Wenn ein verzögerter Callback während der Aufdeckung ausfällt,
+  schließt der Rundenwächter die laufende Runde ab (mit richtigem Sieger,
+  Gleichstand oder ohne Gewinner bei ausschließlich ausgesetzten Karten),
+  statt den Sieg und die Belohnung einfach zu überspringen.
+- Wenn niemand eine normale Karte aufgedeckt hat, läuft die Partie
+  mit neuer Runde weiter, ohne in der Auswahlphase festzustecken.
+- Eine verlorene Kristall-Zeitsteuerung wird weiterhin vom Rundenwächter
+  aufgefangen.
+
+ARTEFAKT-CHANCEN
+- Im Goldkartenstapel sind nun 3 statt 2 Kopien jedes Artefakts.
+- Unter zwei angebotenen Goldkarten beträgt die rechnerische Chance,
+  mindestens ein Artefakt angeboten zu bekommen, ungefähr 22-23 %
+  statt bisher ungefähr 16 %, sofern noch kein Artefakt gesammelt wurde,
+  keine Karteneffekte blockieren und kein Artefakt-Cooldown aktiv ist.
+- Es ist weiter zufällig, der Spieler muss die Karte bewusst wählen.
+- Nach einem tatsächlichen Artefaktfund bleibt weiterhin eine
+  anschließende Goldauswahl artefaktfrei (Cooldown von 1).
+- Bereits gesammelte Artefakte werden nicht doppelt angeboten.
+
+LOKALE TESTS
+- 150 aufeinanderfolgende Rundeneinstiege und neue Kategorien: OK.
+- Ausgefallener Kristall-Callback, automatische Auswahlphase: OK.
+- Ausgefallener Reveal-Callback, Sieger bleibt erhalten: OK.
+- Ausschließlich ausgesetzte Spieler, Aufdeckung ohne Phantomsieg: OK.
+- Statische Kontrolle Grogar-Kategorieanzeige: OK.
+- 10.000 simulierte Goldauswahlen: höhere, aber nicht garantierte Artefaktchance.
+- node --check server.js und public/client.js: OK.
+
+HINWEIS
+Ein vollständiger Mehrspielertest über viele Runden auf deiner Render-Seite
+konnte hier nicht durchgeführt werden. Falls der Fehler dort weiter vorkommt,
+sind Render-Logs und Browser-Konsole wichtig, um eine weitere Ursache zu finden.

@@ -337,6 +337,31 @@ function buildArenaVfx(id){
 }
 
 const CATEGORY_UI={strength:['🏋️','STÄRKE'],speed:['⚡','SCHNELLIGKEIT'],energy:['🔋','ENERGIE'],magic:['⭐','MAGIE']};
+// One category HUD for all sources (roundStart, roomState, Grogar, reconnect).
+// NEVER replace #category.innerHTML: this destroys #categoryIcon/#categoryText
+// and can break every later crystal animation in a long match.
+function categoryHud(icon,label,round=state?.round){
+  const node=$('#category');if(!node)return;
+  let symbol=$('#categoryIcon'),name=$('#categoryText');
+  if(!symbol || !name){
+    // Self-heal a HUD corrupted by a previous client version.
+    node.replaceChildren();
+    symbol=document.createElement('span');symbol.id='categoryIcon';
+    name=document.createElement('span');name.id='categoryText';
+    node.append(symbol,name);
+  }
+  symbol.textContent=icon||'💎';name.textContent=label||'Kategorie';
+  node.dataset.currentCategory=state?.category||'';
+  node.dataset.currentRound=String(round||0);
+}
+function syncCategoryFromState(){
+  if(!state?.category || !['select','reveal','tie','result','rewardchoice'].includes(state.phase))return;
+  const names={strength:'Stärke',speed:'Schnelligkeit',energy:'Energie',magic:'Magie'};
+  const symbols={strength:'🏋️',speed:'⚡',energy:'🔋',magic:'⭐'};
+  categoryHud(symbols[state.category],names[state.category]||state.category,state.round);
+  $('#category')?.classList.add('category-visible');
+}
+
 
 
 function accessoryDecor(key){const a=ITEMS[key]||ITEMS.changeling;return `<span class="decor decor-${key}" aria-hidden="true"><img src="${a.image}" alt=""></span>`;}
@@ -663,7 +688,15 @@ socket.on('roomState',s=>{
   hideArenaReady();
   if(s.phase==='countdown')runCountdown(s.countdownUntil||Date.now()+5000);
   if(s.phase==='roundintro')showRoundIntro({round:s.round,category:s.category,until:s.roundIntroUntil});
-  else if(s.phase==='select')startSelectionTimer(s.selectionDeadline);
+  else{
+    if(s.phase==='select'){
+      closeCategoryCrystal();
+      syncCategoryFromState();
+      startSelectionTimer(s.selectionDeadline);
+    }else if(['reveal','tie','result','rewardchoice'].includes(s.phase)){
+      closeCategoryCrystal();syncCategoryFromState();
+    }
+  }
 });
 let newlyDrawn=new Set();
 socket.on('hand',h=>{
@@ -692,8 +725,7 @@ function renderArenaReady(){
   btn.disabled=state.players.length<2;
   btn.textContent=me?.ready?`↩ Nicht bereit (${readyCount}/${state.players.length})`:`✅ Bereit (${readyCount}/${state.players.length})`;
   btn.classList.toggle('ready-active',!!me?.ready);
-  $('#categoryIcon').textContent='⚔️';
-  $('#categoryText').textContent=state.players.length<2?'Warte auf Mitspieler':'Bereit machen!';
+  categoryHud('⚔️',state.players.length<2?'Warte auf Mitspieler':'Bereit machen!');
   $('#roundMessage').textContent=state.players.length<2?`Raumcode: ${state.code}`:'Sobald alle bereit sind, startet der Countdown für alle – direkt hier in der Arena.';
   updateMusicUI();
 }
@@ -963,16 +995,8 @@ function renderGame(){
     opponentElement.innerHTML=opponentHtml;
     opponentElement.dataset.lastHtml=opponentHtml;
   }
-  // Category is authoritative server state, including reconnects and lost roundStart packets.
-  if(['select','reveal','tie','result'].includes(state.phase)&&state.category){
-    const label=({strength:'Stärke',speed:'Schnelligkeit',energy:'Energie',magic:'Magie'})[state.category]||state.category;
-    const icon=({strength:'🏋️',speed:'⚡',energy:'🔋',magic:'⭐'})[state.category]||'💎';
-    const cat=$('#category');
-    if(cat&&cat.dataset.currentCategory!==state.category){
-      cat.dataset.currentCategory=state.category;
-      $('#categoryIcon').textContent=icon;$('#categoryText').textContent=label;
-    }
-  }
+  // The server's current round/category always wins over old intro animations.
+  syncCategoryFromState();
 
   // A new room state is not a new hand: don't rebuild the entire card DOM
   // (images, hover state and CSS transitions) on every spectator/status packet.
@@ -1501,6 +1525,8 @@ function closeCategoryCrystal(){
 }
 function showRoundIntro(e){
   if(state&&e.round&&e.round<state.round)return;
+  if(state && e.round===state.round && state.phase!=='roundintro')return;
+  if(e.until && e.until<Date.now()-1000)return;
   stopCountdown();
   const key=`${e.round||state?.round||1}:${e.until||state?.roundIntroUntil||''}`;
   const portal=categoryCrystalPortal();
@@ -1517,8 +1543,7 @@ function showRoundIntro(e){
   $('#portalCrystalIcon').textContent=e.icon||ui[0];
   $('#portalCrystalLabel').textContent=e.label||ui[1];
 
-  $('#categoryIcon').textContent='💎';
-  $('#categoryText').textContent='Der Kristall wählt die Kategorie …';
+  categoryHud('💎','Der Kristall wählt die Kategorie …',e.round);
   $('#roundMessage').textContent='';
   clearTable();
   stopSelectionTimer();
@@ -1540,8 +1565,7 @@ function showRoundIntro(e){
     crystal?.classList.remove('spinning');
     stopCrystalSpinSound();
     result?.classList.add('show');
-    $('#categoryIcon').textContent=e.icon||ui[0];
-    $('#categoryText').textContent=e.label||ui[1];
+    categoryHud(e.icon||ui[0],e.label||ui[1],e.round);
     crystalLandSound();
     categorySound(e.category);
     const cat=$('#category');
@@ -1611,14 +1635,35 @@ function startSelectionTimer(deadline){
 
 socket.on('countdown',({seconds,until})=>{hideArenaReady();show('game');setMusicMode('game');ensureAudio();runCountdown(until||Date.now()+(seconds||5)*1000)});
 socket.on('allReady',e=>{toast(e.message||'Alle sind bereit!');beep(880,.18)});
+socket.on('roundSync',e=>{
+  if(!state || !e || e.code!==state.code || state.phase==='gameover')return;
+  if(e.round < state.round)return;
+  // Do not roll back phases on packets from a previous transition.
+  const order={ready:0,countdown:1,roundintro:2,select:3,reveal:4,tie:5,result:6,rewardchoice:7};
+  if(e.round===state.round && (order[e.phase]??-1)<(order[state.phase]??-1))return;
+  const changed=e.round!==state.round || e.phase!==state.phase || e.category!==state.category;
+  if(changed){
+    state={...state,round:e.round,phase:e.phase,category:e.category,
+      roundIntroUntil:e.roundIntroUntil,selectionDeadline:e.selectionDeadline};
+    renderGame();
+    if(e.phase==='roundintro')showRoundIntro({round:e.round,category:e.category,until:e.roundIntroUntil});
+    else{
+      closeCategoryCrystal();syncCategoryFromState();
+      if(e.phase==='select')startSelectionTimer(e.selectionDeadline);
+    }
+  }else if(e.phase==='select'){
+    // An earlier client notification cannot leave the crystal overlay open.
+    if(document.getElementById('categoryCrystalPortal')?.classList.contains('active'))closeCategoryCrystal();
+    syncCategoryFromState();
+  }
+});
 socket.on('roundIntro',showRoundIntro);
 socket.on('roundStart',e=>{
   if(state&&e.round&&e.round<state.round)return;
   stopCountdown();
   closeCategoryCrystal();
   const cat=$('#category');
-  $('#categoryIcon').textContent=e.icon;
-  $('#categoryText').textContent=e.label;
+  categoryHud(e.icon,e.label,e.round);
   if(cat){
     cat.classList.add('category-visible');
     cat.setAttribute('aria-label',`${e.label}`);
@@ -2112,9 +2157,9 @@ socket.on('bonusDraw',e=>{cardShuffleSound();toast(`🐲 ${e.source}: Du erhält
 socket.on('categoryOverride',e=>{
   if(state&&e.round&&e.round!==state.round)return;
   if(state&&e.category)state.category=e.category;
-  const categoryEl=$('#category');if(categoryEl)categoryEl.dataset.currentCategory=e.category||'';
+  // Keep the existing elements: Grogar must never delete the crystal HUD.
+  categoryHud(e.icon,e.label,e.round);
   toast(`🔔 ${e.source} bestimmt: ${e.icon} ${e.label}`);
-  const cat=$('#category');if(cat)cat.innerHTML=`${e.icon} <strong>${escapeHtml(e.label)}</strong>`;
   specialFxSound('grogar');
 });
 socket.on('specialCopied',e=>toast(`♟ ${e.name} kopiert ${e.copied?.name||'eine Spezialkarte'}.`));

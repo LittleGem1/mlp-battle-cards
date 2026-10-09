@@ -22,7 +22,7 @@ const NORMAL_HAND_TARGET = 6;
 const MAX_TOTAL_HAND = 7; // V5: Maximum inklusive aller Spezialkarten
 const NORMAL_COPIES = 3;
 const REWARD_SPECIAL_COPIES = 2;
-const REWARD_ARTIFACT_COPIES = 2;
+const REWARD_ARTIFACT_COPIES = 3; // Slightly more frequent, never guaranteed.
 const ARTIFACT_REWARD_COOLDOWN = 1;
 const RECONNECT_GRACE_MS = 120000; // Reserve a disconnected player's seat for two minutes.
 const ROUND_WATCHDOG_PERIOD_MS = 2500;
@@ -1029,7 +1029,7 @@ function startRound(r,delay=900){
     if(!rooms.has(r.code)||r.matchId!==match||r.roundTransitionToken!==token||['lobby','gameover'].includes(r.phase))return;
     clearRoomSpecialChoices(r);
     r.roundTimer=null;r.round++;r.phase='roundintro';r.played={};r.dice={};r.tieIds=[];r.roundBuff={};resetRoundFX(r);
-    r.pendingRoundWinner=null;
+    r.pendingRoundWinner=null;r.revealOutcome=null;
     for(const p of roomPlayers(r)){
       if(p.pendingForcedDiscard?.timer)clearTimeout(p.pendingForcedDiscard.timer);
       p.pendingForcedDiscard=null;p.selected=null;p.specialUsed=0;p.specialExtra=0;
@@ -1146,12 +1146,17 @@ function evaluate(r){
     });
   }
 
-  if(!vals.length){startRound(r,700);return;}
+  if(!vals.length){
+    r.phase='result';r.played={};
+    io.to(r.code).emit('notice','Keine spielbaren Karten aufgedeckt. Der Kristall startet die nächste Runde.');
+    startRound(r,700);return;
+  }
 
   // Daybreaker: Nur Daybreaker-Nutzer mit einer gelegten normalen Karte können gewinnen.
   const auto=vals.filter(x=>fxHas(r,'autoWinner',x.pid)&&!x.forcedLose);
   let contenders=auto.length?auto:vals.filter(x=>!x.forcedLose);
   if(!contenders.length){
+    r.revealOutcome={round:r.round,kind:'all-skipped'};
     // Everyone with a visible card was disabled. Reveal them all as inactive,
     // discard once and continue cleanly without awarding an undeserved win.
     r.phase='reveal';
@@ -1186,6 +1191,7 @@ function evaluate(r){
   const max=Math.max(...contenders.map(x=>x.value));
   const tied=contenders.filter(x=>x.value===max);
 
+  r.revealOutcome={round:r.round,kind:tied.length===1?'winner':'tie',winnerId:tied.length===1?tied[0].pid:null,tieIds:tied.map(x=>x.pid)};
   r.phase='reveal';
   io.to(r.code).emit('reveal',{
     round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],
@@ -1333,9 +1339,31 @@ function guardRoomProgress(r,now=Date.now()){
     return;
   }
   if(r.phase==='reveal'&&age>6000){
-    // Re-evaluate safely next round rather than leave the whole room blocked.
-    io.to(r.code).emit('notice','Die Aufdeckung wurde automatisch fortgesetzt.');
-    startRound(r,900);return;
+    // If an animation callback was dropped, finish THIS round instead of
+    // silently skipping the winner, discarding their cards or losing rewards.
+    const outcome=r.revealOutcome;
+    io.to(r.code).emit('notice','Die Aufdeckung wird automatisch abgeschlossen.');
+    if(outcome?.round===r.round && outcome.kind==='winner'){
+      settleRound(r,outcome.winnerId);
+    }else if(outcome?.round===r.round && outcome.kind==='tie'){
+      const valid=(outcome.tieIds||[]).map(id=>resolveResumedId(r,id))
+        .filter(id=>r.players.has(id)&&!r.players.get(id).surrendered);
+      if(valid.length===1)settleRound(r,valid[0]);
+      else if(valid.length>1){
+        r.phase='tie';r.tieIds=valid;r.dice={};
+        io.to(r.code).emit('tieStart',{playerIds:valid,names:valid.map(id=>r.players.get(id)?.name)});
+        sendState(r);scheduleBotDice(r);
+      }else{r.phase='result';startRound(r,900);}
+    }else if(outcome?.round===r.round && outcome.kind==='all-skipped'){
+      for(const id of Object.values(r.played||{}).flatMap(playedCardIds))discardCard(r,id);
+      r.played={};for(const p of roomPlayers(r))p.selected=null;
+      refillNormalHands(r);r.phase='result';sendState(r);
+      if(!gameOverIfNeeded(r))startRound(r,950);
+    }else{
+      // A malformed or interrupted reveal should not keep a room stuck.
+      r.phase='result';startRound(r,900);
+    }
+    return;
   }
   if(r.phase==='roundintro'&&age>9000){advanceRoundIntro(r);return;}
   if(r.phase==='countdown'&&age>9000){startRound(r,500);return;}
@@ -1346,7 +1374,18 @@ function guardRoomProgress(r,now=Date.now()){
 }
 const roundGuardInterval=setInterval(()=>{
   for(const r of rooms.values()){
-    try{guardRoomProgress(r);}catch(e){console.error('[MLP] Rundenwächter:',e);}
+    try{
+      guardRoomProgress(r);
+      // A compact authoritative sync makes crystal/category/phase recoverable
+      // when a client misses an event during a long-running match.
+      if(!['lobby','gameover'].includes(r.phase)){
+        io.to(r.code).emit('roundSync',{
+          code:r.code,matchId:r.matchId||null,round:r.round,phase:r.phase,
+          category:r.category,roundIntroUntil:r.roundIntroUntil||null,
+          selectionDeadline:r.selectionDeadline||null
+        });
+      }
+    }catch(e){console.error('[MLP] Rundenwächter:',e);}
   }
 },ROUND_WATCHDOG_PERIOD_MS);
 roundGuardInterval.unref?.();
