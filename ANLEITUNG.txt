@@ -1,27 +1,31 @@
-MLP Battle Cards – Arena 2 MAGISCHER WALD (EINZELPATCH)
+MLP Battle Cards – Follow-up Arena Patch
 
-Dieses Paket enthält NUR:
-1. public/assets/backgrounds/arena_2_forest.png – die neue Waldarena (2896 x 2172 Pixel)
-2. NUR_DIESEN_WALD_BLOCK_AN_STYLE_CSS_ANHAENGEN.css – dezente Blatt- und Wasser-Animation.
+Dieses Paket ist fuer deinen AKTUELLEN Stand mit Arena-Auswahl-Button gedacht.
 
-EINBAU
-1. Das neue Wald-Bild unter public/assets/backgrounds/arena_2_forest.png bei GitHub hochladen/ersetzen.
-2. Die Datei NUR_DIESEN_WALD_BLOCK_AN_STYLE_CSS_ANHAENGEN.css öffnen.
-3. Ihren GESAMTEN INHALT GANZ UNTEN an DEINE AKTUELLE public/style.css ANHÄNGEN.
-   Die bestehende style.css NICHT vollständig durch eine ältere Version ersetzen!
-4. public/style.css in GitHub speichern, Render-Deployment abwarten, Strg + F5.
-5. Ein neues Match starten, bis zufällig Waldarena erscheint.
+Es aendert nur:
+- hoehere Arena-Aufloesung
+- Zaubertisch weiter herausgezoomt
+- Magischer Wald = stilles Einzelbild + ein paar wehende Blaetter
 
-NICHT ERSETZEN: server.js, client.js, index.html, Karten, Arena 1, Lobby usw.
-Die Zufallsauswahl der vier Arenen ist bereits in der vorhandenen Spiellogik vorhanden;
-diese ZIP verändert NICHTS daran.
+NICHT geaendert:
+- Arena-Auswahl-Button
+- Zufallsauswahl
+- Spielmechanik
+- Kartenlayout
+- Lobby
 
-GRAFIK
-Die Grundlage ist das bereits angefertigte hochauflösende Waldmotiv mit Tieren,
-Steinzirkel und Bach (Original: 1448 x 1086 Pixel). Für große Displays
-ist es sorgfältig auf 2896 x 2172 hochskaliert, aber nicht nativ in 4K erzeugt.
-Die Landschaft selbst bleibt still; nur wenige Blätter und Wasserreflexe bewegen sich.
-Keine zusätzlichen Soundeffekte.
+EINBAU:
+1. Diese 4 Dateien nach public/assets/backgrounds/ hochladen/ersetzen:
+   - arena_1_jade_palace.png
+   - arena_2_forest.png
+   - arena_3_steampunk.png
+   - arena_4_alchemy.png
+2. Datei NUR_DIESEN_BLOCK_AN_STYLE_CSS_ANHAENGEN.css oeffnen.
+3. Den kompletten Inhalt GANZ UNTEN an deine aktuelle public/style.css anhaengen.
+   WICHTIG: Nicht die ganze style.css durch eine aeltere Version ersetzen.
+4. Speichern, deploy abwarten, danach Strg+F5.
 
-WENN ZURÜCKSETZEN: Den angehängten Wald-CSS-Block wieder entfernen und bei Bedarf
-das vorherige arena_2_forest.png zurückspielen. Andere Arena-Dateien bleiben unberührt.
+Hinweis:
+- Fuer den Wald gibt es danach NUR noch das Einzelbild plus wenige Blaetter.
+- Das Wasserglitzern im Wald wird deaktiviert.
+- Der Zaubertisch nutzt ein neues, weiter herausgezoomtes Hintergrundbild.
