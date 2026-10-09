@@ -3721,3 +3721,155 @@ body.scene-game #lobbySceneVfx{display:none!important}
 .special-burst{background:transparent!important;isolation:isolate}
 .special-burst-card{padding:16px;background:rgba(18,14,55,.82);border:1px solid rgba(216,184,255,.44);border-radius:22px}
 @media(max-width:600px){#mlpSpecialNotice{top:7px;padding:9px 12px}#mlpSpecialNotice strong{font-size:14px}#mlpSpecialNotice span{font-size:12px}}
+
+/* =====================================================================
+   MLP BATTLE CARDS - LESBARES SPIELFELD UND AUDIO-IFRAME (2026-10-09)
+   Reines Anzeigeupdate: keine Spielregeln, Profile, Special-Logik.
+   ===================================================================== */
+
+/* Die YouTube-IFrame-API ersetzt das DIV #ytAudioPlayer durch ein IFRAME.
+   Die vorherige .yt-audio-player-Regel kann danach ins Leere laufen.
+   ID gezielt absichern, sodass das Musikvideo niemals das Spiel vergroessert. */
+html body #ytAudioPlayer,
+html body iframe#ytAudioPlayer,
+html body #ytAudioPlayer iframe {
+  position:fixed !important;
+  top:auto !important;
+  left:auto !important;
+  right:0 !important;
+  bottom:0 !important;
+  display:block !important;
+  width:1px !important;
+  min-width:1px !important;
+  max-width:1px !important;
+  height:1px !important;
+  min-height:1px !important;
+  max-height:1px !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  opacity:.001 !important;
+  clip-path:inset(49%) !important;
+  overflow:hidden !important;
+  pointer-events:none !important;
+  z-index:-1 !important;
+}
+
+/* Breite vorher gelegentlich durch alte Zentrierungsregeln auf den Inhalt
+   zusammengeschnuert (bei 3 Spielern wurde der dritte abgeschnitten). */
+#game.screen.active > .arena {
+  box-sizing:border-box !important;
+  display:block !important;
+  width:100% !important;
+  max-width:1280px !important;
+  margin:0 auto !important;
+}
+
+/* Gegner/Artefakte: kompakte, dynamische Reihe statt riesiger Zweierkacheln.
+   Bei drei Mitspielern passen alle drei auf mittleren und grossen Screens
+   in eine Reihe. Bei vielen Spielern wird kontrolliert umgebrochen. */
+#game .arena #opponents.opponents {
+  position:relative !important;
+  inset:auto !important;
+  width:min(1180px,100%) !important;
+  max-width:100% !important;
+  height:auto !important;
+  min-height:0 !important;
+  margin:4px auto 13px !important;
+  padding:22px 15px 13px !important;
+  display:grid !important;
+  grid-template-columns:repeat(auto-fit, minmax(min(183px,100%),1fr)) !important;
+  align-items:stretch !important;
+  justify-items:stretch !important;
+  gap:19px 28px !important;
+  overflow:visible !important;
+  z-index:6 !important;
+}
+#game .arena #opponents .opponent {
+  position:relative !important;
+  inset:auto !important;
+  transform:none !important;
+  box-sizing:border-box !important;
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:flex-start !important;
+  align-items:center !important;
+  gap:3px !important;
+  min-width:0 !important;
+  max-width:100% !important;
+  width:100% !important;
+  height:auto !important;
+  margin:0 !important;
+  padding:14px 8px 9px !important;
+  isolation:isolate !important;
+  overflow:visible !important;
+}
+#game .arena #opponents .opponent .nameplate {
+  box-sizing:border-box !important;
+  min-width:0 !important;
+  max-width:calc(100% - 10px) !important;
+  margin:0 auto 2px !important;
+}
+#game .arena #opponents .opponent .nameplate-text {
+  font-size:clamp(11px,1.12vw,15px) !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+  line-height:1.15 !important;
+}
+#game .arena #opponents .opponent .opponent-meta {
+  min-height:23px !important;
+  margin:0 auto !important;
+  padding:0 2px !important;
+  gap:3px 7px !important;
+  font-size:clamp(10px,1vw,12px) !important;
+  line-height:1.2 !important;
+}
+#game .arena #opponents .opponent .artifact-mini-row {
+  gap:7px !important;
+  min-height:31px !important;
+  margin:17px 0 3px !important;
+}
+#game .arena #opponents .opponent .artifact-mini-row::before {
+  bottom:calc(100% + 2px) !important;
+  font-size:9px !important;
+  line-height:1.2 !important;
+}
+#game .arena #opponents .opponent .artifact-mini {
+  flex:0 0 29px !important;
+  width:29px !important;
+  height:29px !important;
+  font-size:14px !important;
+}
+#game .arena #opponents .opponent .back-fan {
+  height:49px !important;
+  margin:0 auto !important;
+  flex:0 0 auto !important;
+}
+#game .arena #opponents .opponent .back-fan img {
+  width:34px !important;
+  max-width:34px !important;
+  margin-left:-18px !important;
+}
+#game .arena #opponents .opponent .back-fan img:first-child {margin-left:0 !important;}
+#game .arena .center-stage {
+  margin:12px auto 18px !important;
+  min-height:300px !important;
+}
+/* Die Kategorie darf weder zwischen Spielern noch hinter deren Deko liegen. */
+#game .arena .center-stage #category.category {
+  position:relative !important;
+  z-index:7 !important;
+  margin:8px auto 12px !important;
+}
+@media (max-width:690px){
+  #game .arena #opponents.opponents{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    padding:24px 11px 10px !important;
+    gap:18px 14px !important;
+  }
+  #game .arena #opponents .opponent {padding:12px 5px 8px !important;}
+  #game .arena .center-stage {margin-top:12px !important;min-height:260px !important;}
+}
+@media (max-width:400px){
+  #game .arena #opponents.opponents {grid-template-columns:minmax(0,1fr) !important;}
+}

@@ -1,74 +1,33 @@
-MLP BATTLE CARDS – GEMEINSAMER FIX (09.10.2026)
-=============================================
+MLP BATTLE CARDS – ANZEIGE-FIX (09.10.2026)
+============================================
 
-Dieses Update behebt zusammen die 5 zuletzt genannten Probleme.
-Es baut auf dem bisherigen Spiel mit Benutzername-/Passwort-Accounts,
-Cockatrice, Chrysalis, Arenen und dem Mehrspieler-Layout auf.
+Dieser Fix behebt die beiden Probleme aus dem Screenshot:
+1) Bei mehreren Gegnern rutschen Spielerfelder nach unten, sodass Namen,
+   drei Fragezeichen und Kartenrueckseiten abgeschnitten werden.
+   Die Arena erhaelt eine definierte Breite, die Gegner kompakte Spalten;
+   bei wenig Platz werden die Spalten responsiv umgebrochen.
+2) Unter dem Spielfeld wird das YouTube-Musikvideo gross eingeblendet.
+   Die YouTube-IFrame-API ersetzt den urspruenglichen DIV durch ein IFRAME
+   mit derselben ID. Der Fix verbirgt BEIDE Elementtypen gezielt in 1x1 px.
+   Die Musik-Funktion selbst wird nicht abgeschaltet.
 
-WAS IST REPARIERT?
-------------------
-1. BILDSCHIRMFLACKERN:
-   Die gleiche Spielansicht wird bei Servermeldungen nicht mehr kurz
-   ausgeblendet und eingeblendet. Unveränderte Handkarten und Gegner-
-   felder werden nicht ständig neu aufgebaut. Der Hintergrund der
-   Spezialkarten-Animation verdunkelt nicht mehr flackernd das ganze Bild.
+GITHUB-EINBAU – VARIANTE A (empfohlen bei Verwendung des letzten Gesamtfixes):
+1. ZIP entpacken.
+2. Die enthaltene Datei public/style.css nach GitHub hochladen und dort
+   public/style.css ersetzen.
+3. Commit ausfuehren. Render neu deployen lassen.
+4. Spiel mit Strg+F5 aktualisieren.
 
-2. SPEZIALKARTEN VERSTÄNDLICH:
-   Nach dem Ausspielen erscheint eine gut sichtbare, länger lesbare
-   Meldung mit Kartenname, Spieler, Beschreibung und – bei Ziel-Effekten –
-   betroffenem Spieler. Die bestehenden Spezialeffekte bleiben erhalten.
+VARIANTE B (sicher, falls die vorhandene style.css neuer/anders ist):
+1. In deinem GitHub-Repository public/style.css bearbeiten.
+2. Den GESAMTEN Text aus NUR_ANHAENGEN_LAYOUT_FIX.css ganz unten anhaengen.
+3. Commit, Deployment, Strg+F5.
 
-3. LYRA:
-   Ihre Karte liegt im normalen 1024 x 1536-Format vor und ersetzt
-   public/assets/cards_new/105_Lyra.webp. Die Kartenwerte bleiben gleich.
+NICHT beide Varianten gleichzeitig anwenden.
 
-4. AUSSETZEN:
-   Hat jemand bereits eine normale Karte gelegt und wird danach durch
-   Cockatrice, Bugbear oder Windigos ausgesetzt, bleibt diese Karte
-   beim Aufdecken SICHTBAR und ist als „AUSSETZEN“ gekennzeichnet.
-   Sie darf den Rundensieg nicht erhalten. Ungespielte Karten werden
-   dadurch natürlich nicht versehentlich offengelegt.
+Es werden KEINE server.js, client.js, Spielerprofile, Datenbank,
+Kartenbilder, Arenen oder Spezialkarten geaendert.
 
-5. RUNDEN/KRISTALL:
-   Der Server kann einen feststeckenden Kristall-Intro-Übergang in der
-   GLEICHEN Runde beenden. Alte, verspätete Runden-Timer und Meldungen
-   werden ignoriert. Fehlt der Auswahl-Timer, wird eine Restzeit gesetzt.
-   Die nächste zufällige Kategorie unterscheidet sich von der vorherigen;
-   ausdrücklich durch Effekte vorgegebene Kategorien bleiben gültig.
-   Ein neu verbundenes Gerät bekommt die aktuelle Kategorie vom Server.
-
-SO AUF GITHUB HOCHLADEN
-----------------------
-1. Vorher zur Sicherheit deine aktuellen GitHub-Dateien sichern.
-2. Diese ZIP auf deinem Computer entpacken.
-3. Im GitHub-Repository EXAKT DIESE vier Dateien ersetzen:
-
-   server.js
-   public/client.js
-   public/style.css
-   public/assets/cards_new/105_Lyra.webp
-
-4. Änderungen committen und das Render-Deployment abwarten.
-5. Auf beiden PCs das Spiel mit STRG + F5 neu laden.
-6. Zusammen mit mindestens einem weiteren Spieler testen.
-
-WICHTIG
--------
-- KEIN Löschen der Datenbank oder Ändern von DATABASE_URL nötig.
-- player_profiles.js, cards.js, package.json und alle bisherigen
-  Kartenbilder, Sounds, Arenen, Cockatrice-, Chrysalis- und
-  Verlierer-Animationsdateien NICHT ersetzen oder löschen.
-- Falls seit dem letzten Account-/Layout-Fix jemand anders den
-  aktuellen Servercode verändert hat, die Änderungen vor dem Ersetzen
-  abgleichen; dies ist ein Datei-Ersatz, kein automatischer Merge.
-- Render-Neustarts und anhaltende Verbindungsprobleme können weiter
-  laufende Matches abbrechen; Account-Daten bleiben in PostgreSQL.
-
-PRÜFUNGEN
----------
-- Beide JavaScript-Dateien: node --check erfolgreich.
-- Simulierte Mehrspieler-Logik: Kristallphase, Timer-Wiederherstellung,
-  sichtbare ausgesetzte Karte, Sieg-Ausschluss, Rundennummer,
-  Kategorie-Wechsel, veraltete Callback-Abwehr erfolgreich.
-- Bild: Lyra 1024 x 1536.
-- Live-Test auf deinem Render-Server ist nach dem Upload noch nötig.
+Pruefung: lokale Chromium-Layouttests bei 390, 690, 760, 900 und
+1100 Pixeln, 3, 4 und 7 Gegnern; 1x1-Pixel-IFrame und keine
+waagerechte Scrollleiste. Noch kein Live-Mehrspielertest auf Render.
