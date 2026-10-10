@@ -1,0 +1,42 @@
+/* NUR DER KATEGORIE-KRISTALL: V9, basierend auf funktionierender Arena V7/Items V8.
+   Grund des Fehlers: V7 versteckt den Original-Kristall global mit !important.
+   Der ursprüngliche client.js zeigt #categoryCrystalPortal bereits bei Rundenbeginn.
+   Deshalb ausschließlich dieses Original-Portal wieder sichtbar machen.
+   Keine Arena-, Stapel-, Namensrahmen-, Smolder- oder Spielregel-Änderung. */
+
+/* Die zweite V7-Kristall-Version ausschalten, damit es keine Doppelanzeigen gibt. */
+#mlpCrystalV6 { display:none !important; }
+
+/* Native Anzeige (wird von /client.js bei roundIntro gesteuert). */
+#categoryCrystalPortal.round-crystal-portal {
+  position:fixed !important;
+  inset:0 !important;
+  z-index:2147483200 !important;
+  display:grid !important;
+  place-items:center !important;
+  pointer-events:none !important;
+  opacity:0 !important;
+  visibility:hidden !important;
+}
+#categoryCrystalPortal.round-crystal-portal.active:not(.leaving) {
+  opacity:1 !important;
+  visibility:visible !important;
+}
+#categoryCrystalPortal.round-crystal-portal.active.leaving {
+  opacity:0 !important;
+  visibility:hidden !important;
+}
+/* Kleine Fenster: Kristall vollständig sehen, ohne Spielarena umzubauen. */
+#categoryCrystalPortal.round-crystal-portal .round-crystal-box {
+  max-width:94vw !important;
+  max-height:94dvh !important;
+  overflow:visible !important;
+}
+#categoryCrystalPortal.round-crystal-portal .battle-crystal-wrap {
+  max-height:56dvh !important;
+}
+@media (max-height:590px) {
+  #categoryCrystalPortal.round-crystal-portal .round-crystal-box {gap:3px !important;padding:8px 16px !important}
+  #categoryCrystalPortal.round-crystal-portal .battle-crystal-wrap {height:clamp(160px,43dvh,260px) !important}
+  #categoryCrystalPortal.round-crystal-portal .battle-crystal {height:clamp(120px,39dvh,218px) !important}
+}
