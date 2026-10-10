@@ -1,0 +1,68 @@
+/* Nur CSS für Gewinner, Specials und Smolders Feuer. Keine Arena-/HUD-Regeln. */
+#finisherOverlay.fx-polish .finisher-headline{animation:none!important;display:grid!important;gap:7px!important;justify-items:center!important;text-align:center!important;max-width:95vw!important;font-size:initial!important}
+#finisherOverlay.fx-polish .fx-victory-banner{position:relative;display:flex;align-items:center;justify-content:center;gap:12px;max-width:95vw;padding:14px clamp(14px,2vw,32px);border:2px solid #e9be74;border-radius:999px;background:linear-gradient(110deg,rgba(58,23,100,.96),rgba(15,13,54,.98) 46%,rgba(65,22,110,.96));box-shadow:0 0 20px rgba(221,143,255,.3),inset 0 0 25px rgba(181,102,255,.16),0 12px 32px #05010d66;white-space:normal;color:#ffefc7;line-height:1.1;text-shadow:0 2px 13px #07030e,0 0 16px rgba(235,179,100,.34);font-size:clamp(19px,4vw,44px)!important;font-weight:900!important;letter-spacing:0!important}
+#finisherOverlay.fx-polish .fx-victory-banner::before,#finisherOverlay.fx-polish .fx-victory-banner::after{content:'◆';position:absolute;top:50%;transform:translateY(-50%);font-size:clamp(12px,2.7vw,25px);color:#bef2ff;text-shadow:0 0 12px #8df,0 0 25px #a7f}
+#finisherOverlay.fx-polish .fx-victory-banner::before{left:-9px}#finisherOverlay.fx-polish .fx-victory-banner::after{right:-9px}
+#finisherOverlay.fx-polish .fx-victory-banner span{font-size:clamp(24px,4.5vw,42px)}
+#finisherOverlay.fx-polish .fx-finisher-subtitle{display:block;font-size:clamp(10px,1.4vw,15px)!important;letter-spacing:.2em;color:#cdeaff;font-weight:900;text-shadow:0 2px 10px #000}
+#finisherOverlay.fx-polish #finisherWinner{display:grid;gap:9px;justify-items:center;overflow:visible}
+#finisherOverlay.fx-polish .fx-winner-nameplate{position:relative;font-size:clamp(15px,2.3vw,23px);font-weight:950;padding:8px 22px;border-radius:999px;color:#fff5cf;background:linear-gradient(180deg,#562a9fee,#201553f4);border:2px solid #d3b1ff;box-shadow:0 0 22px #d071ff88,0 0 35px #6bcaff44,inset 0 0 12px #ffb6ef33;text-shadow:0 0 12px #dca1ff}
+#finisherOverlay.fx-polish .winner-card{z-index:55!important;filter:drop-shadow(0 0 20px #ffe7a98f) drop-shadow(0 0 36px #bc7aff99)!important}
+#finisherOverlay.fx-polish .winner-card::before{opacity:.65!important;filter:blur(13px)!important}
+#finisherOverlay.fx-polish .winner-card img{box-shadow:0 0 0 3px #ffe1a1,0 0 24px #ffc986bb,0 0 40px #b47dffa0,0 17px 35px #0009!important}
+
+.fx-special-presentation{position:fixed;inset:0;z-index:2000050;pointer-events:none;display:grid;place-items:center;opacity:0;visibility:hidden;background:radial-gradient(circle at center,#25145273,#020512d9 82%);backdrop-filter:blur(5px);transition:opacity .25s ease,visibility .25s}
+.fx-special-presentation.show{opacity:1;visibility:visible}.fx-special-presentation.leaving{opacity:0;visibility:hidden}
+body.fx-special-active .special-burst:not(.fx-special-presentation){opacity:0!important;visibility:hidden!important}
+body.fx-special-active #mlpSpecialNotice{opacity:0!important;visibility:hidden!important}
+.fx-special-panel{position:relative;width:min(990px,93vw);display:grid;gap:16px;padding:clamp(14px,2vw,26px);border-radius:28px;border:2px solid #9b73e2aa;background:linear-gradient(155deg,#27135cf2,#101635fa 65%,#21103dea);box-shadow:0 0 45px #a16bff5c,0 26px 65px #000b,inset 0 0 28px #cda1ff16;animation:fxSpecialAppear .37s ease-out both}
+.fx-special-banner{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px clamp(6px,2vw,25px);border:1px solid #dcb16ea6;border-radius:21px;background:linear-gradient(90deg,#321154dd,#201341ee,#321154dd);font-size:clamp(17px,2.8vw,32px);font-weight:900;color:#ffe9ae;text-align:center;text-shadow:0 0 14px #c265d299}
+.fx-special-banner-gem{color:#d7a1ff;font-size:clamp(21px,3vw,36px)}
+.fx-special-content{display:grid;grid-template-columns:minmax(150px,.7fr) minmax(220px,1fr);gap:clamp(15px,2.5vw,35px);align-items:center}
+.fx-special-card-wrap{position:relative;display:grid;place-items:center;isolation:isolate;padding:15px}
+.fx-special-card-wrap img{z-index:2;position:relative;width:min(100%,245px);max-height:48vh;object-fit:contain;border-radius:16px;filter:drop-shadow(0 0 19px #be6bf0b4) drop-shadow(0 10px 24px #000a)}
+.fx-special-orbit{position:absolute;inset:9%;border:3px solid #bd9dffd1;border-radius:50%;box-shadow:0 0 34px #ae5bf688,inset 0 0 30px #5dcbff6b;opacity:.82;transform:rotate(-15deg)}
+.fx-special-explain{display:grid;gap:9px;color:#fff;align-content:center}
+.fx-special-kicker{font-weight:900;color:#ecc6ff;letter-spacing:.18em;font-size:12px}
+.fx-special-explain h2{font-size:clamp(23px,3.8vw,45px)!important;color:#ffe29b;margin:0!important;line-height:1.13;text-shadow:0 0 14px #ffcb8b33}
+.fx-special-name{font-size:clamp(13px,1.8vw,19px);color:#bceeff;font-weight:800}
+.fx-special-explain p{font-size:clamp(17px,2.3vw,26px);line-height:1.32;margin:8px 0;color:#fff7e9;overflow-wrap:anywhere}
+.fx-special-type{justify-self:start;padding:7px 13px;border-radius:999px;background:#47246ca3;border:1px solid #bd83ed83;color:#e7d6ff;font-weight:800;font-size:13px}
+@keyframes fxSpecialAppear{0%{transform:translateY(25px) scale(.92);opacity:0}100%{transform:translateY(0) scale(1);opacity:1}}
+
+/* SMOLDER: Originalfigur bleibt; statisches Feuerbild wird durch animierten Atem ersetzt. */
+#finisherOverlay.fx-smolder-live.stage-smolder .loser-fire-stream{display:none!important}
+#finisherOverlay.fx-smolder-live.stage-smolder .v4-overlay-effect{overflow:visible!important}
+#finisherOverlay.fx-smolder-live.stage-smolder .fx-smolder-fire{position:absolute!important;left:-128%;right:-8%;top:-14%;bottom:1%;z-index:38!important;pointer-events:none;overflow:visible}
+#finisherOverlay.fx-smolder-live.stage-smolder .fx-fire-wave{position:absolute;right:0;top:32%;width:100%;height:34%;transform-origin:right center;clip-path:polygon(0 50%,10% 32%,20% 48%,29% 17%,39% 49%,48% 7%,57% 39%,70% 14%,82% 33%,94% 22%,100% 50%,95% 75%,82% 62%,70% 89%,55% 61%,43% 100%,32% 64%,19% 80%,10% 62%);opacity:0;animation:fxFireBreathe 1.82s .65s cubic-bezier(.18,.65,.38,1) both;will-change:transform,opacity}
+#finisherOverlay.fx-smolder-live.stage-smolder .fx-fire-wave-outer{background:linear-gradient(to left,transparent 0,#ff5218 26%,#ff9528 55%,#f76016 80%,transparent 100%);filter:blur(10px);height:45%;top:27%}
+#finisherOverlay.fx-smolder-live.stage-smolder .fx-fire-wave-inner{background:linear-gradient(to left,transparent 0,#fff6bf 18%,#ffdd62 40%,#ff8023 69%,transparent 100%);filter:blur(4px);height:24%;top:37%;animation-delay:.75s}
+#finisherOverlay.fx-smolder-live.stage-smolder .fx-fire-wave-core{background:linear-gradient(to left,transparent 0,#fff 15%,#fff6b6 43%,#ffc046 80%,transparent 100%);height:12%;top:43%;animation-delay:.84s}
+#finisherOverlay.fx-smolder-live.stage-smolder .fx-fire-heat{position:absolute;right:2%;top:39%;width:21%;height:24%;border-radius:50%;opacity:0;background:radial-gradient(circle,#fff8cb 0 15%,#ffb642 29%,#ff5d2590 45%,transparent 75%);filter:blur(7px);animation:fxHeatBuild 1.5s .35s ease-out both}
+#finisherOverlay.fx-smolder-live.stage-smolder .fx-fire-scorch{position:absolute;left:23%;top:29%;width:46%;height:53%;border-radius:50%;background:radial-gradient(circle,#ffce6d5a 0,#fc4d163b 45%,transparent 70%);filter:blur(12px);opacity:0;animation:fxFireScorch 2.3s .85s both}
+#finisherOverlay.fx-smolder-live.stage-smolder .fx-fire-smoke{position:absolute;left:15%;top:10%;width:52%;height:53%;border-radius:50%;background:radial-gradient(circle,#b3aca765 0,#6c5b5466 41%,transparent 71%);filter:blur(19px);opacity:0;animation:fxSmokeRise 2.25s 1.38s ease-out both}
+#finisherOverlay.fx-smolder-live.stage-smolder .fx-fire-sparks{position:absolute!important;inset:-22%;z-index:45!important;pointer-events:none}
+#finisherOverlay.fx-smolder-live.stage-smolder .fx-fire-sparks i{position:absolute;left:57%;top:50%;width:var(--size);height:var(--size);border-radius:100% 0 100% 100%;background:linear-gradient(135deg,#fffbd7,#ffb341 50%,#f9571a);box-shadow:0 0 9px #ff862b;opacity:0;animation:fxEmberDrift 1.65s calc(.95s + var(--d)) cubic-bezier(.2,.65,.2,1) both}
+@keyframes fxFireBreathe{0%{opacity:0;transform:scaleX(.02) scaleY(.18) rotate(3deg)}19%{opacity:.94;transform:scaleX(.38) scaleY(.84) rotate(-3deg)}48%{opacity:.98;transform:scaleX(.95) scaleY(1.16) rotate(2deg)}72%{opacity:.88;transform:scaleX(1.15) scaleY(.94) rotate(-2deg)}100%{opacity:0;transform:scaleX(1.3) scaleY(.45) rotate(4deg)}}
+@keyframes fxHeatBuild{0%{opacity:0;transform:scale(.1)}45%{opacity:.95;transform:scale(1.1)}100%{opacity:0;transform:scale(1.8)}}
+@keyframes fxFireScorch{0%{opacity:0;transform:scale(.35)}40%{opacity:1;transform:scale(1.15)}100%{opacity:0;transform:scale(1.7)}}
+@keyframes fxSmokeRise{0%{opacity:0;transform:translate(0,15px) scale(.4)}40%{opacity:.6}100%{opacity:0;transform:translate(-30px,-65px) scale(1.6)}}
+@keyframes fxEmberDrift{0%{opacity:0;transform:translate(0,0) scale(.25) rotate(0)}20%{opacity:.98}100%{opacity:0;transform:translate(var(--vx),var(--vy)) scale(.15) rotate(210deg)}}
+
+@media(max-width:680px){
+ .fx-special-panel{max-height:93vh;overflow:auto;gap:8px;padding:12px}
+ .fx-special-content{grid-template-columns:1fr;gap:4px}
+ .fx-special-card-wrap{padding:2px}
+ .fx-special-card-wrap img{max-height:28vh;max-width:33vw}
+ .fx-special-orbit{inset:14%;border-width:2px}
+ .fx-special-explain{gap:4px;text-align:center;justify-items:center}
+ .fx-special-explain p{font-size:15px;margin:3px 0}
+ .fx-special-type{justify-self:center}
+ #finisherOverlay.fx-polish .fx-victory-banner{padding:10px 15px;font-size:19px!important}
+ #finisherOverlay.fx-polish .fx-winner-nameplate{font-size:15px}
+}
+@media(prefers-reduced-motion:reduce){
+ #finisherOverlay.fx-polish .winner-card::before,.fx-special-panel,
+ #finisherOverlay.fx-smolder-live.stage-smolder .fx-fire-wave,
+ #finisherOverlay.fx-smolder-live.stage-smolder .fx-fire-sparks i{animation:none!important}
+}

@@ -1,0 +1,57 @@
+MLP BATTLE CARDS – KOMBI-UPDATE: SIEGER, SPECIAL, SMOLDER + ARENA/KRISTALL
+
+Alle benötigten Ergänzungs-Dateien liegen in dieser ZIP.
+Dies ist eine Fortsetzung des vorherigen Arena-/Kristall-Updates.
+
+DATEIEN IN ZIP – ALLE NACH public/ HOCHLADEN:
+- index.html                     (ersetzen)
+- mlp_arena_ui_fix.js            (gleiches Arena-Update wie vorher)
+- mlp_arena_ui_fix.css           (gleiches Arena-Update wie vorher)
+- mlp_sieger_special_smolder.js  (NEU: neue Darstellung)
+- mlp_sieger_special_smolder.css (NEU: neue Darstellung)
+
+DEIN ALTEN DATEIEN UNVERÄNDERT LASSEN:
+- client.js
+- style.css
+- server.js
+- cards.js
+- die Arena-Bilder, Karten, Musik und sonstigen Assets
+
+NEU:
+- Rundensieg: auffälliges Banner mit Gewinnernamen; Gewinnerkarte und Namensrahmen leuchten.
+- Specials: Wer hat welche Karte benutzt und was bewirkt sie? Mit ORIGINAL-Kartenbeschreibung.
+- Smolder: animierter Flammenstrom + Glutpartikel + Rauch + Verbrennung der Verliererkarte.
+
+LETZTER ARENA FIX BLEIBT:
+- Kristallauswahl
+- normale Ziehstapel links
+- Goldstapel unter der Artefakt-Liste rechts
+- Artefakte rechts mit Abstand
+
+INSTALLATION:
+1. ZIP herunterladen und entpacken.
+2. Auf GitHub Repository / public öffnen.
+3. ALLE FÜNF Dateien aus dem ZIP-Ordner public hochladen.
+4. Bei index.html Ersetzen bestätigen, bei den anderen ebenfalls wenn bereits vorhanden.
+5. Commit speichern; Render deploy abwarten; Browser mit Strg+F5 aktualisieren.
+
+ACHTUNG wenn du nach dem Arena-/Kristall-Fix die index.html selbst verändert hast:
+Nicht blind ersetzen! Stattdessen in DEINER aktuellen index.html nur diese beiden Zeilen ergänzen:
+Im HEAD nach dem Link zu mlp_arena_ui_fix.css:
+<link rel="stylesheet" href="/mlp_sieger_special_smolder.css?v=20261010-v1" />
+Vor </body> nach dem Script zu mlp_arena_ui_fix.js:
+<script src="/mlp_sieger_special_smolder.js?v=20261010-v1"></script>
+
+TEST:
+1. Spiel gegen PonyBot und Runde gewinnen (Banner, Siegerkarte, Rahmen).
+2. Spezialkarte spielen (Karte, Spieler, Effekttext).
+3. Smolders Finisher via Arena-Bereit-Menü "Animations-Test", sofern aktiviert.
+4. Prüfe, ob Kristall, Decks, Artefakte wie zuletzt angezeigt werden.
+
+TECHNIK:
+Nur Darstellung, Events "roundWinner" und "specialPlayed".
+Keine Änderung an Spielmechanik, Timer, Kartenregeln oder Server.
+
+STAND DER PRÜFUNGEN:
+ZIP, JavaScript-Syntax, CSS-Syntax, Eventhandler mit simulierten Spielereignissen geprüft.
+Live-Spiel nach GitHub-Deployment muss noch getestet werden.
