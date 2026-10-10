@@ -1,0 +1,31 @@
+KLEINER PATCH FÜR DEINE AKTUELLE cards.js
+=========================================
+
+1) Suche im normalen Kartenblock nach:
+
+  [107,'Becky Bat',6,8,3,6]
+
+und ersetze es durch:
+
+  [107,'Becky Bat',6,8,3,6],
+  [108,'Sil',7,5,8,6]
+
+2) Suche nach:
+
+  n>=94&&n<=107
+
+und ersetze es durch:
+
+  n>=94&&n<=108
+
+3) Falls in cards.js diese Cache-Liste existiert:
+
+  [1,43,44,51,52,53,56,58,94,95,96,97,98,99,100,101,102,103,104,105,106,107].includes(n)
+
+ersetze sie durch:
+
+  [1,43,44,51,52,53,56,58,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108].includes(n)
+
+4) Lade zusätzlich diese Datei hoch:
+
+  public/assets/cards_new/108_Sil.webp
