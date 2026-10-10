@@ -1,0 +1,51 @@
+{
+  "asset_count": 9,
+  "images": {
+    "public/assets/cards/43_Photo_Finish.webp": {
+      "width": 1060,
+      "height": 1484,
+      "sha256": "e59fe8adaec47179f9ac0edb531dfbd11876841858ebf34c34073db13286c699"
+    },
+    "public/assets/cards/44_Sapphire_Shores.webp": {
+      "width": 1060,
+      "height": 1484,
+      "sha256": "f8cad2374655535dddfa779902970c43cb5c1ec7551f42eb60811ccf2e0d35d0"
+    },
+    "public/assets/cards/51_Derpy_Hooves.webp": {
+      "width": 1060,
+      "height": 1484,
+      "sha256": "dc7c5dd3678ef5204e68fa077b3113b4b7174c32d953e0012c1e49c47a804d98"
+    },
+    "public/assets/cards/52_Doctor_Hooves.webp": {
+      "width": 1060,
+      "height": 1484,
+      "sha256": "e41202005da2e7ccf6653aa8a77f2a186ec194e5a0cd04c0b54f56154ba78f5c"
+    },
+    "public/assets/cards/53_Minuette.webp": {
+      "width": 1060,
+      "height": 1484,
+      "sha256": "79563b3ee05b8bb6e367277d712eea0077c3e1294ca488774500cff9db0ca934"
+    },
+    "public/assets/cards/56_Soarin.webp": {
+      "width": 1060,
+      "height": 1484,
+      "sha256": "94dd40ac18cee0cc1f1ae14ee243fd14e8d7d1b0ff325946d7676f2003f8f7e8"
+    },
+    "public/assets/cards/58_Lightning_Dust.webp": {
+      "width": 1060,
+      "height": 1484,
+      "sha256": "13d43b5b894c6522883cb2d4e02f60dda24ca563ef4212b2b35eee8a403fdcbc"
+    },
+    "public/assets/cards_new/105_Lyra.webp": {
+      "width": 1060,
+      "height": 1484,
+      "sha256": "884f52f817279924866d365b89d65c4af727b3e61c5917c27ac6c0cb85b3c029"
+    },
+    "public/assets/cards_new/107_Becky_Bat.webp": {
+      "width": 1060,
+      "height": 1484,
+      "sha256": "d7ac6cb4c214d9eeb202c8511449828647d6a0482872ea58c1c639c75fd659aa"
+    }
+  },
+  "card_js_contains_becky": true
+}

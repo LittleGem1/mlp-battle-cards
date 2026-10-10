@@ -1,57 +1,38 @@
-MLP BATTLE CARDS – KOMBI-UPDATE: SIEGER, SPECIAL, SMOLDER + ARENA/KRISTALL
+MLP BATTLE CARDS – KARTEN-UPDATE MIT BECKY BAT
+=================================================
 
-Alle benötigten Ergänzungs-Dateien liegen in dieser ZIP.
-Dies ist eine Fortsetzung des vorherigen Arena-/Kristall-Updates.
+Enthalten:
+- 8 gezielt vereinheitlichte Kartenbilder (Maße und sichtbare schwarze/überstehende Ränder)
+- 1 neue Karte: 107_Becky_Bat.webp
+- cards.js mit genau EINEM neuen normalen Karteneintrag und minimaler Bildpfad-/Cache-Anpassung
+- VORSCHAU.png zur Kontrolle
 
-DATEIEN IN ZIP – ALLE NACH public/ HOCHLADEN:
-- index.html                     (ersetzen)
-- mlp_arena_ui_fix.js            (gleiches Arena-Update wie vorher)
-- mlp_arena_ui_fix.css           (gleiches Arena-Update wie vorher)
-- mlp_sieger_special_smolder.js  (NEU: neue Darstellung)
-- mlp_sieger_special_smolder.css (NEU: neue Darstellung)
+BECKY BAT
+Name: Becky Bat
+Stärke: 6
+Schnelligkeit: 8
+Magie: 3
+Energie: 6
+Kartentyp: Normal (keine Spezialfähigkeit)
 
-DEIN ALTEN DATEIEN UNVERÄNDERT LASSEN:
-- client.js
-- style.css
-- server.js
-- cards.js
-- die Arena-Bilder, Karten, Musik und sonstigen Assets
+EINBAU AUF GITHUB
+1. ZIP auf dem Computer ENTpacken (nicht die ZIP selbst im Repository hochladen).
+2. In deinem GitHub-Repository die Datei cards.js im HAUPTORDNER ersetzen.
+3. Im Repository public/assets/cards/ die enthaltenen gleichnamigen WEBP-Dateien ersetzen.
+4. Im Repository public/assets/cards_new/ die enthaltenen gleichnamigen WEBP-Dateien ersetzen bzw. 107_Becky_Bat.webp neu hinzufügen.
+5. Änderungen committen; Render nach dem Deploy öffnen und Browser hart neu laden (Strg+Umschalt+R).
+6. Becky Bat erscheint als normale Karte im Ziehstapel, nicht als Spezialkarte. Ihr Bild ist unter public/assets/cards_new/107_Becky_Bat.webp gespeichert.
 
-NEU:
-- Rundensieg: auffälliges Banner mit Gewinnernamen; Gewinnerkarte und Namensrahmen leuchten.
-- Specials: Wer hat welche Karte benutzt und was bewirkt sie? Mit ORIGINAL-Kartenbeschreibung.
-- Smolder: animierter Flammenstrom + Glutpartikel + Rauch + Verbrennung der Verliererkarte.
+WICHTIG
+Die Dateien enthalten nur Änderungen an Kartenbildern und cards.js. Bestehende Effekte, Artefakte, Animationen und die Zugmechanik werden nicht verändert. cards.js beruht auf der Projektdatei aus der vorliegenden Sicherung mlp-battle-cards-main.zip. Falls du cards.js seitdem separat verändert hast, vergleiche die Änderungen vor dem Ersetzen, damit neuere Anpassungen erhalten bleiben.
 
-LETZTER ARENA FIX BLEIBT:
-- Kristallauswahl
-- normale Ziehstapel links
-- Goldstapel unter der Artefakt-Liste rechts
-- Artefakte rechts mit Abstand
-
-INSTALLATION:
-1. ZIP herunterladen und entpacken.
-2. Auf GitHub Repository / public öffnen.
-3. ALLE FÜNF Dateien aus dem ZIP-Ordner public hochladen.
-4. Bei index.html Ersetzen bestätigen, bei den anderen ebenfalls wenn bereits vorhanden.
-5. Commit speichern; Render deploy abwarten; Browser mit Strg+F5 aktualisieren.
-
-ACHTUNG wenn du nach dem Arena-/Kristall-Fix die index.html selbst verändert hast:
-Nicht blind ersetzen! Stattdessen in DEINER aktuellen index.html nur diese beiden Zeilen ergänzen:
-Im HEAD nach dem Link zu mlp_arena_ui_fix.css:
-<link rel="stylesheet" href="/mlp_sieger_special_smolder.css?v=20261010-v1" />
-Vor </body> nach dem Script zu mlp_arena_ui_fix.js:
-<script src="/mlp_sieger_special_smolder.js?v=20261010-v1"></script>
-
-TEST:
-1. Spiel gegen PonyBot und Runde gewinnen (Banner, Siegerkarte, Rahmen).
-2. Spezialkarte spielen (Karte, Spieler, Effekttext).
-3. Smolders Finisher via Arena-Bereit-Menü "Animations-Test", sofern aktiviert.
-4. Prüfe, ob Kristall, Decks, Artefakte wie zuletzt angezeigt werden.
-
-TECHNIK:
-Nur Darstellung, Events "roundWinner" und "specialPlayed".
-Keine Änderung an Spielmechanik, Timer, Kartenregeln oder Server.
-
-STAND DER PRÜFUNGEN:
-ZIP, JavaScript-Syntax, CSS-Syntax, Eventhandler mit simulierten Spielereignissen geprüft.
-Live-Spiel nach GitHub-Deployment muss noch getestet werden.
+GEAENDERTE BILDER
+- 43: Photo Finish – Seitlichen überstehenden Bereich entfernt
+- 44: Sapphire Shores – Rechten schwarzen Rand entfernt
+- 51: Derpy Hooves – Unteren schwarzen Balken entfernt
+- 52: Doctor Hooves – Unteren schwarzen Balken entfernt
+- 53: Minuette – Unteren schwarzen Balken entfernt
+- 56: Soarin – Unteren schwarzen Balken entfernt
+- 58: Lightning Dust – Unteren schwarzen Balken entfernt
+- 105: Lyra – Schmale schwarze Außenkanten entfernt
+- 107: Becky Bat – neu hinzugefügt, Bildrand der Kartennorm angepasst

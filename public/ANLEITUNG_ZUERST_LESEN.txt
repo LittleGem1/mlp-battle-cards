@@ -1,0 +1,45 @@
+MLP Battle Cards – Karten-Update (V2)
+======================================
+
+Diese ZIP enthält NUR geänderte Kartenbilder + cards.js.
+Sie enthält NICHT das komplette Spiel und verändert keine Animationen,
+keine Spezialkarten und keine Arena.
+
+SO BAUST DU ES INS SPIEL EIN
+1. Lade diese ZIP herunter und entpacke sie auf deinem PC.
+2. Öffne deinen GitHub-Projektordner mlp-battle-cards.
+3. Kopiere die entpackten Dateien und Ordner in den Projektordner,
+   wobei du gleichnamige Dateien überschreibst:
+       cards.js                       -> im Projekt-Hauptordner
+       public/assets/cards/           -> vorhandene Karten ersetzen
+       public/assets/cards_new/       -> Lyra ersetzen, Becky Bat ergänzen
+4. Committe / pushe die Änderungen zu GitHub (bei GitHub Desktop: Commit + Push).
+5. Warte auf den Render-Deploy und aktualisiere die Spielseite neu.
+
+WENN DU NUR DIE GITHUB-WEBSEITE NUTZT
+- Öffne die drei Pfade einzeln im GitHub-Repository.
+- Ersetze cards.js im Hauptordner.
+- Lade die 7 .webp-Bilder im Ordner public/assets/cards hoch.
+- Lade die 2 .webp-Bilder im Ordner public/assets/cards_new hoch.
+- Bestätige die Änderungen jeweils mit „Commit changes“.
+
+ENTHALTENE KARTEN
+Bestehende Karten ersetzt:
+- Photo Finish (43)
+- Sapphire Shores (44)
+- Derpy Hooves (51)
+- Doctor Hooves (52)
+- Minuette (53)
+- Soarin (56)
+- Lightning Dust (58)
+- Lyra (105)
+
+Neue normale Karte:
+- Becky Bat (107), Stärke 6, Schnelligkeit 8, Magie 3, Energie 6.
+
+Alle enthaltenen Bilder haben 1060 x 1484 Pixel.
+Nur diese 8 alten Bilder werden ersetzt, die übrigen Karten bleiben unverändert.
+
+HINWEIS: cards.js wurde auf Basis der übergebenen Projekt-ZIP erstellt.
+Falls du nach dieser Version neuere eigene Änderungen an cards.js gemacht hast,
+nicht blind überschreiben, sondern den Becky-Bat-Eintrag in die aktuelle Version übertragen.
