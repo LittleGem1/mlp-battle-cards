@@ -1,0 +1,41 @@
+MLP Battle Cards – Artefakte haeufiger + 7-Runden-Pechschutz (V13)
+====================================================================
+
+NEU:
+- 7 statt 5 Kopien jedes Artefakts im Goldstapel (hoehere natuerliche Chance).
+- SPAETESTENS nach sieben Runden ohne ein Artefaktangebot wird in der
+  naechsten ZULAESSIGEN Goldauswahl ein bisher nicht gesammeltes Artefakt
+  angeboten (neben maximal einer weiteren Goldkarte).
+- Der Zaehler beginnt bei jedem ArtefaktANGEBOT neu – nicht jede siebte
+  Runde starr. Die angebotene Karte muss nicht zwingend gewaehlt werden.
+- Iron Will / Artefaktsperre und der bestehende 1-Auswahl-Cooldown nach
+  einem tatsaechlich gefundenen Artefakt werden respektiert.
+- Gibt es keinen Rundengewinner (z.B. nur Zeitstrafen), kann keine
+  Goldauswahl stattfinden. Die Garantie greift dann bei der naechsten
+  moeglichen Goldauswahl. Keine automatische Vergabe an Verlierer.
+- Alle 3 Artefakte bleiben gleich gewichtet; bereits gefundene Artefakte
+  werden einem Spieler nicht nochmal angeboten.
+
+EINBAU
+1. ZIP entpacken. Es gibt NUR EINE Spieldatei: server.js.
+2. Wenn die zuletzt eingebaute Server-Version die Host-Kartengalerie V2
+   (Becky Bat Auto-Kartengalerie) ist und du seither keine Aenderungen an
+   server.js gemacht hast: server.js im GitHub-Hauptverzeichnis ersetzen.
+3. Falls du server.js danach erneut geaendert hast: NICHT blind ersetzen!
+   Die Datei MANUELLER_PATCH_server.js.diff zeigt exakt, welche Zeilen
+   geaendert werden sollen. Uebertrage diese auf deine AKTUELLE server.js.
+4. Github committen, Render-Deploy abwarten. Neue Partie starten; laufende
+   Partien erhalten die neue Regel erst nach einem neuen Match.
+5. Ab Runde 7 ohne Artefakt in einer regulären Goldauswahl testen.
+
+WICHTIG
+Diese ZIP fasst KEINE Dateien der Host-Galerie, Kartenbilder, client.js,
+style.css oder Spezialkarten an. Die Datei server.js beruht auf der hier
+verfuegbaren Becky-Bat-Auto-Galerie-Version V2. Ohne Zugriff auf deinen
+aktuellen GitHub-Stand kann ich nicht bestaetigen, dass sie inzwischen nicht
+abweicht. Die beigefuegte Diff ist daher die sichere Alternative.
+
+TEST
+- node --check server.js bestanden
+- Simulation: Angebot bis Runde 7, Zuruecksetzen des Zaehlers,
+  Blockade durch Iron Will und Ein-Auswahl-Cooldown bestanden

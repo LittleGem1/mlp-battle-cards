@@ -22,7 +22,8 @@ const NORMAL_HAND_TARGET = 6;
 const MAX_TOTAL_HAND = 7; // V5: Maximum inklusive aller Spezialkarten
 const NORMAL_COPIES = 3;
 const REWARD_SPECIAL_COPIES = 2;
-const REWARD_ARTIFACT_COPIES = 5; // Slightly more frequent, never guaranteed.
+const REWARD_ARTIFACT_COPIES = 7; // Hoehere Zufallschance auf Artefakte.
+const ARTIFACT_PITY_ROUNDS = 7; // ARTIFAKT_PITY_V13: max. 7 Runden ohne Artefaktangebot (bei berechtigter Goldauswahl).
 const ARTIFACT_REWARD_COOLDOWN = 1;
 const RECONNECT_GRACE_MS = 120000; // Reserve a disconnected player's seat for two minutes.
 const ROUND_WATCHDOG_PERIOD_MS = 2500;
@@ -659,6 +660,22 @@ function returnRewardCandidate(r,id){
   r.rewardDeck.push(id);
   r.rewardDeck=shuffle(r.rewardDeck);
 }
+// ARTIFAKT_PITY_V13: Eine garantierte Karte wird aus dem echten Goldstapel
+// bzw. dessen Ablage entnommen, nicht dupliziert. Nur Artefakte, die dem Gewinner fehlen.
+function takePityArtifact(r,p){
+  const missing=shuffle(artifacts.filter(c=>!(p.artifacts||[]).includes(c.id)));
+  if(!missing.length)return null;
+  recycleRewardDeck(r);
+  for(const card of missing){
+    for(const pile of [r.rewardDeck,r.rewardDiscard]){
+      const at=pile.lastIndexOf(card.id);
+      if(at!==-1){pile.splice(at,1);return card.id;}
+    }
+  }
+  // Falls wirklich alle Kopien in anderen Auswahlen liegen, bleibt die Garantie erhalten.
+  // Die Karte wird in dieser seltenen Situation einmalig fuer die Auswahl erstellt.
+  return missing[0].id;
+}
 function beginRewardChoice(r,winnerId){
   winnerId=resolveResumedId(r,winnerId);
   const p=r.players.get(winnerId);
@@ -668,10 +685,16 @@ function beginRewardChoice(r,winnerId){
   }
 
   const candidates=[];
-  const artifactAllowed=(r.artifactRewardCooldown||0)<=0;
+  const artifactAllowed=(r.artifactRewardCooldown||0)<=0 && !r.roundFX?.artifactBlocked;
+  // Nicht jede 7. Runde: Nur nach einer Pechstraehne von 7 Runden seit dem
+  // letzten sichtbaren Artefaktangebot erzwingt die naechste moegliche Goldwahl eins.
+  // Die Sperre durch Iron Will und der normale Ein-Wahl-Cooldown bleiben gueltig.
+  const lastOffer=r.lastArtifactOfferRound||0;
+  const pityDue=artifactAllowed && r.round-lastOffer>=ARTIFACT_PITY_ROUNDS;
 
   // 2 Goldkarten, aber höchstens EIN Artefakt in derselben Auswahl.
-  const first=drawRewardCandidate(r,p,{allowArtifact:artifactAllowed});
+  const first=(pityDue?takePityArtifact(r,p):null)
+    ||drawRewardCandidate(r,p,{allowArtifact:artifactAllowed});
   if(first)candidates.push(first);
 
   const firstIsArtifact=first&&byId[first]?.type==='artifact';
@@ -680,6 +703,12 @@ function beginRewardChoice(r,winnerId){
     excludeIds:first?[first]:[]
   });
   if(second)candidates.push(second);
+
+  // Wir zaehlen das ANGEBOT, nicht erst die Wahl: Auch wenn die Special-Karte
+  // genommen wird, ist das Artefakt in dieser Runde bereits erschienen.
+  if(candidates.some(id=>byId[id]?.type==='artifact')){
+    r.lastArtifactOfferRound=r.round;
+  }
 
   if(!candidates.length){
     io.to(r.code).emit('rewardPhaseDone',{winnerId,winnerName:p.name,rewardKind:null});
@@ -814,7 +843,7 @@ function resetToLobby(r){
   r.pendingRoundWinner=null;
   r.postGameReady=new Set();r.forceNextCategoryDifferent=false;r.forcedNextCategory=null;resetRoundFX(r);
   r.watchdogTag=null;r.watchdogSince=0;r.resumedIds=Object.create(null);
-  r.normalDeck=[];r.normalDiscard=[];r.rewardDeck=[];r.rewardDiscard=[];r.pendingReward=null;r.artifactRewardCooldown=0;
+  r.normalDeck=[];r.normalDiscard=[];r.rewardDeck=[];r.rewardDiscard=[];r.pendingReward=null;r.artifactRewardCooldown=0;r.lastArtifactOfferRound=0;
   for(const p of roomPlayers(r)){
     p.hand=[];p.artifacts=[];p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.pendingForcedDiscard=null;
   }
@@ -1253,6 +1282,8 @@ function beginMatch(r){
   r.arenaSelection='random';
   const ps=roomPlayers(r);
   r.matchId=crypto.randomUUID();
+  r.lastArtifactOfferRound=0;
+  r.artifactRewardCooldown=0;
   initDecks(r);
 
   for(const p of ps){
