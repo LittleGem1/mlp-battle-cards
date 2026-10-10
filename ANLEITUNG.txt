@@ -1,20 +1,20 @@
-MLP BATTLE CARDS - KRISTALL-ANIMATION ZURUECK
+MLP BATTLE CARDS – MAJESTÄTISCHER KATEGORIE-KRISTALL
 
-Enthalten: public/style.css
+ENTHALTEN:
+- client.js
+- style.css
 
-BASIS: Letzter Anti-Flacker-Fix, erweitert um die sichtbare Kategorie-Kristall-Anzeige.
+WAS DER PATCH ÄNDERT:
+- Die alte Rundeneinblendung wird als majestätische Kristall-Animation gespielt.
+- Kein einfaches Clipart-Bild mehr.
+- Der Kristall dreht sich in 3D, leuchtet, enthüllt die gezogene Kategorie und blendet sie danach links in der Arena ein.
+- Die großen Flacker-Effekte bleiben weiterhin reduziert.
 
-EINBAU
+EINBAU:
 1. ZIP entpacken.
-2. Die enthaltene public/style.css im GitHub-Repository im Ordner public ersetzen.
-3. Commit speichern und Render-Deployment abwarten.
-4. Mit Strg+F5 aktualisieren.
-5. Im Bot-Spiel eine neue Runde starten und Kristall pruefen.
+2. In deinem Repository / Spielordner die Dateien client.js und style.css ersetzen.
+3. Änderungen speichern / hochladen.
+4. Spiel neu laden.
 
-Die bestehende client.js steuert weiterhin den 2,7-Sekunden-Drehvorgang
-und die Kategorieauswahl. Keine Aenderung an den Spielregeln.
-Grossflaechige Blinkeffekte bleiben deaktiviert.
-Wenn im Betriebssystem reduzierte Bewegung eingestellt ist, bleibt die
-Kristall-Drehung aus Ruecksicht darauf aus, die Kategorieanzeige ist sichtbar.
-
-HINWEIS: Nicht im aktiven Online-Match getestet.
+HINWEIS:
+Der Patch ist bewusst klein gehalten und ändert nur die zwei Dateien, die für die Animation nötig sind.

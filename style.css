@@ -1311,3 +1311,263 @@ body.scene-game #arenaVfx{display:block!important}
   .ready-volume-wrap{width:100%;justify-content:center}
   .ready-volume-wrap .music-volume{width:min(240px,52vw)}
 }
+
+
+/* === Majestätische Kategorie-Kristallanimation === */
+.round-intro-overlay.category-crystal-overlay{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2000000!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:18px;
+  pointer-events:none!important;
+  opacity:0;
+  visibility:hidden;
+  background:radial-gradient(circle at 50% 50%,rgba(29,48,101,.16),rgba(4,7,19,.74) 72%);
+  backdrop-filter:blur(4px);
+  transition:opacity .18s ease;
+}
+.round-intro-overlay.category-crystal-overlay.active{opacity:1;visibility:visible}
+.round-intro-overlay.category-crystal-overlay.category-strength{--cat:#ff8787;--cat-soft:rgba(255,135,135,.45);--cat-soft2:rgba(255,189,122,.28)}
+.round-intro-overlay.category-crystal-overlay.category-speed{--cat:#ffe173;--cat-soft:rgba(255,225,115,.48);--cat-soft2:rgba(255,240,177,.28)}
+.round-intro-overlay.category-crystal-overlay.category-energy{--cat:#71ffb8;--cat-soft:rgba(113,255,184,.45);--cat-soft2:rgba(118,255,240,.28)}
+.round-intro-overlay.category-crystal-overlay.category-magic{--cat:#d79cff;--cat-soft:rgba(215,156,255,.46);--cat-soft2:rgba(135,214,255,.28)}
+
+.category-crystal-stage{
+  --cat: #d79cff;
+  position:relative;
+  display:grid;
+  place-items:center;
+  width:min(520px,92vw);
+  min-height:min(520px,82vh);
+  padding:26px 28px 30px;
+  border-radius:34px;
+  overflow:hidden;
+  border:1px solid rgba(199,231,255,.18);
+  background:
+    radial-gradient(circle at 50% 32%, rgba(137,210,255,.16), transparent 24%),
+    radial-gradient(circle at 50% 70%, rgba(119,82,224,.14), transparent 35%),
+    linear-gradient(180deg, rgba(10,16,39,.92), rgba(12,16,39,.84));
+  box-shadow:0 28px 80px rgba(0,0,0,.42), inset 0 0 0 1px rgba(255,255,255,.03);
+  animation:crystalStageIn .45s ease-out both;
+}
+.category-crystal-stage::before,
+.category-crystal-stage::after{
+  content:"";
+  position:absolute;
+  border-radius:50%;
+  left:50%;
+  top:53%;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+}
+.category-crystal-stage::before{
+  width:290px;height:290px;
+  border:1px solid rgba(197,233,255,.2);
+  box-shadow:0 0 30px rgba(115,200,255,.16), inset 0 0 28px rgba(164,117,255,.08);
+  opacity:.95;
+}
+.category-crystal-stage::after{
+  width:410px;height:410px;
+  border:1px solid rgba(255,255,255,.06);
+  opacity:.45;
+}
+#roundIntroRound{
+  position:absolute;
+  top:22px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:9px 15px;
+  border-radius:999px;
+  background:rgba(12,20,43,.72);
+  border:1px solid rgba(255,255,255,.08);
+  color:#eef7ff;
+  font-weight:950;
+  letter-spacing:.2em;
+  font-size:clamp(13px,2.9vw,18px);
+  text-shadow:0 0 16px rgba(255,255,255,.12);
+}
+
+.category-crystal{
+  position:relative;
+  width:min(240px,48vw);
+  aspect-ratio:1/1.25;
+  display:grid;
+  place-items:center;
+  perspective:1200px;
+  transform-style:preserve-3d;
+  filter:drop-shadow(0 22px 28px rgba(0,0,0,.42));
+}
+.category-crystal::before,
+.category-crystal::after{
+  content:"";
+  position:absolute;
+  left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  pointer-events:none;
+}
+.category-crystal::before{
+  width:120%;height:82%;
+  border:2px solid rgba(207,234,255,.2);
+  box-shadow:0 0 35px rgba(111,200,255,.18), inset 0 0 18px rgba(208,122,255,.12);
+  opacity:.0;
+}
+.category-crystal::after{
+  width:145%;height:145%;
+  background:conic-gradient(from 0deg, transparent, var(--cat-soft), transparent, var(--cat-soft2), transparent);
+  filter:blur(10px);
+  opacity:0;
+}
+.category-crystal.crystal-running::before{animation:crystalOrbitIn .8s ease-out .25s both, crystalHaloSpin 4s linear .95s infinite}
+.category-crystal.crystal-running::after{animation:crystalAuraIn .85s ease-out .15s both, crystalAuraSpin 7s linear 1.2s infinite}
+
+.category-crystal-face,
+.category-crystal-core,
+.category-crystal-glint{position:absolute;left:50%;top:50%;transform-style:preserve-3d}
+.category-crystal-face{
+  width:118px;
+  height:174px;
+  margin-left:-59px;
+  margin-top:-87px;
+  clip-path:polygon(50% 0%, 100% 28%, 82% 100%, 18% 100%, 0% 28%);
+  background:
+    linear-gradient(140deg, rgba(255,255,255,.95) 0 7%, rgba(201,241,255,.86) 12%, rgba(133,225,255,.42) 38%, rgba(176,130,255,.32) 68%, rgba(82,152,255,.24) 100%),
+    linear-gradient(90deg, rgba(255,255,255,.18), transparent 26%, rgba(255,255,255,.08) 46%, transparent 70%, rgba(255,255,255,.22) 100%);
+  border:1px solid rgba(255,255,255,.36);
+  box-shadow:inset 0 0 28px rgba(255,255,255,.1), 0 0 24px rgba(120,208,255,.16);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  opacity:.86;
+}
+.category-crystal-face span{
+  position:absolute;
+  left:50%;top:48%;
+  transform:translate(-50%,-50%);
+  font-size:clamp(34px,8vw,54px);
+  line-height:1;
+  text-shadow:0 0 18px rgba(255,255,255,.72), 0 0 36px currentColor;
+  filter:drop-shadow(0 0 10px rgba(255,255,255,.3));
+}
+.crystal-face-strength{transform:translateZ(26px)}
+.crystal-face-speed{transform:rotateY(90deg) translateZ(26px)}
+.crystal-face-energy{transform:rotateY(180deg) translateZ(26px)}
+.crystal-face-magic{transform:rotateY(270deg) translateZ(26px)}
+
+.category-crystal-core{
+  width:60px;height:60px;
+  margin-left:-30px;margin-top:-30px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,255,.95), rgba(173,238,255,.6) 32%, rgba(184,129,255,.12) 62%, rgba(255,255,255,0) 74%);
+  filter:blur(1px);
+  opacity:.3;
+}
+.category-crystal-glint{
+  width:26px;height:26px;
+  margin-left:24px;margin-top:-66px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,255,.95), rgba(255,255,255,.0) 72%);
+  filter:blur(.4px);
+  opacity:0;
+}
+.category-crystal.crystal-running .category-crystal-face{animation:majesticCrystalTurn 2.45s cubic-bezier(.18,.75,.18,1) both}
+.category-crystal.crystal-running .category-crystal-core{animation:crystalCorePulse 1.15s ease-in-out .35s infinite alternate}
+.category-crystal.crystal-running .category-crystal-glint{animation:crystalGlintTravel 1.55s ease .42s 2}
+
+.category-crystal-result{
+  position:absolute;
+  left:50%;
+  bottom:46px;
+  transform:translateX(-50%) translateY(18px) scale(.88);
+  display:grid;
+  place-items:center;
+  gap:4px;
+  min-width:min(330px,78vw);
+  padding:18px 22px 16px;
+  border-radius:26px;
+  background:linear-gradient(180deg, rgba(12,22,47,.94), rgba(17,24,54,.94));
+  border:1px solid rgba(218,234,255,.14);
+  box-shadow:0 16px 38px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.03);
+  opacity:0;
+}
+.category-crystal-result::before{
+  content:"Nächste Kategorie";
+  display:block;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.24em;
+  color:#c9d7ff;
+  text-transform:uppercase;
+}
+.category-crystal-result b{
+  font-size:clamp(44px,9vw,58px);
+  line-height:1;
+  filter:drop-shadow(0 0 18px var(--cat));
+}
+.category-crystal-result strong{
+  font-size:clamp(26px,7vw,44px);
+  letter-spacing:.08em;
+  color:#fff;
+  text-shadow:0 0 24px rgba(255,255,255,.15);
+}
+.category-crystal-result.show{animation:crystalResultIn .56s cubic-bezier(.16,.84,.22,1) forwards}
+
+.category-crystal-hint{
+  position:absolute;
+  bottom:18px;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:clamp(12px,2.6vw,15px);
+  letter-spacing:.06em;
+  color:#d4ddff;
+  text-shadow:0 2px 10px rgba(0,0,0,.3);
+}
+
+@keyframes crystalStageIn{from{transform:translateY(16px) scale(.98);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+@keyframes crystalOrbitIn{from{opacity:0;transform:translate(-50%,-50%) scale(.5)}to{opacity:.95;transform:translate(-50%,-50%) scale(1)}}
+@keyframes crystalAuraIn{from{opacity:0;transform:translate(-50%,-50%) scale(.4) rotate(0deg)}to{opacity:.9;transform:translate(-50%,-50%) scale(1) rotate(140deg)}}
+@keyframes crystalHaloSpin{from{transform:translate(-50%,-50%) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes crystalAuraSpin{from{transform:translate(-50%,-50%) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(-360deg)}}
+@keyframes majesticCrystalTurn{
+  0%{transform:translateZ(26px) rotateX(-18deg) rotateY(0deg) scale(.48);opacity:0}
+  16%{opacity:1}
+  28%{transform:translateZ(26px) rotateX(-8deg) rotateY(180deg) scale(1.08)}
+  72%{transform:translateZ(26px) rotateX(0deg) rotateY(calc(var(--final-rotation) + 480deg)) scale(1)}
+  100%{transform:translateZ(26px) rotateX(0deg) rotateY(var(--final-rotation)) scale(1.03);opacity:1}
+}
+/* individual face compensation so all faces share the same container rotation illusion */
+.crystal-face-strength.crystal-face-strength,.crystal-face-speed.crystal-face-speed,.crystal-face-energy.crystal-face-energy,.crystal-face-magic.crystal-face-magic{animation-name:none}
+.category-crystal.crystal-running{animation:crystalWholeSpin 2.45s cubic-bezier(.18,.75,.18,1) both}
+@keyframes crystalWholeSpin{
+  0%{transform:translateY(30px) scale(.5) rotateX(-15deg) rotateY(-40deg);opacity:0}
+  18%{opacity:1}
+  36%{transform:translateY(-8px) scale(1.08) rotateX(-6deg) rotateY(180deg)}
+  74%{transform:translateY(0) scale(1) rotateX(0deg) rotateY(calc(var(--final-rotation) + 460deg))}
+  100%{transform:translateY(0) scale(1.03) rotateX(0deg) rotateY(var(--final-rotation)) ;opacity:1}
+}
+/* cancel per-face old spin override from generic block */
+.category-crystal.crystal-running .category-crystal-face{animation:none}
+@keyframes crystalCorePulse{from{opacity:.45;transform:translate(-50%,-50%) scale(.75)}to{opacity:1;transform:translate(-50%,-50%) scale(1.22)}}
+@keyframes crystalGlintTravel{0%{opacity:0;transform:translate(-10px,-16px) scale(.6)}25%{opacity:.95}100%{opacity:0;transform:translate(52px,-94px) scale(1.4)}}
+@keyframes crystalResultIn{from{opacity:0;transform:translateX(-50%) translateY(18px) scale(.88)}to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
+
+@media(max-width:720px){
+  .category-crystal-stage{width:min(96vw,420px);min-height:470px;padding:20px 12px 24px}
+  .category-crystal-stage::before{width:232px;height:232px}
+  .category-crystal-stage::after{width:330px;height:330px}
+  .category-crystal{width:min(208px,56vw)}
+  .category-crystal-face{width:98px;height:148px;margin-left:-49px;margin-top:-74px}
+  .category-crystal-result{min-width:min(290px,86vw);bottom:54px;padding:16px 16px 14px}
+}
+@media(prefers-reduced-motion:reduce){
+  .category-crystal.crystal-running,
+  .category-crystal.crystal-running::before,
+  .category-crystal.crystal-running::after,
+  .category-crystal.crystal-running .category-crystal-core,
+  .category-crystal.crystal-running .category-crystal-glint,
+  .category-crystal-result.show{
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+  }
+}

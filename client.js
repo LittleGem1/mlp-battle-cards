@@ -112,6 +112,7 @@ function buildCrystalDrift(){
   }
 }
 buildCrystalDrift();
+prepareCategoryCrystal();
 const LOBBY_SCENES=['crystal_cave'];
 let lastLobbyScene='';
 function chooseLobbyScene(){return 'crystal_cave';}
@@ -155,6 +156,24 @@ function buildArenaVfx(id){
   }
 }
 const CATEGORY_UI={strength:['🏋️','STÄRKE'],speed:['⚡','SCHNELLIGKEIT'],energy:['🔋','ENERGIE'],magic:['⭐','MAGIE']};
+const CATEGORY_CRYSTAL_ROTATION={strength:'0deg',speed:'-90deg',energy:'-180deg',magic:'-270deg'};
+function prepareCategoryCrystal(){
+  const faces=[
+    ['.crystal-face-strength','strength'],
+    ['.crystal-face-speed','speed'],
+    ['.crystal-face-energy','energy'],
+    ['.crystal-face-magic','magic']
+  ];
+  for(const [sel,key] of faces){
+    const el=$(sel+' span');
+    if(el){
+      const ui=CATEGORY_UI[key]||['✦',String(key).toUpperCase()];
+      el.textContent=ui[0];
+      el.setAttribute('aria-label',ui[1]);
+      el.title=ui[1];
+    }
+  }
+}
 
 function accessoryDecor(key){const a=ITEMS[key]||ITEMS.changeling;return `<span class="decor decor-${key}" aria-hidden="true"><img src="${a.image}" alt=""></span>`;}
 function frameDecor(key){if(!key||!FRAMES[key])return '';return `<img class="name-frame" src="${FRAMES[key].image}" alt="" aria-hidden="true">`;}
@@ -587,6 +606,7 @@ function coinSpinSound(){
 }
 function showRoundIntro(e){
   stopCountdown();
+  prepareCategoryCrystal();
   const o=$('#roundIntroOverlay');if(!o)return;
   if(roundIntroTimer){clearTimeout(roundIntroTimer);roundIntroTimer=null}
   const ui=CATEGORY_UI[e.category]||['✦',String(e.category||'KATEGORIE').toUpperCase()];
@@ -594,32 +614,43 @@ function showRoundIntro(e){
   $('#roundIntroIcon').textContent=e.icon||ui[0];
   $('#roundIntroLabel').textContent=e.label||ui[1];
 
-  // Die alte Kategorie wird bewusst ausgeblendet: auch zweimal Magie hintereinander
-  // fühlt sich dadurch eindeutig wie eine NEUE Runde an.
-  $('#categoryIcon').textContent='🪙';
-  $('#categoryText').textContent='Neue Kategorie wird gezogen …';
+  // Die alte Kategorie wird kurz verborgen, damit sich die neue Runde klar ankündigt.
+  $('#categoryIcon').textContent='💎';
+  $('#categoryText').textContent='Der Kristall wählt die nächste Kategorie …';
   $('#roundMessage').textContent='';
   clearTable();stopSelectionTimer();
 
-  o.className='round-intro-overlay category-coin-overlay active category-'+(e.category||'magic');
+  o.className='round-intro-overlay category-crystal-overlay active category-'+(e.category||'magic');
   o.setAttribute('aria-hidden','false');
-  const coin=$('#roundCategoryCoin');
-  coin?.classList.remove('coin-running');
-  void coin?.offsetWidth;
-  coin?.classList.add('coin-running');
+
+  const crystal=$('#roundCategoryCrystal');
+  const result=$('#categoryCrystalResult');
+  crystal?.classList.remove('crystal-running');
+  result?.classList.remove('show');
+  if(crystal){
+    crystal.dataset.category=e.category||'magic';
+    crystal.style.setProperty('--final-rotation',CATEGORY_CRYSTAL_ROTATION[e.category]||'-270deg');
+    void crystal.offsetWidth;
+    crystal.classList.add('crystal-running');
+  }
+  if(result){void result.offsetWidth;}
   coinSpinSound();
 
-  // Erst wenn die Münze auf der Rückseite landet, wird die neue Kategorie enthüllt.
+  setTimeout(()=>{result?.classList.add('show')},2450);
+
   setTimeout(()=>{
     $('#categoryIcon').textContent=e.icon||ui[0];
     $('#categoryText').textContent=e.label||ui[1];
     categorySound(e.category);
     const cat=$('#category');if(cat){cat.classList.remove('category-pulse');void cat.offsetWidth;cat.classList.add('category-pulse')}
-  },2050);
+  },2800);
 
   roundIntroTimer=setTimeout(()=>{
-    o.classList.remove('active');o.setAttribute('aria-hidden','true');coin?.classList.remove('coin-running');
-  },2850);
+    o.classList.remove('active');
+    o.setAttribute('aria-hidden','true');
+    crystal?.classList.remove('crystal-running');
+    result?.classList.remove('show');
+  },4300);
 }
 
 let countdownUiTimer=null,selectionUiTimer=null;
