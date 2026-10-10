@@ -1,0 +1,47 @@
+/* MLP Battle Cards V11 – keine Änderungen an Arena-Größe oder Spielmechanik. */
+/* Die alten, konkurrierenden Kristall-Ebenen bleiben unsichtbar. */
+#categoryCrystalPortal.round-crystal-portal,#roundIntroOverlay.category-crystal-overlay,#mlpCrystalV6,#mlpCrystalV10{display:none!important}
+#mlpCrystalV11{position:fixed!important;inset:0!important;z-index:2147483600!important;display:grid!important;place-items:center!important;opacity:0;visibility:hidden;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,rgba(32,34,88,.25),rgba(5,6,21,.8) 80%);transition:opacity .2s ease,visibility .2s ease;color:#f9f8ff;font-family:inherit}
+#mlpCrystalV11.v11-open{opacity:1!important;visibility:visible!important}
+#mlpCrystalV11 *{box-sizing:border-box}
+#mlpCrystalV11 .v11-box{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;width:min(450px,90vw);height:min(430px,90dvh);border:1px solid #d9c7ff88;border-radius:26px;background:linear-gradient(155deg,rgba(11,19,53,.97),rgba(25,16,61,.96));box-shadow:0 22px 55px #0009,0 0 35px #a275ff33 inset;text-align:center;padding:14px}
+#mlpCrystalV11 .v11-title{font-size:clamp(18px,3vw,25px);font-weight:900;letter-spacing:.14em;text-shadow:0 0 15px #d5a5ff88}
+#mlpCrystalV11 .v11-box>small{font-size:clamp(10px,1.5vw,13px);font-weight:800;letter-spacing:.08em;color:#d2e5ff}
+#mlpCrystalV11 .v11-magic-circle{position:relative;width:min(235px,52vw);height:min(260px,49dvh);display:grid;place-items:center;perspective:900px;flex-shrink:1}
+#mlpCrystalV11 .v11-ring{position:absolute;inset:9% 2%;border-radius:50%;border:2px solid #afddff66;box-shadow:0 0 24px #87cfff44,inset 0 0 28px #a568eb44;animation:v11Orbit 4.6s linear infinite}
+#mlpCrystalV11 .v11-ring:after{content:'✦';position:absolute;top:-12px;left:50%;color:#fff1c3;font-size:23px;text-shadow:0 0 20px #bb8cff}
+#mlpCrystalV11 .v11-gem{position:relative;width:min(132px,30vw);height:min(195px,38dvh);min-height:110px;clip-path:polygon(50% 0,82% 15%,100% 39%,88% 73%,50% 100%,12% 73%,0 39%,18% 15%);background:linear-gradient(120deg,#f1ffff,#97dcff 25%,#d4a6ff 49%,#60399c 67%,#d1f0ff);box-shadow:inset 11px 14px 20px #fff9,inset -17px -11px 25px #150b5b99;filter:drop-shadow(0 0 12px #bdacff);border:2px solid #f1efffaa}
+#mlpCrystalV11.v11-open .v11-gem{animation:v11GemSpin 2.4s cubic-bezier(.12,.75,.2,1) both}
+#mlpCrystalV11 .v11-gem i{position:absolute;inset:0;opacity:.65}
+#mlpCrystalV11 .v11-gem i:nth-child(1){background:#fff9;clip-path:polygon(50% 0,100% 39%,56% 52%)}
+#mlpCrystalV11 .v11-gem i:nth-child(2){background:#4d219c88;clip-path:polygon(56% 52%,100% 39%,50% 100%)}
+#mlpCrystalV11 .v11-gem i:nth-child(3){background:#6ddcffaa;clip-path:polygon(0 39%,44% 52%,50% 100%)}
+#mlpCrystalV11 .v11-gem i:nth-child(4){background:#e6d4ffaa;clip-path:polygon(50% 0,44% 52%,56% 52%,50% 100%)}
+#mlpCrystalV11 .v11-result{display:flex;align-items:center;justify-content:center;gap:14px;border:1px solid #ffdea188;border-radius:999px;padding:8px 20px;font-size:clamp(22px,4vw,31px);font-weight:900;color:#fff0c4;background:#201b58;opacity:0;transform:translateY(8px);transition:opacity .25s ease,transform .25s ease}
+#mlpCrystalV11 .v11-result.revealed{opacity:1;transform:translateY(0)}
+@keyframes v11Orbit{from{transform:rotate(-18deg)}to{transform:rotate(342deg)}}
+@keyframes v11GemSpin{0%{opacity:0;transform:translateY(48px) rotateY(-40deg) scale(.55)}20%{opacity:1}66%{transform:translateY(-8px) rotateY(890deg) scale(1.06)}100%{opacity:1;transform:translateY(0) rotateY(1440deg) scale(1)}}
+/* Permanentes kleines Symbol direkt im Kategorie-HUD, nicht über den Handkarten. */
+#game #category #mlpCrystalV11Badge{display:none;position:absolute!important;left:calc(100% + 5px)!important;top:50%!important;transform:translateY(-50%)!important;width:34px;height:44px;place-items:center;background:#12173edc;border:1px solid #b3ddff77;border-radius:10px;box-shadow:0 0 12px #a6a0ff66;z-index:35!important;pointer-events:none}
+#mlpCrystalV11Badge .v11-mini-gem{width:18px;height:25px;clip-path:polygon(50% 0,98% 40%,79% 80%,50% 100%,20% 80%,2% 40%);background:linear-gradient(120deg,#e9fdff,#8ad9ff,#9468e9,#f5fbff);box-shadow:0 0 11px #b3a0ff;animation:v11MiniSpin 4s ease-in-out infinite}
+#mlpCrystalV11Badge .v11-mini-caption{font-size:5px;font-weight:900;letter-spacing:.08em;color:#eef6ff}
+@keyframes v11MiniSpin{0%,100%{transform:rotateY(0)}50%{transform:rotateY(180deg)}}
+/* Eigenes Karten-Aktionsfeld, das NICHT in der am unteren Rand abgeschnittenen Hand liegt. */
+#mlpV11SpecialDock{box-sizing:border-box;position:fixed!important;z-index:850!important;display:none;flex-direction:column;gap:5px;padding:9px 10px;border:1px solid #ffd59b9c;border-radius:14px;background:linear-gradient(145deg,rgba(26,17,65,.97),rgba(10,16,46,.98));box-shadow:0 10px 25px #000b,0 0 17px #ab72ef77;pointer-events:auto;color:#fff;font-family:inherit}
+#mlpV11SpecialDock.visible{display:flex!important}
+#mlpV11SpecialDock .v11-dock-title{font-size:12px;line-height:1.1;color:#ffe5a4;text-align:center}
+#mlpV11SpecialDock .v11-dock-desc{font-size:10px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:#e5efff;text-align:center}
+#mlpV11SpecialDock .v11-dock-buttons{display:flex;gap:5px;align-items:stretch}
+#mlpV11SpecialDock button{min-height:33px;flex:1;border-radius:8px;font-size:12px;font-weight:900;cursor:pointer;border:1px solid #aec7ff77;color:#fff;background:#293666;padding:5px 6px}
+#mlpV11SpecialDock button.v11-use{background:linear-gradient(120deg,#7448de,#bf3dc8);border-color:#efb5ff}
+#mlpV11SpecialDock button:disabled{opacity:.48;cursor:not-allowed}
+body.scene-game #game .arena>#hand .hand-card.special .special-actions{display:none!important}
+body.scene-game #game .arena>#hand .hand-card.special .special-text-strip{display:none!important}
+body.scene-game #game .arena>#hand .hand-card.special>img{max-height:calc(var(--mlp-hand-h) - 8px)!important}
+body.scene-game #game .arena>#hand .hand-card.special.v11-chosen{filter:drop-shadow(0 0 10px #c894ff99)!important}
+/* Test-Vermerk nur über ?kristalltest=1 */
+#mlpV11Test{position:fixed;left:10px;top:10px;z-index:2147483640;border-radius:10px;background:#113843;color:#fff;border:1px solid #5de6c9;font:800 12px system-ui;padding:8px 10px;display:flex;gap:8px;align-items:center}
+#mlpV11Test button{border:1px solid #b5a4fa;background:#53349b;color:#fff;border-radius:7px;padding:5px;cursor:pointer}
+@media(max-height:600px){#mlpCrystalV11 .v11-box{height:min(355px,92dvh)}#mlpCrystalV11 .v11-magic-circle{height:min(195px,44dvh)}#mlpCrystalV11 .v11-gem{height:min(139px,28dvh)} }
+@media(max-width:650px){#mlpV11SpecialDock .v11-dock-desc{font-size:9px}#mlpV11SpecialDock button{font-size:11px}}
+@media(prefers-reduced-motion:reduce){#mlpCrystalV11 .v11-gem,#mlpCrystalV11 .v11-ring,#mlpCrystalV11Badge .v11-mini-gem{animation-duration:.01ms!important;animation-iteration-count:1!important}}
