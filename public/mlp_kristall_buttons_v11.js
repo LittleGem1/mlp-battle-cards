@@ -95,11 +95,15 @@
     const originalRead=selectedCard.querySelector('.special-actions .special-read');
     node.querySelector('.v11-use').disabled=!!(!originalUse||originalUse.disabled);
     node.querySelector('.v11-read').disabled=!originalRead;
-    const width=Math.min(240, Math.max(160,innerWidth-14));
-    const x=Math.min(Math.max(ref.left+ref.width/2-width/2,8),Math.max(8,innerWidth-width-8));
-    // Die Steuerung steht ÜBER der Kartenhand statt unterhalb des Viewports.
-    const desiredTop=ref.top-110;
-    const y=Math.max(55, Math.min(desiredTop,innerHeight-118));
+    // Kompaktes Bedienfeld direkt UNTER der gewählten Spezialkarte.
+    const width=Math.min(150, Math.max(118, ref.width + 8));
+    const x=Math.min(Math.max(ref.left + ref.width/2 - width/2, 6), Math.max(6, innerWidth - width - 6));
+    let y=ref.bottom + 6;
+    const estimatedHeight=96;
+    // Falls unten kein Platz ist, ausnahmsweise knapp über die Karte setzen.
+    if(y + estimatedHeight > innerHeight - 6){
+      y=Math.max(52, ref.top - estimatedHeight - 6);
+    }
     node.style.left=Math.round(x)+'px';node.style.top=Math.round(y)+'px';node.style.width=width+'px';
     node.classList.add('visible');
     for(const c of cards)c.classList.toggle('v11-chosen',c===selectedCard);
