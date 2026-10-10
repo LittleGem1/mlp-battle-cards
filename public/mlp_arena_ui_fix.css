@@ -1,0 +1,40 @@
+/* ===== 10.10.2026: Kategorie-Kristall (ruhig, majestätisch) ===== */
+#categoryCrystalPortal.round-crystal-portal.active{opacity:1!important;visibility:visible!important}
+#categoryCrystalPortal .round-crystal-box{position:relative;width:min(540px,94vw);gap:7px;padding:16px 18px 20px;border-radius:26px;background:linear-gradient(180deg,rgba(17,25,63,.82),rgba(13,15,48,.92));border:1px solid rgba(222,237,255,.2);box-shadow:0 26px 80px rgba(0,0,0,.45),inset 0 0 36px rgba(138,88,255,.1)}
+#categoryCrystalPortal .round-crystal-round{font-size:clamp(17px,3vw,25px);letter-spacing:.18em;color:#f6f1ff}
+#categoryCrystalPortal .round-crystal-kicker{display:block;font-size:clamp(10px,2vw,12px);font-weight:900;letter-spacing:.2em;color:#bfeaff;text-align:center}
+#categoryCrystalPortal .battle-crystal-wrap{position:relative;width:min(315px,72vw);height:min(350px,60vh);perspective:1200px;isolation:isolate;overflow:visible}
+#categoryCrystalPortal .battle-crystal-halo{position:absolute;left:50%;top:50%;width:68%;height:74%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(ellipse,rgba(214,180,255,.34),rgba(116,169,255,.16) 45%,transparent 74%);filter:blur(19px);z-index:0}
+#categoryCrystalPortal .battle-crystal-orbit{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(0);border-radius:50%;pointer-events:none;z-index:1}
+#categoryCrystalPortal .orbit-a{width:94%;height:81%;border:2px solid rgba(190,223,255,.32);box-shadow:0 0 25px rgba(128,186,255,.15),inset 0 0 22px rgba(191,127,255,.1);animation:crystalRingGentle 7s linear infinite}
+#categoryCrystalPortal .orbit-b{width:115%;height:92%;border:1px dashed rgba(211,181,255,.23);animation:crystalRingReverse 9s linear infinite}
+#categoryCrystalPortal .orbit-a i{position:absolute;font-style:normal;color:#d8f1ff;font-size:24px;text-shadow:0 0 14px rgba(160,220,255,.45)}
+#categoryCrystalPortal .orbit-a i:nth-child(1){left:47%;top:-19px}
+#categoryCrystalPortal .orbit-a i:nth-child(2){right:-10px;top:45%}
+#categoryCrystalPortal .orbit-a i:nth-child(3){left:47%;bottom:-19px}
+#categoryCrystalPortal .orbit-a i:nth-child(4){left:-10px;top:45%}
+#categoryCrystalPortal .battle-crystal{z-index:2;width:min(195px,48vw);height:min(294px,51vh);background:
+ linear-gradient(142deg,rgba(255,255,255,.94) 0%,rgba(241,250,255,.87) 9%,rgba(125,216,248,.6) 18%,rgba(123,79,231,.65) 40%,rgba(54,29,137,.96) 62%,rgba(176,103,252,.67) 80%,rgba(239,243,255,.88) 100%),
+ linear-gradient(35deg,#63b6fa,#4a208e 42%,#cc8fff 75%,#dffaff);
+ box-shadow:inset 15px 0 24px rgba(255,255,255,.26),inset -23px -15px 32px rgba(30,11,93,.58),0 0 30px rgba(160,102,255,.32),0 0 62px rgba(80,166,255,.14)}
+#categoryCrystalPortal .battle-crystal .facet{opacity:.66;border-color:rgba(255,255,255,.48)}
+#categoryCrystalPortal .battle-crystal.spinning{animation:battleCrystalSpin 2.72s cubic-bezier(.12,.75,.12,1) both!important}
+#categoryCrystalPortal .round-crystal-result{background:linear-gradient(180deg,rgba(40,21,90,.94),rgba(11,20,57,.94));border:1px solid rgba(245,204,124,.55);box-shadow:0 0 28px rgba(160,130,255,.3);color:#fff4c9}
+#categoryCrystalPortal .round-crystal-result.show{opacity:1!important;transform:translateY(0) scale(1)!important}
+@keyframes crystalRingGentle{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes crystalRingReverse{to{transform:translate(-50%,-50%) rotate(-360deg)}}
+@media(prefers-reduced-motion:reduce){#categoryCrystalPortal .battle-crystal-orbit{animation:none!important}#categoryCrystalPortal .battle-crystal.spinning{animation-duration:.01ms!important}}
+
+/* ===== Ziehstapel und Artefakte: keine Überlagerung ===== */
+body .deck-hud.mlp-decks-fixed{position:fixed!important;inset:0!important;z-index:71!important;pointer-events:none!important;display:none!important;width:0!important;height:0!important}
+body.scene-game .deck-hud.mlp-decks-fixed.hud-visible{display:block!important}
+body .deck-hud.mlp-decks-fixed .deck-pile{position:fixed!important;display:flex!important;gap:7px!important;align-items:center!important;padding:6px 9px!important;transform:none!important;z-index:72!important;max-width:168px!important;min-width:118px!important;visibility:visible!important;opacity:1!important;white-space:nowrap!important;pointer-events:none!important;box-shadow:0 6px 22px rgba(0,0,0,.48)!important}
+body .deck-hud.mlp-decks-fixed .deck-pile img{width:38px!important;height:54px!important;flex:0 0 auto!important}
+body .deck-hud.mlp-decks-fixed .deck-pile span{display:grid!important;gap:2px!important;min-width:0!important;white-space:nowrap!important}
+body .deck-hud.mlp-decks-fixed .deck-pile strong{font-size:10px!important;letter-spacing:.05em!important;white-space:nowrap!important}
+body .deck-hud.mlp-decks-fixed .deck-pile small{font-size:11px!important;opacity:1!important}
+body #game.screen.active .arena #artifactShelf.artifact-shelf{position:fixed!important;transform:none!important;z-index:70!important;visibility:visible!important;opacity:1!important;max-width:calc(100vw - 16px)!important;padding:8px!important;box-sizing:border-box!important}
+body #game.screen.active .arena #artifactShelf .artifact-shelf-slots{display:grid!important;grid-template-columns:1fr!important;gap:5px!important}
+body #game.screen.active .arena #artifactShelf .artifact-slot{min-height:35px!important;height:auto!important;padding:4px!important}
+body #game.screen.active .arena #artifactShelf .artifact-slot small{font-size:9px!important;line-height:1.13!important}
+@media(max-width:660px){body .deck-hud.mlp-decks-fixed .deck-pile{min-width:106px!important;padding:5px!important}body .deck-hud.mlp-decks-fixed .deck-pile img{width:33px!important;height:46px!important}body .deck-hud.mlp-decks-fixed .deck-pile strong{font-size:9px!important}body #game.screen.active .arena #artifactShelf .artifact-slot small{font-size:8px!important}}

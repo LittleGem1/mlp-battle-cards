@@ -1,0 +1,25 @@
+MLP Battle Cards – Sicheres Arena-Update
+
+Dateien aus der ZIP bitte in den GitHub-Ordner public/ hochladen.
+
+1. public/index.html ersetzen (nur zwei Ladezeilen ergänzt).
+2. public/mlp_arena_ui_fix.css hinzufügen.
+3. public/mlp_arena_ui_fix.js hinzufügen.
+
+WICHTIG:
+- client.js, style.css und server.js NICHT ersetzen.
+- Alle bestehenden Karten, Artefakte, Spielregeln und Sounds bleiben unangetastet.
+- Kategorie-Kristall bekommt eine Sichtbarkeits-Reparatur (wenn die bestehende Animation
+  läuft, greift der Zusatz nicht in die laufende Animation ein).
+- Normalstapel links vollständig lesbar; Goldstapel rechts UNTER der Artefaktliste.
+- Die Artefaktliste sitzt rechts etwas tiefer.
+- Fenstergrößenwechsel werden berücksichtigt.
+
+Danach GitHub committen, Render abwarten, mit Strg+F5 neu laden.
+Eine vollständig durchgespielte Multiplayer-Partie konnte hier nicht getestet werden.
+
+Falls die GitHub-index.html neuer als die damals hochgeladene Spiel-ZIP ist:
+Bitte statt der kompletten index.html nur diese zwei Ladezeilen ergänzen,
+die CSS-Zeile im <head>, die JS-Zeile NACH der vorhandenen client.js:
+<link rel="stylesheet" href="/mlp_arena_ui_fix.css?v=20261010-v2" />
+<script src="/mlp_arena_ui_fix.js?v=20261010-v2"></script>
