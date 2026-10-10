@@ -1,38 +1,39 @@
-MLP BATTLE CARDS – KARTEN-UPDATE MIT BECKY BAT
-=================================================
+MLP BATTLE CARDS – WUERFEL LINKS UNTER DIE KATEGORIE (V2)
+=========================================================
 
-Enthalten:
-- 8 gezielt vereinheitlichte Kartenbilder (Maße und sichtbare schwarze/überstehende Ränder)
-- 1 neue Karte: 107_Becky_Bat.webp
-- cards.js mit genau EINEM neuen normalen Karteneintrag und minimaler Bildpfad-/Cache-Anpassung
-- VORSCHAU.png zur Kontrolle
+WAS WIRD GEÄNDERT?
+- Der GESAMTE Würfelbereich (#diceZone) sitzt links direkt UNTER
+  der Kategorie (Stärke / Schnelligkeit / Energie / Magie).
+- Sowohl der Button „Würfeln“ als auch die Würfelergebnisse.
+- Kein Umbau des Spiels, keine Änderung an JavaScript,
+  Würfelmechanik, Karten, Kristall, Arenen oder Artefakten.
+- Auch der alte Positions-Patch kann stehen bleiben:
+  diese neue Ergänzung überschreibt seine Würfel-Position.
 
-BECKY BAT
-Name: Becky Bat
-Stärke: 6
-Schnelligkeit: 8
-Magie: 3
-Energie: 6
-Kartentyp: Normal (keine Spezialfähigkeit)
-
-EINBAU AUF GITHUB
-1. ZIP auf dem Computer ENTpacken (nicht die ZIP selbst im Repository hochladen).
-2. In deinem GitHub-Repository die Datei cards.js im HAUPTORDNER ersetzen.
-3. Im Repository public/assets/cards/ die enthaltenen gleichnamigen WEBP-Dateien ersetzen.
-4. Im Repository public/assets/cards_new/ die enthaltenen gleichnamigen WEBP-Dateien ersetzen bzw. 107_Becky_Bat.webp neu hinzufügen.
-5. Änderungen committen; Render nach dem Deploy öffnen und Browser hart neu laden (Strg+Umschalt+R).
-6. Becky Bat erscheint als normale Karte im Ziehstapel, nicht als Spezialkarte. Ihr Bild ist unter public/assets/cards_new/107_Becky_Bat.webp gespeichert.
+EINBAU ÜBER GITHUB
+1. Die Datei MLP_Wuerfel_LINKS_UNTER_KATEGORIE_V2.css öffnen.
+2. Im GitHub-Repository public/style.css öffnen.
+3. Datei bearbeiten (Stiftsymbol).
+4. DEN GESAMTEN INHALT der neuen CSS-Datei GANZ UNTEN
+   in public/style.css einfügen, NICHT den bisherigen Inhalt löschen.
+5. Commit changes / Änderungen speichern.
+6. Nach dem Render-Deployment im Browser Strg + F5 drücken.
+7. Eine Gleichstand-Runde testen. Erst dann zeigt das Spiel
+   den Würfelbereich an – außerhalb eines Gleichstands ist er leer.
 
 WICHTIG
-Die Dateien enthalten nur Änderungen an Kartenbildern und cards.js. Bestehende Effekte, Artefakte, Animationen und die Zugmechanik werden nicht verändert. cards.js beruht auf der Projektdatei aus der vorliegenden Sicherung mlp-battle-cards-main.zip. Falls du cards.js seitdem separat verändert hast, vergleiche die Änderungen vor dem Ersetzen, damit neuere Anpassungen erhalten bleiben.
+Die neue CSS-Datei NICHT bloß ins Repository hochladen:
+Sie muss an die bestehende public/style.css angehängt werden,
+da index.html nur diese Stylesheet-Datei lädt.
 
-GEAENDERTE BILDER
-- 43: Photo Finish – Seitlichen überstehenden Bereich entfernt
-- 44: Sapphire Shores – Rechten schwarzen Rand entfernt
-- 51: Derpy Hooves – Unteren schwarzen Balken entfernt
-- 52: Doctor Hooves – Unteren schwarzen Balken entfernt
-- 53: Minuette – Unteren schwarzen Balken entfernt
-- 56: Soarin – Unteren schwarzen Balken entfernt
-- 58: Lightning Dust – Unteren schwarzen Balken entfernt
-- 105: Lyra – Schmale schwarze Außenkanten entfernt
-- 107: Becky Bat – neu hinzugefügt, Bildrand der Kartennorm angepasst
+WARUM DER ERSTE PATCH NICHT GEREICHT HAT
+Er verschob nur .roll-trigger (den Button). Der neue Patch setzt
+#diceZone (den gesamten Würfelbereich) unter #category.
+Das Spiel erstellt den Inhalt von #diceZone bei Gleichstand dynamisch.
+
+PRÜFUNG
+Layout mit der CSS-Version aus dem bereitgestellten Spielprojekt
+im Chromium-Browser getestet (1152, 900 und 400 Pixel Breite).
+Die linke Kante des Würfelbereichs folgt genau der Kategorie,
+mit 7–9 Pixel Abstand darunter.
+Eine Live-Multiplayer-Partie wurde nicht durchgeführt.
