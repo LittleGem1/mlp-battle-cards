@@ -26,7 +26,7 @@
       <div class="hostcard-panel">
         <div class="hostcard-heading">
           <div><span class="hostcard-eyebrow">👑 NUR FÜR DEN HOST</span><h2>🃏 Kartengalerie</h2>
-            <p>Die echten Kartenbilder und Werte aus dieser Spielversion – reine Vorschau.</p></div>
+            <p>Die Karten der laufenden Spielversion. Neue Bilder erscheinen nach dem GitHub-/Render-Deploy automatisch; nicht eingetragene Karten werden als Vorschau markiert.</p></div>
           <button id="hostcardClose" class="hostcard-close" type="button" aria-label="Galerie schließen">✕</button>
         </div>
         <div class="hostcard-toolbar">
@@ -75,7 +75,7 @@
     const backUrl = card => card.type === 'normal' ? '/assets/card_back.webp' : '/assets/special_back_gold.png';
     const titleType = type => type === 'normal' ? 'Normale Karte' : type === 'special' ? 'Special-Karte' : 'Artefakt';
     const clean = val => String(val == null ? '' : val).trim();
-    const safeImage = val => /^\/assets\/[a-z0-9_./-]+$/i.test(clean(val)) ? val : fallbackBack;
+    const safeImage = val => /^\/assets\/[a-z0-9_./-]+(?:\?v=[a-z0-9_-]+)?$/i.test(clean(val)) ? val : fallbackBack;
     function makeImg(card, large) {
       const img = document.createElement('img');
       img.src = safeImage(card.image);
@@ -113,7 +113,7 @@
       const big = $('#hostcardBigImage');
       big.src = showBack ? backUrl(card) : safeImage(card.image);
       big.alt = (showBack ? 'Rückseite: ' : 'Vorderseite: ') + card.name;
-      $('#hostcardKind').textContent = titleType(card.type);
+      $('#hostcardKind').textContent = titleType(card.type) + (card.previewOnly ? ' · nur Bildvorschau' : '');
       $('#hostcardName').textContent = card.name;
       $('#hostcardStats').replaceChildren();
       if (card.type === 'normal') {
@@ -124,7 +124,7 @@
           $('#hostcardStats').appendChild(stat);
         });
       }
-      $('#hostcardEffect').textContent = card.type === 'special' ? `${card.useIcon || '✨'} ${card.useLabel || 'Spezialeffekt'}: ${card.text || ''}`
+      $('#hostcardEffect').textContent = card.previewOnly ? 'Dieses Kartenbild ist bereits hochgeladen und erscheint automatisch hier. Um die Karte im Spiel ziehen zu können, müssen Name und Werte noch in cards.js eingetragen werden.' : card.type === 'special' ? `${card.useIcon || '✨'} ${card.useLabel || 'Spezialeffekt'}: ${card.text || ''}`
         : card.type === 'artifact' ? 'Sammelartefakt – eines von drei Artefakten für das Siegziel.' : 'Normale Kampfkarte';
       $('#hostcardFlip').textContent = showBack ? '↺ Vorderseite ansehen' : '↺ Rückseite ansehen';
       const current = visible.findIndex(c => c.id === selectedId);
@@ -149,10 +149,10 @@
         btn.type = 'button';
         btn.className = 'hostcard-thumb';
         btn.dataset.cardId = card.id;
-        btn.setAttribute('aria-label', `${card.name} ansehen`);
+        btn.setAttribute('aria-label', `${card.name} ansehen${card.previewOnly ? ' (nur Vorschau)' : ''}`);
         const img = makeImg(card, false);
         const label = document.createElement('span');
-        label.textContent = card.name;
+        label.textContent = card.name + (card.previewOnly ? ' · Vorschau' : '');
         btn.append(img, label);
         btn.addEventListener('click', () => selectCard(card));
         fragment.appendChild(btn);
@@ -163,10 +163,9 @@
     function requestGallery() {
       if (!isHostInLobby()) return;
       if (!dialog.open) dialog.showModal();
-      if (!loaded) {
-        $('#hostcardCount').textContent = 'Lade echte Spielkarten …';
-        socket.emit('hostCardGalleryRequest');
-      } else renderGrid();
+      loaded = false;
+      $('#hostcardCount').textContent = 'Aktualisiere Karten aus dem Spiel …';
+      socket.emit('hostCardGalleryRequest');
     }
     openBtn.addEventListener('click', requestGallery);
     $('#hostcardClose').addEventListener('click', () => dialog.close());
@@ -187,7 +186,7 @@
     $('#hostcardNext').addEventListener('click', () => { const n = visible.findIndex(c => c.id === selectedId); if (n >= 0 && n < visible.length - 1) selectCard(visible[n + 1]); });
     socket.on('hostCardGalleryData', payload => {
       if (!isHostInLobby()) return;
-      cards = Array.isArray(payload?.cards) ? payload.cards.filter(c => c && ['normal', 'special', 'artifact'].includes(c.type) && c.id && c.name).slice(0, 500) : [];
+      cards = Array.isArray(payload?.cards) ? payload.cards.filter(c => c && ['normal', 'special', 'artifact'].includes(c.type) && c.id && c.name).slice(0, 1000) : [];
       loaded = true;
       renderGrid();
     });

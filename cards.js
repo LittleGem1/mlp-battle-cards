@@ -71,7 +71,8 @@ const normal = [
   [103,'Lili',8,8,3,6],
   [104,'Lucky Lucy',8,8,3,5],
   [105,'Lyra',6,7,8,6],
-  [106,'Ruby Blood',3,8,8,5]
+  [106,'Ruby Blood',3,8,8,5],
+  [107,'Becky Bat',6,8,3,6]
 ].map(([n,name,strength,speed,magic,energy]) => ({
   id:`n${String(n).padStart(2,'0')}`,
   type:'normal',
@@ -80,7 +81,7 @@ const normal = [
   speed,
   magic,
   energy,
-  image:n===17?'/assets/cards_fixes/17_Cozy_Glow.webp':n>=94&&n<=106?`/assets/cards_new/${String(n).padStart(3,'0')}_${name.replaceAll(' ','_')}.webp`:`/assets/cards/${String(n).padStart(2,'0')}_${name.replaceAll(' ','_')}.webp`
+  image:(n===17?'/assets/cards_fixes/17_Cozy_Glow.webp':n>=94&&n<=107?`/assets/cards_new/${String(n).padStart(3,'0')}_${name.replaceAll(' ','_')}.webp`:`/assets/cards/${String(n).padStart(2,'0')}_${name.replaceAll(' ','_')}.webp`) + ([1,43,44,51,52,53,56,58,94,95,96,97,98,99,100,101,102,103,104,105,106,107].includes(n)?'?v=kartenQA20261010':'')
 }));
 
 const specials = [

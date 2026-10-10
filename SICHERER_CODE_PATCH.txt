@@ -1,0 +1,51 @@
+SICHERER CODE-PATCH – IMMER AUF DIE AKTUELLE DATEI ANWENDEN
+===========================================================
+
+1) cards.js (Hauptordner)
+   Suche am Ende der normalen Karten nach:
+
+     [106,'Ruby Blood',3,8,8,5]
+
+   Ersetze die Zeile mit:
+
+     [106,'Ruby Blood',3,8,8,5],
+     [107,'Becky Bat',6,8,3,6]
+
+   Suche im selben File nach:
+
+     n>=94&&n<=106
+
+   Ersetze durch:
+
+     n>=94&&n<=107
+
+   Falls hier bereits 107 oder eine größere Obergrenze steht,
+   diese NICHT wieder herabsetzen. Wenn Becky Bat schon drinsteht,
+   bitte NICHT ein zweites Mal eintragen.
+
+2) server.js (Hauptordner)
+   Suche IM Event:
+
+     socket.on('hostCardGalleryRequest',()=>{
+
+   die Stelle, die cardsForHost aus [...normal,...specials,...artifacts]
+   erzeugt. Ersetze NUR diesen Abschnitt, nicht das ganze Event.
+   Neu sollen dort diese beiden Zeilen stehen:
+
+     const {galleryCards}=require('./host_gallery_autocatalog');
+     socket.emit('hostCardGalleryData',{cards:galleryCards(normal,specials,artifacts)});
+
+   Die vorherigen 3 Zeilen mit "const fields=...", "const cardsForHost=..."
+   und "socket.emit(...cardsForHost...)" müssen entfernt werden.
+   Die Host-Sicherheitsprüfung VOR diesen Zeilen MUSS erhalten bleiben!
+
+3) public/host_card_gallery.js
+   Datei durch die aus der ZIP ersetzen. Host-Galerie wird nun bei jedem
+   Öffnen neu angefordert. Außerdem sind "?v=..." Bildpfade zugelassen.
+
+4) Neue Datei host_gallery_autocatalog.js im Hauptordner hochladen.
+   Nur server.js nutzt sie; NICHT in public/ ablegen.
+
+5) Kartenbild: public/assets/cards_new/107_Becky_Bat.webp hochladen.
+
+KEINE ÄNDERUNGEN AN client.js, style.css, index.html, WÜRFEL ODER SOUNDS.

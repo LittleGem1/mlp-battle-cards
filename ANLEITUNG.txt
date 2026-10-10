@@ -1,52 +1,66 @@
-MLP BATTLE CARDS – V12: SPECIAL-HOVER UND KRISTALLTON
-===================================================
+MLP BATTLE CARDS – BECKY BAT + AUTOMATISCHE HOST-KARTENGALERIE V2
+=======================================================================
 
-ZIEL:
-1. Das V11-Bedienfeld über/an Special-Karten bleibt am PC verborgen,
-   bis du mit dem Mauszeiger über die passende Spezialkarte gehst.
-   Bei Mausverlassen verschwindet es; auf Touchgeräten bleibt es bedienbar.
-   Lesen/Ausspielen nutzen weiter die originalen Aktionen.
-2. Während die große Kristall-V11-Animation dreht, wird ein eigener
-   ca. 2,7 s langer Klang abgespielt. Der Ton endet beim Anzeigen
-   der Kategorie; keine Änderung an Spielmechanik oder Kristallgrafik.
+NEU:
+- Becky Bat ist eine SPIELBARE normale Karte: Stärke 6, Schnelligkeit 8,
+  Magie 3, Energie 6. ID 107, Bild: public/assets/cards_new/107_Becky_Bat.webp
+- Die bestehende Host-Kartengalerie fragt den Server bei JEDEM Öffnen neu.
+- Im Server werden ZUSÄTZLICH automatisch Bilder aus diesen Ordnern erkannt:
+  public/assets/cards/, cards_new/, specials/, specials_new/, artifacts/
+- Bilder, die nur hochgeladen sind, aber noch keinen Eintrag in cards.js haben,
+  werden als "nur Bildvorschau" angezeigt – noch NICHT im Spiel gezogen!
+- Bereits in cards.js registrierte Karten bekommen weiterhin die echten
+  Stats/Effekte, und die Galerie zeigt exakt ihre Spielbilder an.
+- Die bestehende Host-Berechtigung bleibt serverseitig erhalten.
 
-EINBAU (GITHUB)
-1. Dieses ZIP entpacken.
-2. In deinen GitHub-Ordner public/ hochladen:
-     mlp_special_hover_kristallton_v12.css    (NEU)
-     mlp_special_hover_kristallton_v12.js     (NEU)
-3. Datei in den Ordner public/assets/sounds/ hochladen:
-     mlp_kristall_drehung_v12.mp3              (NEU)
-4. Diese EINZIGE bestehende Datei aktualisieren: public/index.html.
-   Wenn du seit der V11-Installation keine eigene Änderung an index.html
-   gemacht hast, kannst du die beigelegte index.html verwenden.
-   Sicherer ist, nur die zwei nachfolgenden Zeilen einzufügen.
-   VOR </head> (nach ALLEN anderen Stylesheets):
-     <link rel="stylesheet" href="/mlp_special_hover_kristallton_v12.css?v=20261010-v12" />
-   VOR </body> (NACH mlp_kristall_buttons_v11.js):
-     <script src="/mlp_special_hover_kristallton_v12.js?v=20261010-v12"></script>
-5. Commit changes, Render-Deploy abwarten und Browser mit Strg+F5
-   neu laden.
+WICHTIG – ZU NEUEN KARTEN:
+  Neue Bilder z.B. public/assets/cards_new/108_Mein_Pony.webp in GitHub
+  hochladen -> GitHub Commit -> erfolgreichen Render-Deploy abwarten ->
+  Lobby als Host neu öffnen -> Galerie erkennt das Bild AUTOMATISCH.
+  Damit die neue Karte AUCH SPIELBAR wird, brauchst du weiterhin einen
+  passenden Eintrag in cards.js, weil das Spiel Name und vier Werte
+  nicht zuverlässig aus einer Bilddatei erkennen kann.
+  Ein neuer Commit/Deploy ist notwendig: nur lokal auf deinem Computer
+  abgelegte Dateien kann die Live-Webseite nicht sehen.
 
-TEST
-https://mlp-battle-cards.onrender.com/?fixcheck=1
-Oben links MUSS „V12 geladen“ stehen. Auf „Kristallton testen“
-klicken; nach dem Klick sollte ein Ton hörbar sein. Danach
-Spiel starten und eine neue Kategorie abwarten.
-Auf dem PC sollte das V11-Special-Feld nur bei Mouseover sichtbar sein.
+DATEIEN IN DIESEM ZIP (Pfad im GitHub-Repository)
+  cards.js                      – Becky Bat als normale Karte
+  public/assets/cards_new/107_Becky_Bat.webp – Bild von Becky Bat
+  public/host_card_gallery.js   – aktualisiert bei jedem Öffnen
+  host_gallery_autocatalog.js   – NEU im Hauptordner: Bilddateien erkennen
+  server.js                     – OPTIONAL: vorbereitete Server-Datei
+  public/host_card_gallery.css  – nur falls noch nicht vorhanden
+  ANLEITUNG.txt                 – diese Anleitung
+  SICHERER_CODE_PATCH.txt      – Änderungen für deine AKTUELLE server.js
 
-TECHNISCH WICHTIG
-Die vorherigen Patches griffen am ursprünglichen client.js bzw.
-style.css an. Das ständig sichtbare Fenster ist aber das separat
-hinzugefügte #mlpV11SpecialDock. V12 steuert genau dieses Element.
-Die Host-Kartengalerie wird NICHT geändert.
+EMPFOHLENER EINBAU – OHNE DEINE NEUEN SPIELFIXES ZU VERLIEREN
+1. ZIP entpacken und deine aktuelle cards.js sowie server.js sichern.
+2. public/assets/cards_new/107_Becky_Bat.webp zu GitHub hinzufügen.
+3. In deiner AKTUELLEN cards.js nur Becky Bat ergänzen und den Pfad
+   für neue Karten erweitern (siehe SICHERER_CODE_PATCH.txt).
+   Nutze die beiliegende cards.js nur, wenn du sicher bist, dass seit der
+   ursprünglichen Version keine anderen Karteneinträge hinzugekommen sind.
+4. public/host_card_gallery.js ersetzen (nur die Galerie; Spielcode bleibt).
+5. host_gallery_autocatalog.js NEU ins Repository-HAUPTVERZEICHNIS hochladen.
+6. In der AKTUELLEN server.js NUR die drei Zeilen für das
+   Host-Kartengalerie-Ereignis austauschen (siehe SICHERER_CODE_PATCH.txt).
+   Bitte NICHT pauschal die beiliegende server.js ersetzen, wenn du später
+   Änderungen an Würfel/Kristall/Specials/Artefakten/Host-Galerie gemacht hast!
+7. Wenn die Galerie-Datei .css noch nicht vorhanden ist, hochladen.
+8. Committen, Render-Deploy abwarten, Browser Strg+F5.
 
-MÖGLICHE GRENZEN
-Manche Browser verbieten Ton vor der ersten Nutzerinteraktion.
-Daher im Spiel mindestens einmal klicken. Falls ?fixcheck=1 einen
-Ton ausgibt, nicht aber die Rundenanimation, ist die aktuelle
-Kristallsteuerung auf Render möglicherweise nicht V11; dann
-müssen wir die neueste public/index.html und Kristall-JS prüfen.
+SO TESTEST DU ES
+A) Als Host in die Lobby gehen -> "Alle Karten ansehen" -> nach Becky Bat
+   suchen. Sie muss mit 6 / 8 / 3 / 6 erscheinen und als normal angezeigt werden.
+B) Eine normale Karte ziehen -> Becky Bat kann (zufällig) im Stapel vorkommen.
+C) Testweise public/assets/cards_new/108_Test_Karte.webp hochladen,
+   OHNE cards.js zu bearbeiten -> nach Deploy in der Galerie als
+   "nur Bildvorschau" vorhanden, aber NICHT im Ziehstapel.
+   Die Testdatei danach wieder entfernen.
+D) Galerie schließen und wieder öffnen -> Daten werden neu angefordert.
 
-KEINE Änderungen an server.js, client.js, style.css, cards.js,
-Karten, Arena, Smolder, Host-Kartengalerie oder Spielregeln.
+TECHNISCHER HINWEIS
+Dieses Paket nutzt den bekannten Projektstand aus den bisherigen ZIP-Dateien.
+Die gepackte server.js stammt aus dem früheren Galerie/Spiel-Fix. Bei einer
+inzwischen neueren Live-Version bitte nur die kleinen Änderungen vornehmen.
+Keine echte Live-Render-Partie wurde mit diesem Paket getestet.
