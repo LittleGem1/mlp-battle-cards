@@ -78,31 +78,47 @@
     winner.prepend(plate);
     overlay.classList.add('fx-polish');
   }
+  // Smolder: genau das von der Spielerin freigegebene GIF – keine neue Zeichnung.
+  // Eine einzige animierte Smolder-Figur pro Finisher, auch in der 12er Vorschau.
+  // Keine Änderungen an playFinisher, Karten oder Socket-Spielereignissen.
   function decorateSmolder(){
     const overlay=byId('finisherOverlay');
-    if(!overlay?.classList.contains('stage-smolder'))return;
-    overlay.classList.add('fx-smolder-live');
-    const layers=overlay.querySelectorAll('#finisherLosers .v4-overlay-effect');
-    layers.forEach((layer,index)=>{
-      if(layer.querySelector('.fx-smolder-fire'))return;
-      const fire=document.createElement('span');
-      fire.className='fx-smolder-fire';
-      fire.innerHTML=`<i class="fx-fire-wave fx-fire-wave-outer"></i><i class="fx-fire-wave fx-fire-wave-inner"></i><i class="fx-fire-wave fx-fire-wave-core"></i><i class="fx-fire-heat"></i><i class="fx-fire-scorch"></i><i class="fx-fire-smoke"></i>`;
-      layer.appendChild(fire);
-      const sparks=document.createElement('span');
-      sparks.className='fx-fire-sparks';
-      for(let i=0;i<24;i++){
-        const spark=document.createElement('i');
-        spark.style.setProperty('--n',String(i));
-        spark.style.setProperty('--d',`${(i%9)*.077}s`);
-        spark.style.setProperty('--vy',`${-94+(i*37)%180}px`);
-        spark.style.setProperty('--vx',`${-155-(i*43)%220}px`);
-        spark.style.setProperty('--size',`${3+(i%3)*3}px`);
-        sparks.appendChild(spark);
-      }
-      layer.appendChild(sparks);
-    });
+    if(!overlay)return;
+    const active=overlay.classList.contains('active') && overlay.classList.contains('stage-smolder');
+    const previous=byId('mlpSmolderOriginalGif');
+    if(!active){
+      previous?.remove();
+      if(overlay.classList.contains('smolder-gif-ready'))overlay.classList.remove('smolder-gif-ready');
+      return;
+    }
+    const stage=overlay.querySelector('.finisher-stage');
+    if(!stage)return;
+    if(!previous || previous.parentNode!==stage){
+      previous?.remove();
+      const img=document.createElement('img');
+      img.id='mlpSmolderOriginalGif';
+      img.className='smolder-original-gif';
+      img.alt='Smolder fliegt und speit Feuer';
+      img.setAttribute('aria-hidden','true');
+      img.draggable=false;
+      // Neuer Aufruf je Finisher startet die acht Originalframes erneut.
+      img.src='/assets/animations/smolder-original-user.gif?v=20261010-final';
+      stage.appendChild(img);
+    }
+    if(!overlay.classList.contains('smolder-gif-ready'))overlay.classList.add('smolder-gif-ready');
   }
+
+  // Beobachtet auch die lokale Vorschau "Alle 12 Animationen testen":
+  // diese ruft playFinisher direkt auf und sendet KEIN roundWinner vom Server.
+  function watchSmolderDemo(){
+    const overlay=byId('finisherOverlay');
+    if(!overlay || typeof MutationObserver==='undefined')return;
+    const watcher=new MutationObserver(()=>decorateSmolder());
+    watcher.observe(overlay,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
+    decorateSmolder();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',watchSmolderDemo,{once:true});
+  else watchSmolderDemo();
   // Bestehende Handler bleiben unverändert; nach dem Rendern nur Darstellung ergänzen.
   if(typeof socket!=='undefined' && typeof socket.on==='function'){
     socket.on('specialPlayed',e=>{
