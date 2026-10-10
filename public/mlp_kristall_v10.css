@@ -1,0 +1,122 @@
+/* MLP Battle Cards – Kristall V10.
+   Nur Kristall-Overlay; keine Arena-, Karten-, Smolder- oder Server-Regeln. */
+/* Alte Crystal-Implementierungen werden weiterhin aufgerufen, aber nur
+   das neue, eigenständige V10 Overlay wird sichtbar gerendert. */
+#mlpCrystalV6,
+#categoryCrystalPortal.round-crystal-portal,
+#roundIntroOverlay.category-crystal-overlay { display:none !important; }
+
+#mlpCrystalV10 {
+  position:fixed !important; inset:0 !important;
+  z-index:2147483600 !important;
+  display:grid !important; place-items:center !important;
+  box-sizing:border-box;
+  padding:12px;
+  background:radial-gradient(ellipse at 50% 45%,rgba(34,44,101,.30),rgba(3,6,24,.84) 76%);
+  backdrop-filter:blur(3px);
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .2s ease,visibility .2s linear;
+  isolation:isolate;
+}
+#mlpCrystalV10.mlp-crystal-v10-visible {
+  opacity:1 !important; visibility:visible !important;
+}
+#mlpCrystalV10, #mlpCrystalV10 * {box-sizing:border-box;}
+#mlpCrystalV10 .mlpc-box {
+  --accent:#c0a0ff;
+  width:min(480px,90vw);max-height:min(510px,96dvh);
+  min-height:min(430px,92dvh);
+  position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  gap:5px;
+  padding:14px 20px 24px;
+  border-radius:28px;
+  border:1px solid rgba(218,226,255,.44);
+  color:#f8f5ff;
+  background:
+     radial-gradient(ellipse at center 45%,rgba(96,145,231,.20),transparent 51%),
+     radial-gradient(ellipse at center 70%,rgba(167,89,240,.20),transparent 52%),
+     linear-gradient(160deg,rgba(10,19,52,.96),rgba(27,17,61,.96));
+  box-shadow:0 22px 70px rgba(0,0,0,.60),inset 0 0 55px rgba(127,99,234,.17),0 0 36px rgba(161,130,255,.18);
+  overflow:hidden;
+  text-align:center;
+}
+#mlpCrystalV10 .mlpc-round {
+  font-size:clamp(16px,3vw,24px);font-weight:950;
+  text-shadow:0 0 13px rgba(211,180,255,.45);letter-spacing:.14em;
+  line-height:1.2;
+}
+#mlpCrystalV10 .mlpc-subtitle{font-size:clamp(11px,1.8vw,14px);font-weight:850;letter-spacing:.08em;color:#cbe7ff;}
+#mlpCrystalV10 .mlpc-orbit-area {
+  width: min(285px,60vw);height: min(293px,52dvh);min-height:155px;
+  flex-shrink:1;position:relative;display:grid;place-items:center;
+  perspective:900px;transform-style:preserve-3d;
+}
+#mlpCrystalV10 .mlpc-orbit-area::before{
+  content:"";position:absolute;left:50%;top:50%;width:86%;height:90%;border:2px solid rgba(178,211,255,.35);
+  border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 20px rgba(160,196,255,.23),inset 0 0 26px rgba(175,121,247,.12);
+  animation:mlpcRingIn .7s ease-out both;
+}
+#mlpCrystalV10 .mlpc-orbit{
+  position:absolute;left:50%;top:50%;width:112%;height:81%;border-radius:50%;
+  border:1px dashed rgba(229,205,255,.29);
+  box-shadow:0 0 18px rgba(161,121,235,.12);
+  transform:translate(-50%,-50%) rotate(-20deg);
+  animation:mlpcOrbit 7.5s linear infinite;
+}
+#mlpCrystalV10 .mlpc-orbit i{position:absolute;font-size:24px;font-style:normal;color:#e8daff;text-shadow:0 0 12px rgba(213,156,250,.54);}
+#mlpCrystalV10 .mlpc-orbit i:nth-child(1){top:-14px;left:48%}
+#mlpCrystalV10 .mlpc-orbit i:nth-child(2){right:-9px;top:44%}
+#mlpCrystalV10 .mlpc-orbit i:nth-child(3){bottom:-16px;left:48%}
+#mlpCrystalV10 .mlpc-orbit i:nth-child(4){left:-9px;top:44%}
+#mlpCrystalV10 .mlpc-gem {
+  width:min(165px,33vw);height:min(230px,39dvh);min-height:125px;
+  position:relative;transform-style:preserve-3d;
+  clip-path:polygon(50% 0,82% 13%,100% 38%,90% 70%,50% 100%,11% 70%,0 38%,18% 13%);
+  border:2px solid rgba(230,245,255,.83);
+  background:linear-gradient(119deg,#edfaff 3%,#9fe3ff 22%,#b68bff 44%,#6845bf 57%,#9ebaff 78%,#f9ffff 100%);
+  box-shadow:inset 12px 12px 22px #fff9,inset -18px -7px 26px #270967aa;
+  filter:drop-shadow(0 0 18px #a3daff);
+  animation:mlpcGemTurn 2.55s cubic-bezier(.15,.75,.15,1) both;
+}
+#mlpCrystalV10 .mlpc-gem::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(140deg,#ffffffaa 0 12%,transparent 35% 62%,#f0d5ff88 90%);
+  clip-path:polygon(50% 0,89% 32%,62% 58%,74% 90%,50% 100%,26% 90%,38% 58%,11% 32%);}
+#mlpCrystalV10 .mlpc-gem i{position:absolute;inset:0;opacity:.65;}
+#mlpCrystalV10 .mlpc-gem i:nth-child(1){background:#d8faff99;clip-path:polygon(50% 0,100% 38%,57% 49%)}
+#mlpCrystalV10 .mlpc-gem i:nth-child(2){background:#6330a688;clip-path:polygon(57% 49%,100% 38%,50% 100%)}
+#mlpCrystalV10 .mlpc-gem i:nth-child(3){background:#56cdfaaa;clip-path:polygon(0 38%,43% 49%,50% 100%)}
+#mlpCrystalV10 .mlpc-gem i:nth-child(4){background:#f4eaff88;clip-path:polygon(43% 49%,50% 0,57% 49%,50% 100%)}
+#mlpCrystalV10 .mlpc-result {
+  min-width:min(290px,75vw);display:flex;align-items:center;justify-content:center;gap:12px;
+  font-size:clamp(20px,4.5vw,31px);font-weight:950;
+  padding:10px 20px;border-radius:999px;
+  color:#fff5c9;background:linear-gradient(90deg,#27245fe9,#161e4ff0,#342268e9);
+  border:1px solid #ffe5a388;box-shadow:0 0 26px rgba(145,170,255,.35);
+  opacity:0;transform:translateY(10px) scale(.96);transition:opacity .4s ease,transform .4s ease;
+}
+#mlpCrystalV10 .mlpc-result.mlpc-revealed{opacity:1;transform:translateY(0) scale(1);}
+#mlpCrystalV10 .mlpc-symbol{font-size:clamp(24px,5vw,36px)}
+#mlpCrystalV10 .mlpc-diagnostic{
+  display:none;position:fixed;top:10px;left:10px;z-index:2147483640;
+  background:#132f40;color:#fff;border:1px solid #6de3c8;border-radius:12px;
+  padding:8px 12px;font:700 13px system-ui;pointer-events:auto;
+}
+#mlpCrystalV10 .mlpc-diagnostic button{margin-left:10px;padding:5px 8px;border-radius:8px;color:#fff;background:#6647ac;border:1px solid #bb9fff;cursor:pointer;}
+#mlpCrystalV10.mlp-crystal-v10-test .mlpc-diagnostic{display:block;}
+@keyframes mlpcGemTurn{
+  0%{opacity:0;transform:translateY(55px) rotateY(-45deg) scale(.4)}
+  20%{opacity:1;transform:translateY(1px) rotateY(220deg) scale(.85)}
+  70%{transform:translateY(-10px) rotateY(1000deg) scale(1.05)}
+  100%{opacity:1;transform:translateY(0) rotateY(1440deg) scale(1)}
+}
+@keyframes mlpcRingIn{0%{opacity:0;scale:.5}100%{opacity:1;scale:1}}
+@keyframes mlpcOrbit{from{transform:translate(-50%,-50%) rotate(-20deg)}to{transform:translate(-50%,-50%) rotate(340deg)}}
+@media(max-height:650px){
+ #mlpCrystalV10 .mlpc-box{min-height:0;height:min(365px,95dvh);padding:6px 10px 12px;gap:3px}
+ #mlpCrystalV10 .mlpc-orbit-area{height:min(220px,52dvh)}
+ #mlpCrystalV10 .mlpc-gem{height:min(160px,34dvh);width:min(115px,25vw)}
+ #mlpCrystalV10 .mlpc-result{padding:6px 12px}
+}
+@media(prefers-reduced-motion:reduce){
+ #mlpCrystalV10 .mlpc-orbit,#mlpCrystalV10 .mlpc-gem,#mlpCrystalV10 .mlpc-orbit-area::before{animation-duration:.01ms !important;animation-iteration-count:1!important}
+}
