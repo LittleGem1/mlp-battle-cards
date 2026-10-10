@@ -177,8 +177,22 @@ body.scene-game #game .arena>.center-stage>#category.category {
 }
 /* Ursprüngliche Kristall-Overlays werden nur visuell ausgeblendet.
    Die eigene Rundensteuerung und Sounds laufen weiter unverändert. */
-#categoryCrystalPortal.round-crystal-portal,
-#roundIntroOverlay.category-crystal-overlay {opacity:0!important;visibility:hidden!important;pointer-events:none!important;}
+
+/* Ursprünglichen Kategorie-Kristall wieder anzeigen */
+#categoryCrystalPortal.round-crystal-portal.active:not(.leaving) {
+  display: grid !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 2147483600 !important;
+}
+
+/* Nur die ungenutzte alte Overlay-Version ausblenden */
+#roundIntroOverlay.category-crystal-overlay {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 /* Eine einzige sichtbare Kristall-Anzeige, unabhängig vom bisherigen Portal-Code. */
 #mlpCrystalV6 {
   position:fixed;inset:0;z-index:2147483001;display:grid;place-items:center;
