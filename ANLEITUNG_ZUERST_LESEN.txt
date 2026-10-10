@@ -1,0 +1,63 @@
+MLP BATTLE CARDS – WINDCHAOS, PASSEND ZUM HOCHGELADENEN PROJEKT
+===============================================================
+
+GEPRÜFTE QUELLE
+  mlp-battle-cards-main (2).zip (vom Benutzer hochgeladener aktueller Projektstand)
+  Dieses Paket wurde DIREKT daraus gebaut – NICHT aus einer veralteten server.js.
+
+SO BLEIBEN DIE BESTEHENDEN FEATURES ERHALTEN
+  • Nur 3 bestehende Dateien wurden gezielt erweitert:
+      cards.js
+      server.js
+      public/index.html
+  • 4 Dateien sind ganz NEU:
+      public/assets/specials_new/94_Sil_Windchaos.webp
+      public/assets/sounds/windchaos_tornado.mp3
+      public/windchaos_fx.js
+      public/windchaos_fx.css
+  • public/client.js, public/style.css, sämtliche anderen Karten, die
+    Würfel-, Kristall-, Galerie- und Artefakt-Dateien bleiben UNVERÄNDERT.
+  • Der bestehende Artefakt-Pechsträhnen-Schutz (7 Runden) und die Host-Galerie
+    bleiben im übernommenen Servercode vorhanden.
+
+INSTALLATION IN GITHUB (WICHTIG: ZIP ZUERST ENTPACKEN)
+1. Sicherheitskopie deiner AKTUELLEN GitHub-Version aufheben.
+2. Die 7 Dateien aus dieser ZIP in den jeweiligen gleichnamigen Pfad
+   deines GitHub-Projekts hochladen und bei den drei bestehenden Dateien
+   (cards.js, server.js, public/index.html) ersetzen.
+3. NICHT zusätzlich noch die alte Windchaos-V1-ZIP einbauen!
+4. GitHub-Commit abschließen, erfolgreichen Render-Deploy abwarten.
+5. Browser mit Strg+F5 (oder Strg+Umschalt+R) neu laden.
+6. Neue Partie beginnen, Sil – Windchaos im Goldstapel ziehen und ausspielen.
+
+SICHERHEITSHINWEIS
+Die drei Dateien stammen aus GENAU deiner hochgeladenen ZIP. Wenn du SEIT
+DEM HERUNTERLADEN der ZIP Änderungen auf GitHub vorgenommen hast, darfst du
+sie NICHT blind ersetzen – dann brauche ich erneut den neuesten Stand.
+
+SPIELVERHALTEN
+- Die Special-Karte heißt Sil – Windchaos; Special-ID s94.
+- Ausspielen kann sie auch jeder andere Spieler, nicht nur Sil selbst.
+- Ausspielender Spieler behält seine restliche Hand (die Windchaos-Karte wird verbraucht).
+- Jeder andere aktive Gegner: sämtliche Handkarten und bereits in dieser Runde
+  gelegte normale Karten werden abgeworfen; danach exakt 6 normale Karten
+  plus 1 Special-Karte. Vorhandene Artefakte bleiben erhalten.
+- Eine neue 30-Sekunden-Auswahl beginnt erst NACH der 4,4-Sekunden-Animation.
+- Währenddessen werden neue Kartenaktionen blockiert.
+- Ein Bot kann Windchaos ebenso ausspielen; Bot-Aktionen werden angehalten.
+- Die Windchaos-Karte erscheint in der Host-Galerie aus der zentralen cards.js.
+
+VORSCHAU
+- VORSCHAU_WINDCHAOS.html öffnen (mit den preview_assets/-Dateien daneben).
+- Bei Bedarf WINDCHAOS_ANIMIERTE_VORSCHAU.gif ansehen.
+- Die echte Browser-/Render-Partie ist damit NICHT ersetzt.
+
+TESTS
+- JavaScript-Syntax beider aktualisierten .js-Dateien geprüft.
+- Karte und Bilddateipfad anhand von cards.js geprüft.
+- Vorhandene Artefakt- und Host-Logik überprüft und erhalten.
+- Serverseitiger Windchaos-Kartentausch mit künstlichen Spielern geprüft.
+- Live-Mehrspieler-Partie auf Render wurde NICHT getestet; es gibt daher
+  KEINE 100-%-Fehlerfreiheit-Garantie.
+
+Siehe auch AENDERUNGEN_UND_TESTS.txt und DIFF_DER_DREI_DATEIEN.patch.

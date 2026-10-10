@@ -67,6 +67,7 @@ function clearTimers(r){
   clearBotTimers(r);
   r.selectionDeadline=null;
   r.countdownUntil=null;
+  r.windchaosUntil=0; // Windchaos bei Match-Abbruch/Neustart beenden.
 }
 function publicState(r){
   return {
@@ -319,6 +320,56 @@ function pendingForCurrentSelection(socket,r){
   }
   return q;
 }
+// WINDCHAOS V2 – serverseitiger Handtausch ohne Änderungen an anderen Specials.
+// Der Effekt wird beim Ausspielen auf dem Server durchgeführt; die Clients animieren nur.
+function applyWindchaos(r,caster){
+  if(!r||!caster||r.phase!=='select'||(r.windchaosUntil||0)>Date.now())return false;
+  const duration=4400;
+  const targets=activePlayers(r).filter(t=>t.id!==caster.id);
+  const targetIds=targets.map(t=>t.id);
+  const match=r.matchId,round=r.round;
+  // Vor dem Tausch senden, damit jeder Browser die alten Karten animieren kann.
+  r.windchaosUntil=Date.now()+duration;
+  io.to(r.code).emit('windchaosAnimation',{casterId:caster.id,casterName:caster.name,targetIds,duration});
+  // Bereits geplante Bot-Aktionen nicht während der Tornadoanimation ausführen.
+  clearBotTimers(r);
+  for(const t of targets){
+    if(t.pendingForcedDiscard?.timer)clearTimeout(t.pendingForcedDiscard.timer);
+    t.pendingForcedDiscard=null;
+    if(!t.isBot){
+      const targetSocket=io.sockets.sockets.get(t.id);
+      if(targetSocket)clearSpecialChoice(targetSocket,r,true);
+    }
+    for(const id of playedCardIds(r.played?.[t.id]))discardCard(r,id);
+    if(r.played)delete r.played[t.id];
+    for(const id of t.hand)discardCard(r,id);
+    t.hand=[];
+    t.selected=null;
+    t.lastPlayedCardId=null;
+    // Hand wird wie zu Spielbeginn neu ausgeteilt, inklusive Abbau der Zeitstrafe.
+    t.timeoutPenaltyCount=0;
+    t.hand.push(...drawNormal(r,NORMAL_HAND_TARGET));
+    const specialCard=drawSpecialOnly(r);
+    if(specialCard)t.hand.push(specialCard);
+  }
+  if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
+  // Die 30-Sekunden-Auswahl beginnt erst, wenn der Tornado verschwunden ist.
+  r.selectionDeadline=Date.now()+duration+30000;
+  io.to(r.code).emit('notice',`${caster.name} entfesselt WINDCHAOS! ${targets.length} gegnerische Hand/Hände werden neu verteilt.`);
+  sendState(r);
+  r.selectionTimer=setTimeout(()=>{
+    if(rooms.has(r.code)&&r.matchId===match&&r.round===round&&r.phase==='select')handleSelectionTimeout(r);
+  },duration+30050);
+  setTimeout(()=>{
+    if(!rooms.has(r.code)||r.matchId!==match||r.round!==round||r.phase!=='select')return;
+    r.windchaosUntil=0;
+    sendState(r);
+    scheduleBotsForSelect(r);
+    maybeEvaluate(r);
+  },duration);
+  return true;
+}
+
 function consumeSpecial(r,p,c){
   const i=p.hand.indexOf(c.id);
   if(i<0)return false;
@@ -401,7 +452,9 @@ function botApplySpecial(r,p,c){
   const effect=c.effect;
   const targetAny=()=>botTarget(r,p,'any');
   const targetHand=()=>botTarget(r,p,'hand');
-  if(effect==='rainbow'){
+  if(effect==='windchaos'){
+    applyWindchaos(r,p);
+  }else if(effect==='rainbow'){
     r.roundBuff[p.id]={...(r.roundBuff[p.id]||{}),speed:(r.roundBuff[p.id]?.speed||0)+2};
   }else if(effect==='applejack'){
     r.roundBuff[p.id]={...(r.roundBuff[p.id]||{}),strength:(r.roundBuff[p.id]?.strength||0)+1};
@@ -517,6 +570,7 @@ function botUsableSpecials(r,p){
   });
 }
 function botMaybeUseSpecial(r,p,forced=false){
+  if((r?.windchaosUntil||0)>Date.now())return false;
   if(!r||r.phase!=='select'||!p?.isBot||p.selected||!r.roundPlayerIds.includes(p.id)||!mayUseSpecial(p))return false;
   const usable=botUsableSpecials(r,p);if(!usable.length)return false;
   let chance=forced?.86:.42;
@@ -544,6 +598,7 @@ function botMaybeUseSpecial(r,p,forced=false){
   return true;
 }
 function botCommitNormal(r,p){
+  if((r?.windchaosUntil||0)>Date.now())return false;
   if(!r||r.phase!=='select'||!p?.isBot||p.selected||p.surrendered||!r.roundPlayerIds.includes(p.id))return;
   const needed=fxHas(r,'doubleNormal',p.id)?2:1;
   const ids=botChooseNormalIds(r,p,needed);
@@ -945,7 +1000,7 @@ function removePlayerFromRoom(socket,notify=true){
   }
 }
 function maybeEvaluate(r){
-  if(!r||r.phase!=='select')return;
+  if(!r||r.phase!=='select'||(r.windchaosUntil||0)>Date.now())return;
   const req=requiredPlayers(r);
   // Effekte wie Starlight / Flim & Flam müssen erst vollständig abgearbeitet
   // sein, bevor die Karten aufgedeckt werden.
@@ -1337,6 +1392,7 @@ function guardRoomProgress(r,now=Date.now()){
   if(['ready','countdown'].includes(r.phase)&&r.players.size<2){resetToLobby(r);return;}
   if(['roundintro','select','reveal','tie','result','rewardchoice'].includes(r.phase)&&gameOverIfNeeded(r))return;
   if(r.phase==='select'){
+    if((r.windchaosUntil||0)>now)return;
     if(!requiredPlayers(r).length){maybeEvaluate(r);return;}
     if(!r.selectionDeadline){
       r.selectionDeadline=now+15000;
@@ -1566,7 +1622,9 @@ io.on('connection',socket=>{
     enterArenaReady(r);
   });
   socket.on('playCard',({cardId})=>{
-    const r=getRoom(socket);if(!r||r.phase!=='select')return socket.emit('errorMsg','Gerade kann keine Karte gespielt werden.');
+    const r=getRoom(socket);
+    if(r&&(r.windchaosUntil||0)>Date.now())return socket.emit('errorMsg','Bitte warte, bis der Windchaos-Tornado vorbei ist.');
+    if(!r||r.phase!=='select')return socket.emit('errorMsg','Gerade kann keine Karte gespielt werden.');
     if(!r.roundPlayerIds.includes(socket.id))return socket.emit('errorMsg','Du bist in dieser Runde nicht aktiv.');
     const p=r.players.get(socket.id),c=byId[cardId];
     if(p?.surrendered)return socket.emit('errorMsg','Du hast aufgegeben und schaust nur noch zu.');
@@ -1605,6 +1663,7 @@ io.on('connection',socket=>{
   });
   socket.on('useSpecial',({cardId})=>{
     const r=getRoom(socket);
+    if(r&&(r.windchaosUntil||0)>Date.now())return socket.emit('errorMsg','Bitte warte, bis der Windchaos-Tornado vorbei ist.');
     if(!r||r.phase!=='select')return socket.emit('errorMsg','Spezialkarten nur während der Auswahl.');
     const p=r.players.get(socket.id),source=byId[cardId];
     if(p?.surrendered)return socket.emit('errorMsg','Du hast aufgegeben und schaust nur noch zu.');
@@ -1649,7 +1708,10 @@ io.on('connection',socket=>{
       io.to(r.code).emit('specialCopied',{playerId:p.id,name:p.name,copied:effectCard});
     }
 
-    if(effect==='rainbow'){
+    if(effect==='windchaos'){
+      applyWindchaos(r,p);
+      socket.emit('specialDone',{text:'WINDCHAOS! Alle Gegner erhalten 6 normale und 1 neue Special-Karte.'});
+    }else if(effect==='rainbow'){
       r.roundBuff[p.id]={...(r.roundBuff[p.id]||{}),speed:(r.roundBuff[p.id]?.speed||0)+2};
       socket.emit('specialDone',{text:'+2 Schnelligkeit.'});
     }else if(effect==='applejack'){

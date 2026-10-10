@@ -1,0 +1,17 @@
+/* Windchaos V1: only active during the Windchaos special animation. */
+.windchaos-overlay{position:fixed;inset:0;z-index:1001;pointer-events:none;overflow:hidden;isolation:isolate}
+.windchaos-canvas,.windchaos-card-layer{position:absolute;inset:0;width:100%;height:100%;display:block}
+.windchaos-card-layer{overflow:hidden}
+.windchaos-card-fly{position:absolute;left:0;top:0;display:block;transform-origin:center center;object-fit:contain;filter:drop-shadow(0 0 10px rgba(60,247,220,.75));will-change:transform,opacity}
+.windchaos-title{position:absolute;z-index:2;top:19%;left:50%;transform:translateX(-50%);width:min(90vw,620px);text-align:center;display:flex;flex-direction:column;gap:.35rem;color:#fff;animation:windchaos-title-pop 4.4s ease both;text-shadow:0 3px 0 #07372d,0 0 18px #25ffbb,0 0 35px #143c4e}
+.windchaos-title strong{font-family:Georgia,serif;font-size:clamp(30px,6vw,78px);font-weight:900;letter-spacing:.05em;color:#b7ffe8;-webkit-text-stroke:1px #235c49}
+.windchaos-title small{font-size:clamp(13px,2vw,19px);font-weight:800;color:#fff}
+@keyframes windchaos-title-pop{0%,100%{opacity:0;transform:translateX(-50%) scale(.64)}9%,43%{opacity:1;transform:translateX(-50%) scale(1)}55%,94%{opacity:0;transform:translateX(-50%) scale(1.12)}}
+/* Suppress generic Special burst for Windchaos, only while specific effect runs. */
+body.windchaos-running .special-burst{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+/* The prior hand images are already captured as moving clones, hide server-refreshed hands
+   briefly so the scene reads as a full hand swap and does not show ghost doubles. */
+body.windchaos-running #game #opponents .back-fan img,
+body.windchaos-running #game #tableCards .played-card img{opacity:0!important}
+body.windchaos-running.windchaos-targeted #game #hand{visibility:hidden!important}
+@media(prefers-reduced-motion:reduce){.windchaos-title{animation-duration:4.4s}}

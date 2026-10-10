@@ -1,0 +1,47 @@
+{
+  "source_file": "mlp-battle-cards-main (2).zip",
+  "modified_existing_files": [
+    "cards.js",
+    "server.js",
+    "public/index.html"
+  ],
+  "added_game_files": [
+    "public/assets/specials_new/94_Sil_Windchaos.webp",
+    "public/assets/sounds/windchaos_tornado.mp3",
+    "public/windchaos_fx.js",
+    "public/windchaos_fx.css"
+  ],
+  "original_game_files_changed_total": 3,
+  "other_existing_game_files_modified": 0,
+  "host_gallery_preserved": true,
+  "artifact_rules_preserved": true,
+  "normal_Sil_preserved": true,
+  "normal_Becky_Bat_preserved": true,
+  "new_special_registered": true,
+  "new_special_image_exists": true,
+  "windchaos_audio_from_prior_package_sha256": "bd85bb2775006ef2082305f0cfbdc62c4cb547bc4285a44820e6a1faeb0f47ff",
+  "source_existing_hashes": {
+    "cards.js": "fb7f3d39d1f4c2e8cbe918b35b1a44cccd9b895e42aef1c7600a4cf82c2dfe36",
+    "server.js": "052a8cb915d704d300cc8fb2bbd9efdf069d4ec693069ca034d1bf2a94450254",
+    "public/index.html": "b93b42697a001b1fdcd3bad2384c36cd35f7139e287deca126044f8c67896162"
+  },
+  "new_existing_hashes": {
+    "cards.js": "84e84433e178d19fd58d7219e8b7382d3c25d305cbbcd9fa6c4b946beebca4eb",
+    "server.js": "ba874ace1c559c69d56eb3bad4ff1d22658921ca2dcb133ef40be66c9bcf314f",
+    "public/index.html": "7f6211050085b1fe79cf9f34baa55c452d5255b4fba5c8f15faa570ed670d831"
+  },
+  "tests": [
+    "node --check cards.js OK",
+    "node --check server.js OK",
+    "node --check public/windchaos_fx.js OK",
+    "Special-Bild validiert: 1024×1536 WEBP",
+    "MP3-Datei vorhanden und lesbar",
+    "Server-Effekt mit zwei Gegnern, Bot, Zuschauer und bereits gelegter Karte simuliert: OK",
+    "Ausspieler behält übrige Hand: OK",
+    "Gegner je sechs normale plus eine Special-Karte, Artefakte unverändert: OK",
+    "Während Sturm sind Doppelaktivierung und Bot-Aktionen blockiert: OK",
+    "Nach 4,4 Sekunden startet 30-Sekunden-Auswahl: OK",
+    "Kartenkatalog: IDs eindeutig; Windchaos s94 und Sil n108 geladen: OK",
+    "Sounddatei SHA-256 identisch mit hochgeladener Datei Tornado-Sound Effect.mp3: OK"
+  ]
+}

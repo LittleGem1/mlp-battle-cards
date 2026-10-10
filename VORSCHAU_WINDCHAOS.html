@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MLP Battle Cards – Windchaos Spielvorschau</title>
+<link rel="stylesheet" href="public/windchaos_fx.css">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#090f22;color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif}header{padding:16px 22px;display:flex;align-items:center;gap:16px;justify-content:space-between;background:#101a32;box-shadow:0 4px 20px #0006}header h1{margin:0;font:800 23px Georgia,serif;color:#befae0}header p{margin:5px 0 0;font-size:13px;color:#bdcde3}button{border:1px solid #b1ffe0;border-radius:12px;padding:12px 18px;background:linear-gradient(135deg,#19654d,#35a488);color:#fff;font-weight:800;font-size:16px;cursor:pointer}button:hover{filter:brightness(1.2)}button:disabled{opacity:.5} .preview-arena{position:relative;width:100%;height:min(76vh,720px);min-height:470px;background-image:linear-gradient(#06152233,#061522aa),url(preview_assets/arena.jpg);background-position:center;background-size:cover;overflow:hidden}.player-opponents{position:absolute;top:17px;left:0;right:0;display:flex;justify-content:space-around;gap:8px;z-index:2}.enemy{width:45%;max-width:380px;text-align:center;background:#0a193ba3;border:1px solid #afffd144;border-radius:12px;padding:8px}.enemy b{display:block;margin-bottom:4px;color:#f6f4fd}.back-fan{height:75px;display:flex;justify-content:center;padding-top:3px}.back-fan img{display:block;width:47px;height:65px;object-fit:cover;object-position:top;border-radius:5px;margin-left:-15px;box-shadow:0 4px 12px #0009;transform:rotate(-5deg)}.back-fan img:first-child{margin-left:0}.back-fan img:nth-child(2n){transform:rotate(6deg)}.center{position:absolute;inset:150px 0 155px;display:grid;place-content:center;text-align:center;gap:12px} .label{background:#121c36e0;border:1px solid #73cfb077;border-radius:18px;padding:9px 21px;font-weight:900;color:#fff}#tableCards{display:flex;gap:14px;justify-content:center}.played-card{width:88px}.played-card img{width:100%;height:120px;object-fit:cover;border:2px solid #edb83f;border-radius:7px;box-shadow:0 7px 15px #0008}.hand-row{position:absolute;bottom:7px;display:flex;align-items:end;justify-content:center;left:0;right:0;gap:3px;z-index:4}#hand{display:flex;gap:4px;justify-content:center}.hand-card{width:min(11vw,84px);height:120px}.hand-card img{width:100%;height:100%;object-fit:cover;object-position:top;border:2px solid #ffd56a;border-radius:8px;box-shadow:0 6px 16px #000a}.hand-label{position:absolute;bottom:129px;left:0;right:0;text-align:center;font-size:13px;font-weight:850;text-shadow:0 1px 5px #000}#result{padding:13px 20px;text-align:center;font-weight:700;color:#b7f7d5;min-height:49px}@media(max-width:600px){header{flex-direction:column;text-align:center}.preview-arena{min-height:430px}.player-opponents{top:9px}.enemy{font-size:12px}.center{inset:170px 0 125px}.played-card{width:54px}.played-card img{height:85px}.hand-card{width:11.2vw;height:90px}.hand-label{bottom:99px;font-size:12px}}
+</style></head>
+<body><header><div><h1>🌪️ Windchaos – Live-Vorschau</h1><p>Einmaliges Sturm-Finale mit deinem Sound · ohne Pony im Tornado</p></div><button id="startBtn">▶ Windchaos mit Sound ansehen</button></header>
+<div id="game" class="screen active"><div class="preview-arena arena"><div id="opponents" class="player-opponents">
+<div class="enemy"><b>Sil – spielt Windchaos</b><div class="back-fan" id="casterCards"></div></div>
+<div class="enemy"><b>Mimsch – Gegner</b><div class="back-fan" id="enemyCards"></div></div></div>
+<div class="center"><div class="label">⭐ Magie – Kategorie</div><div id="tableCards"><div class="played-card"><img src="preview_assets/applejack.webp"></div><div class="played-card"><img src="preview_assets/twilight.webp"></div><div class="played-card"><img src="preview_assets/kik.webp"></div></div></div>
+<div class="hand-label">Little Gem – Gegner · 6 Normale + 1 Special</div><div class="hand-row"><div id="hand"></div></div></div></div>
+<div id="result">Vor dem Effekt haben alle ihre bisherigen Karten. Klicke auf ▶, um Windchaos zu erleben.</div>
+<script src="public/windchaos_fx.js"></script><script>
+const h=document.getElementById('hand'),result=document.getElementById('result'),btn=document.getElementById('startBtn');
+const files=['gem.webp','wisrana.webp','applejack.webp','kik.webp','twilight.webp','gem.webp','card_back.webp'];
+function showCards(list){h.replaceChildren();for(const file of list){const box=document.createElement('div');box.className='hand-card';const im=document.createElement('img');im.src='preview_assets/'+file;box.appendChild(im);h.appendChild(box)}}
+function addBacks(selector){const node=document.getElementById(selector);for(let i=0;i<5;i++){const im=new Image();im.src='preview_assets/card_back.webp';node.appendChild(im)}}
+addBacks('casterCards');addBacks('enemyCards');showCards(files);
+btn.addEventListener('click',()=>{
+ btn.disabled=true;result.textContent='🌪️ Windchaos! Der Tornado wirbelt alle Gegnerkarten davon …';
+ WindchaosFX.play({casterId:'sil',isPreview:true,onComplete(){
+  showCards(['twilight.webp','kik.webp','gem.webp','applejack.webp','wisrana.webp','twilight.webp','card_back.webp']);
+  result.textContent='✅ Alle Gegner haben jetzt 6 neue normale Karten + 1 Special! Sil behält seine eigene Hand.';
+  btn.disabled=false;btn.textContent='↻ Windchaos erneut ansehen';
+ }});
+});
+</script></body></html>

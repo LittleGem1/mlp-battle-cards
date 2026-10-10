@@ -1,0 +1,42 @@
+ERGEBNIS DER ZUSAMMENFÜHRUNG
+============================
+Grundlage: mlp-battle-cards-main (2).zip
+Anzahl gezielt geänderter vorhandener Dateien: 3
+Anzahl neuer Spieldateien: 4
+
+GEÄNDERT:
+  cards.js – ein neuer s94 Special-Karten-Eintrag.
+  server.js – Windchaos-Kartentausch, Pausierung während Sturm und Rundentimer.
+  public/index.html – genau eine Skript-Einbindung.
+
+NEU:
+  public/assets/specials_new/94_Sil_Windchaos.webp
+  public/assets/sounds/windchaos_tornado.mp3
+  public/windchaos_fx.js
+  public/windchaos_fx.css
+
+NICHT GEÄNDERT:
+  sämtliche anderen Dateien der hochgeladenen Projekt-ZIP,
+  besonders public/client.js, public/style.css, alle vorhandenen Bilder,
+  Galerie-Code, Sounddateien, Würfel-/Kristallskripte.
+
+PRÜFUNGEN:
+  node --check cards.js OK
+  node --check server.js OK
+  node --check public/windchaos_fx.js OK
+  Special-Bild validiert: 1024×1536 WEBP
+  MP3-Datei vorhanden und lesbar
+  Simulierter Spieltest: 2 Gegner, darunter PonyBot, erhalten je 6 normale
+  + 1 Special-Karte; ausspielende Person und Zuschauer behalten ihre Hand: OK.
+  Bereits ausgespielte gegnerische Karte wird abgelegt: OK.
+  Ausgespieltes Windchaos kann nicht doppelt ausgelöst werden: OK.
+  Nach 4,4 Sekunden werden Bots freigegeben; 30 Sekunden Auswahl: OK.
+  Kartenkatalog und eindeutige IDs geprüft: OK.
+  Ursprünglicher Tornado-Sound unverändert aus deinem Upload übernommen: OK.
+  Artefakte siebenfach und Pechsträhnen-Schutz vorhanden: JA.
+  Becky Bat und Sil normal vorhanden: JA.
+  Host-Galerie vorhanden: JA.
+
+OFFEN:
+  Eine tatsächliche Render-Live-Partie mit mehreren Browsern konnte hier
+  noch nicht geprüft werden. Trotz minimalem Merge gibt es Restrisiken.
