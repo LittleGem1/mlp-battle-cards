@@ -1,0 +1,147 @@
+/* MLP Battle Cards / nur Items und Rahmen – V8.
+   Wird NACH style.css geladen. Keine Arena, Karten oder Spielregeln. */
+
+/* Alle Namensschilder benutzen ein konsistentes, responsives Maß.
+   Das gilt für Home, Menüs, Lobby, Ready und Spiel für ALLE Spieler. */
+:is(#app, #accessoryDialog) .nameplate.mlp-cosmetics-fixed {
+  position:relative !important;
+  isolation:isolate !important;
+  box-sizing:border-box !important;
+  display:inline-grid !important;
+  place-items:center !important;
+  vertical-align:middle !important;
+  overflow:visible !important;
+  width:min(210px, 100%) !important;
+  min-width:0 !important;
+  max-width:210px !important;
+  height:60px !important;
+  min-height:60px !important;
+  padding:8px 22px !important;
+  margin-inline:auto !important;
+  transform:none !important;
+}
+:is(#app, #accessoryDialog) .nameplate.mlp-cosmetics-fixed.nameplate-small {
+  width:min(170px, 100%) !important;
+  max-width:170px !important;
+  height:50px !important;
+  min-height:50px !important;
+  padding:5px 16px !important;
+}
+:is(#app, #accessoryDialog) .nameplate.mlp-cosmetics-fixed .nameplate-text {
+  display:block !important;
+  position:relative !important;
+  z-index:9 !important;
+  width:100% !important;
+  max-width:100% !important;
+  line-height:1.12 !important;
+  font-size:clamp(12px, 1.7vw, 17px) !important;
+  text-align:center !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  overflow-wrap:normal !important;
+  text-shadow:0 1px 7px #040619, 0 0 7px #040619 !important;
+}
+:is(#app, #accessoryDialog) .nameplate.mlp-cosmetics-fixed.nameplate-small .nameplate-text {
+  font-size:clamp(11px, 1.6vw, 14px) !important;
+}
+/* Originale Rahmenbilder haben alle 3:1 Format. Nicht strecken. */
+:is(#app, #accessoryDialog) .nameplate.mlp-cosmetics-fixed .name-frame {
+  display:block !important;
+  position:absolute !important;
+  z-index:2 !important;
+  left:50% !important;top:50% !important;
+  right:auto !important;bottom:auto !important;
+  width:calc(100% + 28px) !important;
+  height:auto !important;
+  aspect-ratio:3/1 !important;
+  max-width:none !important;
+  max-height:none !important;
+  object-fit:contain !important;
+  transform:translate(-50%, -50%) !important;
+  pointer-events:none !important;
+  opacity:1 !important;
+  visibility:visible !important;
+}
+:is(#app, #accessoryDialog) .nameplate.mlp-cosmetics-fixed.nameplate-small .name-frame {
+  width:calc(100% + 22px) !important;
+}
+/* Einheitliches Positionierungssystem an Stelle dutzender alter Einzelfixes. */
+:is(#app, #accessoryDialog) .nameplate.mlp-cosmetics-fixed .decor {
+  position:absolute !important;
+  display:grid !important;
+  place-items:center !important;
+  inset:auto !important;
+  left:var(--cosmetic-x, 50%) !important;
+  top:var(--cosmetic-y, 50%) !important;
+  right:auto !important;bottom:auto !important;
+  width:var(--cosmetic-w, 62px) !important;
+  height:var(--cosmetic-h, 62px) !important;
+  max-width:none !important;max-height:none !important;
+  min-width:0 !important;min-height:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  transform:translate(-50%, -50%) !important;
+  z-index:3 !important;
+  overflow:visible !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  pointer-events:none !important;
+  border:0 !important;
+  background:none !important;
+}
+:is(#app, #accessoryDialog) .nameplate.mlp-cosmetics-fixed .decor img {
+  display:block !important;
+  position:static !important;
+  width:100% !important;
+  height:100% !important;
+  min-width:0 !important;min-height:0 !important;
+  max-width:100% !important;max-height:100% !important;
+  object-fit:contain !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  transform:none !important;
+  pointer-events:none !important;
+  filter:drop-shadow(0 0 3px rgba(100,210,255,.27)) !important;
+}
+/* Frühere wing-splitting-Pseudoelemente abschalten:
+   jetzt nur das echte Bild, passend skaliert, genau einmal. */
+:is(#app, #accessoryDialog) .nameplate.mlp-cosmetics-fixed .decor::before,
+:is(#app, #accessoryDialog) .nameplate.mlp-cosmetics-fixed .decor::after {
+  content:none !important;
+  display:none !important;
+  background-image:none !important;
+}
+/* Flügel / großflächige Effekte gehören HINTER den Rahmen und den Namen. */
+:is(#app, #accessoryDialog) .nameplate.mlp-cosmetics-fixed:is([data-cosmetic-role="wings"],[data-cosmetic-role="aura"],[data-cosmetic-role="cape"]) .decor {
+  z-index:1 !important;
+}
+/* Spielerliste: feste Maximalgröße selbst bei sechs/acht Spielern. */
+#app #game .arena .opponent .nameplate.mlp-cosmetics-fixed,
+#app #lobby .lobby-player .nameplate.mlp-cosmetics-fixed,
+#app #game .arena-ready-player .nameplate.mlp-cosmetics-fixed {
+  transform:none !important;
+  width:170px !important;
+  min-width:0 !important;
+  max-width:min(170px,100%) !important;
+  overflow:visible !important;
+}
+#app #lobby .lobby-player .nameplate.mlp-cosmetics-fixed .decor,
+#app #game .opponent .nameplate.mlp-cosmetics-fixed .decor {
+  opacity:1 !important;
+  visibility:visible !important;
+}
+#app #game .arena #selfNameplate .nameplate.mlp-cosmetics-fixed {
+  width:170px !important;
+}
+@media(max-width:620px){
+  #app #lobby .lobby-player .nameplate.mlp-cosmetics-fixed,
+  #app #game .arena .opponent .nameplate.mlp-cosmetics-fixed {
+    width:min(145px,100%) !important;
+    max-width:145px !important;
+  }
+  :is(#app, #accessoryDialog) .nameplate.mlp-cosmetics-fixed.nameplate-small {
+    height:43px !important;
+    min-height:43px !important;
+  }
+}
