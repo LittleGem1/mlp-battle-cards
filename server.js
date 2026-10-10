@@ -1391,6 +1391,17 @@ const roundGuardInterval=setInterval(()=>{
 roundGuardInterval.unref?.();
 
 io.on('connection',socket=>{
+  // Host-only read-only gallery. Never sends cards to other players and never changes decks.
+  socket.on('hostCardGalleryRequest',()=>{
+    const room=getRoom(socket);
+    const eligible=room && room.hostId===socket.id && room.players.has(socket.id)
+      && (room.phase==='lobby'||(room.phase==='gameover'&&room.postGameReady?.has(socket.id)));
+    if(!eligible)return; // Do not reveal the catalogue through this event to non-hosts.
+    const fields=['id','type','name','image','strength','speed','magic','energy','text','useIcon','useLabel'];
+    const cardsForHost=[...normal,...specials,...artifacts].map(card=>
+      Object.fromEntries(fields.filter(key=>Object.hasOwn(card,key)).map(key=>[key,card[key]])));
+    socket.emit('hostCardGalleryData',{cards:cardsForHost});
+  });
   socket.on('resumeRoom',({code,token}={})=>restoreSeat(socket,code,token));
   // Account login: server-side profiles, salted password hashes and revocable sessions.
   // Limit attempted registrations/logins per connection AND address.

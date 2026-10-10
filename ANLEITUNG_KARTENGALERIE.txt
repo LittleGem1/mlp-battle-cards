@@ -1,0 +1,58 @@
+MLP BATTLE CARDS – HOST-KARTENGALERIE V1
+======================================
+
+NEU IN DER LOBBY
+----------------
+👑 Nur der Host sieht den Button: "🃏 Alle Karten ansehen".
+Im Fenster findest du die aktuell eingebauten normalen Karten,
+Special-Karten und Artefakte. Du kannst nach Namen/Effekt suchen,
+nach Kartentyp filtern, Karten groß betrachten, zur Rückseite wechseln
+und mit den Pfeilen blättern. Auf dem Smartphone funktioniert es ebenfalls.
+
+WICHTIG: Die Kartengalerie verändert KEINEN Spielzustand, keinen Stapel,
+keine Zugwahrscheinlichkeit, keine Animation und keine Kampfmechanik.
+Es ist eine reine Vorschau. Die Daten stammen aus dem echten Kartenkatalog,
+den der laufende Server aus cards.js benutzt. Neue Karten wie Becky Bat
+werden automatisch angezeigt, sofern sie bereits in DEINER cards.js stehen.
+
+DATEIEN IM ZIP
+--------------
+server.js                         => ins Hauptverzeichnis des Repos
+public/client.js                  => in den Ordner public/
+public/host_card_gallery.js      => NEU in public/
+public/host_card_gallery.css     => NEU in public/
+VORSCHAU_GALERIE_DESKTOP.png      => Beispielansicht (nur 3 Beispielkarten)
+VORSCHAU_GALERIE_HANDY.png        => Beispielansicht (nur 3 Beispielkarten)
+NUR_KLEINE_CODE_ERGAENZUNGEN.txt => sichere manuelle Alternative
+
+EINBAU – WENN DU DIE LETZTEN GEMEINSAMEN FIXES VERWENDEST
+-------------------------------------------------------
+1. Sichere deine bisherigen public/client.js und server.js in GitHub.
+2. Lege in public/ die ZWEI neuen host_card_gallery.* Dateien an.
+3. Ersetze public/client.js mit der beiliegenden Datei (Basis: V5 des
+   Special-Hover/Kristall-Sound-Updates).
+4. Ersetze server.js mit der beiliegenden Datei (Basis: 3-in-1-Würfel,
+   Special-Hover und 5-Artefakt-Exemplare-Fix).
+5. Committen, auf Render den erfolgreichen Deploy abwarten,
+   Seite im Browser mit Strg+F5 neu laden.
+
+DU HAST SEITDEM NOCH ANDERE CODE-ÄNDERUNGEN GEMACHT?
+---------------------------------------------------
+Dann NICHT einfach die beiden großen Dateien überschreiben.
+Nur die 2 neuen public/host_card_gallery.* Dateien hochladen und die
+kleinen Ergänzungen aus NUR_KLEINE_CODE_ERGAENZUNGEN.txt an deine
+AKTUELLE client.js und server.js anhängen/einfügen.
+So bleiben alle neuen Arena-, Würfel-, Spezial- und Kristall-Fixes erhalten.
+
+TEST
+----
+1. Als Host einen Raum erstellen => Karten-Button ist in der Lobby sichtbar.
+2. Galerie öffnen => alle Karten aus dem aktuellen Katalog laden.
+3. Filtern, suchen, eine Special-Karte vergrößern und Rückseite prüfen.
+4. Mit zweitem Browser/Fenster als Mitspieler beitreten => dort gibt es
+   keinen Galerie-Button. Auch direkte Anfragen werden serverseitig abgewiesen.
+5. Match starten => Galerie ist nicht mehr sichtbar oder bedienbar.
+
+Die Galerie wurde mit simulierten Client-/Server-Events auf Desktop und
+Handy getestet. Kein echter Render-Deploy und kein reales Match wurden
+mit diesem Paket durchgeführt.

@@ -2674,3 +2674,17 @@ window.addEventListener('mousemove',e=>{if(!inspectDragging)return;inspectRotati
 window.addEventListener('mouseup',e=>{if(e.button===2){inspectDragging=false;document.body.classList.remove('inspecting-card')}});
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#cardInspectOverlay')?.classList.contains('open'))closeCardInspect()});
 
+
+
+/* Host-Galerie: ausschließlich eine lesende Lobby-Vorschau; keine Spielaktionen. */
+(()=>{
+  const css = document.createElement('link');
+  css.rel='stylesheet';
+  css.href='/host_card_gallery.css?v=1';
+  document.head.appendChild(css);
+  const script = document.createElement('script');
+  script.src='/host_card_gallery.js?v=1';
+  script.onload=()=>window.MLPHostCardGalleryInstall?.(socket,()=>({state,myId}));
+  script.onerror=()=>console.warn('MLP Host-Kartengalerie konnte nicht geladen werden.');
+  document.body.appendChild(script);
+})();

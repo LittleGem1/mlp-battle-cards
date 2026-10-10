@@ -1,0 +1,48 @@
+SICHERE ALTERNATIVE: BEI NEUEREN SPIELDATEIEN NUR KLEINE ÄNDERUNGEN MACHEN
+=========================================================================
+
+1) Kopiere public/host_card_gallery.js und public/host_card_gallery.css
+   unverändert in den public/-Ordner.
+
+2) Füge GANZ UNTEN in deiner aktuellen public/client.js diesen Block ein:
+
+/* Host-Kartengalerie – nur lesen, kein Einfluss auf das Spiel */
+(()=>{
+  const css=document.createElement('link');
+  css.rel='stylesheet';
+  css.href='/host_card_gallery.css?v=1';
+  document.head.appendChild(css);
+  const script=document.createElement('script');
+  script.src='/host_card_gallery.js?v=1';
+  script.onload=()=>window.MLPHostCardGalleryInstall?.(socket,()=>({state,myId}));
+  script.onerror=()=>console.warn('MLP Host-Kartengalerie konnte nicht geladen werden.');
+  document.body.appendChild(script);
+})();
+
+(Die Variablen socket, state, myId existieren in der aktuellen
+ client.js deines MLP-Spiels. Block NICHT mehrfach hinzufügen.)
+
+3) Suche in der aktuellen server.js nach genau dieser Zeile:
+
+io.on('connection',socket=>{
+
+   Direkt DARUNTER einfügen:
+
+  // Host-only read-only gallery. Never sends cards to other players and never changes decks.
+  socket.on('hostCardGalleryRequest',()=>{
+    const room=getRoom(socket);
+    const eligible=room && room.hostId===socket.id && room.players.has(socket.id)
+      && (room.phase==='lobby'||(room.phase==='gameover'&&room.postGameReady?.has(socket.id)));
+    if(!eligible)return;
+    const fields=['id','type','name','image','strength','speed','magic','energy','text','useIcon','useLabel'];
+    const cardsForHost=[...normal,...specials,...artifacts].map(card=>
+      Object.fromEntries(fields.filter(key=>Object.hasOwn(card,key)).map(key=>[key,card[key]])));
+    socket.emit('hostCardGalleryData',{cards:cardsForHost});
+  });
+
+   WICHTIG: Ganz oben in server.js muss bereits existieren:
+   const { normal, specials, artifacts, byId } = require('./cards');
+
+4) GitHub Commit, Render-Deploy abwarten, Browser neu laden (Strg+F5).
+
+Bitte keine bestehenden anderen Zeilen entfernen!
