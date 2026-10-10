@@ -1,35 +1,33 @@
-MLP Battle Cards – WÜRFEL + SPECIAL + ARTEFAKTE (3-in-1)
-==========================================================
+MLP BATTLE CARDS | SPECIAL-HOVER + KRISTALL-SOUND | V5
+======================================================
 
-Dieses Paket wurde geprüft. Alle drei Änderungen sind in den aktiven Dateien integriert:
+DIE ZWEI FEHLER
+1. Krallhieb / andere Spezialkarten: „Lesen“ / „Ausspielen“ und der
+   Info-Kasten waren wegen alter !important-CSS-Regeln dauerhaft sichtbar.
+   Jetzt: auf PC nur beim Ueberfahren (auch Tastatur-Fokus), auf Handy
+   aus Gruenden der Bedienbarkeit weiterhin sichtbar.
+2. Der Kristall dreht sich, aber der Ton ist nicht wahrnehmbar:
+   Die alte Datei dauert nur 0,26 s und hat rund -36 dB Mittelpegel.
+   Derselbe Ton ist jetzt lauter; Wiederholung laeuft waehrend der
+   2,7-s-Drehphase. Beim Aufdecken stoppt er. Wenn mp3-Wiedergabe
+   blockiert ist, faellt die Software auf sanfte WebAudio-Toene zurueck.
 
-1. Würfel-Button & Würfel-Ergebnisanzeige LINKS direkt unter der Kategorie (CSS für #diceZone)
-2. Special-Karten: Lesen/Ausspielen nur bei Maus-Hover/Fokus; auf Touch-Geräten sichtbar
-3. Artefakt-Häufigkeit: 5 Exemplare je Artefakt statt 3 im Goldstapel
+GITHUB-UPLOAD (für den zuletzt eingesetzten 3-in-1-Fix):
+- public/client.js           -> im Repository public/client.js ERSETZEN
+- public/style.css           -> im Repository public/style.css ERSETZEN
+- public/assets/sounds/05_kristall_dreht.mp3 -> diese einzelne Sounddatei ERSETZEN
 
-ENTHALTENE DATEIEN
-- public/style.css (Würfel + Special-Hover bereits drin)
-- server.js (Artefaktmenge 5 bereits drin)
-- NUR_CSS_AN_BESTEHENDE_STYLE_ANHAENGEN.css (alternative sicherere Einbauvariante)
-- ANLEITUNG.txt
+BITTE den Ordner 'public' beibehalten. server.js NICHT austauschen!
+Die Artefaktchance 5, Wuerfel links, Smolder, restliche Sounds und
+alle Spielmechaniken werden nicht veraendert.
 
-EINBAU MIT NEUEREN EIGENEN FIXES (EMPFOHLEN)
-1. Aktuelle public/style.css aus dem GitHub-Repository öffnen.
-2. Inhalt von NUR_CSS_AN_BESTEHENDE_STYLE_ANHAENGEN.css einmal GANZ UNTEN anhängen.
-   Wenn ein alter gleicher Block schon vorhanden ist, darf er ersetzt werden; bitte NICHT wiederholt doppelt anhängen.
-3. Aktuelle server.js im Repo-Hauptordner öffnen und nur den Wert
-     const REWARD_ARTIFACT_COPIES = 3;
-   auf
-     const REWARD_ARTIFACT_COPIES = 5;
-   ändern. Falls bereits 5 eingestellt ist, nichts ändern.
-4. Änderungen committen, Render-Deploy abwarten, danach Seite mit Strg+F5 hart neu laden.
-5. Gleichstands-Runde ausprobieren; Würfelbutton und die Ergebnisse sollten links unter der Kategorie erscheinen.
+ACHTUNG: Die zwei vollstaendigen Dateien sind auf Basis des zuletzt
+besprochenen 3-in-1-Pakets / zugehoerigen Projektcodes erstellt.
+Falls du seither andere Aenderungen an public/client.js oder
+public/style.css hast, diese NICHT blind ueberschreiben.
+Stattdessen bitte die AKTUELLEN Dateien hier hochladen, damit
+wir nur die betreffenden Stellen aktualisieren koennen.
 
-ALTERNATIVE (NUR wenn deine aktuelle CSS nicht weiter modifiziert wurde):
-- public/style.css ersetzen und server.js ersetzen, beide Pfade beibehalten.
-
-HINWEISE
-- Die vorige ZIP mit Special-Hover/Artefakten enthielt den Würfel-CSS-Block bereits.
-  Er war in der Beschreibung leider übersehen worden.
-- Kein Umbau der Würfellogik oder der Kartenmechanik.
-- Die tatsächliche Render-Webseite kann von hier aus nicht interaktiv getestet werden.
+Nach GitHub Commit Render-Deployment abwarten und die Seite mit
+Strg+F5 neu laden. Zum Soundtest auf dem Startbildschirm einmal
+ins Spiel klicken, damit der Browser Tonwiedergabe freigibt.

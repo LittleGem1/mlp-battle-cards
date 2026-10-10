@@ -1131,6 +1131,32 @@ function buildHandCard(c,me,normals,blockedId){
     el.append(actions);
     if(state?.phase!=='select'||me?.selected){use.disabled=true;use.title='Spezialkarte während der Kartenauswahl und vor der normalen Karte spielen';}
 
+    // V5: Kontrolliere das Hover-Verhalten DIREKT am DOM-Element.
+    // Aeltere Stylesheets haben die Aktionen mit !important dauerhaft sichtbar
+    // gemacht. Inline-!important hat Vorrang, ohne irgendeine Spielaktion zu aendern.
+    (function configureSpecialCardHover(){
+      const hoverDevice=window.matchMedia?.('(hover: hover) and (pointer: fine)');
+      const targets=[strip,actions,...actions.querySelectorAll('button')];
+      const setCardHoverVisible=(isHovered)=>{
+        const shouldHide=Boolean(hoverDevice?.matches) && !isHovered;
+        targets.forEach(node=>{
+          node.style.setProperty('visibility',shouldHide?'hidden':'visible','important');
+          node.style.setProperty('opacity',shouldHide?'0':'1','important');
+          node.style.setProperty('pointer-events',shouldHide?'none':node===strip?'none':'auto','important');
+        });
+      };
+      el.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')setCardHoverVisible(true)});
+      el.addEventListener('pointerleave',()=>{
+        if(!el.contains(document.activeElement))setCardHoverVisible(false);
+      });
+      el.addEventListener('focusin',()=>setCardHoverVisible(true));
+      el.addEventListener('focusout',()=>requestAnimationFrame(()=>{
+        if(!el.contains(document.activeElement) && !el.matches(':hover'))setCardHoverVisible(false);
+      }));
+      hoverDevice?.addEventListener?.('change',()=>setCardHoverVisible(el.matches(':hover')));
+      setCardHoverVisible(el.matches(':hover'));
+    })();
+
     // Bei Spezialkarten ist ein normaler Klick zum Lesen da – gespielt wird
     // ausschließlich über den deutlichen „Ausspielen“-Button unter der Karte.
     el.addEventListener('click',e=>{
@@ -1475,19 +1501,55 @@ function categorySound(cat){
   else if(cat==='energy'){tone(250,.15,.04,'sawtooth');tone(500,.2,.035,'triangle',.1)}
   else {tone(520,.12,.04,'sine');tone(780,.18,.045,'sine',.08);tone(1040,.2,.035,'triangle',.18)}
 }
+// V5: gut hoerbarer Original-Kristallklang (parallel zum Rotieren).
+// Der zuvor nur 0,26 Sekunden lange Sound war zusaetzlich sehr leise.
 let crystalSpinAudio=null;
+let crystalFallbackNodes=[];
 function stopCrystalSpinSound(){
-  if(crystalSpinAudio){crystalSpinAudio.pause();crystalSpinAudio.currentTime=0;crystalSpinAudio=null;}
+  if(crystalSpinAudio){
+    try{crystalSpinAudio.pause();crystalSpinAudio.currentTime=0;}catch(err){}
+    crystalSpinAudio=null;
+  }
+  crystalFallbackNodes.forEach(osc=>{try{osc.stop()}catch(err){}});
+  crystalFallbackNodes=[];
+}
+function crystalSpinFallbackSound(){
+  // Nur wenn das Abspielen der mp3 im Browser fehlschlaegt.
+  const ctx=ensureAudio.ctx;
+  if(!ctx || ctx.state!=='running' || battleSoundVolume<=0)return;
+  const t=ctx.currentTime, notes=[523.25,659.25,783.99,1046.5,987.77,1174.66,1318.51,1567.98];
+  notes.forEach((freq,i)=>{
+    const oscillator=ctx.createOscillator(),gain=ctx.createGain();
+    const start=t+i*.30;
+    oscillator.type='sine';oscillator.frequency.setValueAtTime(freq,start);
+    gain.gain.setValueAtTime(0,start);
+    gain.gain.linearRampToValueAtTime(battleSoundVolume*.045,start+.055);
+    gain.gain.exponentialRampToValueAtTime(.0001,start+.31);
+    oscillator.connect(gain);gain.connect(ctx.destination);
+    oscillator.start(start);oscillator.stop(start+.32);
+    crystalFallbackNodes.push(oscillator);
+  });
 }
 function crystalSpinSound(){
   stopCrystalSpinSound();
-  const file=BATTLE_SFX.kristall;if(!file)return;
+  const file=BATTLE_SFX.kristall;
+  if(!file || battleSoundVolume<=0)return;
   try{
-    const audio=new Audio('/assets/sounds/'+file);
-    audio.loop=true;audio.volume=Math.max(0,Math.min(1,battleSoundVolume*.8));
+    // Eigene Dateiversion: Browser laedt nicht die alte extrem leise Cache-Datei.
+    const audio=new Audio('/assets/sounds/'+file+'?v=kristall-v5-hoerbar');
+    audio.preload='auto';
+    audio.loop=true;
+    audio.volume=Math.max(0,Math.min(1,battleSoundVolume*1.15));
     crystalSpinAudio=audio;
-    audio.play().catch(()=>{});
-  }catch(err){console.warn('Kristallton nicht abspielbar:',err)}
+    const promise=audio.play();
+    if(promise?.catch)promise.catch(err=>{
+      console.warn('Kristall-MP3 blockiert; benutze Klang-Fallback:',err);
+      if(crystalSpinAudio===audio)crystalSpinFallbackSound();
+    });
+  }catch(err){
+    console.warn('Kristall-MP3 nicht abspielbar; benutze Klang-Fallback:',err);
+    crystalSpinFallbackSound();
+  }
 }
 function crystalLandSound(){playSfx('vergleich',{gain:.6,cooldown:1200})}
 let roundIntroActiveKey='';
@@ -1849,31 +1911,7 @@ function setupFiveDustDissolve(){
 
 function v7FinisherDecor(kind,layer){
   if(kind==='smolder'){
-    layer.innerHTML=`
-      <div class="smx-smolder-scene" aria-hidden="true">
-        <div class="smx-smolder-dragon">
-          <span class="smx-tail"></span>
-          <span class="smx-body"></span>
-          <span class="smx-belly"></span>
-          <span class="smx-leg back"></span>
-          <span class="smx-leg front"></span>
-          <span class="smx-wing back"></span>
-          <span class="smx-neck"></span>
-          <span class="smx-head"></span>
-          <span class="smx-horn h1"></span>
-          <span class="smx-horn h2"></span>
-          <span class="smx-eye"></span>
-          <span class="smx-mouth"></span>
-          <span class="smx-wing front"></span>
-        </div>
-        <span class="smx-fire-beam outer"></span>
-        <span class="smx-fire-beam mid"></span>
-        <span class="smx-fire-beam core"></span>
-        <span class="smx-burn-glow"></span>
-        <span class="smx-ash-cloud"></span>
-        ${Array.from({length:14},(_,i)=>`<i class="smx-ember e${i+1}"></i>`).join('')}
-        ${Array.from({length:8},(_,i)=>`<i class="smx-smoke s${i+1}"></i>`).join('')}
-      </div>`;
+    layer.innerHTML=`<img class="loser-smolder-art" src="/assets/animations/smolder-fire.webp" alt="" aria-hidden="true"><img class="loser-fire-stream" src="/assets/animations/fire-stream.webp" alt="" aria-hidden="true"><span class="loser-burn-glow"></span>`;
   }else if(kind==='meteor'){
     layer.innerHTML=`<img class="loser-meteor-art meteor-flipped" src="/assets/animations/meteor.webp" alt="" aria-hidden="true"><span class="loser-impact"></span><span class="meteor-burn"></span><span class="loser-ember ember-a"></span><span class="loser-ember ember-b"></span><span class="loser-ember ember-c"></span>`;
   }else if(kind==='dust'){

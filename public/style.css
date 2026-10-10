@@ -4215,3 +4215,39 @@ body.scene-lobby #crystalDrift * {
     transition: none !important;
   }
 }
+
+/* ===================================================================
+   MLP Battle Cards V5 | Spezialkarten-Hover NOTFALLFIX
+   Versteckt im Ruhezustand auch den Info-Kasten, der auf Screenshots
+   oberhalb der Karte klebte. Bei Hover oder Tastaturfokus sichtbar.
+   Bild, Anordnung der Hand, Kartengroessen und Spielregeln unangetastet.
+   JS setzt diese Sichtbarkeit zusätzlich per Inline-!important durch.
+   =================================================================== */
+@media (hover:hover) and (pointer:fine) {
+  #game #hand .hand-card.special > .special-text-strip,
+  #game #hand .hand-card.special > .special-actions,
+  #game #hand .hand-card.special > .special-actions > button {
+    opacity:0 !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+  #game #hand .hand-card.special:hover > .special-text-strip,
+  #game #hand .hand-card.special:hover > .special-actions,
+  #game #hand .hand-card.special:hover > .special-actions > button,
+  #game #hand .hand-card.special:focus-within > .special-text-strip,
+  #game #hand .hand-card.special:focus-within > .special-actions,
+  #game #hand .hand-card.special:focus-within > .special-actions > button {
+    opacity:1 !important;
+    visibility:visible !important;
+    pointer-events:auto !important;
+  }
+  #game #hand .hand-card.special:is(:hover,:focus-within) > .special-text-strip {pointer-events:none !important;}
+}
+@media (hover:none), (pointer:coarse) {
+  #game #hand .hand-card.special > .special-actions,
+  #game #hand .hand-card.special > .special-text-strip {
+    opacity:1 !important;
+    visibility:visible !important;
+    pointer-events:auto !important;
+  }
+}
