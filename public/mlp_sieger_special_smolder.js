@@ -87,24 +87,29 @@
     const active=overlay.classList.contains('active') && overlay.classList.contains('stage-smolder');
     const previous=byId('mlpSmolderOriginalGif');
     if(!active){
+      if(previous?._hideTimer)clearTimeout(previous._hideTimer);
       previous?.remove();
       if(overlay.classList.contains('smolder-gif-ready'))overlay.classList.remove('smolder-gif-ready');
       return;
     }
     const stage=overlay.querySelector('.finisher-stage');
     if(!stage)return;
-    if(!previous || previous.parentNode!==stage){
+    let img=previous;
+    if(!img || img.parentNode!==stage){
       previous?.remove();
-      const img=document.createElement('img');
+      img=document.createElement('img');
       img.id='mlpSmolderOriginalGif';
       img.className='smolder-original-gif';
-      img.alt='Smolder fliegt und speit Feuer';
+      img.alt='Smolder fliegt und speit einmal Feuer';
       img.setAttribute('aria-hidden','true');
       img.draggable=false;
-      // Neuer Aufruf je Finisher startet die acht Originalframes erneut.
-      img.src='/assets/animations/smolder-original-user.gif?v=20261010-final';
       stage.appendChild(img);
     }
+    img.classList.remove('smolder-finished');
+    if(img._hideTimer)clearTimeout(img._hideTimer);
+    // Langsamere Einmal-Animation; Cache-Buster startet die Frames bei jedem Finisher/Test neu.
+    img.src='/assets/animations/smolder-original-once-slow.gif?v=' + Date.now();
+    img._hideTimer=setTimeout(()=>img.classList.add('smolder-finished'),1950);
     if(!overlay.classList.contains('smolder-gif-ready'))overlay.classList.add('smolder-gif-ready');
   }
 

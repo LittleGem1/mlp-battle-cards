@@ -101,9 +101,11 @@ body.fx-special-active #mlpSpecialNotice{opacity:0!important;visibility:hidden!i
   transform:translateY(-50%);
   object-fit:contain!important;
   opacity:1;
+  transition:opacity .18s ease;
   /* Original-GIF hat eine transparente Fläche um den Charakter. */
   filter:drop-shadow(0 8px 14px rgba(0,0,0,.35));
 }
+#finisherOverlay.stage-smolder.smolder-gif-ready .smolder-original-gif.smolder-finished{opacity:0!important}
 @media(max-width:760px){
   #finisherOverlay.stage-smolder.smolder-gif-ready .smolder-original-gif{
     left:2%!important;
