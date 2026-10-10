@@ -1,0 +1,32 @@
+MLP BATTLE CARDS – KRISTALL REPARATUR V3
+
+WICHTIG: BITTE NICHT die bisherige Spielmechanik / client.js ersetzen!
+
+Diese ZIP ist für deinen letzten Stand:
+"MLP_Sieger_Special_Smolder_SICHER_MIT_ARENA_FIX".
+
+ENTHALTEN:
+- public/index.html (ersetzen)
+- public/mlp_crystal_v3.css (NEU)
+- public/mlp_crystal_v3.js (NEU)
+
+SO GEHT ES:
+1. ZIP herunterladen und entpacken.
+2. Den Inhalt des Ordners public auf GitHub in deinen Ordner public hochladen.
+3. index.html ERSETZEN, beide neuen crystal-v3 Dateien HINZUFÜGEN.
+4. In GitHub committen, Render-Deployment abwarten.
+5. Auf deiner Spielseite ?kristalltest=1 an die URL anhängen.
+   Beispiel: https://mlp-battle-cards.onrender.com/?kristalltest=1
+   Der Kristall muss jetzt direkt als Vorschau erscheinen.
+6. Normale URL ohne Test-Parameter öffnen und eine neue Runde testen.
+
+FEHLERBEHEBUNG:
+- Falls der Kristall im Testmodus NICHT erscheint, kann der Browser die
+  zwei neuen v3-Dateien nicht laden. Stelle sicher, dass sie in public/ liegen.
+- Wenn Test funktioniert, aber eine Runde nicht, melde das mit Bildschirmfoto.
+- Bestehende Karte / Server / Audio- / Gegnerlogik bleibt unverändert.
+- Alte Kristall-Overlays werden nur bei aktiv geladenem V3-Zusatz ausgeblendet.
+- Keine blendenden Weißblitze oder Stroboskope.
+
+Bei Bedarf kannst du diese drei Dateien wieder entfernen und die vorherige
+index.html zurückholen.
