@@ -4048,240 +4048,94 @@ body.scene-lobby #crystalDrift * {
 }
 
 
-/* === GEM ARENA RESTORE 2026-10-10: EINE Spielflaeche statt Zusatzzeilen ===
-   Restauriert die alte ueberlagerte Arena-Anordnung; betrifft nur #game.
-   Kein Ersatz fuer Spielregeln, Audio, Spezialkarten oder Kartenrendering. */
-@media (min-width: 780px) {
-  body.scene-game #game.screen.active > .arena {
-    position: relative !important; isolation:isolate !important;
-    box-sizing:border-box !important; max-width:1280px !important;
-    height:max(650px,calc(100dvh - 94px)) !important;
-    min-height:650px !important; padding:0 !important;
-    overflow:hidden !important; background:transparent !important;
-  }
-  body.scene-game #game .arena #arenaVfx {
-    position:absolute !important; inset:0 !important; z-index:0 !important;
-    background-size:cover !important; background-position:center center !important;
-    background-repeat:no-repeat !important; background-color:transparent !important;
-    opacity:1 !important; filter:none !important;
-  }
-  body.scene-game #game .arena .game-actions {
-    position:absolute !important; top:12px !important; left:13% !important;
-    right:13% !important; bottom:auto !important; width:auto !important;
-    margin:0 !important; padding:0 !important; z-index:35 !important;
-  }
-  body.scene-game #game .arena #opponents.opponents {
-    position:absolute !important; top:66px !important; left:5% !important;
-    right:5% !important; bottom:auto !important; width:90% !important;
-    max-width:none !important; height:auto !important; min-height:0 !important;
-    margin:0 !important; padding:5px !important; gap:12px !important;
-    display:grid !important; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)) !important;
-    background:transparent !important; border:0 !important;
-    box-shadow:none !important; backdrop-filter:none !important;
-    z-index:7 !important;
-  }
-  body.scene-game #game .arena #opponents .opponent {
-    background:rgba(10,14,39,.32) !important;
-    backdrop-filter:blur(2px) !important;
-    border:1px solid rgba(190,215,255,.26) !important;
-    border-radius:15px !important;
-    padding:7px 5px 5px !important;
-    min-height:0 !important;
-  }
-  body.scene-game #game .arena .center-stage {
-    position:absolute !important; top:240px !important; bottom:215px !important;
-    left:10% !important; right:10% !important; width:80% !important;
-    max-width:none !important; min-height:0 !important; height:auto !important;
-    margin:0 !important; padding:0 !important;
-    background:transparent !important; border:0 !important; box-shadow:none !important;
-    backdrop-filter:none !important; overflow:visible !important; z-index:9 !important;
-  }
-  body.scene-game #game .arena .center-stage #category.category {
-    position:absolute !important; left:-10% !important; top:4px !important;
-    right:auto !important; bottom:auto !important; margin:0 !important;
-    transform:none !important; animation:none !important;
-    width:145px !important; max-width:145px !important; min-width:0 !important;
-    padding:9px 8px !important; z-index:18 !important;
-    flex-direction:column !important; text-align:center !important;
-  }
-  body.scene-game #game .arena .center-stage #deckHud.deck-hud {
-    position:absolute !important; inset:0 !important; width:100% !important;
-    height:100% !important; margin:0 !important; padding:0 !important;
-    background:none !important; border:0 !important; box-shadow:none !important;
-    pointer-events:none !important;
-  }
-  body.scene-game #game .arena #normalDeckHud,
-  body.scene-game #game .arena #rewardDeckHud {pointer-events:auto !important;}
-  body.scene-game #game .arena .center-stage #roundMessage.round-message {
-    position:absolute !important; left:14% !important; right:14% !important;
-    top:0 !important; margin:0 !important; text-align:center !important;
-    background:transparent !important; box-shadow:none !important;
-  }
-  body.scene-game #game .arena .center-stage #tableCards.table-cards {
-    position:absolute !important; left:15% !important; right:15% !important;
-    top:38px !important; width:auto !important; height:auto !important;
-    min-height:90px !important; margin:0 !important;
-    background:transparent !important; border:0 !important; box-shadow:none !important;
-  }
-  body.scene-game #game .arena #selfNameplate.self-nameplate {
-    position:absolute !important; left:50% !important; bottom:194px !important;
-    top:auto !important; margin:0 !important; transform:translateX(-50%) !important;
-    z-index:16 !important;
-  }
-  body.scene-game #game .arena .self-bar {
-    position:absolute !important; left:50% !important; bottom:171px !important;
-    top:auto !important; margin:0 !important; transform:translateX(-50%) !important;
-    z-index:17 !important;
-  }
-  body.scene-game #game .arena #artifactShelf.artifact-shelf {
-    position:absolute !important; right:8px !important; top:185px !important;
-    left:auto !important; bottom:auto !important; margin:0 !important;
-    width:135px !important; max-width:135px !important; z-index:22 !important;
-  }
-  body.scene-game #game .arena #hand.hand,
-  body.scene-game #game .arena #hand.hand:not(.large-hand) {
-    position:absolute !important; left:9% !important; right:9% !important;
-    bottom:9px !important; top:auto !important; width:82% !important;
-    height:auto !important; min-height:0 !important; max-height:163px !important;
-    margin:0 !important; padding:3px 4px 5px !important;
-    display:flex !important; flex-wrap:nowrap !important;
-    align-items:flex-start !important; justify-content:center !important;
-    gap:7px !important; background:transparent !important;
-    background-image:none !important; border:0 !important; box-shadow:none !important;
-    backdrop-filter:none !important; overflow-x:auto !important; overflow-y:visible !important;
-    transform:none !important; z-index:19 !important;
-  }
-  body.scene-game #game .arena #hand .hand-card {
-    flex:0 0 auto !important; width:clamp(75px,9vw,104px) !important;
-    min-width:75px !important; max-width:104px !important;
-    margin:0 !important;
-  }
-  body.scene-game #game .arena #hand .hand-card.special {
-    padding-bottom:0 !important;
-  }
-  body.scene-game #game .arena #hand .hand-card.special .special-actions {
-    position:relative !important; display:flex !important;
-    flex-direction:row !important; margin-top:3px !important;
-  }
-  body.scene-game #game .arena #hand .hand-card.special .special-text-strip {
-    display:none !important;
-  }
-  body.scene-game #game .arena #hand .hand-card.special .special-actions button {
-    min-height:25px !important; font-size:10px !important; padding:3px !important;
-  }
+/* === Smolder V2: neue Vorschau + Ingame-Finisher === */
+#finisherOverlay.v7-finisher.stage-smolder .v4-overlay-effect{
+  inset:-15% -70% -14% -55%!important;
+  width:auto!important;
+  height:auto!important;
+  overflow:visible!important;
 }
-@media(max-width:779px){
-  body.scene-game #game .arena #arenaVfx {background-size:cover !important; background-position:center !important;}
-  body.scene-game #game .arena .center-stage,
-  body.scene-game #game .arena #hand {background:transparent !important;backdrop-filter:none !important;box-shadow:none !important;}
-  body.scene-game #game .arena .center-stage #category.category{position:absolute !important;left:0 !important;top:0 !important;}
+#finisherOverlay.v7-finisher.stage-smolder .smx-smolder-scene{
+  position:absolute;inset:0;pointer-events:none;overflow:visible;
 }
+#finisherOverlay.v7-finisher.stage-smolder .smx-smolder-dragon{
+  position:absolute;left:-5%;top:10%;width:58%;height:58%;
+  transform-origin:center center;opacity:0;
+  filter:drop-shadow(0 10px 18px rgba(0,0,0,.45)) drop-shadow(0 0 22px rgba(255,118,43,.25));
+  animation:smxDragonEnter 3.8s ease both;
+}
+#finisherOverlay.v7-finisher.stage-smolder .smx-smolder-dragon span,
+#finisherOverlay.v7-finisher.stage-smolder .smx-fire-beam,
+#finisherOverlay.v7-finisher.stage-smolder .smx-burn-glow,
+#finisherOverlay.v7-finisher.stage-smolder .smx-ash-cloud,
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember,
+#finisherOverlay.v7-finisher.stage-smolder .smx-smoke{
+  position:absolute;display:block;pointer-events:none;
+}
+#finisherOverlay.v7-finisher.stage-smolder .smx-body{left:16%;top:33%;width:32%;height:20%;border-radius:48% 44% 38% 44%;background:linear-gradient(180deg,#ffbf52,#ff8a2c 38%,#df4d1a 100%);border:3px solid #7c220d;transform:rotate(-8deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-belly{left:23%;top:39%;width:15%;height:9%;border-radius:45% 48% 38% 40%;background:linear-gradient(180deg,#ffe8af,#ffcb71);transform:rotate(-7deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-neck{left:40%;top:28%;width:14%;height:10%;border-radius:50% 45% 35% 35%;background:linear-gradient(180deg,#ffab40,#f36a22);border:3px solid #7c220d;transform:rotate(-18deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-head{left:48%;top:22%;width:15%;height:12%;border-radius:55% 47% 50% 40%;background:linear-gradient(180deg,#ffb049,#f26a24 70%);border:3px solid #7c220d;transform:rotate(-9deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-mouth{left:58%;top:30%;width:10%;height:5px;border-radius:999px;background:#5f1409;transform:rotate(-8deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-eye{left:57%;top:27.5%;width:8px;height:8px;border-radius:50%;background:#fff7c4;box-shadow:0 0 7px #fff7c4,0 0 16px #ffb347;animation:smxEyeBlink 1.6s .7s 1 both}
+#finisherOverlay.v7-finisher.stage-smolder .smx-horn{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:18px solid #ffe1a0;transform:rotate(-16deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-horn.h1{left:52%;top:15%}
+#finisherOverlay.v7-finisher.stage-smolder .smx-horn.h2{left:58%;top:14%;border-bottom-color:#ffd177}
+#finisherOverlay.v7-finisher.stage-smolder .smx-leg{width:8%;height:12%;border-radius:40% 40% 28% 28%;background:linear-gradient(180deg,#ff982a,#ca4316);border:3px solid #7c220d;top:46%}
+#finisherOverlay.v7-finisher.stage-smolder .smx-leg.back{left:23%;transform:rotate(14deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-leg.front{left:36%;transform:rotate(-10deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-tail{left:6%;top:40%;width:16%;height:6%;border-radius:999px;background:linear-gradient(90deg,#c53b14,#ff8d2b);transform:rotate(-20deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-tail::after{content:"";position:absolute;right:-14px;top:-10px;width:24px;height:24px;background:radial-gradient(circle at 35% 35%,#fff7c0 0 13%,#ffa435 35%,#f34d18 64%,transparent 74%);clip-path:polygon(50% 0,72% 26%,100% 56%,69% 100%,43% 81%,0 100%,17% 58%,0 25%)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-wing{width:24%;height:19%;background:linear-gradient(180deg,#cb4820,#822012);border:3px solid #651409;clip-path:polygon(0 100%,12% 32%,44% 0,73% 29%,100% 0,88% 65%,100% 100%);transform-origin:left bottom}
+#finisherOverlay.v7-finisher.stage-smolder .smx-wing.back{left:21%;top:16%;opacity:.78;transform:rotate(-15deg);animation:smxWingBack 1.45s ease-in-out infinite alternate}
+#finisherOverlay.v7-finisher.stage-smolder .smx-wing.front{left:30%;top:19%;transform:rotate(7deg);animation:smxWingFront 1.1s ease-in-out infinite alternate}
 
+#finisherOverlay.v7-finisher.stage-smolder .smx-fire-beam{left:46%;top:26%;transform-origin:left center;opacity:0;clip-path:polygon(0 47%,9% 24%,18% 38%,31% 8%,44% 31%,57% 2%,71% 33%,86% 15%,100% 50%,87% 82%,72% 61%,58% 95%,44% 64%,30% 88%,18% 61%,8% 72%);}
+#finisherOverlay.v7-finisher.stage-smolder .smx-fire-beam.outer{width:95%;height:28%;background:linear-gradient(90deg,rgba(255,100,21,0) 0,#ff5e21 12%,#ff8e1e 36%,#ffd45f 72%,rgba(255,252,223,.95) 100%);filter:blur(6px) drop-shadow(0 0 18px rgba(255,124,28,.9));animation:smxFlameBlast 3.4s .7s ease-out both}
+#finisherOverlay.v7-finisher.stage-smolder .smx-fire-beam.mid{width:82%;height:18%;top:30%;background:linear-gradient(90deg,rgba(255,149,41,0) 0,#ff8f24 18%,#ffca57 62%,rgba(255,255,255,.98) 100%);filter:blur(3px) drop-shadow(0 0 12px rgba(255,197,74,.6));animation:smxFlameBlast 3.0s .82s ease-out both}
+#finisherOverlay.v7-finisher.stage-smolder .smx-fire-beam.core{width:64%;height:10%;top:34%;background:linear-gradient(90deg,rgba(255,255,255,0) 0,#fff6bf 22%,#fff 60%,rgba(255,255,255,.95) 100%);filter:drop-shadow(0 0 8px rgba(255,246,191,.9));animation:smxFlameBlast 2.8s .95s ease-out both}
+#finisherOverlay.v7-finisher.stage-smolder .smx-burn-glow{right:-2%;top:18%;width:50%;height:66%;border-radius:50%;background:radial-gradient(circle,#fff1a6 0 10%,rgba(255,141,44,.8) 24%,rgba(255,86,15,.34) 42%,rgba(0,0,0,0) 72%);filter:blur(16px);opacity:0;animation:smxImpactGlow 3.2s 1.15s ease-out both}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ash-cloud{right:6%;top:12%;width:36%;height:76%;background:radial-gradient(circle at 40% 40%,rgba(255,190,120,.22),rgba(95,95,95,.22) 26%,rgba(255,255,255,0) 65%);filter:blur(16px);opacity:0;animation:smxAshCloud 2.3s 1.7s ease-out both}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember{width:10px;height:14px;border-radius:55% 55% 40% 40%;background:linear-gradient(180deg,#fff7c6,#ffb746 45%,#f24c17 80%,rgba(242,76,23,0) 100%);box-shadow:0 0 10px rgba(255,158,50,.8);left:48%;top:32%;opacity:0;transform-origin:center center;animation:smxEmberFly 1.2s calc(1.0s + var(--d,0s)) linear infinite}
+#finisherOverlay.v7-finisher.stage-smolder .smx-smoke{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.28),rgba(109,109,109,.3) 35%,rgba(109,109,109,0) 70%);left:78%;top:35%;opacity:0;filter:blur(2px);animation:smxSmokeRise 1.8s calc(1.35s + var(--sd,0s)) ease-out infinite}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember.e1{--d:0.00s;left:59%;top:35%;transform:scale(0.82) rotate(-16deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember.e2{--d:0.08s;left:68%;top:42%;transform:scale(0.94) rotate(-7deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember.e3{--d:0.16s;left:77%;top:49%;transform:scale(1.06) rotate(2deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember.e4{--d:0.24s;left:86%;top:56%;transform:scale(0.70) rotate(11deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember.e5{--d:0.32s;left:50%;top:63%;transform:scale(0.82) rotate(20deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember.e6{--d:0.40s;left:59%;top:28%;transform:scale(0.94) rotate(29deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember.e7{--d:0.48s;left:68%;top:35%;transform:scale(1.06) rotate(38deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember.e8{--d:0.56s;left:77%;top:42%;transform:scale(0.70) rotate(47deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember.e9{--d:0.64s;left:86%;top:49%;transform:scale(0.82) rotate(56deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember.e10{--d:0.72s;left:50%;top:56%;transform:scale(0.94) rotate(65deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember.e11{--d:0.80s;left:59%;top:63%;transform:scale(1.06) rotate(74deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember.e12{--d:0.88s;left:68%;top:28%;transform:scale(0.70) rotate(83deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember.e13{--d:0.96s;left:77%;top:35%;transform:scale(0.82) rotate(92deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-ember.e14{--d:1.04s;left:86%;top:42%;transform:scale(0.94) rotate(101deg)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-smoke.s1{--sd:0.00s;left:78%;top:35%;transform:scale(0.88)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-smoke.s2{--sd:0.13s;left:85%;top:44%;transform:scale(1.06)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-smoke.s3{--sd:0.26s;left:92%;top:53%;transform:scale(0.70)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-smoke.s4{--sd:0.39s;left:71%;top:62%;transform:scale(0.88)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-smoke.s5{--sd:0.52s;left:78%;top:26%;transform:scale(1.06)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-smoke.s6{--sd:0.65s;left:85%;top:35%;transform:scale(0.70)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-smoke.s7{--sd:0.78s;left:92%;top:44%;transform:scale(0.88)}
+#finisherOverlay.v7-finisher.stage-smolder .smx-smoke.s8{--sd:0.91s;left:71%;top:53%;transform:scale(1.06)}
 
-/* === MLP ARENA: RUHIGER BILDSCHIRM / KEIN GROSSFLAECHIGES FLACKERN ===
-   Aufbau aus dem funktionierenden Originalaufbau-Fix bleibt erhalten.
-   Nur die dekorativen Hintergrundeffekte und grossflaechigen Blitze ruhen. */
-body.scene-game #game .arena,
-body.scene-game #game .arena::before,
-body.scene-game #game .arena::after {
-  background-attachment: scroll !important;
-  animation: none !important;
-  transition: none !important;
-  filter: none !important;
-}
-body.scene-game #game .arena::before,
-body.scene-game #game .arena::after {
-  opacity: 0 !important;
-  background-image: none !important;
-  box-shadow: none !important;
-}
-body.scene-game #game #arenaVfx {
-  animation: none !important;
-  transition: none !important;
-  filter: none !important;
-  opacity: 1 !important;
-  background-attachment: scroll !important;
-}
-/* Keine zusaetzlichen Licht-/Wetter-/Gitterebenen ueber dem Hintergrund. */
-body.scene-game #game #arenaVfx > *,
-body.scene-game #game .arena .arena-particle,
-body.scene-game #game .arena .arena-lightning,
-body.scene-game #game .arena .arena-rain {
-  display: none !important;
-  animation: none !important;
-}
-/* Verhindert teure, bei manchen Browsern blinkende Hintergrund-Blur-Layer. */
-body.scene-game #game .arena .opponent,
-body.scene-game #game .arena .center-stage,
-body.scene-game #game .arena #hand,
-body.scene-game #game .arena .self-bar {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-/* Vollbild-Blinkeffekte bei Kartenauflösung / Finisher verhindern,
-   ohne die Animationen der Spielkarten selbst zu deaktivieren. */
-body.scene-game .crystal-flash,
-body.scene-game .v7-impact-flash,
-body.scene-game .v7-heart-crack,
-body.scene-game .v4-crack,
-body.scene-game .special-burst::before,
-body.scene-game .special-burst::after {
-  animation: none !important;
-  opacity: 0 !important;
-}
-@media (prefers-reduced-motion: reduce) {
-  body.scene-game #game .arena * {scroll-behavior:auto !important;}
-}
-
-
-/* === FIX: Kategorie-Kristall wieder sichtbar, ohne Arena-Flackern ===
-   Der Portal-Dialog liegt ausserhalb der Arena im body.
-   Daher darf nur die Kristall-Animation laufen, nicht die VFX-Ebenen. */
-#categoryCrystalPortal.round-crystal-portal {
-  position: fixed !important;
-  inset: 0 !important;
-  display: grid !important;
-  place-items: center !important;
-  z-index: 2147483000 !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  isolation: isolate !important;
-  background: rgba(6, 8, 24, .72) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  transition: opacity .18s ease !important;
-}
-#categoryCrystalPortal.round-crystal-portal.active {
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-#categoryCrystalPortal.round-crystal-portal.leaving { opacity: 0 !important; }
-#categoryCrystalPortal .round-crystal-box {
-  position: relative !important;
-  z-index: 1 !important;
-  visibility: visible !important;
-}
-#categoryCrystalPortal .battle-crystal {
-  opacity: 1;
-  filter: none !important;
-  will-change: transform;
-}
-@media (prefers-reduced-motion: no-preference) {
-  #categoryCrystalPortal.active .battle-crystal.spinning {
-    animation: battleCrystalSpin 2.72s cubic-bezier(.12,.75,.12,1) both !important;
-    animation-play-state: running !important;
-  }
-}
-#categoryCrystalPortal .round-crystal-result.show {
-  opacity: 1 !important;
-  visibility: visible !important;
-  transform: translateY(0) scale(1) !important;
-}
-@media (prefers-reduced-motion: reduce) {
-  #categoryCrystalPortal.active .battle-crystal.spinning {
-    animation: none !important;
-    transform: none !important;
-  }
-  #categoryCrystalPortal.active .round-crystal-result { opacity: 1 !important; }
+#finisherOverlay.v7-finisher.stage-smolder .finisher-card-image{animation:smxCardBurn 3.6s .15s ease-out forwards!important}
+@keyframes smxDragonEnter{0%{transform:translate(-140%,24px) scale(.7) rotate(-6deg);opacity:0}16%{opacity:1}38%{transform:translate(-18%,0) scale(1) rotate(1deg)}55%{transform:translate(-6%,-3px) scale(1.02) rotate(2deg)}100%{transform:translate(-10%,2px) scale(1) rotate(-1deg);opacity:1}}
+@keyframes smxWingFront{from{transform:rotate(7deg) translateY(0)}to{transform:rotate(17deg) translateY(-5px)}}
+@keyframes smxWingBack{from{transform:rotate(-15deg) translateY(0)}to{transform:rotate(-6deg) translateY(-3px)}}
+@keyframes smxEyeBlink{0%,100%{transform:scaleY(1)}45%{transform:scaleY(.16)}}
+@keyframes smxFlameBlast{0%{transform:scaleX(.02);opacity:0}12%{opacity:1}58%{transform:scaleX(1);opacity:1}100%{transform:scaleX(1.18);opacity:0}}
+@keyframes smxImpactGlow{0%{opacity:0;transform:scale(.6)}25%{opacity:.95;transform:scale(1)}75%{opacity:.85;transform:scale(1.08)}100%{opacity:0;transform:scale(1.2)}}
+@keyframes smxAshCloud{0%{opacity:0;transform:scale(.75)}30%{opacity:.6}100%{opacity:0;transform:translate(18px,-28px) scale(1.18)}}
+@keyframes smxEmberFly{0%{opacity:0;transform:translate(0,0) scale(.6)}15%{opacity:1}100%{opacity:0;transform:translate(calc(30px + (var(--d,0s) * 10)),calc(-28px - (var(--d,0s) * 30))) rotate(20deg) scale(1.2)}}
+@keyframes smxSmokeRise{0%{opacity:0;transform:translate(0,0) scale(.6)}24%{opacity:.45}100%{opacity:0;transform:translate(28px,-34px) scale(1.3)}}
+@keyframes smxCardBurn{0%,30%{opacity:1;filter:none;transform:none}46%{opacity:1;filter:sepia(1) saturate(3.8) brightness(1.45);transform:scale(1.03)}68%{opacity:.95;filter:sepia(1) saturate(5) brightness(.92) contrast(1.08)}100%{opacity:0;filter:blur(15px) brightness(.22) saturate(.4);transform:scale(.48) rotate(3deg)}}
+@media(max-width:760px){
+  #finisherOverlay.v7-finisher.stage-smolder .v4-overlay-effect{inset:-8% -55% -10% -42%!important}
+  #finisherOverlay.v7-finisher.stage-smolder .smx-smolder-dragon{width:66%;height:66%;left:-4%;top:14%}
+  #finisherOverlay.v7-finisher.stage-smolder .smx-fire-beam.outer{width:86%}
+  #finisherOverlay.v7-finisher.stage-smolder .smx-fire-beam.mid{width:73%}
+  #finisherOverlay.v7-finisher.stage-smolder .smx-fire-beam.core{width:58%}
 }

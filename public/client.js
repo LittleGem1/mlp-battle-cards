@@ -1849,7 +1849,31 @@ function setupFiveDustDissolve(){
 
 function v7FinisherDecor(kind,layer){
   if(kind==='smolder'){
-    layer.innerHTML=`<img class="loser-smolder-art" src="/assets/animations/smolder-fire.webp" alt="" aria-hidden="true"><img class="loser-fire-stream" src="/assets/animations/fire-stream.webp" alt="" aria-hidden="true"><span class="loser-burn-glow"></span>`;
+    layer.innerHTML=`
+      <div class="smx-smolder-scene" aria-hidden="true">
+        <div class="smx-smolder-dragon">
+          <span class="smx-tail"></span>
+          <span class="smx-body"></span>
+          <span class="smx-belly"></span>
+          <span class="smx-leg back"></span>
+          <span class="smx-leg front"></span>
+          <span class="smx-wing back"></span>
+          <span class="smx-neck"></span>
+          <span class="smx-head"></span>
+          <span class="smx-horn h1"></span>
+          <span class="smx-horn h2"></span>
+          <span class="smx-eye"></span>
+          <span class="smx-mouth"></span>
+          <span class="smx-wing front"></span>
+        </div>
+        <span class="smx-fire-beam outer"></span>
+        <span class="smx-fire-beam mid"></span>
+        <span class="smx-fire-beam core"></span>
+        <span class="smx-burn-glow"></span>
+        <span class="smx-ash-cloud"></span>
+        ${Array.from({length:14},(_,i)=>`<i class="smx-ember e${i+1}"></i>`).join('')}
+        ${Array.from({length:8},(_,i)=>`<i class="smx-smoke s${i+1}"></i>`).join('')}
+      </div>`;
   }else if(kind==='meteor'){
     layer.innerHTML=`<img class="loser-meteor-art meteor-flipped" src="/assets/animations/meteor.webp" alt="" aria-hidden="true"><span class="loser-impact"></span><span class="meteor-burn"></span><span class="loser-ember ember-a"></span><span class="loser-ember ember-b"></span><span class="loser-ember ember-c"></span>`;
   }else if(kind==='dust'){
