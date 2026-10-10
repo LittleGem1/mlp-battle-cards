@@ -1,0 +1,28 @@
+MLP BATTLE CARDS - WUERFELN OHNE MITTE ZU VERDECKEN
+==================================================
+
+ZIEL
+Der Button "🎲 Würfeln" sitzt links unter der Stärke-/Kategorieanzeige.
+Die Würfelergebnisse bleiben in der Mitte. Es wird KEINE Spiellogik geändert.
+
+SICHERSTE EINBAUVARIANTE (nur eine vorhandene Datei bearbeiten)
+1. GitHub öffnen -> dein Spiel-Repository -> Ordner "public".
+2. Die dortige Datei "style.css" öffnen -> Stiftsymbol (Edit this file).
+3. Ganz ans ENDE der Datei gehen. NICHT vorhandene Regeln löschen.
+4. Den kompletten Inhalt von "MLP_Wuerfeln_Nur_Position.css" unten anhängen.
+5. "Commit changes" speichern und warten, bis Render neu deployt hat.
+6. Im Browser Strg+F5 (harte Aktualisierung) drücken.
+
+WICHTIG
+Bitte NICHT deine aktuelle style.css durch eine ältere Version ersetzen.
+Eine zusätzliche CSS-Datei wird durch das bloße Hochladen nicht automatisch
+vom Spiel geladen. Darum die CSS-Regeln an die bestehende style.css anhängen.
+
+GEÄNDERT
+Nur der sichtbare Würfeln-Button (Klasse .roll-trigger).
+NICHT geändert: Würfel-Logik, Ergebnisfelder, Karten, Artefakte, Kristall,
+Arena-Hintergrund, Spezialkarten, Musik oder Ziehstapel.
+
+Hinweis: Der Patch wurde anhand des in der Unterhaltung vorhandenen
+public/index.html / public/client.js und des Screenshots erstellt; er
+wurde noch nicht in deiner live veröffentlichten Spielversion getestet.
