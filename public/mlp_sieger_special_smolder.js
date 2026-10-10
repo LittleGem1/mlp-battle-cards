@@ -78,48 +78,55 @@
     winner.prepend(plate);
     overlay.classList.add('fx-polish');
   }
-  // Smolder: genau das von der Spielerin freigegebene GIF – keine neue Zeichnung.
-  // Eine einzige animierte Smolder-Figur pro Finisher, auch in der 12er Vorschau.
-  // Keine Änderungen an playFinisher, Karten oder Socket-Spielereignissen.
+  // SMOLDER V4 — einmaliger Start pro Finisher, ohne Endlosschleife.
+  // Die Teststeuerung bleibt vollständig beim vorhandenen playFinisher() im Spiel.
+  let smolderEpisode=false;
+  let smolderHideTimer=null;
   function decorateSmolder(){
     const overlay=byId('finisherOverlay');
     if(!overlay)return;
     const active=overlay.classList.contains('active') && overlay.classList.contains('stage-smolder');
-    const previous=byId('mlpSmolderOriginalGif');
+    const stage=overlay.querySelector('.finisher-stage');
     if(!active){
-      if(previous?._hideTimer)clearTimeout(previous._hideTimer);
-      previous?.remove();
+      if(smolderHideTimer!==null){clearTimeout(smolderHideTimer);smolderHideTimer=null;}
+      smolderEpisode=false;
+      byId('mlpSmolderOriginalGif')?.remove();
       if(overlay.classList.contains('smolder-gif-ready'))overlay.classList.remove('smolder-gif-ready');
       return;
     }
-    const stage=overlay.querySelector('.finisher-stage');
+    // Ein zweiter MutationObserver-Aufruf oder ein roundWinner-Event darf
+    // weder das GIF noch den Countdown erneut starten.
+    if(smolderEpisode)return;
     if(!stage)return;
-    let img=previous;
-    if(!img || img.parentNode!==stage){
-      previous?.remove();
-      img=document.createElement('img');
-      img.id='mlpSmolderOriginalGif';
-      img.className='smolder-original-gif';
-      img.alt='Smolder fliegt und speit einmal Feuer';
-      img.setAttribute('aria-hidden','true');
-      img.draggable=false;
-      stage.appendChild(img);
-    }
-    img.classList.remove('smolder-finished');
-    if(img._hideTimer)clearTimeout(img._hideTimer);
-    // Langsamere Einmal-Animation; Cache-Buster startet die Frames bei jedem Finisher/Test neu.
-    img.src='/assets/animations/smolder-original-once-slow.gif?v=' + Date.now();
-    img._hideTimer=setTimeout(()=>img.classList.add('smolder-finished'),1950);
-    if(!overlay.classList.contains('smolder-gif-ready'))overlay.classList.add('smolder-gif-ready');
+    smolderEpisode=true;
+    const old=byId('mlpSmolderOriginalGif');
+    old?.remove();
+    const img=document.createElement('img');
+    img.id='mlpSmolderOriginalGif';
+    img.className='smolder-original-gif';
+    img.alt='Smolder spuckt einmal Feuer';
+    img.setAttribute('aria-hidden','true');
+    img.draggable=false;
+    // GIF ohne Netscape-Loop-Extension: spielt genau EIN MAL.
+    img.src='/assets/animations/smolder-original-once-slow.gif?v=smolder-one-shot-v4';
+    stage.appendChild(img);
+    overlay.classList.add('smolder-gif-ready');
+    // Nur visuell ausblenden; keine Overlay-/Klassenmutation,
+    // die einen erneuten Start auslösen könnte.
+    smolderHideTimer=setTimeout(()=>{
+      if(img.isConnected && smolderEpisode){img.style.opacity='0';}
+      smolderHideTimer=null;
+    },2750);
   }
 
-  // Beobachtet auch die lokale Vorschau "Alle 12 Animationen testen":
-  // diese ruft playFinisher direkt auf und sendet KEIN roundWinner vom Server.
+  // Nur den Klassenwechsel der HAUPT-Ebene beobachten, nicht alle
+  // Unterelemente. Sonst lösten GIF- und Klassenänderungen sich selbst aus
+  // und blockierten beim Demo-Test Animation 11 (Smolder).
   function watchSmolderDemo(){
     const overlay=byId('finisherOverlay');
     if(!overlay || typeof MutationObserver==='undefined')return;
-    const watcher=new MutationObserver(()=>decorateSmolder());
-    watcher.observe(overlay,{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
+    const observer=new MutationObserver(()=>decorateSmolder());
+    observer.observe(overlay,{attributes:true,attributeFilter:['class']});
     decorateSmolder();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',watchSmolderDemo,{once:true});
