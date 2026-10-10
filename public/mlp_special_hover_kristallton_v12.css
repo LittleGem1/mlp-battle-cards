@@ -1,0 +1,26 @@
+/* MLP Battle Cards V12 – nur Spezialkarten-Bedienfeld + Kristall-Sound.
+   Ändert keine Kartenhöhe, Arena oder Spielregeln. */
+@media (hover:hover) and (pointer:fine) {
+  /* Das V11-Bedienfeld schaltet sich selbst alle 700 ms sichtbar.
+     Darum ist eine eigene Klasse erforderlich, statt nur :hover auf der Karte. */
+  body #mlpV11SpecialDock:not(.mlp-v12-hover-open),
+  body #mlpV11SpecialDock.visible:not(.mlp-v12-hover-open) {
+    display:none!important;
+    visibility:hidden!important;
+    opacity:0!important;
+    pointer-events:none!important;
+  }
+  body #mlpV11SpecialDock.mlp-v12-hover-open.visible {
+    display:flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+    pointer-events:auto!important;
+  }
+  /* Bei der V11-Galerie liegen die alten Knöpfe bereits verborgen.
+     Diese Ergänzung greift auch, falls ältere Stylesheets sie erzwingen. */
+  body.scene-game #game .arena #hand .hand-card.special .special-actions,
+  body.scene-game #game .arena #hand .hand-card.special .special-text-strip {
+    display:none!important;
+  }
+}
+/* Der neue Sound erzeugt kein zusätzliches sichtbares Element. */

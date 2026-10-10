@@ -1,33 +1,52 @@
-MLP BATTLE CARDS | SPECIAL-HOVER + KRISTALL-SOUND | V5
-======================================================
+MLP BATTLE CARDS – V12: SPECIAL-HOVER UND KRISTALLTON
+===================================================
 
-DIE ZWEI FEHLER
-1. Krallhieb / andere Spezialkarten: „Lesen“ / „Ausspielen“ und der
-   Info-Kasten waren wegen alter !important-CSS-Regeln dauerhaft sichtbar.
-   Jetzt: auf PC nur beim Ueberfahren (auch Tastatur-Fokus), auf Handy
-   aus Gruenden der Bedienbarkeit weiterhin sichtbar.
-2. Der Kristall dreht sich, aber der Ton ist nicht wahrnehmbar:
-   Die alte Datei dauert nur 0,26 s und hat rund -36 dB Mittelpegel.
-   Derselbe Ton ist jetzt lauter; Wiederholung laeuft waehrend der
-   2,7-s-Drehphase. Beim Aufdecken stoppt er. Wenn mp3-Wiedergabe
-   blockiert ist, faellt die Software auf sanfte WebAudio-Toene zurueck.
+ZIEL:
+1. Das V11-Bedienfeld über/an Special-Karten bleibt am PC verborgen,
+   bis du mit dem Mauszeiger über die passende Spezialkarte gehst.
+   Bei Mausverlassen verschwindet es; auf Touchgeräten bleibt es bedienbar.
+   Lesen/Ausspielen nutzen weiter die originalen Aktionen.
+2. Während die große Kristall-V11-Animation dreht, wird ein eigener
+   ca. 2,7 s langer Klang abgespielt. Der Ton endet beim Anzeigen
+   der Kategorie; keine Änderung an Spielmechanik oder Kristallgrafik.
 
-GITHUB-UPLOAD (für den zuletzt eingesetzten 3-in-1-Fix):
-- public/client.js           -> im Repository public/client.js ERSETZEN
-- public/style.css           -> im Repository public/style.css ERSETZEN
-- public/assets/sounds/05_kristall_dreht.mp3 -> diese einzelne Sounddatei ERSETZEN
+EINBAU (GITHUB)
+1. Dieses ZIP entpacken.
+2. In deinen GitHub-Ordner public/ hochladen:
+     mlp_special_hover_kristallton_v12.css    (NEU)
+     mlp_special_hover_kristallton_v12.js     (NEU)
+3. Datei in den Ordner public/assets/sounds/ hochladen:
+     mlp_kristall_drehung_v12.mp3              (NEU)
+4. Diese EINZIGE bestehende Datei aktualisieren: public/index.html.
+   Wenn du seit der V11-Installation keine eigene Änderung an index.html
+   gemacht hast, kannst du die beigelegte index.html verwenden.
+   Sicherer ist, nur die zwei nachfolgenden Zeilen einzufügen.
+   VOR </head> (nach ALLEN anderen Stylesheets):
+     <link rel="stylesheet" href="/mlp_special_hover_kristallton_v12.css?v=20261010-v12" />
+   VOR </body> (NACH mlp_kristall_buttons_v11.js):
+     <script src="/mlp_special_hover_kristallton_v12.js?v=20261010-v12"></script>
+5. Commit changes, Render-Deploy abwarten und Browser mit Strg+F5
+   neu laden.
 
-BITTE den Ordner 'public' beibehalten. server.js NICHT austauschen!
-Die Artefaktchance 5, Wuerfel links, Smolder, restliche Sounds und
-alle Spielmechaniken werden nicht veraendert.
+TEST
+https://mlp-battle-cards.onrender.com/?fixcheck=1
+Oben links MUSS „V12 geladen“ stehen. Auf „Kristallton testen“
+klicken; nach dem Klick sollte ein Ton hörbar sein. Danach
+Spiel starten und eine neue Kategorie abwarten.
+Auf dem PC sollte das V11-Special-Feld nur bei Mouseover sichtbar sein.
 
-ACHTUNG: Die zwei vollstaendigen Dateien sind auf Basis des zuletzt
-besprochenen 3-in-1-Pakets / zugehoerigen Projektcodes erstellt.
-Falls du seither andere Aenderungen an public/client.js oder
-public/style.css hast, diese NICHT blind ueberschreiben.
-Stattdessen bitte die AKTUELLEN Dateien hier hochladen, damit
-wir nur die betreffenden Stellen aktualisieren koennen.
+TECHNISCH WICHTIG
+Die vorherigen Patches griffen am ursprünglichen client.js bzw.
+style.css an. Das ständig sichtbare Fenster ist aber das separat
+hinzugefügte #mlpV11SpecialDock. V12 steuert genau dieses Element.
+Die Host-Kartengalerie wird NICHT geändert.
 
-Nach GitHub Commit Render-Deployment abwarten und die Seite mit
-Strg+F5 neu laden. Zum Soundtest auf dem Startbildschirm einmal
-ins Spiel klicken, damit der Browser Tonwiedergabe freigibt.
+MÖGLICHE GRENZEN
+Manche Browser verbieten Ton vor der ersten Nutzerinteraktion.
+Daher im Spiel mindestens einmal klicken. Falls ?fixcheck=1 einen
+Ton ausgibt, nicht aber die Rundenanimation, ist die aktuelle
+Kristallsteuerung auf Render möglicherweise nicht V11; dann
+müssen wir die neueste public/index.html und Kristall-JS prüfen.
+
+KEINE Änderungen an server.js, client.js, style.css, cards.js,
+Karten, Arena, Smolder, Host-Kartengalerie oder Spielregeln.
