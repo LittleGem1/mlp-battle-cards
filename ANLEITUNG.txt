@@ -1,20 +1,35 @@
-MLP BATTLE CARDS – MAJESTÄTISCHER KATEGORIE-KRISTALL
+MLP Battle Cards – WÜRFEL + SPECIAL + ARTEFAKTE (3-in-1)
+==========================================================
 
-ENTHALTEN:
-- client.js
-- style.css
+Dieses Paket wurde geprüft. Alle drei Änderungen sind in den aktiven Dateien integriert:
 
-WAS DER PATCH ÄNDERT:
-- Die alte Rundeneinblendung wird als majestätische Kristall-Animation gespielt.
-- Kein einfaches Clipart-Bild mehr.
-- Der Kristall dreht sich in 3D, leuchtet, enthüllt die gezogene Kategorie und blendet sie danach links in der Arena ein.
-- Die großen Flacker-Effekte bleiben weiterhin reduziert.
+1. Würfel-Button & Würfel-Ergebnisanzeige LINKS direkt unter der Kategorie (CSS für #diceZone)
+2. Special-Karten: Lesen/Ausspielen nur bei Maus-Hover/Fokus; auf Touch-Geräten sichtbar
+3. Artefakt-Häufigkeit: 5 Exemplare je Artefakt statt 3 im Goldstapel
 
-EINBAU:
-1. ZIP entpacken.
-2. In deinem Repository / Spielordner die Dateien client.js und style.css ersetzen.
-3. Änderungen speichern / hochladen.
-4. Spiel neu laden.
+ENTHALTENE DATEIEN
+- public/style.css (Würfel + Special-Hover bereits drin)
+- server.js (Artefaktmenge 5 bereits drin)
+- NUR_CSS_AN_BESTEHENDE_STYLE_ANHAENGEN.css (alternative sicherere Einbauvariante)
+- ANLEITUNG.txt
 
-HINWEIS:
-Der Patch ist bewusst klein gehalten und ändert nur die zwei Dateien, die für die Animation nötig sind.
+EINBAU MIT NEUEREN EIGENEN FIXES (EMPFOHLEN)
+1. Aktuelle public/style.css aus dem GitHub-Repository öffnen.
+2. Inhalt von NUR_CSS_AN_BESTEHENDE_STYLE_ANHAENGEN.css einmal GANZ UNTEN anhängen.
+   Wenn ein alter gleicher Block schon vorhanden ist, darf er ersetzt werden; bitte NICHT wiederholt doppelt anhängen.
+3. Aktuelle server.js im Repo-Hauptordner öffnen und nur den Wert
+     const REWARD_ARTIFACT_COPIES = 3;
+   auf
+     const REWARD_ARTIFACT_COPIES = 5;
+   ändern. Falls bereits 5 eingestellt ist, nichts ändern.
+4. Änderungen committen, Render-Deploy abwarten, danach Seite mit Strg+F5 hart neu laden.
+5. Gleichstands-Runde ausprobieren; Würfelbutton und die Ergebnisse sollten links unter der Kategorie erscheinen.
+
+ALTERNATIVE (NUR wenn deine aktuelle CSS nicht weiter modifiziert wurde):
+- public/style.css ersetzen und server.js ersetzen, beide Pfade beibehalten.
+
+HINWEISE
+- Die vorige ZIP mit Special-Hover/Artefakten enthielt den Würfel-CSS-Block bereits.
+  Er war in der Beschreibung leider übersehen worden.
+- Kein Umbau der Würfellogik oder der Kartenmechanik.
+- Die tatsächliche Render-Webseite kann von hier aus nicht interaktiv getestet werden.

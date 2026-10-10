@@ -1,0 +1,168 @@
+/* ====================================================================
+   MLP BATTLE CARDS – Würfel unter die Kategorie, VERSION 3 – direkt in public/style.css eingebaut
+   Nur die Anzeige #diceZone (inkl. Button UND Würfelergebnissen).
+   Ganz ans Ende der vorhandenen public/style.css anhängen.
+   Keine Änderung an Spielregeln, Würfelwerten oder Kartendarstellung.
+   ==================================================================== */
+
+/* Die bestehende Kategorie dient als genauer Positionsanker. */
+#game.screen.active .arena .center-stage #category.category {
+  anchor-name: --mlp-category-for-dice;
+}
+
+/* Die komplette Würfelzone wird unter der Kategorie positioniert.
+   Der erste top/left-Wert ist ein Fallback für ältere Browser. */
+#game.screen.active .arena .center-stage #diceZone.dice-zone {
+  position: absolute !important;
+  top: 110px !important;
+  left: calc(50% - min(50vw, 640px) + 16px) !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 180px !important;
+  max-width: 180px !important;
+  min-width: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  gap: 7px !important;
+  z-index: 75 !important;
+  pointer-events: auto !important;
+}
+
+/* Moderner Browser: exakt an den UNTEREN LINKEN Rand der sichtbaren
+   Kategorie gekoppelt – selbst wenn deren Position später variiert. */
+@supports (top: anchor(bottom)) and (left: anchor(left)) {
+  #game.screen.active .arena .center-stage #diceZone.dice-zone {
+    position-anchor: --mlp-category-for-dice !important;
+    top: anchor(bottom) !important;
+    left: anchor(left) !important;
+    margin-top: 9px !important;
+  }
+}
+
+/* Würfelergebnisse ordentlich innerhalb der linken schmalen Fläche. */
+#game.screen.active .arena .center-stage #diceZone #diceSpectacle.dice-spectacle {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 5px !important;
+  width: 100% !important;
+  justify-content: center !important;
+}
+#game.screen.active .arena .center-stage #diceZone .dice-result {
+  min-width: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 6px 3px !important;
+  border-radius: 10px !important;
+  text-align: center !important;
+}
+#game.screen.active .arena .center-stage #diceZone .dice-result strong {
+  font-size: 10px !important;
+  overflow-wrap: anywhere !important;
+}
+#game.screen.active .arena .center-stage #diceZone .dice-face {
+  font-size: 36px !important;
+  line-height: 1.05 !important;
+  margin-top: 2px !important;
+}
+/* Die vorherige Version hatte nur diesen Knopf absolut verschoben.
+   Hier zurück in den normalen Fluss INNERHALB der linken Würfelzone. */
+#game.screen.active .arena .center-stage #diceZone .roll-trigger {
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 45px !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 6px 8px !important;
+  font-size: 15px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+}
+#game.screen.active .arena .center-stage #diceZone .dice-wait {
+  font-size: 11px !important;
+  line-height: 1.3 !important;
+  text-align: center !important;
+  padding: 5px !important;
+  border-radius: 10px !important;
+  background: rgba(9, 14, 42, .88) !important;
+}
+
+@media (max-width: 760px) {
+  #game.screen.active .arena .center-stage #diceZone.dice-zone {
+    left: 8px !important;
+    top: 88px !important;
+    width: min(116px, 31vw) !important;
+    max-width: min(116px, 31vw) !important;
+  }
+  #game.screen.active .arena .center-stage #diceZone .dice-face {
+    font-size: 27px !important;
+  }
+  #game.screen.active .arena .center-stage #diceZone .dice-result strong {
+    font-size: 9px !important;
+  }
+  #game.screen.active .arena .center-stage #diceZone .roll-trigger {
+    font-size: 11px !important;
+    height: 39px !important;
+    white-space: normal !important;
+  }
+  @supports (top: anchor(bottom)) and (left: anchor(left)) {
+    #game.screen.active .arena .center-stage #diceZone.dice-zone {
+      top: anchor(bottom) !important;
+      left: anchor(left) !important;
+      margin-top: 7px !important;
+    }
+  }
+}
+
+/* V3: die Würfel-Zone unabhängig von der Arena-Mitte immer frei positionieren.
+   Diese beiden Regeln auch dann verwenden, wenn alte Positionierungsregeln existieren. */
+#game.screen.active .arena .center-stage > #diceZone {
+  transform:none !important;
+  float:none !important;
+  place-self:auto !important;
+  align-self:auto !important;
+  justify-self:auto !important;
+}
+#game.screen.active .arena .center-stage > #diceZone:empty { display:none !important; }
+
+/* ================================================================
+   MLP Battle Cards – Specialkarten: Aktionen nur bei Maus-Hover
+   10.10.2026. Rein visuell; Klicks / Special-Logik unveraendert.
+   Die beiden Buttons bleiben UNTER der Karte und untereinander.
+   Mouse: im Ruhezustand ausgeblendet, Hover/Fokus: eingeblendet.
+   Touch: dauerhaft sichtbar, da dort kein Maus-Hover existiert.
+   ================================================================ */
+@media (hover: hover) and (pointer: fine) {
+  #game.screen.active .arena #hand .hand-card.special > .special-actions {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity .17s ease !important;
+  }
+  #game.screen.active .arena #hand .hand-card.special > .special-actions > button {
+    pointer-events: none !important;
+  }
+  #game.screen.active .arena #hand .hand-card.special:hover > .special-actions,
+  #game.screen.active .arena #hand .hand-card.special:focus-within > .special-actions {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+  #game.screen.active .arena #hand .hand-card.special:hover > .special-actions > button,
+  #game.screen.active .arena #hand .hand-card.special:focus-within > .special-actions > button {
+    pointer-events: auto !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #game.screen.active .arena #hand .hand-card.special > .special-actions {
+    transition: none !important;
+  }
+}
