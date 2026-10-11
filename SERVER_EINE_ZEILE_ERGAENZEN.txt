@@ -1,0 +1,14 @@
+EINZEILIGER SICHERER PATCH FUER DEINE BESTEHENDE server.js
+
+Suche im HAUPTVERZEICHNIS deiner server.js diese Zeile:
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+Fuege DIREKT DAVOR folgende Zeile ein:
+
+require('./asset_bandwidth_optimization')(app);
+
+Die alte Zeile bleibt bestehen. Fertig!
+
+WICHTIG: NICHT die ganze server.js aus einer alten Version ersetzen.
+Bitte deine aktuelle server.js behalten. Keine komplette server.js wird in diesem ZIP mitgeliefert.

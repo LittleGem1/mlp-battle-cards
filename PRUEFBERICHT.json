@@ -1,57 +1,679 @@
 {
-  "base": "V15 bugfix + Diabolo Shadow V1 + V16 Animation Timing",
-  "modified_files": [
-    "cards.js",
-    "server.js",
-    "public/index.html",
-    "public/shadowform_fx.js"
-  ],
-  "new_files": [
-    "public/artifact_magic_fx.js",
-    "public/artifact_magic_fx.css",
-    "public/assets/specials_new/96_Flawless_Sparkle_Moon_Zauberkopierer.webp",
-    "public/assets/specials_new/97_Evil_Sci_Twi_Zauberklau.webp",
-    "public/assets/sounds/flawless_zauberkopierer.mp3",
-    "public/assets/sounds/evil_sci_twi_zauberklau.mp3",
-    "public/assets/sounds/diabolo_shadowform.mp3"
-  ],
-  "unchanged_preview_asset": [
-    "public/assets/specials_new/95_Diabolo_Schattengestalt.webp"
-  ],
-  "new_specials": [
+  "source": "mlp-battle-cards-main (2).zip",
+  "scope": "Asset optimization + browser cache; no game logic changes",
+  "optimized": [
     {
-      "id": "s96",
-      "name": "Flawless Sparkle Moon – Zauberkopierer",
-      "effect": "artifactcopy"
+      "original": "public/assets/accessories/04_crystal-horn.png",
+      "variant": "public/optimized_assets/accessories/04_crystal-horn.png.webp",
+      "original_bytes": 632472,
+      "variant_bytes": 152834,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 24.2
     },
     {
-      "id": "s97",
-      "name": "Evil Sci Twi – Zauberklau",
-      "effect": "artifactsteal"
+      "original": "public/assets/accessories/05_crown.png",
+      "variant": "public/optimized_assets/accessories/05_crown.png.webp",
+      "original_bytes": 1847649,
+      "variant_bytes": 444974,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 24.1
+    },
+    {
+      "original": "public/assets/accessories/06_halo.png",
+      "variant": "public/optimized_assets/accessories/06_halo.png.webp",
+      "original_bytes": 926073,
+      "variant_bytes": 235762,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 25.5
+    },
+    {
+      "original": "public/assets/accessories/07_angel-wings.png",
+      "variant": "public/optimized_assets/accessories/07_angel-wings.png.webp",
+      "original_bytes": 1273727,
+      "variant_bytes": 244050,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 19.2
+    },
+    {
+      "original": "public/assets/accessories/08_bat-wings.png",
+      "variant": "public/optimized_assets/accessories/08_bat-wings.png.webp",
+      "original_bytes": 890337,
+      "variant_bytes": 179192,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 20.1
+    },
+    {
+      "original": "public/assets/accessories/09_magic-flames.png",
+      "variant": "public/optimized_assets/accessories/09_magic-flames.png.webp",
+      "original_bytes": 1228095,
+      "variant_bytes": 389898,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 31.7
+    },
+    {
+      "original": "public/assets/accessories/10_orbit-crystals.png",
+      "variant": "public/optimized_assets/accessories/10_orbit-crystals.png.webp",
+      "original_bytes": 1506709,
+      "variant_bytes": 472876,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 31.4
+    },
+    {
+      "original": "public/assets/accessories/11_bow.png",
+      "variant": "public/optimized_assets/accessories/11_bow.png.webp",
+      "original_bytes": 1761121,
+      "variant_bytes": 310894,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 17.7
+    },
+    {
+      "original": "public/assets/accessories/12_scarf.png",
+      "variant": "public/optimized_assets/accessories/12_scarf.png.webp",
+      "original_bytes": 1292048,
+      "variant_bytes": 322942,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 25.0
+    },
+    {
+      "original": "public/assets/accessories/13_goggles.png",
+      "variant": "public/optimized_assets/accessories/13_goggles.png.webp",
+      "original_bytes": 1306208,
+      "variant_bytes": 205976,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 15.8
+    },
+    {
+      "original": "public/assets/accessories/14_gears.png",
+      "variant": "public/optimized_assets/accessories/14_gears.png.webp",
+      "original_bytes": 2439394,
+      "variant_bytes": 508892,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 20.9
+    },
+    {
+      "original": "public/assets/accessories/15_flower-crown.png",
+      "variant": "public/optimized_assets/accessories/15_flower-crown.png.webp",
+      "original_bytes": 1565561,
+      "variant_bytes": 396932,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 25.4
+    },
+    {
+      "original": "public/assets/accessories/16_butterflies.png",
+      "variant": "public/optimized_assets/accessories/16_butterflies.png.webp",
+      "original_bytes": 2278169,
+      "variant_bytes": 619854,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 27.2
+    },
+    {
+      "original": "public/assets/accessories/17_bandages.png",
+      "variant": "public/optimized_assets/accessories/17_bandages.png.webp",
+      "original_bytes": 1632809,
+      "variant_bytes": 293930,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 18.0
+    },
+    {
+      "original": "public/assets/accessories/18_potions.png",
+      "variant": "public/optimized_assets/accessories/18_potions.png.webp",
+      "original_bytes": 2107602,
+      "variant_bytes": 500778,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 23.8
+    },
+    {
+      "original": "public/assets/accessories/19_collar.png",
+      "variant": "public/optimized_assets/accessories/19_collar.png.webp",
+      "original_bytes": 1618640,
+      "variant_bytes": 287554,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 17.8
+    },
+    {
+      "original": "public/assets/accessories/20_bell.png",
+      "variant": "public/optimized_assets/accessories/20_bell.png.webp",
+      "original_bytes": 1953589,
+      "variant_bytes": 427466,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 21.9
+    },
+    {
+      "original": "public/assets/accessories/21_cape.png",
+      "variant": "public/optimized_assets/accessories/21_cape.png.webp",
+      "original_bytes": 1642013,
+      "variant_bytes": 235010,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 14.3
+    },
+    {
+      "original": "public/assets/accessories/22_cards.png",
+      "variant": "public/optimized_assets/accessories/22_cards.png.webp",
+      "original_bytes": 2151011,
+      "variant_bytes": 479264,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 22.3
+    },
+    {
+      "original": "public/assets/accessories/23_tech-wings.png",
+      "variant": "public/optimized_assets/accessories/23_tech-wings.png.webp",
+      "original_bytes": 1804659,
+      "variant_bytes": 455662,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 25.2
+    },
+    {
+      "original": "public/assets/accessories/24_moon.png",
+      "variant": "public/optimized_assets/accessories/24_moon.png.webp",
+      "original_bytes": 1482411,
+      "variant_bytes": 388836,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 26.2
+    },
+    {
+      "original": "public/assets/accessories/balloon.png",
+      "variant": "public/optimized_assets/accessories/balloon.png.webp",
+      "original_bytes": 859363,
+      "variant_bytes": 198654,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 23.1
+    },
+    {
+      "original": "public/assets/accessories/changeling-wings.png",
+      "variant": "public/optimized_assets/accessories/changeling-wings.png.webp",
+      "original_bytes": 1040128,
+      "variant_bytes": 289954,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 27.9
+    },
+    {
+      "original": "public/assets/accessories/sweets.png",
+      "variant": "public/optimized_assets/accessories/sweets.png.webp",
+      "original_bytes": 1135319,
+      "variant_bytes": 223114,
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "ratio_percent": 19.7
+    },
+    {
+      "original": "public/assets/animations/cockatrice_sprite.png",
+      "variant": "public/optimized_assets/animations/cockatrice_sprite.png.webp",
+      "original_bytes": 277336,
+      "variant_bytes": 58040,
+      "width": 1024,
+      "height": 707,
+      "mode": "RGBA",
+      "ratio_percent": 20.9
+    },
+    {
+      "original": "public/assets/artifacts/01_Elemente_der_Harmonie.png",
+      "variant": "public/optimized_assets/artifacts/01_Elemente_der_Harmonie.png.webp",
+      "original_bytes": 2491722,
+      "variant_bytes": 401342,
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGB",
+      "ratio_percent": 16.1
+    },
+    {
+      "original": "public/assets/artifacts/02_Kristall_Herz.png",
+      "variant": "public/optimized_assets/artifacts/02_Kristall_Herz.png.webp",
+      "original_bytes": 2492577,
+      "variant_bytes": 385478,
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGB",
+      "ratio_percent": 15.5
+    },
+    {
+      "original": "public/assets/artifacts/03_Star_Swirls_Tagebuch.png",
+      "variant": "public/optimized_assets/artifacts/03_Star_Swirls_Tagebuch.png.webp",
+      "original_bytes": 2739159,
+      "variant_bytes": 454628,
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGB",
+      "ratio_percent": 16.6
+    },
+    {
+      "original": "public/assets/backgrounds/arena_1_jade_palace.png",
+      "variant": "public/optimized_assets/backgrounds/arena_1_jade_palace.png.webp",
+      "original_bytes": 9988058,
+      "variant_bytes": 1010832,
+      "width": 3840,
+      "height": 2160,
+      "mode": "RGB",
+      "ratio_percent": 10.1
+    },
+    {
+      "original": "public/assets/backgrounds/arena_1_leaf.png",
+      "variant": "public/optimized_assets/backgrounds/arena_1_leaf.png.webp",
+      "original_bytes": 13472,
+      "variant_bytes": 6148,
+      "width": 256,
+      "height": 256,
+      "mode": "RGBA",
+      "ratio_percent": 45.6
+    },
+    {
+      "original": "public/assets/backgrounds/arena_2_forest.png",
+      "variant": "public/optimized_assets/backgrounds/arena_2_forest.png.webp",
+      "original_bytes": 12094844,
+      "variant_bytes": 1498772,
+      "width": 3840,
+      "height": 2160,
+      "mode": "RGB",
+      "ratio_percent": 12.4
+    },
+    {
+      "original": "public/assets/backgrounds/arena_2_wald_still.png",
+      "variant": "public/optimized_assets/backgrounds/arena_2_wald_still.png.webp",
+      "original_bytes": 4051674,
+      "variant_bytes": 773254,
+      "width": 1672,
+      "height": 941,
+      "mode": "RGB",
+      "ratio_percent": 19.1
+    },
+    {
+      "original": "public/assets/backgrounds/arena_3_steampunk.png",
+      "variant": "public/optimized_assets/backgrounds/arena_3_steampunk.png.webp",
+      "original_bytes": 10419363,
+      "variant_bytes": 1183152,
+      "width": 3840,
+      "height": 2160,
+      "mode": "RGB",
+      "ratio_percent": 11.4
+    },
+    {
+      "original": "public/assets/backgrounds/arena_3_steampunk_still.png",
+      "variant": "public/optimized_assets/backgrounds/arena_3_steampunk_still.png.webp",
+      "original_bytes": 3387306,
+      "variant_bytes": 588276,
+      "width": 1672,
+      "height": 941,
+      "mode": "RGBA",
+      "ratio_percent": 17.4
+    },
+    {
+      "original": "public/assets/backgrounds/arena_4_alchemy.png",
+      "variant": "public/optimized_assets/backgrounds/arena_4_alchemy.png.webp",
+      "original_bytes": 8388759,
+      "variant_bytes": 839270,
+      "width": 3840,
+      "height": 2160,
+      "mode": "RGB",
+      "ratio_percent": 10.0
+    },
+    {
+      "original": "public/assets/backgrounds/arena_4_hexentisch_still.png",
+      "variant": "public/optimized_assets/backgrounds/arena_4_hexentisch_still.png.webp",
+      "original_bytes": 3342558,
+      "variant_bytes": 565202,
+      "width": 1672,
+      "height": 941,
+      "mode": "RGBA",
+      "ratio_percent": 16.9
+    },
+    {
+      "original": "public/assets/backgrounds/lobby_crystal_cave.png",
+      "variant": "public/optimized_assets/backgrounds/lobby_crystal_cave.png.webp",
+      "original_bytes": 2980145,
+      "variant_bytes": 494862,
+      "width": 1672,
+      "height": 941,
+      "mode": "RGB",
+      "ratio_percent": 16.6
+    },
+    {
+      "original": "public/assets/special_back_gold.png",
+      "variant": "public/optimized_assets/special_back_gold.png.webp",
+      "original_bytes": 3703297,
+      "variant_bytes": 636752,
+      "width": 1086,
+      "height": 1448,
+      "mode": "RGB",
+      "ratio_percent": 17.2
+    },
+    {
+      "original": "public/assets/specials_new/67_Tirek.png",
+      "variant": "public/optimized_assets/specials_new/67_Tirek.png.webp",
+      "original_bytes": 3030239,
+      "variant_bytes": 442610,
+      "width": 1086,
+      "height": 1448,
+      "mode": "RGBA",
+      "ratio_percent": 14.6
+    },
+    {
+      "original": "public/assets/specials_new/68_Koenigin_Chrysalis.png",
+      "variant": "public/optimized_assets/specials_new/68_Koenigin_Chrysalis.png.webp",
+      "original_bytes": 2285600,
+      "variant_bytes": 302760,
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGB",
+      "ratio_percent": 13.2
+    },
+    {
+      "original": "public/assets/specials_new/69_Storm_King.png",
+      "variant": "public/optimized_assets/specials_new/69_Storm_King.png.webp",
+      "original_bytes": 2656993,
+      "variant_bytes": 429780,
+      "width": 1086,
+      "height": 1448,
+      "mode": "RGB",
+      "ratio_percent": 16.2
+    },
+    {
+      "original": "public/assets/specials_new/70_Flim_und_Flam.png",
+      "variant": "public/optimized_assets/specials_new/70_Flim_und_Flam.png.webp",
+      "original_bytes": 2586385,
+      "variant_bytes": 417478,
+      "width": 1086,
+      "height": 1448,
+      "mode": "RGB",
+      "ratio_percent": 16.1
+    },
+    {
+      "original": "public/assets/specials_new/71_Cozy_Glow.png",
+      "variant": "public/optimized_assets/specials_new/71_Cozy_Glow.png.webp",
+      "original_bytes": 2661648,
+      "variant_bytes": 445252,
+      "width": 1086,
+      "height": 1448,
+      "mode": "RGB",
+      "ratio_percent": 16.7
+    },
+    {
+      "original": "public/assets/specials_new/72_Sludge.png",
+      "variant": "public/optimized_assets/specials_new/72_Sludge.png.webp",
+      "original_bytes": 2513340,
+      "variant_bytes": 383526,
+      "width": 968,
+      "height": 1448,
+      "mode": "RGBA",
+      "ratio_percent": 15.3
+    },
+    {
+      "original": "public/assets/specials_new/73_Diamond_Dogs.png",
+      "variant": "public/optimized_assets/specials_new/73_Diamond_Dogs.png.webp",
+      "original_bytes": 2986157,
+      "variant_bytes": 469362,
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGBA",
+      "ratio_percent": 15.7
+    },
+    {
+      "original": "public/assets/specials_new/74_Changeling.png",
+      "variant": "public/optimized_assets/specials_new/74_Changeling.png.webp",
+      "original_bytes": 3229323,
+      "variant_bytes": 511506,
+      "width": 1086,
+      "height": 1448,
+      "mode": "RGBA",
+      "ratio_percent": 15.8
+    },
+    {
+      "original": "public/assets/specials_new/75_Nightmare_Moon.png",
+      "variant": "public/optimized_assets/specials_new/75_Nightmare_Moon.png.webp",
+      "original_bytes": 3009836,
+      "variant_bytes": 457392,
+      "width": 1086,
+      "height": 1448,
+      "mode": "RGBA",
+      "ratio_percent": 15.2
+    },
+    {
+      "original": "public/assets/specials_new/76_Hydra.png",
+      "variant": "public/optimized_assets/specials_new/76_Hydra.png.webp",
+      "original_bytes": 2575331,
+      "variant_bytes": 365138,
+      "width": 1086,
+      "height": 1448,
+      "mode": "RGB",
+      "ratio_percent": 14.2
+    },
+    {
+      "original": "public/assets/specials_new/77_Bugbear.png",
+      "variant": "public/optimized_assets/specials_new/77_Bugbear.png.webp",
+      "original_bytes": 2722306,
+      "variant_bytes": 456172,
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGB",
+      "ratio_percent": 16.8
+    },
+    {
+      "original": "public/assets/specials_new/78_Manticore.png",
+      "variant": "public/optimized_assets/specials_new/78_Manticore.png.webp",
+      "original_bytes": 2925691,
+      "variant_bytes": 444406,
+      "width": 1049,
+      "height": 1499,
+      "mode": "RGBA",
+      "ratio_percent": 15.2
+    },
+    {
+      "original": "public/assets/specials_new/79_Timberwolves.png",
+      "variant": "public/optimized_assets/specials_new/79_Timberwolves.png.webp",
+      "original_bytes": 3250428,
+      "variant_bytes": 537242,
+      "width": 1049,
+      "height": 1468,
+      "mode": "RGBA",
+      "ratio_percent": 16.5
+    },
+    {
+      "original": "public/assets/specials_new/80_Grogar.png",
+      "variant": "public/optimized_assets/specials_new/80_Grogar.png.webp",
+      "original_bytes": 2606089,
+      "variant_bytes": 370172,
+      "width": 986,
+      "height": 1511,
+      "mode": "RGBA",
+      "ratio_percent": 14.2
+    },
+    {
+      "original": "public/assets/specials_new/81_King_Sombra.png",
+      "variant": "public/optimized_assets/specials_new/81_King_Sombra.png.webp",
+      "original_bytes": 2960032,
+      "variant_bytes": 511920,
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGB",
+      "ratio_percent": 17.3
+    },
+    {
+      "original": "public/assets/specials_new/82_Daybreaker.png",
+      "variant": "public/optimized_assets/specials_new/82_Daybreaker.png.webp",
+      "original_bytes": 2946533,
+      "variant_bytes": 463242,
+      "width": 1049,
+      "height": 1499,
+      "mode": "RGBA",
+      "ratio_percent": 15.7
+    },
+    {
+      "original": "public/assets/specials_new/83_Iron_Will.png",
+      "variant": "public/optimized_assets/specials_new/83_Iron_Will.png.webp",
+      "original_bytes": 2312719,
+      "variant_bytes": 333604,
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGB",
+      "ratio_percent": 14.4
+    },
+    {
+      "original": "public/assets/specials_new/84_Pony_of_Shadows.png",
+      "variant": "public/optimized_assets/specials_new/84_Pony_of_Shadows.png.webp",
+      "original_bytes": 2830259,
+      "variant_bytes": 433304,
+      "width": 1024,
+      "height": 1491,
+      "mode": "RGBA",
+      "ratio_percent": 15.3
+    },
+    {
+      "original": "public/assets/specials_new/85_Windigos.png",
+      "variant": "public/optimized_assets/specials_new/85_Windigos.png.webp",
+      "original_bytes": 2720766,
+      "variant_bytes": 497456,
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGB",
+      "ratio_percent": 18.3
+    },
+    {
+      "original": "public/assets/specials_new/86_Sunset_Shimmer.png",
+      "variant": "public/optimized_assets/specials_new/86_Sunset_Shimmer.png.webp",
+      "original_bytes": 2722326,
+      "variant_bytes": 420410,
+      "width": 1024,
+      "height": 1466,
+      "mode": "RGBA",
+      "ratio_percent": 15.4
+    },
+    {
+      "original": "public/assets/specials_new/87_Starlight_Glimmer.png",
+      "variant": "public/optimized_assets/specials_new/87_Starlight_Glimmer.png.webp",
+      "original_bytes": 2537441,
+      "variant_bytes": 379488,
+      "width": 1086,
+      "height": 1448,
+      "mode": "RGB",
+      "ratio_percent": 15.0
+    },
+    {
+      "original": "public/assets/specials_new/88_The_Great_and_Powerful_Trixie.png",
+      "variant": "public/optimized_assets/specials_new/88_The_Great_and_Powerful_Trixie.png.webp",
+      "original_bytes": 2886178,
+      "variant_bytes": 469422,
+      "width": 1086,
+      "height": 1448,
+      "mode": "RGB",
+      "ratio_percent": 16.3
+    },
+    {
+      "original": "public/assets/specials_new/89_Ahuizotl.png",
+      "variant": "public/optimized_assets/specials_new/89_Ahuizotl.png.webp",
+      "original_bytes": 3304937,
+      "variant_bytes": 564734,
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGBA",
+      "ratio_percent": 17.1
+    },
+    {
+      "original": "public/assets/specials_new/90_The_Mane_iac.png",
+      "variant": "public/optimized_assets/specials_new/90_The_Mane_iac.png.webp",
+      "original_bytes": 2920637,
+      "variant_bytes": 399782,
+      "width": 1086,
+      "height": 1448,
+      "mode": "RGBA",
+      "ratio_percent": 13.7
+    },
+    {
+      "original": "public/assets/specials_new/91_Lightning_Dust.png",
+      "variant": "public/optimized_assets/specials_new/91_Lightning_Dust.png.webp",
+      "original_bytes": 2573389,
+      "variant_bytes": 380064,
+      "width": 1086,
+      "height": 1448,
+      "mode": "RGB",
+      "ratio_percent": 14.8
+    },
+    {
+      "original": "public/assets/specials_new/92_Gilda_Griffon.png",
+      "variant": "public/optimized_assets/specials_new/92_Gilda_Griffon.png.webp",
+      "original_bytes": 2443707,
+      "variant_bytes": 325634,
+      "width": 1086,
+      "height": 1448,
+      "mode": "RGB",
+      "ratio_percent": 13.3
+    },
+    {
+      "original": "public/assets/specials_new/93_Cockatrice.png",
+      "variant": "public/optimized_assets/specials_new/93_Cockatrice.png.webp",
+      "original_bytes": 3373736,
+      "variant_bytes": 597428,
+      "width": 1024,
+      "height": 1536,
+      "mode": "RGB",
+      "ratio_percent": 17.7
     }
   ],
-  "sounds": {
-    "flawless": "Unicorn Horn Magic",
-    "evil_sci_twi": "Evil Magic Spell Sound Design",
-    "diabolo": "Magic WHOOSH"
+  "statistics": {
+    "png_count_in_source": 65,
+    "png_bytes_before": 178317403,
+    "optimized_count": 65,
+    "optimized_original_bytes": 178317403,
+    "optimized_variant_bytes": 28970590,
+    "saved_bytes_per_full_set": 149346813,
+    "saved_percent_on_optimized_pngs": 83.8,
+    "original_unchanged": true,
+    "animation_files_unchanged": true,
+    "browser_cache_hours": 3,
+    "elapsed_seconds": 20.2
   },
-  "syntax_checks": "pass",
-  "tests_passed": [
-    "test_artifact_magic.js",
-    "test-catalog.js",
-    "test-profiles.js",
-    "test-rundenfix.js",
-    "test-windchaos-reconnect-qa.js (timing V16 fixture updated)",
-    "test_cosmetics_after_game.js"
-  ],
-  "live_multiplayer_test": "not performed",
-  "media_sha256": {
-    "public/artifact_magic_fx.js": "814e615e02f4c63ad528858780d64b6029ade6963c352c6f2e08fae2300b872f",
-    "public/artifact_magic_fx.css": "eb3fc9bab7144dacd3b594cfea873be01b12162d196f0c11d9919a006e25a62c",
-    "public/assets/specials_new/96_Flawless_Sparkle_Moon_Zauberkopierer.webp": "bd4bb3c848011f0e65a9dad6c2654ebabe6b51400dc1af63890ff6c42b7eb3a2",
-    "public/assets/specials_new/97_Evil_Sci_Twi_Zauberklau.webp": "edeb391ccc297c1e0c9d63e5ff33d194151282ab85af5ff39ac149473f68946a",
-    "public/assets/sounds/flawless_zauberkopierer.mp3": "ef232742df17cad6aca8208e2298b1b69a0b77f0f3113e54a8e659b47ed05bd9",
-    "public/assets/sounds/evil_sci_twi_zauberklau.mp3": "5efa81e9971442982888713bc86d3515f002fee644840b0773f0cc6035cd27ba",
-    "public/assets/sounds/diabolo_shadowform.mp3": "b8a971f5f493a53ff86ae3b2ecc7cd6bef6b950575200b4bd1d2a1f7b95204ec"
+  "controls": {
+    "server_modification": "one middleware registration before existing express.static",
+    "existing_card_lists_changed": false,
+    "existing_scripts_changed": false,
+    "existing_asset_names_changed": false,
+    "user_account_database_changed": false,
+    "middleware_tests": "PASSED: WebP headers, PNG fallback, missing variants, existing animations, traversal, non-GET, cache TTL",
+    "all_png_variants_dimension_verified": true,
+    "node_syntax_checks": "PASSED"
   }
 }

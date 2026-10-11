@@ -1,62 +1,66 @@
-MLP BATTLE CARDS – V16: ERST SPECIAL-KARTE, DANN ANIMATION
-============================================================
+MLP BATTLE CARDS – DATENVOLUMEN-SPARFIX V18 (ohne Spielmechanik-Umbau)
+======================================================================
 
-Dein Wunsch:
-1) Sil – Windchaos: erst die vollständige große Special-Karte zeigen,
-   dann dieses Fenster schließen, DANN Tornado samt Tornado-Sound.
-2) Diabolo – Schattengestalt: erst die große Special-Karte vollständig
-   zeigen, nach der Zielwahl/Popup-Schließung erst das Artefakt verschlingen.
-3) Der kleine Special-Hinweis wird während der eigentlichen Animation
-   ausgeblendet. Arena und Animation bleiben vollständig sichtbar.
+PROBLEM
+Render Free hat ein begrenztes monatliches Bandbreitenbudget. In deinem Projekt
+sind beispielsweise einzelne Arena-PNGs 8–12 MB gross. Bei wiederholtem
+Laden summiert sich das schnell.
 
-WINDCHAOS ZEITPLAN
-0,0–2,5 s  normale Karteneinblendung
-2,5–2,8 s  Übergang / freies Spielfeld
-2,8–7,2 s  Tornado + Originalsound + Karten fliegen weg
-bis 7,4 s  Server schützt weiterhin vor verfrühten Spielzügen
-ab 7,4 s  neue Karten und 30 Sek. Auswahlzeit
+ERGEBNIS IN DEINEM HOCHGELADENEN PROJEKT
+65 Bilder: 178,3 MB Original-PNGs -> 29,0 MB WebP-Varianten.
+Ersparnis bei diesen 65 Bildern: 83,8 %. Noch nicht die komplette Bandbreite!
 
-SCHATTENGESTALT
-Die Zielauswahl ist weiterhin normal. Wird sie schnell bestätigt,
-wartet die Schattenanimation auf das tatsächliche Verschwinden der
-Karteneinblendung; bei späterer Zielwahl beginnt sie direkt danach.
-GENAU EIN zufällig ausgewähltes Artefakt wird wie bisher entfernt.
+WAS DIESE VERSION MACHT
+- Bestehende PNG-Dateien bleiben VOLLSTAENDIG erhalten.
+- Neue, kleinere WEBP-Alternativen liegen unter public/optimized_assets/.
+- Moderne Browser bekommen unter derselben bisherigen *.png-URL die kleinere
+  WEBP-Version mit korrektem Content-Type. Aeltere Browser bekommen PNG.
+- Bilder, MP3s, GIFs und animierte WEBPs werden bis zu 3 Stunden im Browser
+  zwischengespeichert. Javascript, HTML, CSS und Socket-/Spieler-Daten
+  werden hierdurch nicht zusaetzlich gecacht.
+- KARTENLISTEN, ZAHLEN, SOUNDS, ANIMATIONEN, SPIELREGELN und die DATENBANK
+  werden NICHT veraendert.
 
-WAS GEÄNDERT WURDE (NUR DIESE 4 BESTEHENDEN DATEIEN)
- server.js                – Windchaos-Sperre auf die neue Gesamtdauer angepasst
- public/index.html        – versionsgebundene Skript-Links aktualisiert und
-                            kleiner Hinweis während Arena-FX ausgeblendet
- public/windchaos_fx.js   – Tornado und Sound warten auf die Karteneinblendung
- public/shadowform_fx.js  – Schattengestalt wartet auf die Karteneinblendung
+SICHERER EINBAU (EMPFOHLEN)
+1. Sicherung von server.js und deinem GitHub-Stand erstellen.
+2. ZIP entpacken.
+3. Die komplette neue Datei asset_bandwidth_optimization.js in das
+   HAUPTVERZEICHNIS deines GitHub-Repositories hochladen.
+4. Den neuen Ordner public/optimized_assets/ samt Inhalt hochladen.
+   Die vorhandenen Dateien in public/assets/ NICHT ersetzen oder loeschen!
+5. Deine AKTUELLE server.js oeffnen und EINE Zeile vor
+   app.use(express.static(path.join(__dirname, 'public'))); einfuegen:
 
-ES WURDEN NICHT GEÄNDERT:
- cards.js, client.js, die Kartenbilder, alle Audio-Dateien,
- Profile/Accounts, Items & Rahmen, Artefakt-Verteilung,
- Würfel, Kristall, Arena-Hintergründe und andere Specials.
+   require('./asset_bandwidth_optimization')(app);
 
-EINBAU IN GITHUB:
-1) WICHTIG: Nur verwenden, wenn du bereits die Version
-   „Diabolo – Schattengestalt V1“ auf Basis von Bugfix V15
-   eingebaut hast. Ohne diese Grundlage muss der Fix zuerst an deine
-   tatsächliche neue Projektversion angepasst werden.
-2) Sichere den aktuellen GitHub-Stand (ZIP/Commit).
-3) Diese 4 Dateien in die GLEICHNAMIGEN Pfade hochladen.
-4) Commit und erfolgreichen Render-Deploy abwarten.
-5) Strg+F5 zum Neu-Laden. Eine frische Partie starten.
-6) Windchaos und Schattengestalt jeweils einmal mit einem Mitspieler testen.
+6. Committen, Render-Deploy abwarten und die Webseite mit Strg+F5 laden.
+   Bei laufender Render-Sperre werden keine Deploys live geschaltet, bevor
+   dein Workspace wieder freigegeben ist.
 
-Falls du SEIT Diabolo V1 weitere Änderungen vorgenommen hast:
-Dann bitte NICHT die ganze server.js oder index.html überschreiben.
-Nimm stattdessen AENDERUNGEN_NUR_REIHENFOLGE.patch als Grundlage,
-und schick mir am besten vorher den allerneuesten Spielstand.
+WICHTIG: Das ZIP enthaelt KEINE Server-Komplettdatei und KEINE veraenderten Spielregeln.
+Du ergaenzt in DEINER aktuellen server.js lediglich eine Zeile. Dadurch werden
+neuere Spiel-Fixes nicht durch eine alte server.js ueberschrieben!
 
-TESTS
-- Node-Syntaxprüfung bestanden.
-- 4 verzögerungsabhängige Darstellungs-Tests bestanden.
-- Windchaos: 6+1, eigene Karten behalten, Sperre auch während
-  Karteneinblendung, 30s-Auswahl, Wiederbeitritt getestet.
-- Schattengestalt: 1 Artefaktverlust, Gegner-Zielprüfung, eigene
-  Hand unberührt getestet.
-- Weitere Tests für Spielerprofile, Lobby, Rahmen/Items und
-  Rundenablauf bestanden.
-- Echte Live-Mehrspielerpartie in Render wurde NICHT getestet.
+TEST AUF RENDER (WENN WIEDER AKTIV)
+1. Starte dein Spiel und oeffne Browser-Entwicklertools mit F12.
+2. Tab 'Netzwerk' (Network) -> 'Disable cache' fuer ersten Test aktivieren.
+3. Arena aufrufen oder eine PNG-Karte laden.
+4. Anklicken: URL kann noch auf .png enden, Content-Type sollte
+   image/webp zeigen, Transfer-Size deutlich kleiner als Original sein.
+5. 'Disable cache' ausschalten, Seite neu laden. Wiederholte Bilder sollten
+   nun (aus dem Speicher-Cache) bzw. mit kaum uebertragenen Bytes erscheinen.
+6. Pruefe Arena 1–4, Karten, Items/Rahmen, und Sound.
+7. Danach - wie immer - eine Testpartie gegen PonyBot.
+
+GRENZEN
+- Diese Optimierung reduziert Bild- und Asset-Transfer, garantiert aber
+  KEIN Einhalten eines monatlichen Render-Kontingents bei beliebig vielen
+  Spielern und Seitenaufrufen.
+- Bereits genutzte Render-Bandbreite wird dadurch nicht zurueckgesetzt.
+- Die kostenlosen Render-Webserver bieten kein Render Edge Caching; der
+  Browser nutzt hier seinen eigenen Cache.
+- Bei Austausch eines Bildes kann ein Browser es bis zu 3 Stunden im Cache
+  behalten, es sei denn man laedt mit Strg+F5 neu.
+- PNG und WEBP Alternative muessen bei zukuenftigen Bildern ggf.
+  neu erzeugt werden. Falls keine Alternative vorhanden ist, zeigt das
+  Spiel wie bisher das originale Bild.
