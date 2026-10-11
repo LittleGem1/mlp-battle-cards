@@ -259,7 +259,7 @@
         <article class="tutorial-step" data-step="5">
           <div class="tutorial-copy">
             <h4>6. Spezialkarten, Gleichstand & Sieg</h4>
-            <p>Normalerweise darfst du <strong>1 Spezialkarte pro Runde</strong> einsetzen – Changeling erlaubt dir eine zweite. Manche Spezialkarten lassen dich einen Gegner, eine Handkarte oder sogar die Kategorie auswählen. Verlorene normale Karten werden erst <strong>nach Abschluss der Runde</strong> beim automatischen Auffüllen ersetzt; verlorene Spezialkarten nicht. Bei Gleichstand wird gewürfelt. Sobald ein Spieler <strong>alle drei verschiedenen Artefakte</strong> besitzt, gewinnt er das Match.</p>
+            <p>Normalerweise darfst du <strong>1 Spezialkarte pro Runde</strong> einsetzen – Changeling erlaubt dir zwei zusätzliche. Manche Spezialkarten lassen dich einen Gegner, eine Handkarte oder sogar die Kategorie auswählen. Verlorene normale Karten werden erst <strong>nach Abschluss der Runde</strong> beim automatischen Auffüllen ersetzt; verlorene Spezialkarten nicht. Bei Gleichstand wird gewürfelt. Sobald ein Spieler <strong>alle drei verschiedenen Artefakte</strong> besitzt, gewinnt er das Match.</p>
             <div class="tutorial-special-note"><strong>Wichtig:</strong> Iron Will kann eine Artefaktziehung für die gesamte Runde verhindern. Grogar bestimmt die aktuelle Kategorie selbst. Windigos lassen alle anderen aussetzen. Daybreaker gewinnt die Runde automatisch, sobald eine normale Karte gelegt wurde.</div>
             <div class="tutorial-practice-cta">
               <strong>🎮 Jetzt selbst ausprobieren!</strong>
@@ -271,7 +271,7 @@
             <img class="tutorial-special special-one" src="/assets/specials/64_Spezial_Pinkie_Pie.webp" alt="Pinkie Pie Spezialkarte">
             <img class="tutorial-special special-two" src="/assets/specials_new/80_Grogar.png" alt="Grogar Spezialkarte">
             <img class="tutorial-special special-three" src="/assets/specials_new/91_Lightning_Dust.png" alt="Lightning Dust Spezialkarte">
-            <span class="tutorial-special-rule">Normal: 1 Spezialkarte pro Runde<br><small>Changeling erlaubt eine zweite.</small></span>
+            <span class="tutorial-special-rule">Normal: 1 Spezialkarte pro Runde<br><small>Changeling erlaubt zwei zusätzliche.</small></span>
           </div>
         </article>
       </div>
@@ -406,13 +406,15 @@
   <script src="/mlp_special_hover_kristallton_v12.js?v=20261010-v12"></script>
   <!-- Bei Windchaos/Schattengestalt hat die Arena freie Sicht: nach der Karte
        wird auch der kleine Special-Hinweis während des Effekts ausgeblendet. -->
-  <style id="special-fx-sequence-style">body.windchaos-running #mlpSpecialNotice,body.shadowform-running #mlpSpecialNotice{opacity:0!important;visibility:hidden!important}</style>
+  <style id="special-fx-sequence-style">body.windchaos-running #mlpSpecialNotice,body.shadowform-running #mlpSpecialNotice,body.artifactmagic-running #mlpSpecialNotice,body.changeling-swarm-running #mlpSpecialNotice{opacity:0!important;visibility:hidden!important}</style>
   <!-- Windchaos: ausschließlich diese zusätzliche Special-Animation -->
   <script src="/windchaos_fx.js?v=fx-reihenfolge-v2"></script>
   <!-- Schattengestalt: In-Game-Effekt für Artefaktverlust -->
-  <script src="/shadowform_fx.js?v=diabolo-visible-v2"></script>
   <!-- Artefakt-Zauber: nur ein Zusatz-Effekt für Flawless Sparkle Moon / Evil Sci Twi -->
-  <script src="/artifact_magic_fx.js?v=artifactmagic-v17"></script>
+  <script src="/arena_selector.js?v=arena-selector-v2"></script>
 
-<!-- V7: Alte V5-Einbindung entfernt; eigenes testbares Vollbild-Layout + Kristall. --></body>
+  <script src="/shadowform_fx.js?v=ingame-final-1"></script>
+  <script src="/artifact_magic_fx.js?v=ingame-final-1"></script>
+  <script src="/changeling_swarm_fx.js?v=ingame-final-1"></script>
+</body>
 </html>

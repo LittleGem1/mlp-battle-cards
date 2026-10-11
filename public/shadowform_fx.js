@@ -26,9 +26,9 @@
     if(!preview && !document.querySelector('#game.screen.active'))return null;
     // Die Tonspur beginnt erst beim tatsächlichen Erscheinen des Schattens,
     // niemals schon während der 2,5-s-Karteneinblendung.
-    if(!preview){
+    {
       try{
-        const sound=new Audio('/assets/sounds/diabolo_shadowform.mp3?v=diabolo-v17');
+        const sound=new Audio('/assets/sounds/diabolo_shadowform.mp3?v=diabolo-v18');
         sound.volume=0.64;
         sound.play().catch(()=>{});
       }catch(_err){}
@@ -41,7 +41,7 @@
     const caption=document.createElement('small');caption.textContent=`${targetName} verliert ein Artefakt!`;
     title.append(heading,caption);root.appendChild(title);
     const creature=document.createElement('div');creature.className='shadowform-creature';
-    const sprite=document.createElement('div');sprite.className='shadowform-silhouette';sprite.setAttribute('aria-hidden','true');
+    const sprite=document.createElement('img');sprite.src='/assets/fx/schattengestalt_silhouette.png';sprite.alt='';
     const maw=document.createElement('div');maw.className='shadowform-maw';creature.append(sprite,maw);root.appendChild(creature);
     const card=document.createElement('img');card.className='shadowform-card';card.alt='Artefakt wird von Schattengestalt verschlungen';
     card.src=safeCardImage(artifact?.image);root.appendChild(card);
@@ -106,7 +106,7 @@
       if(!document.querySelector('#game.screen.active'))return;
       const elapsed=performance.now()-started;
       const popup=document.querySelector('.special-burst');
-      if(elapsed<minimumDelay || (popup && elapsed<6500)){
+      if(elapsed<minimumDelay || popup){
         setTimeout(step,50);
         return;
       }

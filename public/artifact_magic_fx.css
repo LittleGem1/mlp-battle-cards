@@ -1,24 +1,38 @@
-/* Extra Spell FX – keine Anpassungen am Arena-Layout. */
-.artifactmagic-overlay{position:fixed;inset:0;z-index:260;pointer-events:none;overflow:hidden;color:white;opacity:0;transition:opacity .28s ease;isolation:isolate}
+.artifactmagic-overlay{position:fixed;inset:0;z-index:260;pointer-events:none;overflow:hidden;color:#fff;opacity:0;transition:opacity .24s ease;isolation:isolate}
 .artifactmagic-overlay.show{opacity:1}
-.artifactmagic-overlay::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 48%,rgba(160,86,255,.27),rgba(11,9,40,.34) 48%,rgba(0,0,0,.1));animation:magicFog 2.6s ease both}
-.artifactmagic-overlay.artifactmagic-steal::before{background:radial-gradient(circle at 50% 48%,rgba(210,42,112,.37),rgba(12,2,24,.44) 58%,rgba(0,0,0,.1))}
-.artifactmagic-title{position:absolute;top:12%;left:50%;transform:translateX(-50%);display:grid;text-align:center;gap:5px;text-shadow:0 3px 15px #16072d,0 0 24px #b869fa;width:min(90%,760px);z-index:3;animation:magicTitle 2.6s ease both}
-.artifactmagic-title strong{font-size:clamp(27px,5.5vw,65px);letter-spacing:.07em;color:#ffe9ac}
-.artifactmagic-title small{font-size:clamp(13px,2.3vw,22px);color:#f6efff}
-.artifactmagic-moving,.artifactmagic-original{position:absolute;top:43%;width:clamp(100px,15vw,185px);height:auto;aspect-ratio:2/3;object-fit:cover;border:4px solid #f1d8a5;border-radius:13px;box-shadow:0 0 32px rgba(186,108,255,.88),0 12px 42px #000b;left:calc(50% - clamp(50px,7.5vw,92.5px));z-index:2}
-.artifactmagic-original{opacity:0;animation:magicOriginal 2.6s ease both}
-.artifactmagic-copy .artifactmagic-moving{animation:magicCopy 2.6s cubic-bezier(.2,.7,.17,1) both}
-.artifactmagic-steal .artifactmagic-moving{animation:magicSteal 2.6s cubic-bezier(.2,.7,.17,1) both}
+.artifactmagic-overlay::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 55%,rgba(138,92,255,.32),rgba(18,13,56,.42) 36%,rgba(0,0,0,.18) 68%);animation:amFog 2.8s ease both}
+.artifactmagic-overlay.artifactmagic-steal::before{background:radial-gradient(circle at 52% 53%,rgba(255,62,140,.38),rgba(23,6,31,.56) 42%,rgba(0,0,0,.18) 72%)}
+.artifactmagic-title{position:absolute;top:9%;left:50%;transform:translateX(-50%);display:grid;text-align:center;gap:5px;text-shadow:0 3px 15px #16072d,0 0 24px #b869fa;width:min(90%,760px);z-index:7;animation:amTitle 2.8s ease both}
+.artifactmagic-title strong{font-size:clamp(28px,5.6vw,66px);letter-spacing:.08em;color:#ffe8ac}
+.artifactmagic-title small{font-size:clamp(13px,2.1vw,22px);color:#f8f4ff}
+.artifactmagic-moving,.artifactmagic-original{position:absolute;top:45%;width:clamp(100px,15vw,188px);height:auto;aspect-ratio:2/3;object-fit:cover;border:4px solid #f1d8a5;border-radius:13px;box-shadow:0 0 35px rgba(186,108,255,.92),0 12px 42px #000b;left:calc(50% - clamp(50px,7.5vw,94px));z-index:5;backface-visibility:hidden}
+.artifactmagic-original{opacity:0;animation:amOriginal 2.8s ease both}
+.artifactmagic-copy .artifactmagic-moving{animation:amCopy 2.8s cubic-bezier(.2,.7,.17,1) both}
+.artifactmagic-steal .artifactmagic-moving{animation:amSteal 2.8s cubic-bezier(.2,.7,.17,1) both}
 .artifactmagic-steal .artifactmagic-original{display:none}
-.artifactmagic-ring{position:absolute;left:50%;top:54%;width:220px;height:220px;margin:-110px;z-index:1;border:7px solid rgba(238,198,255,.6);border-radius:50%;box-shadow:0 0 40px #e0b3ff, inset 0 0 35px #e0b3ff;animation:magicRing 2.6s ease-in-out both}
-.artifactmagic-spark{position:absolute;left:50%;top:54%;width:8px;height:8px;border-radius:50%;background:#ffe6ae;box-shadow:0 0 14px #ebbdff;transform:rotate(var(--angle)) translateX(110px);animation:magicSpark 2.6s ease-in-out both;animation-delay:calc(var(--i)*-20ms)}
-@keyframes magicFog{0%,100%{opacity:0}15%,74%{opacity:1}}
-@keyframes magicTitle{0%,100%{opacity:0;transform:translate(-50%,-22px)}16%,74%{opacity:1;transform:translate(-50%,0)}}
-@keyframes magicCopy{0%{opacity:0;transform:translate(36vw,30px) scale(.55) rotate(-25deg)}24%{opacity:1;transform:translate(8vw,0) scale(1) rotate(0)}55%{opacity:1;transform:translate(0,0) scale(1.25)}84%{opacity:1;transform:translate(-25vw,-35px) scale(.9) rotate(15deg)}100%{opacity:0;transform:translate(-34vw,-80px) scale(.35) rotate(110deg)}}
-@keyframes magicSteal{0%{opacity:0;transform:translate(35vw,0) scale(1) rotate(0)}24%{opacity:1;transform:translate(19vw,15px) scale(1.18) rotate(-12deg)}55%{opacity:1;transform:translate(0,0) scale(1.35) rotate(30deg)}86%{opacity:1;transform:translate(-26vw,-30px) scale(.85) rotate(540deg)}100%{opacity:0;transform:translate(-36vw,-60px) scale(.2) rotate(680deg)}}
-@keyframes magicOriginal{0%,15%{opacity:0;transform:translate(35vw,5px) scale(.9)}30%,86%{opacity:.9;transform:translate(28vw,5px) scale(1)}100%{opacity:0;transform:translate(28vw,5px) scale(1)}}
-@keyframes magicRing{0%,100%{opacity:0;transform:scale(.1) rotate(-60deg)}32%{opacity:1;transform:scale(1) rotate(50deg)}66%{opacity:1;transform:scale(1.45) rotate(180deg)}}
-@keyframes magicSpark{0%,100%{opacity:0;transform:rotate(var(--angle)) translateX(12px)}38%,72%{opacity:1;transform:rotate(var(--angle)) translateX(160px)}}
+.artifactmagic-ring,.artifactmagic-targetburst,.artifactmagic-mirror,.artifactmagic-beam{position:absolute;left:50%;top:53%;transform:translate(-50%,-50%)}
+.artifactmagic-ring{width:min(34vw,260px);height:min(34vw,260px);z-index:2;border:7px solid rgba(238,198,255,.54);border-radius:50%;box-shadow:0 0 40px #e0b3ff,inset 0 0 35px #e0b3ff;animation:amRing 2.8s ease-in-out both}
+.artifactmagic-targetburst{width:min(48vw,420px);height:min(48vw,420px);z-index:1;border-radius:50%;filter:blur(14px);background:radial-gradient(circle,rgba(255,255,255,.2),rgba(140,109,255,.22) 24%,rgba(0,0,0,0) 60%);animation:amBurst 2.8s ease both}
+.artifactmagic-steal .artifactmagic-targetburst{background:radial-gradient(circle,rgba(255,255,255,.18),rgba(255,80,162,.28) 24%,rgba(0,0,0,0) 60%)}
+.artifactmagic-mirror{width:min(17vw,132px);height:min(22vw,170px);margin-left:18vw;border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(188,160,255,.22),rgba(255,255,255,.1));border:3px solid rgba(240,230,255,.7);box-shadow:0 0 35px rgba(193,171,255,.8);z-index:3;opacity:0;transform:translate(-50%,-50%) rotate(-16deg);animation:amMirror 2.8s ease both}
+.artifactmagic-steal .artifactmagic-mirror{display:none}
+.artifactmagic-beam{width:min(60vw,600px);height:10px;background:linear-gradient(90deg,rgba(0,0,0,0),rgba(255,145,231,.95),rgba(186,255,246,.95),rgba(0,0,0,0));filter:blur(2px);z-index:2;opacity:0;transform-origin:center;animation:amBeam 2.8s ease both}
+.artifactmagic-steal .artifactmagic-beam{background:linear-gradient(90deg,rgba(0,0,0,0),rgba(47,255,182,.95),rgba(255,82,166,.95),rgba(0,0,0,0));animation:amBeamSteal 2.8s ease both}
+.artifactmagic-spark,.artifactmagic-rune{position:absolute;left:50%;top:53%;z-index:4}
+.artifactmagic-spark{width:8px;height:8px;border-radius:50%;background:#ffe6ae;box-shadow:0 0 14px #ebbdff;transform:rotate(var(--angle)) translateX(110px);animation:amSpark 2.8s ease-in-out both;animation-delay:calc(var(--i)*-18ms)}
+.artifactmagic-rune{font-size:clamp(16px,2vw,26px);font-weight:900;color:#ffedbd;text-shadow:0 0 12px rgba(255,255,255,.6),0 0 20px rgba(197,156,255,.8);opacity:0;animation:amRune 2.8s ease both;animation-delay:calc(var(--i)*70ms)}
+.artifactmagic-rune:nth-child(odd){color:#fff3ff}
+@keyframes amFog{0%,100%{opacity:0}12%,86%{opacity:1}}
+@keyframes amTitle{0%,100%{opacity:0;transform:translate(-50%,-22px)}12%,78%{opacity:1;transform:translate(-50%,0)}}
+@keyframes amCopy{0%{opacity:0;transform:translate(34vw,30px) scale(.55) rotate(-25deg)}22%{opacity:1;transform:translate(10vw,0) scale(1) rotate(0)}50%{opacity:1;transform:translate(0,0) scale(1.15)}72%{opacity:1;transform:translate(-8vw,-18px) scale(1.05) rotate(8deg)}88%{opacity:1;transform:translate(-27vw,-36px) scale(.88) rotate(16deg)}100%{opacity:0;transform:translate(-35vw,-80px) scale(.32) rotate(120deg)}}
+@keyframes amSteal{0%{opacity:0;transform:translate(35vw,0) scale(1) rotate(0)}20%{opacity:1;transform:translate(19vw,15px) scale(1.15) rotate(-10deg)}48%{opacity:1;transform:translate(0,0) scale(1.34) rotate(18deg)}70%{opacity:1;transform:translate(-3vw,-8px) scale(1.2) rotate(85deg)}88%{opacity:1;transform:translate(-28vw,-32px) scale(.8) rotate(560deg)}100%{opacity:0;transform:translate(-37vw,-70px) scale(.18) rotate(720deg)}}
+@keyframes amOriginal{0%,15%{opacity:0;transform:translate(35vw,5px) scale(.9)}24%,74%{opacity:.9;transform:translate(28vw,5px) scale(1)}100%{opacity:0;transform:translate(28vw,5px) scale(1)}}
+@keyframes amRing{0%,100%{opacity:0;transform:translate(-50%,-50%) scale(.1) rotate(-60deg)}25%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(50deg)}60%{opacity:1;transform:translate(-50%,-50%) scale(1.45) rotate(190deg)}85%{opacity:.3}}
+@keyframes amBurst{0%,100%{opacity:0;transform:translate(-50%,-50%) scale(.2)}24%{opacity:1;transform:translate(-50%,-50%) scale(1)}72%{opacity:.9;transform:translate(-50%,-50%) scale(1.18)}}
+@keyframes amMirror{0%,16%{opacity:0;transform:translate(calc(-50% + 18vw),-50%) rotate(-16deg) scale(.4)}30%,62%{opacity:1;transform:translate(calc(-50% + 18vw),-50%) rotate(-16deg) scale(1)}72%{opacity:1;transform:translate(calc(-50% + 7vw),calc(-50% - 10px)) rotate(-6deg) scale(1.05)}88%{opacity:1;transform:translate(calc(-50% - 5vw),calc(-50% - 22px)) rotate(8deg) scale(.72)}100%{opacity:0;transform:translate(calc(-50% - 18vw),calc(-50% - 70px)) rotate(14deg) scale(.3)}}
+@keyframes amBeam{0%,22%,100%{opacity:0;transform:translate(-50%,-50%) rotate(-12deg) scaleX(.2)}34%,64%{opacity:.95;transform:translate(-50%,-50%) rotate(-12deg) scaleX(1)}80%{opacity:.6;transform:translate(-50%,-50%) rotate(-12deg) scaleX(.8)}}
+@keyframes amBeamSteal{0%,18%,100%{opacity:0;transform:translate(-50%,-50%) rotate(8deg) scaleX(.2)}30%,68%{opacity:1;transform:translate(-50%,-50%) rotate(8deg) scaleX(1)}82%{opacity:.6;transform:translate(-50%,-50%) rotate(8deg) scaleX(.82)}}
+@keyframes amSpark{0%,100%{opacity:0;transform:rotate(var(--angle)) translateX(12px)}34%,76%{opacity:1;transform:rotate(var(--angle)) translateX(170px)}}
+@keyframes amRune{0%{opacity:0;transform:translate(-50%,-50%) rotate(calc(var(--i)*36deg)) translateX(20px) scale(.2)}22%,74%{opacity:.95;transform:translate(-50%,-50%) rotate(calc(var(--i)*36deg)) translateX(min(22vw,180px)) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) rotate(calc(var(--i)*36deg)) translateX(min(27vw,210px)) scale(.7)}}
 body.artifactmagic-running #mlpSpecialNotice{visibility:hidden!important;opacity:0!important}
-@media(max-width:580px){.artifactmagic-title{top:17%}.artifactmagic-title small{font-size:13px}.artifactmagic-moving,.artifactmagic-original{top:48%;width:110px;left:calc(50% - 55px)}}
+@media(max-width:580px){.artifactmagic-title{top:15%}.artifactmagic-title small{font-size:13px}.artifactmagic-moving,.artifactmagic-original{top:48%;width:110px;left:calc(50% - 55px)}.artifactmagic-mirror{margin-left:22vw}}

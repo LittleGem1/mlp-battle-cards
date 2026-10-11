@@ -1,64 +1,61 @@
-/* Flawless Sparkle Moon / Evil Sci Twi – reiner Arena-Effekt.
-   Die Artefakt-Regeln und Besitzdaten bleiben vollständig auf dem Server. */
 (()=>{
   'use strict';
-  const get=(s)=>document.querySelector(s);
-  if(!get('link[data-artifact-magic-css]')){
-    const link=document.createElement('link');link.rel='stylesheet';
-    link.href='/artifact_magic_fx.css?v=17';link.dataset.artifactMagicCss='1';
-    document.head.append(link);
+  const qs=s=>document.querySelector(s);
+  if(!qs('link[data-artifact-magic-css]')){
+    const link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href='/artifact_magic_fx.css?v=18';
+    link.dataset.artifactMagicCss='1';
+    document.head.appendChild(link);
   }
-  let current=null;
-  let currentAudio=null;
-  const safeImage=value=>typeof value==='string' && /^\/assets\/artifacts\/[\w.-]+\.(?:png|webp|jpg)$/i.test(value)
-    ? value:'/assets/artifacts/01_Elemente_der_Harmonie.png';
-
+  let current=null, currentAudio=null;
+  const safeImage=v=>typeof v==='string' && /^\/assets\/[\w./-]+\.(?:png|webp|jpg)$/i.test(v) ? v : '/assets/artifacts/01_Elemente_der_Harmonie.png';
+  function stop(){
+    current?.remove(); current=null; document.body.classList.remove('artifactmagic-running');
+    if(currentAudio){try{currentAudio.pause(); currentAudio.currentTime=0;}catch(_){ } currentAudio=null;}
+  }
   function play(evt={}){
-    const scene=get('#game.screen.active');if(!scene)return;
-    current?.remove();
-    if(currentAudio){try{currentAudio.pause();currentAudio.currentTime=0;}catch(_){}}
+    const preview=!!evt.preview;
+    const scene=preview ? document.body : qs('#game.screen.active');
+    if(!scene)return;
+    stop();
     const stealing=evt.action==='artifactsteal';
     const layer=document.createElement('div');
     layer.className='artifactmagic-overlay '+(stealing?'artifactmagic-steal':'artifactmagic-copy');
     layer.setAttribute('aria-label',stealing?'Zauberklau – ein Artefakt wird gestohlen':'Zauberkopierer – ein Artefakt wird kopiert');
-    const title=document.createElement('div');title.className='artifactmagic-title';
-    const strong=document.createElement('strong');strong.textContent=stealing?'ZAUBERKLAU':'ZAUBERKOPIERER';
-    const detail=document.createElement('small');
-    detail.textContent=(evt.casterName||'Spieler')+(stealing?' stiehlt ':' kopiert ')+(evt.artifact?.name||'ein Artefakt')+' von '+(evt.targetName||'einem Gegner');
-    title.append(strong,detail);
-    const card=document.createElement('img');card.className='artifactmagic-moving';card.alt=evt.artifact?.name||'Artefakt';card.src=safeImage(evt.artifact?.image);
-    const original=document.createElement('img');original.className='artifactmagic-original';original.alt='';original.src=card.src;
-    const ring=document.createElement('div');ring.className='artifactmagic-ring';
-    layer.append(title,original,ring,card);
-    for(let i=0;i<22;i++){
-      const spark=document.createElement('i');spark.className='artifactmagic-spark';
-      spark.style.setProperty('--i',i);
-      spark.style.setProperty('--angle',(i*360/22)+'deg');
-      layer.append(spark);
+    const title=document.createElement('div'); title.className='artifactmagic-title';
+    title.innerHTML=`<strong>${stealing?'ZAUBERKLAU':'ZAUBERKOPIERER'}</strong><small>${evt.casterName||'Spieler'} ${stealing?'entreißt':'spiegelt'} ${(evt.artifact?.name)||'ein Artefakt'} ${stealing?'von':'bei'} ${evt.targetName||'einem Gegner'}</small>`;
+    const moving=document.createElement('img'); moving.className='artifactmagic-moving'; moving.alt=evt.artifact?.name||'Artefakt'; moving.src=safeImage(evt.artifact?.image);
+    const original=document.createElement('img'); original.className='artifactmagic-original'; original.alt=''; original.src=moving.src;
+    const ring=document.createElement('div'); ring.className='artifactmagic-ring';
+    const targetBurst=document.createElement('div'); targetBurst.className='artifactmagic-targetburst';
+    const mirror=document.createElement('div'); mirror.className='artifactmagic-mirror';
+    const beam=document.createElement('div'); beam.className='artifactmagic-beam';
+    layer.append(title,targetBurst,ring,mirror,beam,original,moving);
+    for(let i=0;i<28;i++){
+      const spark=document.createElement('i'); spark.className='artifactmagic-spark';
+      spark.style.setProperty('--i',i); spark.style.setProperty('--angle',(i*360/28)+'deg'); layer.append(spark);
     }
-    document.body.append(layer);current=layer;
-    document.body.classList.add('artifactmagic-running');
-    // Sound beginnt mit dem sichtbaren Zauber, nicht beim Karten-Popup.
-    const audio=new Audio(stealing?'/assets/sounds/evil_sci_twi_zauberklau.mp3?v=17':'/assets/sounds/flawless_zauberkopierer.mp3?v=17');
-    audio.volume=0.66;currentAudio=audio;audio.play().catch(()=>{});
+    for(let i=0;i<10;i++){
+      const rune=document.createElement('b'); rune.className='artifactmagic-rune'; rune.textContent=['✦','✧','✶','✷','⟡'][i%5];
+      rune.style.setProperty('--i',i); layer.append(rune);
+    }
+    document.body.appendChild(layer); current=layer; document.body.classList.add('artifactmagic-running');
+    const audio=new Audio(stealing?'/assets/sounds/evil_sci_twi_zauberklau.mp3?v=18':'/assets/sounds/flawless_zauberkopierer.mp3?v=18');
+    audio.volume=0.72; currentAudio=audio; audio.play().catch(()=>{});
     requestAnimationFrame(()=>layer.classList.add('show'));
-    const duration=Math.max(1600,Math.min(Number(evt.duration)||2600,5000));
-    setTimeout(()=>{
-      if(current===layer){layer.remove();current=null;document.body.classList.remove('artifactmagic-running');}
-      if(currentAudio===audio){try{audio.pause();}catch(_){} currentAudio=null;}
-    },duration+160);
+    const duration=Math.max(1800,Math.min(Number(evt.duration)||2800,5200));
+    setTimeout(stop,duration+180);
   }
   function afterCardReveal(evt){
     const started=performance.now();
     const poll=()=>{
-      if(!get('#game.screen.active'))return;
-      if(get('.special-burst') && performance.now()-started<6500){setTimeout(poll,55);return;}
+      if(!qs('#game.screen.active'))return;
+      if(qs('.special-burst') && performance.now()-started<6500){setTimeout(poll,55); return;}
       requestAnimationFrame(()=>play(evt));
     };
     poll();
   }
-  if(typeof socket!=='undefined'&&socket?.on){
-    socket.on('artifactMagicAnimation',afterCardReveal);
-  }
-  window.ArtifactMagicFX={play};
+  if(typeof socket!=='undefined'&&socket?.on){ socket.on('artifactMagicAnimation',afterCardReveal); }
+  window.ArtifactMagicFX={play,stop};
 })();

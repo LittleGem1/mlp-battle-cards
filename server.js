@@ -31,7 +31,7 @@ const RECONNECT_GRACE_MS = 120000; // Reserve a disconnected player's seat for t
 const ROUND_WATCHDOG_PERIOD_MS = 2500;
 
 
-// Test-Einstellung der Arena: Nur Host; nur die naechste Partie.
+// Arena-Auswahl: Host kann eine feste Arena oder Zufall wählen; Einstellung bleibt bestehen, bis sie geändert wird.
 const ARENA_IDS = Object.freeze(['jade_palace','whispering_forest','steampunk_works','witchs_table']);
 function arenaForNextMatch(r){
   return ARENA_IDS.includes(r.arenaSelection)
@@ -1411,7 +1411,6 @@ function beginMatch(r){
   if(!r||r.phase!=='ready'||r.players.size<2)return;
   clearTimers(r);
   if(!r.arenaId)r.arenaId=arenaForNextMatch(r);
-  // Host-Auswahl bleibt für spätere Matches erhalten.
   const ps=roomPlayers(r);
   r.matchId=crypto.randomUUID();
   r.lastArtifactOfferRound=0;
@@ -1767,7 +1766,7 @@ io.on('connection',socket=>{
       if(old.round!==r.round||old.room!==r.code)clearSpecialChoice(socket,r,true);
       else return socket.emit('errorMsg','Beende zuerst die aktuelle Spezialkarten-Auswahl oder schließe das Fenster.');
     }
-    if(!mayUseSpecial(p))return socket.emit('errorMsg','Du kannst in dieser Runde nur 1 Spezialkarte einsetzen. Changeling erlaubt eine zusätzliche.');
+    if(!mayUseSpecial(p))return socket.emit('errorMsg','Du kannst in dieser Runde nur 1 Spezialkarte einsetzen. Changeling erlaubt zwei zusätzliche.');
 
     let effectCard=source;
 
@@ -1848,8 +1847,9 @@ io.on('connection',socket=>{
       socket.data.pendingSpecial={room:r.code,round:r.round,action:'diamonddogs',sourceCardId:source.id,choices:d};
       socket.emit('specialCardRequest',{title:'Diamond Dogs: Behalte 1 der 2 Karten',cards:d.map(id=>byId[id]).filter(Boolean)});
     }else if(effect==='changeling'){
-      p.specialExtra=(p.specialExtra||0)+1;
-      socket.emit('specialDone',{text:'Du darfst diese Runde noch 1 zusätzliche Spezialkarte spielen.'});
+      p.specialExtra=(p.specialExtra||0)+2;
+      io.to(r.code).emit('changelingSwarmAnimation',{casterId:p.id,casterName:p.name,duration:4300,extra:2});
+      socket.emit('specialDone',{text:'Du darfst diese Runde noch 2 zusätzliche Spezialkarten spielen.'});
     }else if(effect==='nightmare'){
       r.forcedNextCategory='magic';
       socket.emit('specialDone',{text:'Die nächste Runde wird automatisch Magie.'});
