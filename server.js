@@ -1139,6 +1139,29 @@ function handleSelectionTimeout(r){
   const req=requiredPlayers(r),late=req.filter(p=>!p.selected);
   if(!late.length){maybeEvaluate(r);return;}
 
+  // Zwei-Spieler-Duell: Wer nicht rechtzeitig legt, verliert die Runde,
+  // sofern der Gegenspieler seine Karte fristgerecht gelegt hat.
+  const duelPlayers=requiredPlayers(r);
+  const winner=duelPlayers.length===2 && late.length===1
+    ? duelPlayers.find(p=>p.selected && p.id!==late[0].id) : null;
+  if(winner && r.played[winner.id]){
+    r.phase='reveal';
+    r.revealOutcome={round:r.round,kind:'winner',winnerId:winner.id,reason:'opponent-timeout'};
+    const played=r.played[winner.id];
+    const cardId=playedCardIds(played)[0];
+    io.to(r.code).emit('notice',`${late[0].name} hat keine Karte gelegt. ${winner.name} gewinnt die Runde!`);
+    io.to(r.code).emit('reveal',{
+      round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],
+      entries:cardId&&byId[cardId]?[{pid:winner.id,cardId,card:byId[cardId],name:winner.name,value:0,base:0,bonus:0,cards:playedCardIds(played),forcedLose:false,skipped:false}]:[]
+    });
+    sendState(r);
+    const match=r.matchId,round=r.round;
+    setTimeout(()=>{
+      if(rooms.has(r.code)&&r.matchId===match&&r.round===round&&r.phase==='reveal')settleRound(r,winner.id);
+    },2100);
+    return;
+  }
+
   for(const [pid,entry] of Object.entries(r.played)){
     const p=r.players.get(pid);
     if(!p)continue;

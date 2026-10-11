@@ -1,29 +1,15 @@
-MLP BATTLE CARDS – V19: ITEM- UND RAHMENANZEIGE REPARIEREN
+MLP Battle Cards – Duell-Timer + Changeling-Karte + 4 Animationen
 
-INSTALLATION (bestehendes GitHub-Projekt, NICHT das gesamte ZIP-Repository austauschen):
+ÄNDERUNGEN
+1. Bei exakt 2 aktiven Spielern: Legt Spieler A eine normale Karte und Spieler B lässt die 30-Sekunden-Auswahlzeit verstreichen, gewinnt A automatisch die Runde. Der normale Gewinnablauf inklusive Belohnung bleibt erhalten. Wenn beide gar nicht legen, gelten weiterhin die bisherigen Timeout-Regeln. Bei mehr als 2 Spielern bleiben die alten Timeout-Regeln ebenfalls bestehen.
+2. Die vom Nutzer bereitgestellte neue Changeling-Karte wird als PNG und als optimiertes WebP ersetzt, damit die alte Version nicht wieder geladen wird.
+3. Vier Effekte mit ihren Sounds: Schattengestalt/Diabolo, Zauberklau, Zauberkopierer und Schwarmruf (Augen leuchten nacheinander, Changelinge erscheinen, 2 Bonus-Spezialkarten).
+
+INSTALLATION
 1. ZIP entpacken.
-2. server.js in den Hauptordner deines GitHub-Repositories hochladen – alte server.js ersetzen.
-3. public/style.css in den GitHub-Ordner public/ hochladen – alte style.css ersetzen.
-4. Auf GitHub „Commit changes“ klicken. Auf Render den neuesten Deploy abwarten.
-5. Spiel neu öffnen (Strg+F5), anmelden, gewonnenes Item und gewonnenen Rahmen ausrüsten.
-   Test: Lobby und Arena mit einem zweiten Spieler/Bot anschauen.
+2. Dateien samt Ordnerstruktur in GitHub-Projekt mlp-battle-cards einfügen/ersetzen. Nicht nur die ZIP in GitHub hochladen.
+3. Änderungen committen, Render-Deploy abwarten.
+4. Strg+F5 im Browser drücken.
+5. Zu zweit testen: Eine Person legt eine Karte, andere legt 30 Sek. nichts. Die aktive Person soll Rundensieger werden, nicht automatisch das ganze Match gewinnen.
 
-WAS WURDE REPARIERT?
-- Neue Gewinnbelohnungen werden nicht nur in PostgreSQL gespeichert, sondern auch
-  sofort beim bereits angemeldeten Sieger im aktuellen Serversitzungsprofil freigeschaltet.
-- 'Ausrüsten' synchronisiert den ausgewählten Gegenstand/Rahmen nach erfolgreicher
-  Datenbankspeicherung in den gesamten Spielraum, sogar während einer Partie / auf
-  dem Ergebnisbildschirm. Andere Spieler sehen ihn sofort in Lobby und Arena.
-- Die CSS-Anzeige neuer Items neben dem Namensschild wird korrekt positioniert;
-  Rahmen bleiben sichtbar.
-
-UNVERÄNDERT:
-- Spielregeln, Artefakte, Spezialkarten, Sound und Animationen.
-- PostgreSQL und gespeicherte Spielerkonten/Belohnungen.
-- Der zuvor eingerichtete V18-Datensparfix bleibt in server.js eingebunden.
-
-WICHTIG: Diese zwei Ersatzdateien wurden aus deinem zuletzt geposteten server.js
-(V17) und dem jüngsten hier vorliegenden Original public/style.css abgeleitet.
-Falls du diese Dateien auf GitHub NACHHER anderweitig verändert hast, solltest du
-statt kompletten Ersatzes die Änderungen aus AENDERUNGEN_V19.diff übernehmen,
-damit keine neueren Codeänderungen überschrieben werden.
+HINWEIS: Syntax geprüft; Multiplayer auf Render muss real getestet werden. Bei bestehenden neuesten Serveränderungen server.js vor Ersetzen vergleichen.
