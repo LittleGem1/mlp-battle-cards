@@ -62,7 +62,8 @@
     const rect=img.getBoundingClientRect();
     const copy=document.createElement('img');copy.className='windchaos-card-fly';
     copy.src=img.currentSrc||img.src;copy.alt='';copy.draggable=false;
-    let w=clamp(rect.width,34,120),h=w*(rect.height/Math.max(1,rect.width));
+    let w=clamp(rect.width || img.naturalWidth || 72,34,120);
+    let h=w*((rect.width>1 && rect.height>1) ? rect.height/rect.width : (img.naturalHeight && img.naturalWidth ? img.naturalHeight/img.naturalWidth : 1.45));
     copy.style.width=w+'px';copy.style.height=h+'px';container.appendChild(copy);
     return {node:copy,x:rect.left+(rect.width-w)/2,y:rect.top+(rect.height-h)/2,w,h,
       delay:Math.min(.23,idx*.012),angle:random(-15,15),speed:random(1.3,2.1)};

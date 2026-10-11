@@ -12,11 +12,14 @@ class FakePool {
 class FakeClient {
   async query(sql,args=[]){
     const s=sql.trim();
-    if(/^(BEGIN|COMMIT|ROLLBACK|CREATE TABLE)/.test(s))return {rowCount:0,rows:[]};
+    if(/^(BEGIN|COMMIT|ROLLBACK|CREATE TABLE|CREATE INDEX)/.test(s))return {rowCount:0,rows:[]};
     if(s.startsWith('INSERT INTO mlp_player_profiles')){
       const row={id:args[0],item_unlocks:JSON.parse(args[1]),frame_unlocks:JSON.parse(args[2]),selected_item:args[3],selected_frame:args[4]};
       states.set(row.id,row);return {rowCount:1,rows:[clone(row)]};
     }
+    if(s.startsWith('SELECT id FROM mlp_player_accounts WHERE username_norm='))return {rowCount:0,rows:[]};
+    if(s.startsWith('INSERT INTO mlp_player_accounts'))return {rowCount:1,rows:[]};
+    if(s.startsWith('INSERT INTO mlp_player_sessions'))return {rowCount:1,rows:[]};
     if(s.startsWith('SELECT * FROM mlp_player_profiles')){
       const row=states.get(args[0]);return {rowCount:row?1:0,rows:row?[clone(row)]:[]};
     }
@@ -71,9 +74,13 @@ const {createProfileStore,ITEMS,FRAMES,STARTER_ITEMS,STARTER_FRAMES}=require(pat
   assert.equal(all.profile.items.length,ITEMS.length);
   assert.equal(all.profile.frames.length,FRAMES.length);
   assert.equal((await db.awardWin(a.profile.id,'match_complete_999')).reward.kind,'complete');
+  // A new account must never get arbitrary localStorage unlocks supplied by a client.
+  const forged=await db.accountRegister({username:'NeueSpielerin',password:'sicheres-demo-passwort',legacy:{items:ITEMS,frames:FRAMES,accessory:'crown',frame:'ice'}});
+  assert.deepEqual(forged.profile.items,STARTER_ITEMS,'a new account cannot inject unlocked items');
+  assert.deepEqual(forged.profile.frames,STARTER_FRAMES,'a new account cannot inject unlocked frames');
   const different=await db.login({legacy:{}});
   assert.ok(different.profile.items.length===STARTER_ITEMS.length,'profiles do not share earned items');
   assert.notEqual(different.token,a.token);
-  console.log('OK: 13 Profiltests (Import, Isolation, Login, Auswahl, Persistenz, Belohnung, Duplikatschutz, Vollständigkeit)');
+  console.log('OK: 14 Profiltests (Import, Isolation, Login, Auswahl, Persistenz, Belohnung, Duplikatschutz, Vollständigkeit)');
   await db.close();
 })().catch(e=>{console.error(e);process.exitCode=1});

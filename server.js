@@ -68,6 +68,7 @@ function clearTimers(r){
   r.selectionDeadline=null;
   r.countdownUntil=null;
   r.windchaosUntil=0; // Windchaos bei Match-Abbruch/Neustart beenden.
+  r.windchaosCasterId=null;
 }
 function publicState(r){
   return {
@@ -105,6 +106,9 @@ function sendState(r){
   for(const p of roomPlayers(r))enforceHandLimit(r,p);
   io.to(r.code).emit('roomState',publicState(r));
   for(const p of roomPlayers(r)){
+    // Keep opponents' fresh Windchaos hands secret until the tornado finishes.
+    // Public roomState is still broadcast, so reconnection/round sync works.
+    if((r.windchaosUntil||0)>Date.now() && p.id!==r.windchaosCasterId)continue;
     if(!p.isBot)io.to(p.id).emit('hand',p.hand.map(id=>byId[id]).filter(Boolean));
   }
 }
@@ -330,6 +334,7 @@ function applyWindchaos(r,caster){
   const match=r.matchId,round=r.round;
   // Vor dem Tausch senden, damit jeder Browser die alten Karten animieren kann.
   r.windchaosUntil=Date.now()+duration;
+  r.windchaosCasterId=caster.id;
   io.to(r.code).emit('windchaosAnimation',{casterId:caster.id,casterName:caster.name,targetIds,duration});
   // Bereits geplante Bot-Aktionen nicht während der Tornadoanimation ausführen.
   clearBotTimers(r);
@@ -363,6 +368,7 @@ function applyWindchaos(r,caster){
   setTimeout(()=>{
     if(!rooms.has(r.code)||r.matchId!==match||r.round!==round||r.phase!=='select')return;
     r.windchaosUntil=0;
+    r.windchaosCasterId=null;
     sendState(r);
     scheduleBotsForSelect(r);
     maybeEvaluate(r);
@@ -806,6 +812,9 @@ function beginRewardChoice(r,winnerId){
   },18000);
 }
 function resolveRewardChoice(r,winnerId,chosenId,token){
+  // Reconnection changes socket IDs; timeouts still capture the old ID.
+  // Resolve it before validating and crediting the reward.
+  winnerId=resolveResumedId(r,winnerId);
   const pending=r.pendingReward;
   const p=r.players.get(winnerId);
   if(!pending||!p||pending.winnerId!==winnerId)return false;
@@ -931,6 +940,7 @@ function restoreSeat(socket,roomCode,ticket){
   r.resumedIds ||= Object.create(null);
   if(oldId!==newId)r.resumedIds[oldId]=newId;
   if(r.hostId===oldId)r.hostId=newId;
+  if(r.windchaosCasterId===oldId)r.windchaosCasterId=newId;
   const ids=xs=>(xs||[]).map(id=>id===oldId?newId:id);
   r.roundPlayerIds=ids(r.roundPlayerIds);
   r.tieIds=ids(r.tieIds);
@@ -1477,6 +1487,14 @@ const roundGuardInterval=setInterval(()=>{
 },ROUND_WATCHDOG_PERIOD_MS);
 roundGuardInterval.unref?.();
 
+// Ein Spieler, der nach Spielende bereits zur Lobby zurückgekehrt ist,
+// darf seine Dekoration auch während der gemeinsamen gameover-Wartephase ändern.
+// Spieler, die noch ihr Ergebnis anschauen, sind davon ausgenommen.
+function canEditLobbyCosmetics(r,playerId){
+  return r && (r.phase==='lobby' || r.phase==='ready' ||
+    (r.phase==='gameover' && r.postGameReady?.has(playerId)));
+}
+
 io.on('connection',socket=>{
   // Host-only read-only gallery. Never sends cards to other players and never changes decks.
   socket.on('hostCardGalleryRequest',()=>{
@@ -1542,7 +1560,7 @@ io.on('connection',socket=>{
       const result=await profileStore.choose(socket.data.profile.id,a,f);
       socket.emit('profileSaved',{accessory:result.accessory,frame:result.frame});
       const r=getRoom(socket),p=r?.players.get(socket.id);
-      if(r&&p&&['lobby','ready'].includes(r.phase)){p.accessory=a;p.frame=f;sendState(r)}
+      if(p && canEditLobbyCosmetics(r,socket.id)){p.accessory=a;p.frame=f;sendState(r)}
     }catch(err){console.error('[MLP] Kosmetik speichern:',err);socket.emit('profileSaveError','Item-/Rahmen-Auswahl konnte nicht gespeichert werden.');}
   });
   socket.on('createRoom',({name,accessory,frame})=>{
@@ -1589,7 +1607,7 @@ io.on('connection',socket=>{
   });
   socket.on('setCosmetics',({accessory,frame})=>{
     const r=getRoom(socket),p=r?.players.get(socket.id);
-    if(!r||!['lobby','ready'].includes(r.phase)||!p)return;
+    if(!p||!canEditLobbyCosmetics(r,socket.id))return;
     const a=String(accessory||'changeling'),f=String(frame??'');
     if(socket.data.profile && (!socket.data.profile.items.includes(a)||!(f===''||socket.data.profile.frames.includes(f))))
       return socket.emit('errorMsg','Item oder Rahmen noch gesperrt.');

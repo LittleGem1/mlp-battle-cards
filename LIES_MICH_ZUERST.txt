@@ -1,49 +1,71 @@
-MLP BATTLE CARDS – GESAMTFIX 2026-10-10
-===========================================
+MLP BATTLE CARDS – ALLE BUGFIXES KOMBINIERT V15 (11.10.2026)
+==============================================================
 
-ENTHALTEN
-1. Kristall-/Langzeit-Rundenfix (server.js, public/client.js)
-   - Server synchronisiert aktuelle Runde + Kategorie regelmaessig.
-   - Grogar darf Kategorie-HTML nicht zerstoeren.
-   - Rundenwaechter faengt verlorene Timer/Callbacks auf.
-   - 150 aufeinanderfolgende Rundenstarts lokal simuliert.
+DIESES PAKET ERSETZT DIE DREI VORHERIGEN PATCH-ZIPS:
+- Windchaos SICHER AKTUELLES PROJEKT V2
+- BUGCHECK SICHERER FIX 20261011
+- Items/Rahmen Nach Partie FIX V14
 
-2. Artefakte werden im Goldstapel moderat haeufiger angeboten.
-   - Drei statt zwei Kopien jedes Artefakts im Stapel.
-   - Rechnerisch ca. 23 statt 16 Prozent bei zwei Goldkarten, wenn
-     alle Artefakte noch fehlen und kein Cooldown aktiv ist.
-   - Sie bleiben zufaellig und muessen gewaehlt werden.
+GRUNDLAGE: Dein hochgeladenes Projekt mlp-battle-cards-main (2).zip.
+Es enthält die bisherigen Karten (inkl. Becky Bat, Sil), Galerie,
+Artefaktregel mit Pechsträhnenschutz, Würfel, Kristall und Freischaltungen.
 
-3. Kategorie seitlich links – ARENA SONST GENAU WIE ZUVOR
-   - Die vier bisherigen Arenen und Spielerpositionen bleiben gleich.
-   - Namen und Fragezeichen-Artefakte bleiben unveraendert.
-   - Kategorie erscheint links anstelle ueber den Spielern.
-   - Auf kleinen Bildschirmen links kompakt im Kampffeld.
-   - Die Kristall-Drehung selbst bleibt erhalten.
+FEHLERBEHEBUNGEN IN EINEM UPDATE
+1. Windchaos inklusive Karte, Originalsound, Animation und Kartenneuverteilung.
+2. Neue gegnerische Windchaos-Hände werden erst nach der Tornado-Animation angezeigt.
+3. Goldbelohnungs-Automatik funktioniert bei geänderter Spieler-ID nach Reconnect.
+4. Die Tornado-Animation berücksichtigt fehlende Kartengrößen korrekt.
+5. Neue Accounts können keine beliebigen Item-/Rahmen-Freischaltungen aus
+   veränderbaren Browserdaten übernehmen. Bereits vorhandene Profile bleiben gleich.
+6. Item-/Rahmen-Auswahl in der Lobby funktioniert auch nach einer Partie,
+   während andere Spieler noch ihren Ergebnisbildschirm ansehen.
+7. Kein unnötiges Arena-Neuzeichnen beim Wechseln der Lobby-Dekoration.
 
-GITHUB-INSTALLATION (DIE FOLGENDEN 3 DATEIEN ERSETZEN)
-1. server.js               im Hauptverzeichnis
-2. public/client.js        im public-Ordner
-3. public/style.css        im public-Ordner
+GENAU DIESE 9 SPIELDATEIEN HOCHLADEN
+  Hauptordner:
+    cards.js
+    server.js
+    player_profiles.js
+  Ordner public:
+    public/client.js
+    public/index.html
+    public/windchaos_fx.js             (neu)
+    public/windchaos_fx.css            (neu)
+  Assets:
+    public/assets/specials_new/94_Sil_Windchaos.webp  (neu)
+    public/assets/sounds/windchaos_tornado.mp3        (neu)
 
-Andere Dateien NICHT loeschen oder ersetzen! Die Datenbank, Account-Login,
-player_profiles.js, Lobby-Hintergrund, alle Karten, Audio, Cockatrice,
-Finisher und Arena-Hintergruende bleiben unveraendert.
+EINBAU IN GITHUB
+1. Aktuelles GitHub-Repository vorab als ZIP herunterladen / sichern.
+2. Diese ZIP auf dem PC ENTpacken.
+3. Die neun angegebenen Spieldateien mit denselben Pfaden auf GitHub
+   hinzufügen bzw. vorhandene Dateien ersetzen. KEINE anderen Dateien löschen.
+4. tests/ ist freiwillig und wird nicht von Render benötigt.
+5. Committen und erfolgreichen Render-Deploy abwarten.
+6. Browser mit Strg+F5 neu laden. Neue Partie starten.
 
-ALTERNATIVE, WENN DU DAS AKTUELLE STYLE.CSS BEHALTEN MOECHTEST:
-Statt public/style.css zu ersetzen, den Inhalt von
-NUR_ANHAENGEN_KATEGORIE_LINKS.css GANZ UNTEN an die vorhandene
-public/style.css anfuegen. NICHT beides gleichzeitig anwenden.
-
-Render danach automatisch neu deployen lassen und Browser Strg+F5.
-WICHTIG: Eine laufende Partie wird durch den Deploy unterbrochen.
+WICHTIG: Wenn du seit der hochgeladenen Projekt-ZIP noch ANDERE Änderungen
+auf GitHub gemacht hast, dann NICHT direkt die vorhandenen Dateien ersetzen!
+In diesem Fall: den aktuellen GitHub-Stand schicken oder NUR die Unterschiede
+in GESAMT_AENDERUNGEN.patch kontrolliert in den neuesten Code übernehmen.
 
 TESTS
-- node --check beider JS-Dateien: bestanden.
-- CSS-Patch und vorhandene Kategorie-Elemente: geprueft.
-- Kristall- und Rundenwaechtertests aus dem vorigen Logikfix: bestanden.
-- Anzeige auf realem Render-Multiplayer muss weiterhin getestet werden.
+- Node Syntaxprüfungen und 5 automatisierte Regressionstests auf der
+  zusammengeführten Version bestanden; Details in PRUEFBERICHT.json.
+- Windchaos/Spielrunden/Goldauswahl/Kosmetik/Testprofile simuliert.
+- Keine Live-Render-Partie und kein echter PostgreSQL-Test hier erfolgt.
+  Deshalb trotz Tests KEINE 100-%-Fehlerfreiheitsgarantie.
 
-ACHTUNG: Die 23 % sind kein garantierter Artefakt-Drop pro Runde.
-Die Wahrscheinlichkeit gilt nur fuer eine Goldauswahl mit zwei Karten
-unter genannten Voraussetzungen.
+NICHT GEÄNDERT
+- Alle alten Kartenbilder, Sounds und Karteneinträge außer s94 Windchaos.
+- Artefakt-Häufigkeit und 7-Runden-Garantie.
+- Würfel, Kategorie-Kristall, Musik, übrige Animationen, Arena-CSS.
+- Host-Kartengalerie, freigeschaltete Items und Rahmen der bestehenden Accounts.
+- Datenbankschema, Datenbankinhalte und DATABASE_URL.
+
+EMPFOHLENER KURZTEST NACH DEPLOY
+A. Lobby starten: Item und Rahmen wechseln.
+B. Testspiel gegen PonyBot: Runde beenden, erst selbst zur Lobby
+   gehen und vor dem Bot einen anderen freigeschalteten Rahmen wählen.
+C. Eine neue Runde starten und Artefakt-/Würfelfunktion testen.
+D. Später Windchaos ziehen und auf einem zweiten Browser verfolgen.

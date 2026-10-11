@@ -197,7 +197,9 @@ function createProfileStore(databaseUrl) {
       }else{
         const newProfileId=digest(crypto.randomBytes(32).toString('hex'));
         // Legacy browser unlocks are imported only once, at initial account creation.
-        const allowLegacy=process.env.MLP_ALLOW_LEGACY_IMPORT!=='false';
+        // Security: browser localStorage is client-controlled; never trust it for new-account unlocks.
+        // Existing accounts and server-verified oldProfileToken migration are unchanged.
+        const allowLegacy=process.env.MLP_ALLOW_LEGACY_IMPORT==='true';
         const items=uniqueKnown(allowLegacy?legacy?.items:null,itemSet,STARTER_ITEMS);
         const frames=uniqueKnown(allowLegacy?legacy?.frames:null,frameSet,STARTER_FRAMES);
         const accessory=items.includes(legacy?.accessory)?legacy.accessory:'changeling';
