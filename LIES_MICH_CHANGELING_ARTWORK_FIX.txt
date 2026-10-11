@@ -1,0 +1,13 @@
+NEUES CHANGEling ARTWORK – Cache-sicherer Kartenfix
+
+Die neue Changeling-Karte hat nun den eigenen Bildpfad:
+public/assets/specials_new/74_Changeling_NEU_20261011.png
+
+Die Kartendefinitionen cards.js und public/cards.js verweisen nun darauf.
+Die Originaldatei public/assets/specials_new/74_Changeling.png wurde ebenfalls beigefuegt.
+
+Einbau: ZIP entpacken und Dateien in genau den angegebenen Ordnern ersetzen/hochladen.
+Wichtig: Die Datei NICHT nur in GitHub ablegen, sondern AUCH cards.js und public/cards.js ersetzen.
+Danach Render Deployment abwarten und mit Strg+F5 neu laden.
+
+Das ist ein gezielter Kartenbild-Fix. Die vier Special-Animationen / Spielregeln aus dem vorherigen Build bleiben unveraendert.
