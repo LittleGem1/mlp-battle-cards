@@ -11,6 +11,7 @@ if(!profileStore) console.warn('[MLP] Kein DATABASE_URL: Rahmen/Items sind NICHT
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+require('./asset_bandwidth_optimization')(app);
 app.use(express.static(path.join(__dirname, 'public')));
 
 const accountAttemptLimits = new Map();
