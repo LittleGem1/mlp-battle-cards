@@ -1,0 +1,18 @@
+[
+  {
+    "source": "/mnt/data/zauberkopierer_mit_sternenumhang.png",
+    "target": "public/assets/specials_new/96_Flawless_Sparkle_Moon_Zauberkopierer.webp",
+    "size": [
+      1024,
+      1536
+    ]
+  },
+  {
+    "source": "/mnt/data/evil_sci_twi_mit_magischem_visier.png",
+    "target": "public/assets/specials_new/97_Evil_Sci_Twi_Zauberklau.webp",
+    "size": [
+      1024,
+      1536
+    ]
+  }
+]
