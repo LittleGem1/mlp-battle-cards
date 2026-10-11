@@ -151,7 +151,32 @@
   }
 
   window.WindchaosFX={play,isRunning:()=>running};
+  // Keine Arena-Animation, solange die normale 2,5-s-Special-Karte sichtbar ist.
+  // Auch bei langsamen Geräten wird auf das tatsächliche Entfernen des Popups
+  // gewartet. Keine Änderung an Karten, Timer, Socket-Events oder Spielregeln.
+  function afterCardReveal(callback,minimumDelay=0){
+    const started=performance.now();
+    const step=()=>{
+      if(!document.querySelector('#game.screen.active'))return;
+      const elapsed=performance.now()-started;
+      const popup=document.querySelector('.special-burst');
+      if(elapsed<minimumDelay || popup){
+        setTimeout(step,50);
+        return;
+      }
+      requestAnimationFrame(()=>{
+        if(document.querySelector('#game.screen.active'))callback();
+      });
+    };
+    step();
+  }
   if(typeof socket!=='undefined'&&socket&&typeof socket.on==='function'){
-    socket.on('windchaosAnimation',event=>play({casterId:event?.casterId}));
+    socket.on('windchaosAnimation',event=>{
+      // Der Server wartet entsprechend länger, damit erst nach dem Tornado
+      // erneut ausgewählt werden darf. Sound und Wirbel starten gemeinsam.
+      const delay=Number.isFinite(Number(event?.introDelay))
+        ?Math.max(0,Math.min(5000,Number(event.introDelay))):2800;
+      afterCardReveal(()=>play({casterId:event?.casterId}),delay);
+    });
   }
 })();

@@ -264,9 +264,30 @@ function availableTargets(r,p,mode='any'){
     if(t.id===p.id||t.surrendered)return false;
     if(mode==='played'&&!playedCardIds(r.played?.[t.id]).length)return false;
     if(mode==='hand'&&!t.hand.length)return false;
+    if(mode==='artifact'&&!(t.artifacts||[]).length)return false;
     return true;
   });
 }
+// SCHATTENGESTALT: Server entscheidet über den echten Artefaktverlust.
+// Die Animation ist nur Darstellung: niemals vertrauliche Spielwerte im Browser ändern.
+function applyShadowForm(r,caster,target){
+  if(!r||!caster||!target||caster.id===target.id||target.surrendered)return false;
+  const pool=(target.artifacts||[]).filter(id=>byId[id]?.type==='artifact');
+  if(!pool.length)return false;
+  const artifactId=pool[Math.floor(Math.random()*pool.length)];
+  const index=target.artifacts.indexOf(artifactId);
+  if(index<0)return false;
+  target.artifacts.splice(index,1);
+  // Verlorenes Artefakt bleibt Teil des Goldstapelsystems und kann neu gefunden werden.
+  r.rewardDiscard.push(artifactId);
+  const artifact=byId[artifactId];
+  io.to(r.code).emit('shadowformAnimation',{
+    casterId:caster.id,casterName:caster.name,targetId:target.id,
+    targetName:target.name,artifact:{id:artifact.id,name:artifact.name,image:artifact.image},duration:3600
+  });
+  return true;
+}
+
 function requestTarget(socket,r,p,sourceCard,action,mode='any',title='Wähle einen Gegner'){
   const targets=availableTargets(r,p,mode);
   if(!targets.length){socket.emit('errorMsg','Für diesen Effekt gibt es gerade kein gültiges Ziel.');return false;}
@@ -328,14 +349,19 @@ function pendingForCurrentSelection(socket,r){
 // Der Effekt wird beim Ausspielen auf dem Server durchgeführt; die Clients animieren nur.
 function applyWindchaos(r,caster){
   if(!r||!caster||r.phase!=='select'||(r.windchaosUntil||0)>Date.now())return false;
-  const duration=4400;
+  // Spezialkarte zuerst vollständig zeigen (2,5 s) und erst danach den Tornado.
+  // Während BEIDER Phasen ist die Auswahl gesperrt; sonst würde die Runde mitten
+  // in der sichtbaren Animation weiterlaufen.
+  const introDelay=2800;
+  const duration=4400; // Nur die Tornadoanimation.
+  const totalDuration=introDelay+duration+200; // Kleiner Puffer für die Darstellung.
   const targets=activePlayers(r).filter(t=>t.id!==caster.id);
   const targetIds=targets.map(t=>t.id);
   const match=r.matchId,round=r.round;
   // Vor dem Tausch senden, damit jeder Browser die alten Karten animieren kann.
-  r.windchaosUntil=Date.now()+duration;
+  r.windchaosUntil=Date.now()+totalDuration;
   r.windchaosCasterId=caster.id;
-  io.to(r.code).emit('windchaosAnimation',{casterId:caster.id,casterName:caster.name,targetIds,duration});
+  io.to(r.code).emit('windchaosAnimation',{casterId:caster.id,casterName:caster.name,targetIds,duration,introDelay});
   // Bereits geplante Bot-Aktionen nicht während der Tornadoanimation ausführen.
   clearBotTimers(r);
   for(const t of targets){
@@ -359,12 +385,12 @@ function applyWindchaos(r,caster){
   }
   if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
   // Die 30-Sekunden-Auswahl beginnt erst, wenn der Tornado verschwunden ist.
-  r.selectionDeadline=Date.now()+duration+30000;
+  r.selectionDeadline=Date.now()+totalDuration+30000;
   io.to(r.code).emit('notice',`${caster.name} entfesselt WINDCHAOS! ${targets.length} gegnerische Hand/Hände werden neu verteilt.`);
   sendState(r);
   r.selectionTimer=setTimeout(()=>{
     if(rooms.has(r.code)&&r.matchId===match&&r.round===round&&r.phase==='select')handleSelectionTimeout(r);
-  },duration+30050);
+  },totalDuration+30050);
   setTimeout(()=>{
     if(!rooms.has(r.code)||r.matchId!==match||r.round!==round||r.phase!=='select')return;
     r.windchaosUntil=0;
@@ -372,7 +398,7 @@ function applyWindchaos(r,caster){
     sendState(r);
     scheduleBotsForSelect(r);
     maybeEvaluate(r);
-  },duration);
+  },totalDuration);
   return true;
 }
 
@@ -458,7 +484,9 @@ function botApplySpecial(r,p,c){
   const effect=c.effect;
   const targetAny=()=>botTarget(r,p,'any');
   const targetHand=()=>botTarget(r,p,'hand');
-  if(effect==='windchaos'){
+  if(effect==='shadowform'){
+    const t=botTarget(r,p,'artifact');if(t)applyShadowForm(r,p,t);
+  }else if(effect==='windchaos'){
     applyWindchaos(r,p);
   }else if(effect==='rainbow'){
     r.roundBuff[p.id]={...(r.roundBuff[p.id]||{}),speed:(r.roundBuff[p.id]?.speed||0)+2};
@@ -570,6 +598,7 @@ function botUsableSpecials(r,p){
     if(['tirek','bugbear','cockatrice','sombra','ponyshadows','lightningdust'].includes(c.effect))return botTargets(r,p,'any').length>0;
     if(c.effect==='timberwolves')return botNormalCards(p,r.category).length>=2;
     if(c.effect==='manticore')return r.normalDiscard.length+r.rewardDiscard.length>0;
+    if(c.effect==='shadowform')return botTargets(r,p,'artifact').length>0;
     if(c.effect==='trixie')return botHasNegative(r,p);
     if(c.effect==='ironwill')return roomPlayers(r).some(x=>x.id!==p.id&&new Set(x.artifacts||[]).size>=2);
     return true;
@@ -1714,6 +1743,7 @@ io.on('connection',socket=>{
       if(!availableTargets(r,p,mode).length)return socket.emit('errorMsg','Für diese Spezialkarte gibt es gerade kein gültiges Ziel.');
     }
     if(effect==='cozy' && p.hand.filter(id=>id!==cardId).length<1)return socket.emit('errorMsg','Cozy Glow braucht noch mindestens 1 weitere Handkarte zum Tauschen.');
+    if(effect==='shadowform'&&!availableTargets(r,p,'artifact').length)return socket.emit('errorMsg','Schattengestalt benötigt einen Gegner mit mindestens einem Artefakt. Die Karte bleibt auf deiner Hand.');
     if(effect==='manticore'&&!r.normalDiscard.length&&!r.rewardDiscard.length)return socket.emit('errorMsg','Die Ablagestapel sind noch leer.');
 
     if(!consumeSpecial(r,p,source))return;
@@ -1726,7 +1756,9 @@ io.on('connection',socket=>{
       io.to(r.code).emit('specialCopied',{playerId:p.id,name:p.name,copied:effectCard});
     }
 
-    if(effect==='windchaos'){
+    if(effect==='shadowform'){
+      requestTarget(socket,r,p,source,'shadowform','artifact','Schattengestalt: Wer muss ein Artefakt ablegen?');
+    }else if(effect==='windchaos'){
       applyWindchaos(r,p);
       socket.emit('specialDone',{text:'WINDCHAOS! Alle Gegner erhalten 6 normale und 1 neue Special-Karte.'});
     }else if(effect==='rainbow'){
@@ -1857,7 +1889,9 @@ io.on('connection',socket=>{
     }
     socket.data.pendingSpecial=null;
 
-    if(action==='tirek'){
+    if(action==='shadowform'){
+      if(!applyShadowForm(r,p,target))socket.emit('errorMsg','Das gewählte Ziel besitzt inzwischen kein Artefakt mehr.');
+    }else if(action==='tirek'){
       addDebuff(r,target.id,-2,p.id,'Tirek');
     }else if(action==='cozy'){
       if(!target.hand.length)return socket.emit('errorMsg','Dieser Gegner hat keine Handkarte.');

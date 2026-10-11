@@ -1,71 +1,62 @@
-MLP BATTLE CARDS – ALLE BUGFIXES KOMBINIERT V15 (11.10.2026)
-==============================================================
+MLP BATTLE CARDS – V16: ERST SPECIAL-KARTE, DANN ANIMATION
+============================================================
 
-DIESES PAKET ERSETZT DIE DREI VORHERIGEN PATCH-ZIPS:
-- Windchaos SICHER AKTUELLES PROJEKT V2
-- BUGCHECK SICHERER FIX 20261011
-- Items/Rahmen Nach Partie FIX V14
+Dein Wunsch:
+1) Sil – Windchaos: erst die vollständige große Special-Karte zeigen,
+   dann dieses Fenster schließen, DANN Tornado samt Tornado-Sound.
+2) Diabolo – Schattengestalt: erst die große Special-Karte vollständig
+   zeigen, nach der Zielwahl/Popup-Schließung erst das Artefakt verschlingen.
+3) Der kleine Special-Hinweis wird während der eigentlichen Animation
+   ausgeblendet. Arena und Animation bleiben vollständig sichtbar.
 
-GRUNDLAGE: Dein hochgeladenes Projekt mlp-battle-cards-main (2).zip.
-Es enthält die bisherigen Karten (inkl. Becky Bat, Sil), Galerie,
-Artefaktregel mit Pechsträhnenschutz, Würfel, Kristall und Freischaltungen.
+WINDCHAOS ZEITPLAN
+0,0–2,5 s  normale Karteneinblendung
+2,5–2,8 s  Übergang / freies Spielfeld
+2,8–7,2 s  Tornado + Originalsound + Karten fliegen weg
+bis 7,4 s  Server schützt weiterhin vor verfrühten Spielzügen
+ab 7,4 s  neue Karten und 30 Sek. Auswahlzeit
 
-FEHLERBEHEBUNGEN IN EINEM UPDATE
-1. Windchaos inklusive Karte, Originalsound, Animation und Kartenneuverteilung.
-2. Neue gegnerische Windchaos-Hände werden erst nach der Tornado-Animation angezeigt.
-3. Goldbelohnungs-Automatik funktioniert bei geänderter Spieler-ID nach Reconnect.
-4. Die Tornado-Animation berücksichtigt fehlende Kartengrößen korrekt.
-5. Neue Accounts können keine beliebigen Item-/Rahmen-Freischaltungen aus
-   veränderbaren Browserdaten übernehmen. Bereits vorhandene Profile bleiben gleich.
-6. Item-/Rahmen-Auswahl in der Lobby funktioniert auch nach einer Partie,
-   während andere Spieler noch ihren Ergebnisbildschirm ansehen.
-7. Kein unnötiges Arena-Neuzeichnen beim Wechseln der Lobby-Dekoration.
+SCHATTENGESTALT
+Die Zielauswahl ist weiterhin normal. Wird sie schnell bestätigt,
+wartet die Schattenanimation auf das tatsächliche Verschwinden der
+Karteneinblendung; bei späterer Zielwahl beginnt sie direkt danach.
+GENAU EIN zufällig ausgewähltes Artefakt wird wie bisher entfernt.
 
-GENAU DIESE 9 SPIELDATEIEN HOCHLADEN
-  Hauptordner:
-    cards.js
-    server.js
-    player_profiles.js
-  Ordner public:
-    public/client.js
-    public/index.html
-    public/windchaos_fx.js             (neu)
-    public/windchaos_fx.css            (neu)
-  Assets:
-    public/assets/specials_new/94_Sil_Windchaos.webp  (neu)
-    public/assets/sounds/windchaos_tornado.mp3        (neu)
+WAS GEÄNDERT WURDE (NUR DIESE 4 BESTEHENDEN DATEIEN)
+ server.js                – Windchaos-Sperre auf die neue Gesamtdauer angepasst
+ public/index.html        – versionsgebundene Skript-Links aktualisiert und
+                            kleiner Hinweis während Arena-FX ausgeblendet
+ public/windchaos_fx.js   – Tornado und Sound warten auf die Karteneinblendung
+ public/shadowform_fx.js  – Schattengestalt wartet auf die Karteneinblendung
 
-EINBAU IN GITHUB
-1. Aktuelles GitHub-Repository vorab als ZIP herunterladen / sichern.
-2. Diese ZIP auf dem PC ENTpacken.
-3. Die neun angegebenen Spieldateien mit denselben Pfaden auf GitHub
-   hinzufügen bzw. vorhandene Dateien ersetzen. KEINE anderen Dateien löschen.
-4. tests/ ist freiwillig und wird nicht von Render benötigt.
-5. Committen und erfolgreichen Render-Deploy abwarten.
-6. Browser mit Strg+F5 neu laden. Neue Partie starten.
+ES WURDEN NICHT GEÄNDERT:
+ cards.js, client.js, die Kartenbilder, alle Audio-Dateien,
+ Profile/Accounts, Items & Rahmen, Artefakt-Verteilung,
+ Würfel, Kristall, Arena-Hintergründe und andere Specials.
 
-WICHTIG: Wenn du seit der hochgeladenen Projekt-ZIP noch ANDERE Änderungen
-auf GitHub gemacht hast, dann NICHT direkt die vorhandenen Dateien ersetzen!
-In diesem Fall: den aktuellen GitHub-Stand schicken oder NUR die Unterschiede
-in GESAMT_AENDERUNGEN.patch kontrolliert in den neuesten Code übernehmen.
+EINBAU IN GITHUB:
+1) WICHTIG: Nur verwenden, wenn du bereits die Version
+   „Diabolo – Schattengestalt V1“ auf Basis von Bugfix V15
+   eingebaut hast. Ohne diese Grundlage muss der Fix zuerst an deine
+   tatsächliche neue Projektversion angepasst werden.
+2) Sichere den aktuellen GitHub-Stand (ZIP/Commit).
+3) Diese 4 Dateien in die GLEICHNAMIGEN Pfade hochladen.
+4) Commit und erfolgreichen Render-Deploy abwarten.
+5) Strg+F5 zum Neu-Laden. Eine frische Partie starten.
+6) Windchaos und Schattengestalt jeweils einmal mit einem Mitspieler testen.
+
+Falls du SEIT Diabolo V1 weitere Änderungen vorgenommen hast:
+Dann bitte NICHT die ganze server.js oder index.html überschreiben.
+Nimm stattdessen AENDERUNGEN_NUR_REIHENFOLGE.patch als Grundlage,
+und schick mir am besten vorher den allerneuesten Spielstand.
 
 TESTS
-- Node Syntaxprüfungen und 5 automatisierte Regressionstests auf der
-  zusammengeführten Version bestanden; Details in PRUEFBERICHT.json.
-- Windchaos/Spielrunden/Goldauswahl/Kosmetik/Testprofile simuliert.
-- Keine Live-Render-Partie und kein echter PostgreSQL-Test hier erfolgt.
-  Deshalb trotz Tests KEINE 100-%-Fehlerfreiheitsgarantie.
-
-NICHT GEÄNDERT
-- Alle alten Kartenbilder, Sounds und Karteneinträge außer s94 Windchaos.
-- Artefakt-Häufigkeit und 7-Runden-Garantie.
-- Würfel, Kategorie-Kristall, Musik, übrige Animationen, Arena-CSS.
-- Host-Kartengalerie, freigeschaltete Items und Rahmen der bestehenden Accounts.
-- Datenbankschema, Datenbankinhalte und DATABASE_URL.
-
-EMPFOHLENER KURZTEST NACH DEPLOY
-A. Lobby starten: Item und Rahmen wechseln.
-B. Testspiel gegen PonyBot: Runde beenden, erst selbst zur Lobby
-   gehen und vor dem Bot einen anderen freigeschalteten Rahmen wählen.
-C. Eine neue Runde starten und Artefakt-/Würfelfunktion testen.
-D. Später Windchaos ziehen und auf einem zweiten Browser verfolgen.
+- Node-Syntaxprüfung bestanden.
+- 4 verzögerungsabhängige Darstellungs-Tests bestanden.
+- Windchaos: 6+1, eigene Karten behalten, Sperre auch während
+  Karteneinblendung, 30s-Auswahl, Wiederbeitritt getestet.
+- Schattengestalt: 1 Artefaktverlust, Gegner-Zielprüfung, eigene
+  Hand unberührt getestet.
+- Weitere Tests für Spielerprofile, Lobby, Rahmen/Items und
+  Rundenablauf bestanden.
+- Echte Live-Mehrspielerpartie in Render wurde NICHT getestet.

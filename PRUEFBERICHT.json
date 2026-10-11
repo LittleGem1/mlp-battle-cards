@@ -1,174 +1,27 @@
 {
-  "source_project": "mlp-battle-cards-main (2).zip",
-  "merge_sequence": [
-    "Windchaos V2 (source original project)",
-    "QA 2026-10-11 (wind/reconnect/profiles)",
-    "Lobby V14 (server + client)"
-  ],
-  "date": "2026-10-11",
-  "runtime_files_count": 9,
-  "changed_existing_runtime_files": [
-    "cards.js",
+  "package": "V16 Reihenfolge der Spezialeffekte",
+  "baseline": "Diabolo – Schattengestalt V1 auf Bugfix V15; nicht mit anderen unbekannten neuen Ständen verwechselt",
+  "changedFiles": [
     "server.js",
-    "player_profiles.js",
-    "public/client.js",
-    "public/index.html"
-  ],
-  "new_runtime_files": [
+    "public/index.html",
     "public/windchaos_fx.js",
-    "public/windchaos_fx.css",
-    "public/assets/specials_new/94_Sil_Windchaos.webp",
-    "public/assets/sounds/windchaos_tornado.mp3"
+    "public/shadowform_fx.js"
   ],
-  "unchanged_all_other_files": true,
-  "changes": {
-    "cards.js": {
-      "status": "GEAENDERT",
-      "size_bytes": 11294,
-      "sha256_new": "84e84433e178d19fd58d7219e8b7382d3c25d305cbbcd9fa6c4b946beebca4eb",
-      "sha256_original": "fb7f3d39d1f4c2e8cbe918b35b1a44cccd9b895e42aef1c7600a4cf82c2dfe36"
-    },
-    "server.js": {
-      "status": "GEAENDERT",
-      "size_bytes": 104080,
-      "sha256_new": "98788d55de8df2b773960e7eb82592ab088f0728fa5e48ef4fd1e192947446e5",
-      "sha256_original": "052a8cb915d704d300cc8fb2bbd9efdf069d4ec693069ca034d1bf2a94450254"
-    },
-    "player_profiles.js": {
-      "status": "GEAENDERT",
-      "size_bytes": 15209,
-      "sha256_new": "1b3d2825d2f732e1b52bb3c692ef71e840427587e1fdc90b61d1b3157156ec12",
-      "sha256_original": "21147e1f967cb122cb7bb2c38c8c5b91235f4a49b5cc7e0a7cd86552e00a6ad2"
-    },
-    "public/client.js": {
-      "status": "GEAENDERT",
-      "size_bytes": 149175,
-      "sha256_new": "d1ee7514f0c8afb9e9156df566d84e392533f6174c4124a4945f6b9df897acf6",
-      "sha256_original": "72502be1b3e3eec052e3d3b7164f2c084d4f92e471f5537707965140850c67ec"
-    },
-    "public/index.html": {
-      "status": "GEAENDERT",
-      "size_bytes": 25196,
-      "sha256_new": "7f6211050085b1fe79cf9f34baa55c452d5255b4fba5c8f15faa570ed670d831",
-      "sha256_original": "b93b42697a001b1fdcd3bad2384c36cd35f7139e287deca126044f8c67896162"
-    },
-    "public/windchaos_fx.js": {
-      "status": "NEU",
-      "size_bytes": 8557,
-      "sha256_new": "755ec82eedacf1e42e1a9e032e84e76debbf66fd76481a7832abe1760cc6eaba",
-      "sha256_original": null
-    },
-    "public/windchaos_fx.css": {
-      "status": "NEU",
-      "size_bytes": 1939,
-      "sha256_new": "2b74d283e63a1316afe6ca56f6ad6e56eaa5b1a6271386b34c3ff1c7517144cc",
-      "sha256_original": null
-    },
-    "public/assets/specials_new/94_Sil_Windchaos.webp": {
-      "status": "NEU",
-      "size_bytes": 658636,
-      "sha256_new": "2f8f0468a268895574386ae18e40428a34354bdd16c51eac5115e1276a12c2f8",
-      "sha256_original": null
-    },
-    "public/assets/sounds/windchaos_tornado.mp3": {
-      "status": "NEU",
-      "size_bytes": 293364,
-      "sha256_new": "bd85bb2775006ef2082305f0cfbdc62c4cb547bc4285a44820e6a1faeb0f47ff",
-      "sha256_original": null
-    }
+  "behavior": {
+    "cardIntroMs": 2500,
+    "windWaitMinMs": 2800,
+    "windAnimationMs": 4400,
+    "windServerLockMs": 7400,
+    "shadowWait": "bis .special-burst nicht mehr im DOM vorhanden ist; nach Zielwahl wenn Karte bereits geschlossen sofort",
+    "specialNotice": "wird nur während FX ausgeblendet",
+    "unchanged": "Kartenwerte, Artefaktgewinn und -verlust, 6+1 bei Windchaos, Accounts, Items, Rahmen, andere Specials und Arena-Layouts"
   },
-  "tests": [
-    {
-      "test": "Syntax cards.js",
-      "passed": true,
-      "returncode": 0,
-      "stdout": "",
-      "stderr": ""
-    },
-    {
-      "test": "Syntax server.js",
-      "passed": true,
-      "returncode": 0,
-      "stdout": "",
-      "stderr": ""
-    },
-    {
-      "test": "Syntax player_profiles.js",
-      "passed": true,
-      "returncode": 0,
-      "stdout": "",
-      "stderr": ""
-    },
-    {
-      "test": "Syntax public/client.js",
-      "passed": true,
-      "returncode": 0,
-      "stdout": "",
-      "stderr": ""
-    },
-    {
-      "test": "Syntax public/windchaos_fx.js",
-      "passed": true,
-      "returncode": 0,
-      "stdout": "",
-      "stderr": ""
-    },
-    {
-      "test": "Syntax host_gallery_autocatalog.js",
-      "passed": true,
-      "returncode": 0,
-      "stdout": "",
-      "stderr": ""
-    },
-    {
-      "test": "Syntax public/host_card_gallery.js",
-      "passed": true,
-      "returncode": 0,
-      "stdout": "",
-      "stderr": ""
-    },
-    {
-      "test": "Regression tests/test-catalog.js",
-      "passed": true,
-      "returncode": 0,
-      "stdout": "OK: 3 Sammlungs-Checks; Chrysalis/Cockatrice und Spielablauf in den Sourcen erhalten\n",
-      "stderr": ""
-    },
-    {
-      "test": "Regression tests/test-profiles.js",
-      "passed": true,
-      "returncode": 0,
-      "stdout": "OK: 14 Profiltests (Import, Isolation, Login, Auswahl, Persistenz, Belohnung, Duplikatschutz, Vollständigkeit)\n",
-      "stderr": ""
-    },
-    {
-      "test": "Regression tests/test-rundenfix.js",
-      "passed": true,
-      "returncode": 0,
-      "stdout": "OK: lobby, room secrets, reconnect, hand preservation, 30s timeout, zero-participant rounds, dice fallback, stale event protection, no-card gameover, 3 assets.\n",
-      "stderr": "[MLP] Kein DATABASE_URL: Rahmen/Items sind NICHT dauerhaft gespeichert. Bitte Datenbank verbinden!\n"
-    },
-    {
-      "test": "Regression tests/test-windchaos-reconnect-qa.js",
-      "passed": true,
-      "returncode": 0,
-      "stdout": "OK: Windchaos visual timing, 6+1 enemy, caster preserved, blocked play, 30s selection, reconnect-safe reward auto-pick, artifact pity\n",
-      "stderr": "[MLP] Kein DATABASE_URL: Rahmen/Items sind NICHT dauerhaft gespeichert. Bitte Datenbank verbinden!\n"
-    },
-    {
-      "test": "Regression tests/test_cosmetics_after_game.js",
-      "passed": true,
-      "returncode": 0,
-      "stdout": "PASS: lobby, game, postgame pre/post ready, locked cosmetics, DB choice, other player isolation\n",
-      "stderr": ""
-    }
-  ],
-  "notes": [
-    "Only these runtime files are delivered; no original assets or database data are touched.",
-    "Install as replacement/creation at the paths given; do not upload the zip itself to the repo.",
-    "Based on the latest uploaded original project. If GitHub has changes since that upload, verify before overwriting.",
-    "No live Render browser test or real PostgreSQL multi-client test was performed.",
-    "The source project did not yet contain Windchaos, so this package includes its image/audio/effect and game registration.",
-    "Real gameplay rules other than the explicitly targeted Windchaos and bug fixes are not intentionally modified."
-  ]
+  "checks": {
+    "nodeSyntax": "4 JS Dateien geprüft",
+    "effectTimeline": "4 gezielte Tests bestanden",
+    "windServer": "6 normale + 1 Special, Spielerverteilung, Sperre bis Ende des FX, Wiedereinstieg, Goldbelohnung und Artefaktchance geprüft",
+    "shadowServer": "genau 1 Artefakt und keine Handkarte betroffen",
+    "regression": "Karten, Profile, Lobby, Kosmetik, allgemeiner Rundenablauf geprüft",
+    "liveBrowser": "nicht getestet"
+  }
 }

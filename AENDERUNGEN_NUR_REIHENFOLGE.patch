@@ -1,0 +1,154 @@
+--- a/server.js
++++ b/server.js
+@@ -349,14 +349,19 @@
+ // Der Effekt wird beim Ausspielen auf dem Server durchgeführt; die Clients animieren nur.
+ function applyWindchaos(r,caster){
+   if(!r||!caster||r.phase!=='select'||(r.windchaosUntil||0)>Date.now())return false;
+-  const duration=4400;
++  // Spezialkarte zuerst vollständig zeigen (2,5 s) und erst danach den Tornado.
++  // Während BEIDER Phasen ist die Auswahl gesperrt; sonst würde die Runde mitten
++  // in der sichtbaren Animation weiterlaufen.
++  const introDelay=2800;
++  const duration=4400; // Nur die Tornadoanimation.
++  const totalDuration=introDelay+duration+200; // Kleiner Puffer für die Darstellung.
+   const targets=activePlayers(r).filter(t=>t.id!==caster.id);
+   const targetIds=targets.map(t=>t.id);
+   const match=r.matchId,round=r.round;
+   // Vor dem Tausch senden, damit jeder Browser die alten Karten animieren kann.
+-  r.windchaosUntil=Date.now()+duration;
++  r.windchaosUntil=Date.now()+totalDuration;
+   r.windchaosCasterId=caster.id;
+-  io.to(r.code).emit('windchaosAnimation',{casterId:caster.id,casterName:caster.name,targetIds,duration});
++  io.to(r.code).emit('windchaosAnimation',{casterId:caster.id,casterName:caster.name,targetIds,duration,introDelay});
+   // Bereits geplante Bot-Aktionen nicht während der Tornadoanimation ausführen.
+   clearBotTimers(r);
+   for(const t of targets){
+@@ -380,12 +385,12 @@
+   }
+   if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
+   // Die 30-Sekunden-Auswahl beginnt erst, wenn der Tornado verschwunden ist.
+-  r.selectionDeadline=Date.now()+duration+30000;
++  r.selectionDeadline=Date.now()+totalDuration+30000;
+   io.to(r.code).emit('notice',`${caster.name} entfesselt WINDCHAOS! ${targets.length} gegnerische Hand/Hände werden neu verteilt.`);
+   sendState(r);
+   r.selectionTimer=setTimeout(()=>{
+     if(rooms.has(r.code)&&r.matchId===match&&r.round===round&&r.phase==='select')handleSelectionTimeout(r);
+-  },duration+30050);
++  },totalDuration+30050);
+   setTimeout(()=>{
+     if(!rooms.has(r.code)||r.matchId!==match||r.round!==round||r.phase!=='select')return;
+     r.windchaosUntil=0;
+@@ -393,7 +398,7 @@
+     sendState(r);
+     scheduleBotsForSelect(r);
+     maybeEvaluate(r);
+-  },duration);
++  },totalDuration);
+   return true;
+ }
+ 
+--- a/public/index.html
++++ b/public/index.html
+@@ -404,10 +404,13 @@
+   <script src="/mlp_cosmetics_v8.js?v=20261010-cosmetics8a"></script>
+   <script src="/mlp_kristall_buttons_v11.js?v=20261010-v11b"></script>
+   <script src="/mlp_special_hover_kristallton_v12.js?v=20261010-v12"></script>
++  <!-- Bei Windchaos/Schattengestalt hat die Arena freie Sicht: nach der Karte
++       wird auch der kleine Special-Hinweis während des Effekts ausgeblendet. -->
++  <style id="special-fx-sequence-style">body.windchaos-running #mlpSpecialNotice,body.shadowform-running #mlpSpecialNotice{opacity:0!important;visibility:hidden!important}</style>
+   <!-- Windchaos: ausschließlich diese zusätzliche Special-Animation -->
+-  <script src="/windchaos_fx.js?v=windchaos-merge-v2"></script>
++  <script src="/windchaos_fx.js?v=fx-reihenfolge-v2"></script>
+   <!-- Schattengestalt: In-Game-Effekt für Artefaktverlust -->
+-  <script src="/shadowform_fx.js?v=diabolo-shadow-v1"></script>
++  <script src="/shadowform_fx.js?v=fx-reihenfolge-v2"></script>
+ 
+ <!-- V7: Alte V5-Einbindung entfernt; eigenes testbares Vollbild-Layout + Kristall. --></body>
+ </html>
+--- a/public/windchaos_fx.js
++++ b/public/windchaos_fx.js
+@@ -151,7 +151,32 @@
+   }
+ 
+   window.WindchaosFX={play,isRunning:()=>running};
++  // Keine Arena-Animation, solange die normale 2,5-s-Special-Karte sichtbar ist.
++  // Auch bei langsamen Geräten wird auf das tatsächliche Entfernen des Popups
++  // gewartet. Keine Änderung an Karten, Timer, Socket-Events oder Spielregeln.
++  function afterCardReveal(callback,minimumDelay=0){
++    const started=performance.now();
++    const step=()=>{
++      if(!document.querySelector('#game.screen.active'))return;
++      const elapsed=performance.now()-started;
++      const popup=document.querySelector('.special-burst');
++      if(elapsed<minimumDelay || popup){
++        setTimeout(step,50);
++        return;
++      }
++      requestAnimationFrame(()=>{
++        if(document.querySelector('#game.screen.active'))callback();
++      });
++    };
++    step();
++  }
+   if(typeof socket!=='undefined'&&socket&&typeof socket.on==='function'){
+-    socket.on('windchaosAnimation',event=>play({casterId:event?.casterId}));
++    socket.on('windchaosAnimation',event=>{
++      // Der Server wartet entsprechend länger, damit erst nach dem Tornado
++      // erneut ausgewählt werden darf. Sound und Wirbel starten gemeinsam.
++      const delay=Number.isFinite(Number(event?.introDelay))
++        ?Math.max(0,Math.min(5000,Number(event.introDelay))):2800;
++      afterCardReveal(()=>play({casterId:event?.casterId}),delay);
++    });
+   }
+ })();
+--- a/public/shadowform_fx.js
++++ b/public/shadowform_fx.js
+@@ -39,6 +39,7 @@
+     const wisps=[];
+     for(let k=0;k<18;k++){const w=document.createElement('span');w.className='shadowform-wisp';root.appendChild(w);wisps.push(w);}
+     document.body.appendChild(root);
++    document.body.classList.add('shadowform-running');
+     requestAnimationFrame(()=>root.classList.add('visible'));
+     let d=clamp(Number(duration)||3600,2300,6000);
+     const source=(typeof myId!=='undefined'&&targetId===myId)?findShelfSource(artifact):null;
+@@ -47,7 +48,7 @@
+     const startX=rect?.width>4?rect.left+rect.width/2:vw()*.78;
+     const startY=rect?.height>4?rect.top+rect.height/2:vh()*.64;
+     let frame=0,done=false,started=performance.now();
+-    const cancel=()=>{if(done)return;done=true;cancelAnimationFrame(frame);root.remove();if(active?.cancel===cancel)active=null;};
++    const cancel=()=>{if(done)return;done=true;cancelAnimationFrame(frame);root.remove();document.body.classList.remove('shadowform-running');if(active?.cancel===cancel)active=null;};
+     active={cancel};
+     function tick(now){
+       if(done)return;
+@@ -87,7 +88,30 @@
+     return active;
+   }
+   window.ShadowFormFX={play,isPlaying:()=>!!active};
++  // Keine Arena-Animation, solange die normale 2,5-s-Special-Karte sichtbar ist.
++  // Auch bei langsamen Geräten wird auf das tatsächliche Entfernen des Popups
++  // gewartet. Keine Änderung an Karten, Timer, Socket-Events oder Spielregeln.
++  function afterCardReveal(callback,minimumDelay=0){
++    const started=performance.now();
++    const step=()=>{
++      if(!document.querySelector('#game.screen.active'))return;
++      const elapsed=performance.now()-started;
++      const popup=document.querySelector('.special-burst');
++      if(elapsed<minimumDelay || popup){
++        setTimeout(step,50);
++        return;
++      }
++      requestAnimationFrame(()=>{
++        if(document.querySelector('#game.screen.active'))callback();
++      });
++    };
++    step();
++  }
+   if(typeof socket!=='undefined'&&socket&&typeof socket.on==='function'){
+-    socket.on('shadowformAnimation',evt=>play(evt||{}));
++    socket.on('shadowformAnimation',evt=>{
++      // Zielwahl kann während oder nach der Karteneinblendung beendet werden.
++      // In beiden Fällen beginnt die Schattenanimation erst NACH dem Popup.
++      afterCardReveal(()=>play(evt||{}));
++    });
+   }
+ })();

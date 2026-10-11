@@ -404,8 +404,13 @@
   <script src="/mlp_cosmetics_v8.js?v=20261010-cosmetics8a"></script>
   <script src="/mlp_kristall_buttons_v11.js?v=20261010-v11b"></script>
   <script src="/mlp_special_hover_kristallton_v12.js?v=20261010-v12"></script>
+  <!-- Bei Windchaos/Schattengestalt hat die Arena freie Sicht: nach der Karte
+       wird auch der kleine Special-Hinweis während des Effekts ausgeblendet. -->
+  <style id="special-fx-sequence-style">body.windchaos-running #mlpSpecialNotice,body.shadowform-running #mlpSpecialNotice{opacity:0!important;visibility:hidden!important}</style>
   <!-- Windchaos: ausschließlich diese zusätzliche Special-Animation -->
-  <script src="/windchaos_fx.js?v=windchaos-merge-v2"></script>
+  <script src="/windchaos_fx.js?v=fx-reihenfolge-v2"></script>
+  <!-- Schattengestalt: In-Game-Effekt für Artefaktverlust -->
+  <script src="/shadowform_fx.js?v=fx-reihenfolge-v2"></script>
 
 <!-- V7: Alte V5-Einbindung entfernt; eigenes testbares Vollbild-Layout + Kristall. --></body>
 </html>
