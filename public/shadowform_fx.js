@@ -6,7 +6,7 @@
   'use strict';
   if(!document.querySelector('link[data-shadowform-css]')){
     const link=document.createElement('link');link.rel='stylesheet';
-    link.href='/shadowform_fx.css?v=diabolo-shadow-v1';link.dataset.shadowformCss='1';
+    link.href='/shadowform_fx.css?v=diabolo-shadow-v2';link.dataset.shadowformCss='1';
     document.head.appendChild(link);
   }
   let active=null;
@@ -41,7 +41,7 @@
     const caption=document.createElement('small');caption.textContent=`${targetName} verliert ein Artefakt!`;
     title.append(heading,caption);root.appendChild(title);
     const creature=document.createElement('div');creature.className='shadowform-creature';
-    const sprite=document.createElement('img');sprite.src='/assets/fx/schattengestalt_silhouette.png';sprite.alt='';
+    const sprite=document.createElement('div');sprite.className='shadowform-silhouette';sprite.setAttribute('aria-hidden','true');
     const maw=document.createElement('div');maw.className='shadowform-maw';creature.append(sprite,maw);root.appendChild(creature);
     const card=document.createElement('img');card.className='shadowform-card';card.alt='Artefakt wird von Schattengestalt verschlungen';
     card.src=safeCardImage(artifact?.image);root.appendChild(card);
@@ -106,7 +106,7 @@
       if(!document.querySelector('#game.screen.active'))return;
       const elapsed=performance.now()-started;
       const popup=document.querySelector('.special-burst');
-      if(elapsed<minimumDelay || popup){
+      if(elapsed<minimumDelay || (popup && elapsed<6500)){
         setTimeout(step,50);
         return;
       }

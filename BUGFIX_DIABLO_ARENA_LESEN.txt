@@ -1,0 +1,7 @@
+MLP Battle Cards: Diablo + Arena-Fix
+
+1. Diablo / Diabolo Schattengestalt: fehlende CSS-Datei hinzugefuegt und nicht vorhandene externe Schatten-Silhouette durch animierte CSS-Gestalt ersetzt. Die Karteneinblendung wird abgewartet (maximal 6,5 Sekunden).
+2. Arena: Auswahl bleibt pro Spielraum ueber mehrere Partien erhalten. Zufall waehlt fuer jedes Match eine neue Arena. Der Host kann die Einstellung in der Lobby aendern.
+
+Die gesamte ZIP entpacken und die Dateien ins GitHub-Repository uebernehmen (bestehende Dateien ersetzen). Danach Render-Deployment abwarten, Seite mit Strg+F5 neu laden.
+Achtung: Die Auswahl gilt pro Spielraum, nicht dauerhaft nach Serverneustart.

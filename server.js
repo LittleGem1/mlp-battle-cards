@@ -963,7 +963,7 @@ function requiredPlayers(r){ return (r.roundPlayerIds||[]).map(id=>r.players.get
 function resetToLobby(r){
   clearTimers(r);
   clearRoomSpecialChoices(r);
-  r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;r.arenaSelection='random';
+  r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;
   r.round=0;r.played={};r.dice={};r.tieIds=[];r.roundBuff={};r.roundPlayerIds=[];
   r.pendingRoundWinner=null;
   r.postGameReady=new Set();r.forceNextCategoryDifferent=false;r.forcedNextCategory=null;resetRoundFX(r);
@@ -1411,8 +1411,7 @@ function beginMatch(r){
   if(!r||r.phase!=='ready'||r.players.size<2)return;
   clearTimers(r);
   if(!r.arenaId)r.arenaId=arenaForNextMatch(r);
-  // Eine Test-Auswahl wird nach genau einem gestarteten Match wieder aufgehoben.
-  r.arenaSelection='random';
+  // Host-Auswahl bleibt für spätere Matches erhalten.
   const ps=roomPlayers(r);
   r.matchId=crypto.randomUUID();
   r.lastArtifactOfferRound=0;

@@ -1,4 +1,4 @@
-/* MLP Battle Cards – Arena-Testauswahl (nur Lobby, keine Spiel- oder Stil-Dateien ersetzen). */
+/* MLP Battle Cards – dauerhafte Arena-Auswahl pro Spielraum. */
 (() => {
   'use strict';
   const OPTIONS = [
@@ -40,8 +40,8 @@
 
   const dialog=document.createElement('dialog');
   dialog.id='arenaSelectDialog';
-  const heading=document.createElement('h3');heading.textContent='🏞️ Arena für das nächste Match';
-  const info=document.createElement('p');info.textContent='Für unsere Tests kannst du eine Arena festlegen. Nach dem Match wird wieder zufällig ausgewählt.';
+  const heading=document.createElement('h3');heading.textContent='🏞️ Arena auswählen';
+  const info=document.createElement('p');info.textContent='Die Auswahl gilt für jedes neue Match in diesem Spielraum, bis der Host sie ändert.';
   const grid=document.createElement('div');grid.id='arenaSelectOptions';
   const close=document.createElement('button');close.id='arenaSelectClose';close.className='soft-btn';close.type='button';close.textContent='Schließen';
   dialog.append(heading,info,grid,close);document.body.append(dialog);
@@ -53,7 +53,7 @@
     status.style.display=inLobby?'block':'none';
     if(!inLobby){if(dialog.open)dialog.close();return;}
     const selected=names[s.arenaSelection] ? s.arenaSelection : 'random';
-    status.textContent='Nächste Arena: '+names[selected]+(selected==='random'?'':' · nur für das nächste Match');
+    status.textContent='Arena-Einstellung: '+names[selected];
     for(const option of grid.querySelectorAll('button[data-arena]')){
       option.setAttribute('aria-pressed',String(option.dataset.arena===selected));
     }
