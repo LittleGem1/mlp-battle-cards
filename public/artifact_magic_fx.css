@@ -1,0 +1,24 @@
+/* Extra Spell FX – keine Anpassungen am Arena-Layout. */
+.artifactmagic-overlay{position:fixed;inset:0;z-index:260;pointer-events:none;overflow:hidden;color:white;opacity:0;transition:opacity .28s ease;isolation:isolate}
+.artifactmagic-overlay.show{opacity:1}
+.artifactmagic-overlay::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 48%,rgba(160,86,255,.27),rgba(11,9,40,.34) 48%,rgba(0,0,0,.1));animation:magicFog 2.6s ease both}
+.artifactmagic-overlay.artifactmagic-steal::before{background:radial-gradient(circle at 50% 48%,rgba(210,42,112,.37),rgba(12,2,24,.44) 58%,rgba(0,0,0,.1))}
+.artifactmagic-title{position:absolute;top:12%;left:50%;transform:translateX(-50%);display:grid;text-align:center;gap:5px;text-shadow:0 3px 15px #16072d,0 0 24px #b869fa;width:min(90%,760px);z-index:3;animation:magicTitle 2.6s ease both}
+.artifactmagic-title strong{font-size:clamp(27px,5.5vw,65px);letter-spacing:.07em;color:#ffe9ac}
+.artifactmagic-title small{font-size:clamp(13px,2.3vw,22px);color:#f6efff}
+.artifactmagic-moving,.artifactmagic-original{position:absolute;top:43%;width:clamp(100px,15vw,185px);height:auto;aspect-ratio:2/3;object-fit:cover;border:4px solid #f1d8a5;border-radius:13px;box-shadow:0 0 32px rgba(186,108,255,.88),0 12px 42px #000b;left:calc(50% - clamp(50px,7.5vw,92.5px));z-index:2}
+.artifactmagic-original{opacity:0;animation:magicOriginal 2.6s ease both}
+.artifactmagic-copy .artifactmagic-moving{animation:magicCopy 2.6s cubic-bezier(.2,.7,.17,1) both}
+.artifactmagic-steal .artifactmagic-moving{animation:magicSteal 2.6s cubic-bezier(.2,.7,.17,1) both}
+.artifactmagic-steal .artifactmagic-original{display:none}
+.artifactmagic-ring{position:absolute;left:50%;top:54%;width:220px;height:220px;margin:-110px;z-index:1;border:7px solid rgba(238,198,255,.6);border-radius:50%;box-shadow:0 0 40px #e0b3ff, inset 0 0 35px #e0b3ff;animation:magicRing 2.6s ease-in-out both}
+.artifactmagic-spark{position:absolute;left:50%;top:54%;width:8px;height:8px;border-radius:50%;background:#ffe6ae;box-shadow:0 0 14px #ebbdff;transform:rotate(var(--angle)) translateX(110px);animation:magicSpark 2.6s ease-in-out both;animation-delay:calc(var(--i)*-20ms)}
+@keyframes magicFog{0%,100%{opacity:0}15%,74%{opacity:1}}
+@keyframes magicTitle{0%,100%{opacity:0;transform:translate(-50%,-22px)}16%,74%{opacity:1;transform:translate(-50%,0)}}
+@keyframes magicCopy{0%{opacity:0;transform:translate(36vw,30px) scale(.55) rotate(-25deg)}24%{opacity:1;transform:translate(8vw,0) scale(1) rotate(0)}55%{opacity:1;transform:translate(0,0) scale(1.25)}84%{opacity:1;transform:translate(-25vw,-35px) scale(.9) rotate(15deg)}100%{opacity:0;transform:translate(-34vw,-80px) scale(.35) rotate(110deg)}}
+@keyframes magicSteal{0%{opacity:0;transform:translate(35vw,0) scale(1) rotate(0)}24%{opacity:1;transform:translate(19vw,15px) scale(1.18) rotate(-12deg)}55%{opacity:1;transform:translate(0,0) scale(1.35) rotate(30deg)}86%{opacity:1;transform:translate(-26vw,-30px) scale(.85) rotate(540deg)}100%{opacity:0;transform:translate(-36vw,-60px) scale(.2) rotate(680deg)}}
+@keyframes magicOriginal{0%,15%{opacity:0;transform:translate(35vw,5px) scale(.9)}30%,86%{opacity:.9;transform:translate(28vw,5px) scale(1)}100%{opacity:0;transform:translate(28vw,5px) scale(1)}}
+@keyframes magicRing{0%,100%{opacity:0;transform:scale(.1) rotate(-60deg)}32%{opacity:1;transform:scale(1) rotate(50deg)}66%{opacity:1;transform:scale(1.45) rotate(180deg)}}
+@keyframes magicSpark{0%,100%{opacity:0;transform:rotate(var(--angle)) translateX(12px)}38%,72%{opacity:1;transform:rotate(var(--angle)) translateX(160px)}}
+body.artifactmagic-running #mlpSpecialNotice{visibility:hidden!important;opacity:0!important}
+@media(max-width:580px){.artifactmagic-title{top:17%}.artifactmagic-title small{font-size:13px}.artifactmagic-moving,.artifactmagic-original{top:48%;width:110px;left:calc(50% - 55px)}}

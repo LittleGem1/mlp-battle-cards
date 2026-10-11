@@ -24,6 +24,15 @@
     // Neustart/überlappende Specials: alte Darstellung sicher beenden.
     if(active)active.cancel();
     if(!preview && !document.querySelector('#game.screen.active'))return null;
+    // Die Tonspur beginnt erst beim tatsächlichen Erscheinen des Schattens,
+    // niemals schon während der 2,5-s-Karteneinblendung.
+    if(!preview){
+      try{
+        const sound=new Audio('/assets/sounds/diabolo_shadowform.mp3?v=diabolo-v17');
+        sound.volume=0.64;
+        sound.play().catch(()=>{});
+      }catch(_err){}
+    }
     const root=document.createElement('div');root.className='shadowform-overlay';
     root.setAttribute('aria-label','Schattengestalt verschlingt ein Artefakt');
     const darkness=document.createElement('div');darkness.className='shadowform-darkness';root.appendChild(darkness);

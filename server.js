@@ -265,6 +265,8 @@ function availableTargets(r,p,mode='any'){
     if(mode==='played'&&!playedCardIds(r.played?.[t.id]).length)return false;
     if(mode==='hand'&&!t.hand.length)return false;
     if(mode==='artifact'&&!(t.artifacts||[]).length)return false;
+    // Kopieren/Stehlen: Nur Gegner mit einem Artefakt, das der Spieler noch nicht hat.
+    if(mode==='artifact_new'&&!(t.artifacts||[]).some(id=>byId[id]?.type==='artifact'&&!(p.artifacts||[]).includes(id)))return false;
     return true;
   });
 }
@@ -284,6 +286,30 @@ function applyShadowForm(r,caster,target){
   io.to(r.code).emit('shadowformAnimation',{
     casterId:caster.id,casterName:caster.name,targetId:target.id,
     targetName:target.name,artifact:{id:artifact.id,name:artifact.name,image:artifact.image},duration:3600
+  });
+  return true;
+}
+
+
+// Zauberkopierer / Zauberklau: Spielstand wird nur auf dem Server verändert.
+// Copy: der Gegner behält sein Artefakt; Steal: ein echter Besitztransfer.
+function artifactMagicOptions(caster,target){
+  return (target?.artifacts||[]).filter(id=>byId[id]?.type==='artifact'&&!(caster?.artifacts||[]).includes(id));
+}
+function applyArtifactMagic(r,caster,target,artifactId,action){
+  if(!r||!caster||!target||caster.id===target.id||target.surrendered)return false;
+  if(action!=='artifactcopy'&&action!=='artifactsteal')return false;
+  if(!artifactMagicOptions(caster,target).includes(artifactId))return false;
+  if(action==='artifactsteal'){
+    const index=target.artifacts.indexOf(artifactId);
+    if(index<0)return false;
+    target.artifacts.splice(index,1);
+  }
+  caster.artifacts.push(artifactId);
+  const a=byId[artifactId];
+  io.to(r.code).emit('artifactMagicAnimation',{
+    action,casterId:caster.id,casterName:caster.name,targetId:target.id,
+    targetName:target.name,artifact:{id:a.id,name:a.name,image:a.image},duration:2600
   });
   return true;
 }
@@ -484,7 +510,10 @@ function botApplySpecial(r,p,c){
   const effect=c.effect;
   const targetAny=()=>botTarget(r,p,'any');
   const targetHand=()=>botTarget(r,p,'hand');
-  if(effect==='shadowform'){
+  if(effect==='artifactcopy'||effect==='artifactsteal'){
+    const t=botTarget(r,p,'artifact_new');
+    if(t){const options=artifactMagicOptions(p,t);if(options.length){applyArtifactMagic(r,p,t,options[0],effect);gameOverIfNeeded(r);}}
+  }else if(effect==='shadowform'){
     const t=botTarget(r,p,'artifact');if(t)applyShadowForm(r,p,t);
   }else if(effect==='windchaos'){
     applyWindchaos(r,p);
@@ -599,6 +628,7 @@ function botUsableSpecials(r,p){
     if(c.effect==='timberwolves')return botNormalCards(p,r.category).length>=2;
     if(c.effect==='manticore')return r.normalDiscard.length+r.rewardDiscard.length>0;
     if(c.effect==='shadowform')return botTargets(r,p,'artifact').length>0;
+    if(c.effect==='artifactcopy'||c.effect==='artifactsteal')return botTargets(r,p,'artifact_new').length>0;
     if(c.effect==='trixie')return botHasNegative(r,p);
     if(c.effect==='ironwill')return roomPlayers(r).some(x=>x.id!==p.id&&new Set(x.artifacts||[]).size>=2);
     return true;
@@ -1744,6 +1774,7 @@ io.on('connection',socket=>{
     }
     if(effect==='cozy' && p.hand.filter(id=>id!==cardId).length<1)return socket.emit('errorMsg','Cozy Glow braucht noch mindestens 1 weitere Handkarte zum Tauschen.');
     if(effect==='shadowform'&&!availableTargets(r,p,'artifact').length)return socket.emit('errorMsg','Schattengestalt benötigt einen Gegner mit mindestens einem Artefakt. Die Karte bleibt auf deiner Hand.');
+    if(['artifactcopy','artifactsteal'].includes(effect)&&!availableTargets(r,p,'artifact_new').length)return socket.emit('errorMsg','Es gibt derzeit kein gegnerisches Artefakt, das du noch nicht besitzt. Die Karte bleibt auf deiner Hand.');
     if(effect==='manticore'&&!r.normalDiscard.length&&!r.rewardDiscard.length)return socket.emit('errorMsg','Die Ablagestapel sind noch leer.');
 
     if(!consumeSpecial(r,p,source))return;
@@ -1756,7 +1787,11 @@ io.on('connection',socket=>{
       io.to(r.code).emit('specialCopied',{playerId:p.id,name:p.name,copied:effectCard});
     }
 
-    if(effect==='shadowform'){
+    if(effect==='artifactcopy'||effect==='artifactsteal'){
+      requestTarget(socket,r,p,source,effect,'artifact_new',effect==='artifactcopy'
+        ?'Zauberkopierer: Von welchem Gegner kopierst du ein Artefakt?'
+        :'Zauberklau: Von welchem Gegner stiehlst du ein Artefakt?');
+    }else if(effect==='shadowform'){
       requestTarget(socket,r,p,source,'shadowform','artifact','Schattengestalt: Wer muss ein Artefakt ablegen?');
     }else if(effect==='windchaos'){
       applyWindchaos(r,p);
@@ -1889,7 +1924,16 @@ io.on('connection',socket=>{
     }
     socket.data.pendingSpecial=null;
 
-    if(action==='shadowform'){
+    if(action==='artifactcopy'||action==='artifactsteal'){
+      const choices=artifactMagicOptions(p,target);
+      if(!choices.length){
+        socket.emit('errorMsg','Dieser Gegner hat kein für dich neues Artefakt mehr.');
+        sendState(r);return;
+      }
+      socket.data.pendingSpecial={room:r.code,round:r.round,action:'artifactmagic-card',kind:action,sourceCardId:source.id,targetId:target.id,choices};
+      socket.emit('specialCardRequest',{title:`${action==='artifactcopy'?'Zauberkopierer':'Zauberklau'}: Welches Artefakt von ${target.name}?`,cards:choices.map(id=>byId[id])});
+      return;
+    }else if(action==='shadowform'){
       if(!applyShadowForm(r,p,target))socket.emit('errorMsg','Das gewählte Ziel besitzt inzwischen kein Artefakt mehr.');
     }else if(action==='tirek'){
       addDebuff(r,target.id,-2,p.id,'Tirek');
@@ -1945,6 +1989,22 @@ io.on('connection',socket=>{
     const r=getRoom(socket),pending=pendingForCurrentSelection(socket,r),p=r?.players.get(socket.id);
     if(!pending||!p)return;
     const action=pending.action;
+
+    if(action==='artifactmagic-card'){
+      const target=r.players.get(pending.targetId);
+      const kind=pending.kind;
+      if(!pending.choices?.includes(cardId)||!applyArtifactMagic(r,p,target,cardId,kind)){
+        socket.data.pendingSpecial=null;
+        socket.emit('errorMsg','Dieses Artefakt ist inzwischen nicht mehr verfügbar.');
+        sendState(r);return;
+      }
+      socket.data.pendingSpecial=null;
+      socket.emit('specialDone',{text:kind==='artifactcopy'?'Artefakt erfolgreich kopiert!':'Artefakt erfolgreich gestohlen!'});
+      sendState(r);
+      // Falls dies das dritte unterschiedliche Artefakt war, ist der Sieg verdient.
+      gameOverIfNeeded(r);
+      return;
+    }
 
     if(action==='sludge-card'||action==='maneiac-card'){
       const target=r.players.get(pending.targetId);

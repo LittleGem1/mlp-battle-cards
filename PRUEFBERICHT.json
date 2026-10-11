@@ -1,27 +1,57 @@
 {
-  "package": "V16 Reihenfolge der Spezialeffekte",
-  "baseline": "Diabolo – Schattengestalt V1 auf Bugfix V15; nicht mit anderen unbekannten neuen Ständen verwechselt",
-  "changedFiles": [
+  "base": "V15 bugfix + Diabolo Shadow V1 + V16 Animation Timing",
+  "modified_files": [
+    "cards.js",
     "server.js",
     "public/index.html",
-    "public/windchaos_fx.js",
     "public/shadowform_fx.js"
   ],
-  "behavior": {
-    "cardIntroMs": 2500,
-    "windWaitMinMs": 2800,
-    "windAnimationMs": 4400,
-    "windServerLockMs": 7400,
-    "shadowWait": "bis .special-burst nicht mehr im DOM vorhanden ist; nach Zielwahl wenn Karte bereits geschlossen sofort",
-    "specialNotice": "wird nur während FX ausgeblendet",
-    "unchanged": "Kartenwerte, Artefaktgewinn und -verlust, 6+1 bei Windchaos, Accounts, Items, Rahmen, andere Specials und Arena-Layouts"
+  "new_files": [
+    "public/artifact_magic_fx.js",
+    "public/artifact_magic_fx.css",
+    "public/assets/specials_new/96_Flawless_Sparkle_Moon_Zauberkopierer.webp",
+    "public/assets/specials_new/97_Evil_Sci_Twi_Zauberklau.webp",
+    "public/assets/sounds/flawless_zauberkopierer.mp3",
+    "public/assets/sounds/evil_sci_twi_zauberklau.mp3",
+    "public/assets/sounds/diabolo_shadowform.mp3"
+  ],
+  "unchanged_preview_asset": [
+    "public/assets/specials_new/95_Diabolo_Schattengestalt.webp"
+  ],
+  "new_specials": [
+    {
+      "id": "s96",
+      "name": "Flawless Sparkle Moon – Zauberkopierer",
+      "effect": "artifactcopy"
+    },
+    {
+      "id": "s97",
+      "name": "Evil Sci Twi – Zauberklau",
+      "effect": "artifactsteal"
+    }
+  ],
+  "sounds": {
+    "flawless": "Unicorn Horn Magic",
+    "evil_sci_twi": "Evil Magic Spell Sound Design",
+    "diabolo": "Magic WHOOSH"
   },
-  "checks": {
-    "nodeSyntax": "4 JS Dateien geprüft",
-    "effectTimeline": "4 gezielte Tests bestanden",
-    "windServer": "6 normale + 1 Special, Spielerverteilung, Sperre bis Ende des FX, Wiedereinstieg, Goldbelohnung und Artefaktchance geprüft",
-    "shadowServer": "genau 1 Artefakt und keine Handkarte betroffen",
-    "regression": "Karten, Profile, Lobby, Kosmetik, allgemeiner Rundenablauf geprüft",
-    "liveBrowser": "nicht getestet"
+  "syntax_checks": "pass",
+  "tests_passed": [
+    "test_artifact_magic.js",
+    "test-catalog.js",
+    "test-profiles.js",
+    "test-rundenfix.js",
+    "test-windchaos-reconnect-qa.js (timing V16 fixture updated)",
+    "test_cosmetics_after_game.js"
+  ],
+  "live_multiplayer_test": "not performed",
+  "media_sha256": {
+    "public/artifact_magic_fx.js": "814e615e02f4c63ad528858780d64b6029ade6963c352c6f2e08fae2300b872f",
+    "public/artifact_magic_fx.css": "eb3fc9bab7144dacd3b594cfea873be01b12162d196f0c11d9919a006e25a62c",
+    "public/assets/specials_new/96_Flawless_Sparkle_Moon_Zauberkopierer.webp": "bd4bb3c848011f0e65a9dad6c2654ebabe6b51400dc1af63890ff6c42b7eb3a2",
+    "public/assets/specials_new/97_Evil_Sci_Twi_Zauberklau.webp": "edeb391ccc297c1e0c9d63e5ff33d194151282ab85af5ff39ac149473f68946a",
+    "public/assets/sounds/flawless_zauberkopierer.mp3": "ef232742df17cad6aca8208e2298b1b69a0b77f0f3113e54a8e659b47ed05bd9",
+    "public/assets/sounds/evil_sci_twi_zauberklau.mp3": "5efa81e9971442982888713bc86d3515f002fee644840b0773f0cc6035cd27ba",
+    "public/assets/sounds/diabolo_shadowform.mp3": "b8a971f5f493a53ff86ae3b2ecc7cd6bef6b950575200b4bd1d2a1f7b95204ec"
   }
 }

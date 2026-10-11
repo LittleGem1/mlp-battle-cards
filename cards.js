@@ -121,6 +121,9 @@ const specials = [
   {id:'s92',type:'special',name:'Gilda Griffon',effect:'gilda',text:'Wähle einen Gegner und nimm zufällig 1 Karte aus seiner Hand.',useIcon:'🦅',useLabel:'Krallehieb',image:'/assets/specials_new/92_Gilda_Griffon.png'},
   {id:'s93',type:'special',name:'Cockatrice',effect:'cockatrice',text:'Versteinert, wähle einen Gegner aus dessen Karte diese Runde aussetzt.',useIcon:'🪨',useLabel:'Versteinert',image:'/assets/specials_new/93_Cockatrice.png'},
   {id:'s94',type:'special',name:'Sil – Windchaos',effect:'windchaos',text:'Alle Gegner legen ihre gesamte Hand ab und ziehen 6 normale Karten und 1 Special-Karte neu.',useIcon:'🌪️',useLabel:'Windchaos',image:'/assets/specials_new/94_Sil_Windchaos.webp'},
+  {id:'s95',type:'special',name:'Diabolo – Schattengestalt',effect:'shadowform',text:'Wähle einen Spieler, der ein Artefakt ablegen muss.',useIcon:'🌑',useLabel:'Schattengestalt',image:'/assets/specials_new/95_Diabolo_Schattengestalt.webp'},
+  {id:'s96',type:'special',name:'Flawless Sparkle Moon – Zauberkopierer',effect:'artifactcopy',text:'Wähle einen Gegner und eines seiner Artefakte, das du für dich kopierst.',useIcon:'🪄',useLabel:'Zauberkopierer',image:'/assets/specials_new/96_Flawless_Sparkle_Moon_Zauberkopierer.webp'},
+  {id:'s97',type:'special',name:'Evil Sci Twi – Zauberklau',effect:'artifactsteal',text:'Wähle einen Gegner und eines seiner Artefakte, das du ihm stiehlst.',useIcon:'✨',useLabel:'Zauberklau',image:'/assets/specials_new/97_Evil_Sci_Twi_Zauberklau.webp'},
 ];
 const artifacts = [
   {id:'a01',type:'artifact',artifactKey:'elements',name:'Elemente der Harmonie',image:'/assets/artifacts/01_Elemente_der_Harmonie.png'},

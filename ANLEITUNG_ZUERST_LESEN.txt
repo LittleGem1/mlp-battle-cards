@@ -1,63 +1,55 @@
-MLP BATTLE CARDS – WINDCHAOS, PASSEND ZUM HOCHGELADENEN PROJEKT
-===============================================================
+MLP BATTLE CARDS – 2 NEUE SPECIALS + DIABOLO-SOUND V17
+========================================================
 
-GEPRÜFTE QUELLE
-  mlp-battle-cards-main (2).zip (vom Benutzer hochgeladener aktueller Projektstand)
-  Dieses Paket wurde DIREKT daraus gebaut – NICHT aus einer veralteten server.js.
+BASIS: bestehender Bugfix V15 + Diabolo/Schattengestalt V1 + Animationsreihenfolge V16.
+Dieses ZIP ersetzt NICHT das komplette Spiel. Es enthält 4 gezielt geänderte Dateien
+und neue Assets. Wenn dein GitHub-Stand seit V16 verändert wurde, beachte PATCH_V17.diff.
 
-SO BLEIBEN DIE BESTEHENDEN FEATURES ERHALTEN
-  • Nur 3 bestehende Dateien wurden gezielt erweitert:
-      cards.js
-      server.js
-      public/index.html
-  • 4 Dateien sind ganz NEU:
-      public/assets/specials_new/94_Sil_Windchaos.webp
-      public/assets/sounds/windchaos_tornado.mp3
-      public/windchaos_fx.js
-      public/windchaos_fx.css
-  • public/client.js, public/style.css, sämtliche anderen Karten, die
-    Würfel-, Kristall-, Galerie- und Artefakt-Dateien bleiben UNVERÄNDERT.
-  • Der bestehende Artefakt-Pechsträhnen-Schutz (7 Runden) und die Host-Galerie
-    bleiben im übernommenen Servercode vorhanden.
+NEU: Flawless Sparkle Moon – ZAUBERKOPIERER (Special s96)
+   Du wählst einen Gegner, danach eines seiner Artefakte.
+   Du erhältst das Artefakt als Kopie. Der Gegner behält sein Artefakt.
+   Sound: Unicorn Horn Magic (vom Nutzer bereitgestellt, lautheitsangepasst).
 
-INSTALLATION IN GITHUB (WICHTIG: ZIP ZUERST ENTPACKEN)
-1. Sicherheitskopie deiner AKTUELLEN GitHub-Version aufheben.
-2. Die 7 Dateien aus dieser ZIP in den jeweiligen gleichnamigen Pfad
-   deines GitHub-Projekts hochladen und bei den drei bestehenden Dateien
-   (cards.js, server.js, public/index.html) ersetzen.
-3. NICHT zusätzlich noch die alte Windchaos-V1-ZIP einbauen!
-4. GitHub-Commit abschließen, erfolgreichen Render-Deploy abwarten.
-5. Browser mit Strg+F5 (oder Strg+Umschalt+R) neu laden.
-6. Neue Partie beginnen, Sil – Windchaos im Goldstapel ziehen und ausspielen.
+NEU: Evil Sci Twi – ZAUBERKLAU (Special s97)
+   Du wählst einen Gegner, danach eines seiner Artefakte.
+   Genau dieses Artefakt wechselt zu dir; der Gegner verliert es.
+   Sound: Evil Magic Spell (vom Nutzer bereitgestellt, kürzer geschnitten).
 
-SICHERHEITSHINWEIS
-Die drei Dateien stammen aus GENAU deiner hochgeladenen ZIP. Wenn du SEIT
-DEM HERUNTERLADEN der ZIP Änderungen auf GitHub vorgenommen hast, darfst du
-sie NICHT blind ersetzen – dann brauche ich erneut den neuesten Stand.
+NEU: Diabolo – SCHATTENGESTALT
+   Die vorhandene Animation bleibt unverändert. Bei ihrem Start, NACH dem
+   Schließen der Special-Karteneinblendung, erklingt nun der WHOOSH-Sound.
 
-SPIELVERHALTEN
-- Die Special-Karte heißt Sil – Windchaos; Special-ID s94.
-- Ausspielen kann sie auch jeder andere Spieler, nicht nur Sil selbst.
-- Ausspielender Spieler behält seine restliche Hand (die Windchaos-Karte wird verbraucht).
-- Jeder andere aktive Gegner: sämtliche Handkarten und bereits in dieser Runde
-  gelegte normale Karten werden abgeworfen; danach exakt 6 normale Karten
-  plus 1 Special-Karte. Vorhandene Artefakte bleiben erhalten.
-- Eine neue 30-Sekunden-Auswahl beginnt erst NACH der 4,4-Sekunden-Animation.
-- Währenddessen werden neue Kartenaktionen blockiert.
-- Ein Bot kann Windchaos ebenso ausspielen; Bot-Aktionen werden angehalten.
-- Die Windchaos-Karte erscheint in der Host-Galerie aus der zentralen cards.js.
+SICHERHEIT UND SPIELREGELN
+- Der Server prüft die Besitzer und Artefakte bei jeder Auswahl neu.
+- Ein Artefakt, das du bereits hast, kann nicht doppelt kopiert oder gestohlen werden.
+- Hat kein Gegner ein für dich neues Artefakt, bleibt die Special-Karte auf der Hand.
+- Gewinnt jemand durch seine dritte Artefaktart, greift die normale Siegprüfung.
+- PonyBot kann die Specials sinnvoll verwenden.
+- Keine Änderungen an Profilen, Rahmen, Items, Würfel, Kristall, Goldkartenchance,
+  Artefakt-Pechsträhnenschutz oder der übrigen Kartenauswahl.
 
-VORSCHAU
-- VORSCHAU_WINDCHAOS.html öffnen (mit den preview_assets/-Dateien daneben).
-- Bei Bedarf WINDCHAOS_ANIMIERTE_VORSCHAU.gif ansehen.
-- Die echte Browser-/Render-Partie ist damit NICHT ersetzt.
+GITHUB EINBAU
+1. Backup deines aktuellen Repositories machen.
+2. Dieses ZIP entpacken (NICHT die ZIP selbst ins Repo legen).
+3. Die vier Dateien cards.js, server.js, public/index.html und
+   public/shadowform_fx.js im Repo ersetzen – aber NUR wenn dein Stand auf V16 beruht.
+   Wenn neuer: Die gezielten Änderungen aus PATCH_V17.diff übernehmen.
+4. Die Dateien unter public/artifact_magic_fx.js und .css NEU hinzufügen.
+5. Die beiden neuen Kartenbilder nach public/assets/specials_new/ hochladen.
+6. Die drei MP3s nach public/assets/sounds/ hochladen.
+7. Committen und den Render-Deploy abwarten, danach Strg+F5.
+8. In der Host-Galerie nach Flawless Sparkle Moon und Evil Sci Twi suchen.
+   Eine echte Mehrspielerpartie ist für den Abschlusscheck empfohlen.
 
-TESTS
-- JavaScript-Syntax beider aktualisierten .js-Dateien geprüft.
-- Karte und Bilddateipfad anhand von cards.js geprüft.
-- Vorhandene Artefakt- und Host-Logik überprüft und erhalten.
-- Serverseitiger Windchaos-Kartentausch mit künstlichen Spielern geprüft.
-- Live-Mehrspieler-Partie auf Render wurde NICHT getestet; es gibt daher
-  KEINE 100-%-Fehlerfreiheit-Garantie.
+BILDVORSCHAU
+- VORSCHAU_NEUE_SPECIALS.png zeigt beide fertigen Karten nebeneinander.
+- VORSCHAU_SPECIALS.html im entpackten ZIP lokal öffnen: Karten und Sounds prüfen.
+- Die bereits vorhandene Diabolo-Bilddatei liegt zusätzlich unverändert im ZIP,
+  damit seine Vorschau offline angezeigt wird. Beim Einbau ist kein erneutes
+  Hochladen dieser bereits existierenden Karte notwendig.
 
-Siehe auch AENDERUNGEN_UND_TESTS.txt und DIFF_DER_DREI_DATEIEN.patch.
+WARNUNG
+Die Sounds sind vom Nutzer bereitgestellt. Es wurden nur kurze spielgeeignete
+Fassungen erstellt. Die Zuordnung ist Unicorn Horn -> Flawless,
+Evil Magic -> Evil Sci Twi, WHOOSH -> Diabolo.
+Die Tests sind lokal, kein Live-Render-Multiplayer-Test wurde durchgeführt.
