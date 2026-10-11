@@ -4251,3 +4251,46 @@ body.scene-lobby #crystalDrift * {
     pointer-events:auto !important;
   }
 }
+
+
+/* === V19: Gewonnene Rahmen/Items in Lobby + Arena sichtbar (nur Darstellung) ===
+   Die bestehende item_-Regel setzt left/top VOR dem !important-inset-Shorthand.
+   Dadurch werden beide Positionen wieder zu auto. Diese spaeten Regeln setzen
+   left/top NACH inset und positionieren das Item stabil neben dem Namensschild.
+*/
+.nameplate[class*="item_"] > .decor {
+  inset:auto !important;
+  left:calc(100% - 4px) !important;
+  top:50% !important;
+  right:auto !important;
+  bottom:auto !important;
+  transform:translateY(-50%) !important;
+  display:grid !important;
+  place-items:center !important;
+  width:70px !important;
+  height:70px !important;
+  overflow:visible !important;
+  opacity:1 !important;
+  visibility:visible !important;
+}
+.nameplate[class*="item_"] > .decor > img {
+  display:block !important;
+  width:100% !important;
+  height:100% !important;
+  object-fit:contain !important;
+  opacity:1 !important;
+  visibility:visible !important;
+}
+.nameplate-small[class*="item_"] > .decor {
+  left:calc(100% - 3px) !important;
+  top:50% !important;
+  width:48px !important;
+  height:48px !important;
+}
+/* Rahmen dürfen nicht durch spätere Arena-/Lobby-Regeln verborgen werden. */
+.nameplate.has-frame > .name-frame {
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  pointer-events:none !important;
+}

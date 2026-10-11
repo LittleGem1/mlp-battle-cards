@@ -11,6 +11,7 @@ if(!profileStore) console.warn('[MLP] Kein DATABASE_URL: Rahmen/Items sind NICHT
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+// V18: bereits installierte Bandbreiten-Optimierung erhalten.
 require('./asset_bandwidth_optimization')(app);
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -1098,6 +1099,13 @@ function endGame(r,champion,reason='artifacts'){
   const profileId=winnerSocket?.data?.profile?.id||champion.profileId;
   if(profileStore && profileId){
     profileStore.awardWin(profileId,r.matchId||crypto.randomUUID()).then(result=>{
+      // V19: Der Gewinn aktualisiert nicht nur PostgreSQL und den Browser,
+      // sondern auch das serverseitige Profil dieser laufenden Verbindung.
+      // Sonst gelten gerade gewonnene Rahmen/Items bis zum nächsten Login
+      // fälschlich noch als gesperrt und lassen sich nicht ausrüsten.
+      if(winnerSocket?.data?.profile && result?.profile && winnerSocket.data.profile.id===result.profile.id){
+        winnerSocket.data.profile=result.profile;
+      }
       winnerSocket?.emit('profileData',{profile:result.profile});
       winnerSocket?.emit('profileWinReward',result.reward);
     }).catch(err=>{
@@ -1615,12 +1623,20 @@ io.on('connection',socket=>{
     // Reflect locally only after checking ownership.
     const owns=socket.data.profile.items.includes(a)&&(f===''||socket.data.profile.frames.includes(f));
     if(!owns)return socket.emit('profileSaveError','Dieses Item oder dieser Rahmen ist noch gesperrt.');
-    socket.data.profile={...socket.data.profile,accessory:a,frame:f};
     try{
       const result=await profileStore.choose(socket.data.profile.id,a,f);
-      socket.emit('profileSaved',{accessory:result.accessory,frame:result.frame});
+      // V19: Erst nach erfolgreichem Speichern als ausgerüstet bestätigen.
+      socket.data.profile={...socket.data.profile,accessory:result.accessory,frame:result.frame};
       const r=getRoom(socket),p=r?.players.get(socket.id);
-      if(p && canEditLobbyCosmetics(r,socket.id)){p.accessory=a;p.frame=f;sendState(r)}
+      // Nur Kosmetik: Aktualisierungen sind auch im laufenden Spiel und im
+      // Ergebnisbildschirm erlaubt; sie ändern keine Karten/Artefakte/Phasen.
+      // Broadcast an den Raum aktualisiert Lobby UND Arena aller Mitspieler.
+      if(p && !p.isBot){
+        p.accessory=result.accessory;
+        p.frame=result.frame;
+        sendState(r);
+      }
+      socket.emit('profileSaved',{accessory:result.accessory,frame:result.frame});
     }catch(err){console.error('[MLP] Kosmetik speichern:',err);socket.emit('profileSaveError','Item-/Rahmen-Auswahl konnte nicht gespeichert werden.');}
   });
   socket.on('createRoom',({name,accessory,frame})=>{

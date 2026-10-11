@@ -1,66 +1,29 @@
-MLP BATTLE CARDS – DATENVOLUMEN-SPARFIX V18 (ohne Spielmechanik-Umbau)
-======================================================================
+MLP BATTLE CARDS – V19: ITEM- UND RAHMENANZEIGE REPARIEREN
 
-PROBLEM
-Render Free hat ein begrenztes monatliches Bandbreitenbudget. In deinem Projekt
-sind beispielsweise einzelne Arena-PNGs 8–12 MB gross. Bei wiederholtem
-Laden summiert sich das schnell.
+INSTALLATION (bestehendes GitHub-Projekt, NICHT das gesamte ZIP-Repository austauschen):
+1. ZIP entpacken.
+2. server.js in den Hauptordner deines GitHub-Repositories hochladen – alte server.js ersetzen.
+3. public/style.css in den GitHub-Ordner public/ hochladen – alte style.css ersetzen.
+4. Auf GitHub „Commit changes“ klicken. Auf Render den neuesten Deploy abwarten.
+5. Spiel neu öffnen (Strg+F5), anmelden, gewonnenes Item und gewonnenen Rahmen ausrüsten.
+   Test: Lobby und Arena mit einem zweiten Spieler/Bot anschauen.
 
-ERGEBNIS IN DEINEM HOCHGELADENEN PROJEKT
-65 Bilder: 178,3 MB Original-PNGs -> 29,0 MB WebP-Varianten.
-Ersparnis bei diesen 65 Bildern: 83,8 %. Noch nicht die komplette Bandbreite!
+WAS WURDE REPARIERT?
+- Neue Gewinnbelohnungen werden nicht nur in PostgreSQL gespeichert, sondern auch
+  sofort beim bereits angemeldeten Sieger im aktuellen Serversitzungsprofil freigeschaltet.
+- 'Ausrüsten' synchronisiert den ausgewählten Gegenstand/Rahmen nach erfolgreicher
+  Datenbankspeicherung in den gesamten Spielraum, sogar während einer Partie / auf
+  dem Ergebnisbildschirm. Andere Spieler sehen ihn sofort in Lobby und Arena.
+- Die CSS-Anzeige neuer Items neben dem Namensschild wird korrekt positioniert;
+  Rahmen bleiben sichtbar.
 
-WAS DIESE VERSION MACHT
-- Bestehende PNG-Dateien bleiben VOLLSTAENDIG erhalten.
-- Neue, kleinere WEBP-Alternativen liegen unter public/optimized_assets/.
-- Moderne Browser bekommen unter derselben bisherigen *.png-URL die kleinere
-  WEBP-Version mit korrektem Content-Type. Aeltere Browser bekommen PNG.
-- Bilder, MP3s, GIFs und animierte WEBPs werden bis zu 3 Stunden im Browser
-  zwischengespeichert. Javascript, HTML, CSS und Socket-/Spieler-Daten
-  werden hierdurch nicht zusaetzlich gecacht.
-- KARTENLISTEN, ZAHLEN, SOUNDS, ANIMATIONEN, SPIELREGELN und die DATENBANK
-  werden NICHT veraendert.
+UNVERÄNDERT:
+- Spielregeln, Artefakte, Spezialkarten, Sound und Animationen.
+- PostgreSQL und gespeicherte Spielerkonten/Belohnungen.
+- Der zuvor eingerichtete V18-Datensparfix bleibt in server.js eingebunden.
 
-SICHERER EINBAU (EMPFOHLEN)
-1. Sicherung von server.js und deinem GitHub-Stand erstellen.
-2. ZIP entpacken.
-3. Die komplette neue Datei asset_bandwidth_optimization.js in das
-   HAUPTVERZEICHNIS deines GitHub-Repositories hochladen.
-4. Den neuen Ordner public/optimized_assets/ samt Inhalt hochladen.
-   Die vorhandenen Dateien in public/assets/ NICHT ersetzen oder loeschen!
-5. Deine AKTUELLE server.js oeffnen und EINE Zeile vor
-   app.use(express.static(path.join(__dirname, 'public'))); einfuegen:
-
-   require('./asset_bandwidth_optimization')(app);
-
-6. Committen, Render-Deploy abwarten und die Webseite mit Strg+F5 laden.
-   Bei laufender Render-Sperre werden keine Deploys live geschaltet, bevor
-   dein Workspace wieder freigegeben ist.
-
-WICHTIG: Das ZIP enthaelt KEINE Server-Komplettdatei und KEINE veraenderten Spielregeln.
-Du ergaenzt in DEINER aktuellen server.js lediglich eine Zeile. Dadurch werden
-neuere Spiel-Fixes nicht durch eine alte server.js ueberschrieben!
-
-TEST AUF RENDER (WENN WIEDER AKTIV)
-1. Starte dein Spiel und oeffne Browser-Entwicklertools mit F12.
-2. Tab 'Netzwerk' (Network) -> 'Disable cache' fuer ersten Test aktivieren.
-3. Arena aufrufen oder eine PNG-Karte laden.
-4. Anklicken: URL kann noch auf .png enden, Content-Type sollte
-   image/webp zeigen, Transfer-Size deutlich kleiner als Original sein.
-5. 'Disable cache' ausschalten, Seite neu laden. Wiederholte Bilder sollten
-   nun (aus dem Speicher-Cache) bzw. mit kaum uebertragenen Bytes erscheinen.
-6. Pruefe Arena 1–4, Karten, Items/Rahmen, und Sound.
-7. Danach - wie immer - eine Testpartie gegen PonyBot.
-
-GRENZEN
-- Diese Optimierung reduziert Bild- und Asset-Transfer, garantiert aber
-  KEIN Einhalten eines monatlichen Render-Kontingents bei beliebig vielen
-  Spielern und Seitenaufrufen.
-- Bereits genutzte Render-Bandbreite wird dadurch nicht zurueckgesetzt.
-- Die kostenlosen Render-Webserver bieten kein Render Edge Caching; der
-  Browser nutzt hier seinen eigenen Cache.
-- Bei Austausch eines Bildes kann ein Browser es bis zu 3 Stunden im Cache
-  behalten, es sei denn man laedt mit Strg+F5 neu.
-- PNG und WEBP Alternative muessen bei zukuenftigen Bildern ggf.
-  neu erzeugt werden. Falls keine Alternative vorhanden ist, zeigt das
-  Spiel wie bisher das originale Bild.
+WICHTIG: Diese zwei Ersatzdateien wurden aus deinem zuletzt geposteten server.js
+(V17) und dem jüngsten hier vorliegenden Original public/style.css abgeleitet.
+Falls du diese Dateien auf GitHub NACHHER anderweitig verändert hast, solltest du
+statt kompletten Ersatzes die Änderungen aus AENDERUNGEN_V19.diff übernehmen,
+damit keine neueren Codeänderungen überschrieben werden.

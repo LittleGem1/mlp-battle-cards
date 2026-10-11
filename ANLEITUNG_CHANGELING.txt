@@ -1,0 +1,22 @@
+CHANGELING UPDATE - MLP BATTLE CARDS
+
+NEUES KARTENBILD:
+Die Datei public/assets/specials_new/74_Changeling.png ersetzt das alte Bild.
+
+SO HOCHLADEN:
+1. ZIP entpacken.
+2. In GitHub dein Repository LittleGem1/mlp-battle-cards öffnen.
+3. Zu public/assets/specials_new/74_Changeling.png gehen.
+4. Datei durch die gleichnamige neue PNG ersetzen und Änderungen committen.
+5. Render auf das neue Deployment warten lassen.
+
+WICHTIG - SPIELLOGIK:
+Dieses Paket ersetzt das Kartenbild. Die sichtbare Beschriftung erlaubt jetzt
+2 zusätzliche Spezialkarten. Das Spiel muss diese Regel separat erlauben.
+In cards.js beim Eintrag id:'s74' den text ändern zu:
+text:'Spiele sofort bis zu 2 zusätzliche Spezialkarten aus deiner Hand, falls vorhanden.'
+
+Die tatsächliche Freigabe von ZWEI weiteren Spezialkarten muss außerdem in
+der Spielserver-Logik (server.js bzw. etwaigen Updates) geändert werden.
+Diese Serveränderung ist hier NICHT enthalten, damit nichts versehentlich
+einen neueren Stand des Spiels überschreibt.

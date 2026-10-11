@@ -1,0 +1,99 @@
+--- server.js (vorher)
++++ server.js (V19)
+@@ -11,6 +11,8 @@
+ const app = express();
+ const server = http.createServer(app);
+ const io = new Server(server);
++// V18: bereits installierte Bandbreiten-Optimierung erhalten.
++require('./asset_bandwidth_optimization')(app);
+ app.use(express.static(path.join(__dirname, 'public')));
+ 
+ const accountAttemptLimits = new Map();
+@@ -1097,6 +1099,13 @@
+   const profileId=winnerSocket?.data?.profile?.id||champion.profileId;
+   if(profileStore && profileId){
+     profileStore.awardWin(profileId,r.matchId||crypto.randomUUID()).then(result=>{
++      // V19: Der Gewinn aktualisiert nicht nur PostgreSQL und den Browser,
++      // sondern auch das serverseitige Profil dieser laufenden Verbindung.
++      // Sonst gelten gerade gewonnene Rahmen/Items bis zum nächsten Login
++      // fälschlich noch als gesperrt und lassen sich nicht ausrüsten.
++      if(winnerSocket?.data?.profile && result?.profile && winnerSocket.data.profile.id===result.profile.id){
++        winnerSocket.data.profile=result.profile;
++      }
+       winnerSocket?.emit('profileData',{profile:result.profile});
+       winnerSocket?.emit('profileWinReward',result.reward);
+     }).catch(err=>{
+@@ -1614,12 +1623,20 @@
+     // Reflect locally only after checking ownership.
+     const owns=socket.data.profile.items.includes(a)&&(f===''||socket.data.profile.frames.includes(f));
+     if(!owns)return socket.emit('profileSaveError','Dieses Item oder dieser Rahmen ist noch gesperrt.');
+-    socket.data.profile={...socket.data.profile,accessory:a,frame:f};
+     try{
+       const result=await profileStore.choose(socket.data.profile.id,a,f);
++      // V19: Erst nach erfolgreichem Speichern als ausgerüstet bestätigen.
++      socket.data.profile={...socket.data.profile,accessory:result.accessory,frame:result.frame};
++      const r=getRoom(socket),p=r?.players.get(socket.id);
++      // Nur Kosmetik: Aktualisierungen sind auch im laufenden Spiel und im
++      // Ergebnisbildschirm erlaubt; sie ändern keine Karten/Artefakte/Phasen.
++      // Broadcast an den Raum aktualisiert Lobby UND Arena aller Mitspieler.
++      if(p && !p.isBot){
++        p.accessory=result.accessory;
++        p.frame=result.frame;
++        sendState(r);
++      }
+       socket.emit('profileSaved',{accessory:result.accessory,frame:result.frame});
+-      const r=getRoom(socket),p=r?.players.get(socket.id);
+-      if(p && canEditLobbyCosmetics(r,socket.id)){p.accessory=a;p.frame=f;sendState(r)}
+     }catch(err){console.error('[MLP] Kosmetik speichern:',err);socket.emit('profileSaveError','Item-/Rahmen-Auswahl konnte nicht gespeichert werden.');}
+   });
+   socket.on('createRoom',({name,accessory,frame})=>{
+
+--- public/style.css (vorher)
++++ public/style.css (V19)
+@@ -4251,3 +4251,46 @@
+     pointer-events:auto !important;
+   }
+ }
++
++
++/* === V19: Gewonnene Rahmen/Items in Lobby + Arena sichtbar (nur Darstellung) ===
++   Die bestehende item_-Regel setzt left/top VOR dem !important-inset-Shorthand.
++   Dadurch werden beide Positionen wieder zu auto. Diese spaeten Regeln setzen
++   left/top NACH inset und positionieren das Item stabil neben dem Namensschild.
++*/
++.nameplate[class*="item_"] > .decor {
++  inset:auto !important;
++  left:calc(100% - 4px) !important;
++  top:50% !important;
++  right:auto !important;
++  bottom:auto !important;
++  transform:translateY(-50%) !important;
++  display:grid !important;
++  place-items:center !important;
++  width:70px !important;
++  height:70px !important;
++  overflow:visible !important;
++  opacity:1 !important;
++  visibility:visible !important;
++}
++.nameplate[class*="item_"] > .decor > img {
++  display:block !important;
++  width:100% !important;
++  height:100% !important;
++  object-fit:contain !important;
++  opacity:1 !important;
++  visibility:visible !important;
++}
++.nameplate-small[class*="item_"] > .decor {
++  left:calc(100% - 3px) !important;
++  top:50% !important;
++  width:48px !important;
++  height:48px !important;
++}
++/* Rahmen dürfen nicht durch spätere Arena-/Lobby-Regeln verborgen werden. */
++.nameplate.has-frame > .name-frame {
++  display:block !important;
++  visibility:visible !important;
++  opacity:1 !important;
++  pointer-events:none !important;
++}
