@@ -1,35 +1,15 @@
-MLP BATTLE CARDS – SIL INS SPIEL V1
-===================================
+MLP Battle Cards - Animationsmenue + Sweetie Bot + Helements of Armory
 
-INHALT
-- cards.js
-- public/assets/cards_new/108_Sil.webp
-- ANLEITUNG.txt
-- KLEINER_PATCH.txt
+Inhalt:
+- Beiden originalen Animationen samt Audio, Bildern und CSS
+- Altes Animations-Testzentrum fuer Lobby und Arena reaktiviert
+- Sweetie Bot / Helements in der Vorschau-Liste aufgenommen
+- Keinerlei Veraenderung des Server-Spielzustands durch die Vorschau
 
-NEU
-- Sil ist jetzt als spielbare normale Karte eingetragen.
-- Werte:
-  Stärke 7
-  Geschwindigkeit 5
-  Magie 8
-  Energie 6
-- Karten-ID: 108
-- Kartenbild: public/assets/cards_new/108_Sil.webp
+INSTALLATION:
+1) ZIP entpacken.
+2) Den INHALT aus public/ an die entsprechenden Stellen im public/-Ordner deines GitHub-Repos hochladen. Insbesondere public/index.html und public/mlp_animation_center.js ersetzen. Bestehende andere Dateien behalten.
+3) Render-Deploy abwarten; Seite mit Strg+F5 aktualisieren.
+4) In Lobby oder Arena auf 'Animationen ansehen' druecken.
 
-SCHNELLER EINBAU
-1. ZIP entpacken.
-2. public/assets/cards_new/108_Sil.webp in dein GitHub-Repo hochladen.
-3. cards.js ersetzen ODER nur die kleine Änderung aus KLEINER_PATCH.txt
-   in deine aktuelle cards.js übernehmen.
-4. Committen / pushen.
-5. Render-Deploy abwarten.
-6. Browser mit Strg+F5 neu laden.
-
-WENN DU DIE HOST-KARTENGALERIE SCHON HAST
-- Dann erscheint Sil dort automatisch mit Bild und Werten,
-  sobald cards.js + die Bilddatei im Repo sind.
-
-HINWEIS
-- Dieses Paket ändert absichtlich nur die Karte selbst.
-- Würfel, Kristall, Artefakte, Special-Hover usw. werden dadurch NICHT überschrieben.
+WICHTIG: Die beiden Special-Effekte sind als sichere VORSCHAU integriert. Die tatsaechliche Spezialkartenvergabe und Wertveraenderung waehrend eines echten Matches verlangen Aenderungen an der serverseitigen Regel-/Eventlogik; das macht dieses Patch bewusst NICHT und behauptet nicht, dass die Karten nun im Ziehstapel sind.

@@ -8,7 +8,9 @@
     {id:'copy',title:'Zauberkopierer',module:'ArtifactMagicFX',desc:'Ritual erstellt eine Artefaktkopie'},
     {id:'swarm',title:'Changeling · Schwarmruf',module:'ChangelingSwarmFX',desc:'Erst Dunkelheit, dann Augen und Changeling-Schwarm'},
     {id:'wind',title:'Windchaos',module:'WindchaosFX',desc:'Ein mächtiger Tornado'},
-    {id:'cockatrice',title:'Cockatrice',module:'CockatriceEffect',desc:'Eine Karte wird versteinert'}
+    {id:'cockatrice',title:'Cockatrice',module:'CockatriceEffect',desc:'Eine Karte wird versteinert'},
+    {id:'sweetie',title:'Sweetie Bot',module:'SpecialPreview',desc:'Voiceline, Schüsse, Bildschirmrisse · 8 → 4'},
+    {id:'helements',title:'Helements of Armory',module:'SpecialPreview',desc:'Erdbeben, Steinregen, Furz · Artefakt erscheint'}
   ];
   const doc=document;
   let overlay=null, activeId=null, previewTimer=null;
@@ -25,6 +27,13 @@
   function doPlay(id){
     const f=definitions.find(d=>d.id===id);if(!f)return;
     if(!isAvailable(f)){state('Nicht verfügbar – Effekt-Skript wurde nicht geladen');return;}
+    if(id==='sweetie'||id==='helements'){
+      stop();activeId=id;
+      overlay?.classList.add('mlp-anim-preview-playing');
+      Promise.resolve(window.SpecialPreview.play(id)).catch(err=>state('Vorschaufehler: '+err.message))
+        .finally(()=>{overlay?.classList.remove('mlp-anim-preview-playing');});
+      return;
+    }
     stop();activeId=id;
     state('Abgespielt: '+f.title+' · Vorschau ohne Einfluss auf das Spiel');
     // Bedienfenster komplett ausblenden, damit die bestehenden Vollbild-Effekte sichtbar sind.
