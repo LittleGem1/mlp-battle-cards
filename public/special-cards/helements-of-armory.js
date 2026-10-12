@@ -40,7 +40,7 @@ function spawnCrack(layer){
   removeLater(el,2050);
 }
 
-function makeCloud(layer, center){
+function makeCloud(layer, center, duration=1500){
   const cloud=document.createElement('div'); cloud.className='hoa-cloud'; cloud.style.left=`${center.x}px`; cloud.style.top=`${center.y}px`;
   cloud.innerHTML='<i></i><i></i><i></i>';
   layer.appendChild(cloud);
@@ -49,8 +49,8 @@ function makeCloud(layer, center){
     {opacity:1, transform:'translate(-50%,-50%) scale(1.05)', offset:.35},
     {opacity:.92, transform:'translate(-50%,-50%) scale(1)', offset:.6},
     {opacity:0, transform:'translate(-50%,-60%) scale(1.26)'}
-  ],{duration:1500,easing:'cubic-bezier(.17,.84,.44,1)'});
-  removeLater(cloud,1600);
+  ],{duration,easing:'cubic-bezier(.17,.84,.44,1)'});
+  removeLater(cloud,duration+100);
 }
 
 function makeArtifactCard(layer, {artifactName='Zufalls-Artefakt', artifactIcon='✦', artifactImageUrl=''}){
@@ -150,7 +150,7 @@ export async function playHelementsOfArmoryAnimation({
     const source=point(sourceElement,.5,.5);
     const deck=point(deckElement,.5,.5);
     const burstCenter={x:(source.x+deck.x)/2, y:Math.min(source.y, deck.y)-50};
-    makeCloud(layer, burstCenter);
+    makeCloud(layer, burstCenter, 3500);
     // Originalvorschau: Artefakt erscheint bei 6.32 Sekunden.
     await until(6.32);
 
