@@ -1,6 +1,6 @@
 // Nur lokale Testanimationen. Keine Socket-Events oder serverseitige Kartenänderungen.
 import {playSweetieBotAnimation} from './sweetie-bot.js';
-import {playHelementsOfArmoryAnimation} from './helements-of-armory.js?v=hoa-cloud-20261012-6';
+import {playHelementsOfArmoryAnimation} from './helements-of-armory.js?v=hoa-readable-20261012-7';
 export async function playSpecialPreview(id){
  const old=document.getElementById('mlp-special-preview-stage');if(old)old.remove();
  const stage=document.createElement('div');stage.id='mlp-special-preview-stage';
