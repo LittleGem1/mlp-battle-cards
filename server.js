@@ -31,7 +31,7 @@ const RECONNECT_GRACE_MS = 120000; // Reserve a disconnected player's seat for t
 const ROUND_WATCHDOG_PERIOD_MS = 2500;
 
 
-// Arena-Auswahl: Host kann eine feste Arena oder Zufall wählen; Einstellung bleibt bestehen, bis sie geändert wird.
+// Test-Einstellung der Arena: Nur Host; nur die naechste Partie.
 const ARENA_IDS = Object.freeze(['jade_palace','whispering_forest','steampunk_works','witchs_table']);
 function arenaForNextMatch(r){
   return ARENA_IDS.includes(r.arenaSelection)
@@ -169,6 +169,15 @@ function drawSpecialOnly(r){
   if(idx<0)return null;
   return r.rewardDeck.splice(idx,1)[0];
 }
+
+function drawEquivalentReplacement(r,discardedCardId){
+  const discarded=byId[discardedCardId];
+  if(discarded?.type==='special'){
+    return drawSpecialOnly(r) || drawNormal(r,1)[0] || null;
+  }
+  return drawNormal(r,1)[0] || null;
+}
+
 function discardCard(r,id){
   const c=byId[id];
   if(!c)return;
@@ -615,6 +624,22 @@ function botApplySpecial(r,p,c){
     const t=targetAny();if(t)markForcedLose(r,t.id,p.id,'Lightning Dust','lightning');
   }else if(effect==='gilda'){
     const t=targetHand();if(t&&t.hand.length){const id=t.hand[Math.floor(Math.random()*t.hand.length)];t.hand.splice(t.hand.indexOf(id),1);p.hand.push(id);emitImpact(r,'steal',[t.id,p.id],`${p.name} nimmt eine zufällige Karte von ${t.name}.`);}
+  }else if(effect==='sphinx'){
+    const normals=p.hand.filter(id=>byId[id]?.type==='normal').sort((a,b)=>(byId[a]?.[r.category]||0)-(byId[b]?.[r.category]||0));
+    const specials=p.hand.filter(id=>byId[id]?.type==='special');
+    let chosen=normals.filter(id=>(byId[id]?.[r.category]||0)<=5).slice(0,4);
+    if(!chosen.length)chosen=normals.slice(0,Math.min(2,normals.length));
+    if(chosen.length<2 && specials.length && p.hand.length>3)chosen=[...chosen,...specials.slice(0,Math.min(4-chosen.length,1))];
+    chosen=[...new Set(chosen)].slice(0,4);
+    const drawn=[];
+    for(const id of chosen){
+      const idx=p.hand.indexOf(id);
+      if(idx<0)continue;
+      p.hand.splice(idx,1);discardCard(r,id);
+      const replacement=drawEquivalentReplacement(r,id);
+      if(replacement)drawn.push(replacement);
+    }
+    if(drawn.length)p.hand.push(...drawn);
   }
 }
 function botUsableSpecials(r,p){
@@ -963,7 +988,7 @@ function requiredPlayers(r){ return (r.roundPlayerIds||[]).map(id=>r.players.get
 function resetToLobby(r){
   clearTimers(r);
   clearRoomSpecialChoices(r);
-  r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;
+  r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;r.arenaSelection='random';
   r.round=0;r.played={};r.dice={};r.tieIds=[];r.roundBuff={};r.roundPlayerIds=[];
   r.pendingRoundWinner=null;
   r.postGameReady=new Set();r.forceNextCategoryDifferent=false;r.forcedNextCategory=null;resetRoundFX(r);
@@ -1138,29 +1163,6 @@ function handleSelectionTimeout(r){
   r.selectionTimer=null;r.selectionDeadline=null;
   const req=requiredPlayers(r),late=req.filter(p=>!p.selected);
   if(!late.length){maybeEvaluate(r);return;}
-
-  // Zwei-Spieler-Duell: Wer nicht rechtzeitig legt, verliert die Runde,
-  // sofern der Gegenspieler seine Karte fristgerecht gelegt hat.
-  const duelPlayers=requiredPlayers(r);
-  const winner=duelPlayers.length===2 && late.length===1
-    ? duelPlayers.find(p=>p.selected && p.id!==late[0].id) : null;
-  if(winner && r.played[winner.id]){
-    r.phase='reveal';
-    r.revealOutcome={round:r.round,kind:'winner',winnerId:winner.id,reason:'opponent-timeout'};
-    const played=r.played[winner.id];
-    const cardId=playedCardIds(played)[0];
-    io.to(r.code).emit('notice',`${late[0].name} hat keine Karte gelegt. ${winner.name} gewinnt die Runde!`);
-    io.to(r.code).emit('reveal',{
-      round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],
-      entries:cardId&&byId[cardId]?[{pid:winner.id,cardId,card:byId[cardId],name:winner.name,value:0,base:0,bonus:0,cards:playedCardIds(played),forcedLose:false,skipped:false}]:[]
-    });
-    sendState(r);
-    const match=r.matchId,round=r.round;
-    setTimeout(()=>{
-      if(rooms.has(r.code)&&r.matchId===match&&r.round===round&&r.phase==='reveal')settleRound(r,winner.id);
-    },2100);
-    return;
-  }
 
   for(const [pid,entry] of Object.entries(r.played)){
     const p=r.players.get(pid);
@@ -1434,6 +1436,8 @@ function beginMatch(r){
   if(!r||r.phase!=='ready'||r.players.size<2)return;
   clearTimers(r);
   if(!r.arenaId)r.arenaId=arenaForNextMatch(r);
+  // Eine Test-Auswahl wird nach genau einem gestarteten Match wieder aufgehoben.
+  r.arenaSelection='random';
   const ps=roomPlayers(r);
   r.matchId=crypto.randomUUID();
   r.lastArtifactOfferRound=0;
@@ -1789,7 +1793,7 @@ io.on('connection',socket=>{
       if(old.round!==r.round||old.room!==r.code)clearSpecialChoice(socket,r,true);
       else return socket.emit('errorMsg','Beende zuerst die aktuelle Spezialkarten-Auswahl oder schließe das Fenster.');
     }
-    if(!mayUseSpecial(p))return socket.emit('errorMsg','Du kannst in dieser Runde nur 1 Spezialkarte einsetzen. Changeling erlaubt zwei zusätzliche.');
+    if(!mayUseSpecial(p))return socket.emit('errorMsg','Du kannst in dieser Runde nur 1 Spezialkarte einsetzen. Changeling erlaubt eine zusätzliche.');
 
     let effectCard=source;
 
@@ -1870,9 +1874,8 @@ io.on('connection',socket=>{
       socket.data.pendingSpecial={room:r.code,round:r.round,action:'diamonddogs',sourceCardId:source.id,choices:d};
       socket.emit('specialCardRequest',{title:'Diamond Dogs: Behalte 1 der 2 Karten',cards:d.map(id=>byId[id]).filter(Boolean)});
     }else if(effect==='changeling'){
-      p.specialExtra=(p.specialExtra||0)+2;
-      io.to(r.code).emit('changelingSwarmAnimation',{casterId:p.id,casterName:p.name,duration:4300,extra:2});
-      socket.emit('specialDone',{text:'Du darfst diese Runde noch 2 zusätzliche Spezialkarten spielen.'});
+      p.specialExtra=(p.specialExtra||0)+1;
+      socket.emit('specialDone',{text:'Du darfst diese Runde noch 1 zusätzliche Spezialkarte spielen.'});
     }else if(effect==='nightmare'){
       r.forcedNextCategory='magic';
       socket.emit('specialDone',{text:'Die nächste Runde wird automatisch Magie.'});
@@ -1937,6 +1940,20 @@ io.on('connection',socket=>{
       requestTarget(socket,r,p,source,'lightningdust','any','Lightning Dust: Wer verliert diese Runde automatisch?');
     }else if(effect==='gilda'){
       requestTarget(socket,r,p,source,'gilda','hand','Gilda: Von welchem Gegner willst du eine zufällige Karte nehmen?');
+    }else if(effect==='sphinx'){
+      const choices=p.hand.map(id=>byId[id]).filter(Boolean);
+      if(!choices.length){
+        socket.emit('specialDone',{text:'Keine weitere Handkarte zum Austauschen verfügbar.'});
+      }else{
+        socket.data.pendingSpecial={room:r.code,round:r.round,action:'sphinx',sourceCardId:source.id,choices:choices.map(c=>c.id)};
+        socket.emit('specialMultiCardRequest',{
+          title:'Sphinx: Wähle bis zu 4 Handkarten zum Austauschen',
+          description:'Lege bis zu 4 Karten aus deiner Hand ab und ziehe genauso viele neue Karten nach.',
+          cards:choices,
+          maxSelect:Math.min(4,choices.length),
+          confirmLabel:'Karten austauschen'
+        });
+      }
     }
 
     sendState(r);
@@ -2100,6 +2117,36 @@ io.on('connection',socket=>{
       socket.emit('specialDone',{text:`${byId[cardId]?.name||'Karte'} aus dem Ablagestapel zurückgeholt.`});
       sendState(r);return;
     }
+  });
+
+
+  socket.on('specialMultiCardChoice',({cardIds})=>{
+    const r=getRoom(socket),pending=pendingForCurrentSelection(socket,r),p=r?.players.get(socket.id);
+    if(!pending||!p)return;
+    if(pending.action!=='sphinx')return;
+    const raw=Array.isArray(cardIds)?cardIds:[];
+    const unique=[...new Set(raw)].slice(0,4);
+    const allowed=new Set(pending.choices||[]);
+    if(unique.some(id=>!allowed.has(id)||!p.hand.includes(id))){
+      return socket.emit('errorMsg','Eine der gewählten Karten ist nicht mehr verfügbar.');
+    }
+    socket.data.pendingSpecial=null;
+    if(!unique.length){
+      socket.emit('specialDone',{text:'Sphinx wurde eingesetzt, aber es wurden keine Karten ausgetauscht.'});
+      sendState(r);return;
+    }
+    const drawn=[];
+    for(const id of unique){
+      const idx=p.hand.indexOf(id);
+      if(idx<0)continue;
+      p.hand.splice(idx,1);
+      discardCard(r,id);
+      const replacement=drawEquivalentReplacement(r,id);
+      if(replacement)drawn.push(replacement);
+    }
+    if(drawn.length)p.hand.push(...drawn);
+    socket.emit('specialDone',{text:`Sphinx: ${unique.length} Karte(n) abgelegt und ${drawn.length} neue Karte(n) gezogen.`});
+    sendState(r);maybeEvaluate(r);
   });
 
   socket.on('forcedDiscardChoice',({cardId})=>{

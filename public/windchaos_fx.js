@@ -69,7 +69,30 @@
       delay:Math.min(.23,idx*.012),angle:random(-15,15),speed:random(1.3,2.1)};
   }
 
+  function startWindAudio(isPreview){
+    let audio=null;
+    try{
+      const src=isPreview?'preview_assets/windchaos_tornado.mp3':'/assets/sounds/windchaos_tornado.mp3?v=2';
+      audio=new Audio(src);
+      audio.preload='auto';
+      audio.volume=.92;
+      const kick=()=>{
+        const promise=audio.play();
+        if(promise&&typeof promise.catch==='function'){
+          promise.catch(()=>{
+            const retry=()=>{audio.play().catch(()=>{});window.removeEventListener('pointerdown',retry,true);};
+            window.addEventListener('pointerdown',retry,true);
+          });
+        }
+      };
+      kick();
+      oldAudio=audio;
+    }catch(err){}
+    return audio;
+  }
+
   function play({casterId=null,isPreview=false,onComplete=null}={}){
+
     if(running)return;
     const arena=RENDER.querySelector('#game .arena')||RENDER.querySelector('.preview-arena')||RENDER.body;
     const box=arena.getBoundingClientRect();
@@ -93,11 +116,7 @@
         const f=addSnapshot(cardLayer,im,j);f.x=(.12+j*.11)*innerWidth;f.y=innerHeight*.60;flyers.push(f);im.remove();
       }
     }
-    let audio=null;
-    try{
-      audio=new Audio(isPreview?'preview_assets/windchaos_tornado.mp3':'/assets/sounds/windchaos_tornado.mp3');
-      audio.volume=.83;audio.play().catch(()=>{});oldAudio=audio;
-    }catch(err){}
+    const audio=startWindAudio(isPreview);
     const ctx=canvas.getContext('2d');
     let start=performance.now(),raf=0,disposed=false;
     function render(now){

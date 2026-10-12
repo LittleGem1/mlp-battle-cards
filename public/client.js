@@ -2218,6 +2218,7 @@ socket.on('specialChoicesCancelled',dismissOldSpecialChoices);
 socket.on('specialTargetRequest',e=>showPlayerChoices(e.title,e.targets,id=>socket.emit('specialTargetChoice',{targetId:id})));
 socket.on('specialCategoryRequest',e=>showCategoryChoices(e.title,e.categories,id=>socket.emit('specialCategoryChoice',{category:id})));
 socket.on('specialCardRequest',e=>showChoices(e.title,e.cards,c=>socket.emit('specialCardChoice',{cardId:c.id})));
+socket.on('specialMultiCardRequest',e=>showMultiChoices(e));
 socket.on('forcedDiscardRequest',e=>showChoices(e.title,e.cards,c=>socket.emit('forcedDiscardChoice',{cardId:c.id})));
 socket.on('extraNormalNeeded',e=>toast(`🌲 ${e.source}: Lege noch ${e.remaining} normale Karte${e.remaining===1?'':'n'}.`));
 socket.on('bonusDraw',e=>{cardShuffleSound();toast(`🐲 ${e.source}: Du erhältst 1 zusätzliche normale Karte.`)});
@@ -2267,6 +2268,67 @@ socket.on('specialImpact',e=>{
 
 socket.on('flutterChoices',e=>showChoices('Fluttershy: Welche Karte möchtest du behalten?',e.cards,c=>socket.emit('flutterKeep',{cardId:c.id})));
 socket.on('rarityChoose',e=>showChoices('Rarity: Welche Karte möchtest du austauschen?',e.cards,c=>socket.emit('raritySwap',{cardId:c.id})));
+
+function showMultiChoices(req){
+  const d=$('#choiceDialog');
+  if(!d.dataset.cancelHandler){
+    d.dataset.cancelHandler='1';
+    d.addEventListener('close',()=>{
+      if(d.dataset.selectionResolved!=='1')socket.emit('cancelSpecialChoice');
+      d.dataset.selectionResolved='0';
+    });
+  }
+  d.dataset.selectionResolved='0';
+  $('#choiceTitle').textContent=req?.title||'Wähle Karten';
+  const g=$('#choiceCards');g.innerHTML='';
+  const form=d.querySelector('form');
+  let actions=d.querySelector('.choice-actions');
+  if(!actions){
+    actions=document.createElement('div');
+    actions.className='choice-actions';
+    form.append(actions);
+  }
+  actions.innerHTML='';
+  const description=document.createElement('p');
+  description.className='choice-help';
+  description.textContent=req?.description || 'Wähle bis zu 4 Karten.';
+  g.append(description);
+  const selected=new Set();
+  const max=Math.max(1,Math.min(Number(req?.maxSelect)||4,4));
+  const cards=req?.cards||[];
+  cards.forEach(c=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='choice-pick';
+    b.innerHTML=`<img src="${c.image}" alt="${escapeHtml(c.name)}"><span>${escapeHtml(c.name)}</span>`;
+    b.addEventListener('click',()=>{
+      if(selected.has(c.id))selected.delete(c.id);
+      else {
+        if(selected.size>=max)return toast(`Du kannst höchstens ${max} Karten auswählen.`);
+        selected.add(c.id);
+      }
+      b.classList.toggle('selected',selected.has(c.id));
+      info.textContent=`${selected.size} / ${max} ausgewählt`;
+      confirm.disabled=false;
+    });
+    g.append(b);
+  });
+  const info=document.createElement('div');
+  info.className='choice-selection-info';
+  info.textContent=`0 / ${max} ausgewählt`;
+  actions.append(info);
+  const cancel=document.createElement('button');
+  cancel.type='button'; cancel.className='secondary'; cancel.textContent='Abbrechen';
+  cancel.addEventListener('click',()=>{d.dataset.selectionResolved='0';d.close();});
+  actions.append(cancel);
+  const confirm=document.createElement('button');
+  confirm.type='button'; confirm.className='primary'; confirm.textContent=req?.confirmLabel||'Bestätigen';
+  confirm.addEventListener('click',()=>{d.dataset.selectionResolved='1';d.close();socket.emit('specialMultiCardChoice',{cardIds:[...selected]})});
+  actions.append(confirm);
+  if(cards.length)d.showModal();
+  else {socket.emit('cancelSpecialChoice');toast('Keine Karte für diese Auswahl verfügbar. Du kannst die Runde fortsetzen.');}
+}
+
 function showChoices(title,cards,cb){
   const d=$('#choiceDialog');
   if(!d.dataset.cancelHandler){
@@ -2279,6 +2341,8 @@ function showChoices(title,cards,cb){
   d.dataset.selectionResolved='0';
   $('#choiceTitle').textContent=title;
   const g=$('#choiceCards');g.innerHTML='';
+  const actions=d.querySelector('.choice-actions');
+  if(actions)actions.innerHTML='';
   (cards||[]).forEach(c=>{
     const b=document.createElement('button');b.type='button';
     b.innerHTML=`<img src="${c.image}" alt="${escapeHtml(c.name)}">`;

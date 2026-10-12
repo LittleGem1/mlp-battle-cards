@@ -100,7 +100,7 @@ const specials = [
   {id:'s71',type:'special',name:'Cozy Glow',effect:'cozy',text:'Du wählst einen Spieler, klaust ihm zufällig 1 Karte und tauschst sie mit 1 gewählten Karte aus deiner Hand.',useIcon:'🎀',useLabel:'Falsches Lächeln',image:'/assets/specials_new/71_Cozy_Glow.png'},
   {id:'s72',type:'special',name:'Sludge',effect:'sludge',text:'Wähle einen Gegner und bestimme selbst 1 Karte aus seiner Hand, die er ablegen muss.',useIcon:'🐉',useLabel:'Karte bestimmen',image:'/assets/specials_new/72_Sludge.png'},
   {id:'s73',type:'special',name:'Diamond Dogs',effect:'diamonddogs',text:'Ziehe 2 normale Karten und behalte 1 davon.',useIcon:'💎',useLabel:'Graben nach Schätzen',image:'/assets/specials_new/73_Diamond_Dogs.png'},
-  {id:'s74',type:'special',name:'Changeling',effect:'changeling',text:'Du darfst in dieser Runde sofort 2 weitere Spezialkarten einsetzen.',useIcon:'🪽',useLabel:'Schwarmruf',image:'/assets/specials_new/74_Changeling_NEU_20261011.png'},
+  {id:'s74',type:'special',name:'Changeling',effect:'changeling',text:'Du darfst in dieser Runde sofort 1 weitere Spezialkarte einsetzen.',useIcon:'🪽',useLabel:'Schwarmruf',image:'/assets/specials_new/74_Changeling.png'},
   {id:'s75',type:'special',name:'Nightmare Moon',effect:'nightmare',text:'Die Kategorie der nächsten Runde ist automatisch Magie.',useIcon:'🌙',useLabel:'Ewige Nacht',image:'/assets/specials_new/75_Nightmare_Moon.png'},
   {id:'s76',type:'special',name:'Hydra',effect:'hydra',text:'Wenn diese Karte gespielt wird, kannst du deine gesamten Handkarten ablegen und neu ziehen.',useIcon:'🐲',useLabel:'Viele Köpfe',image:'/assets/specials_new/76_Hydra.png'},
   {id:'s77',type:'special',name:'Bugbear',effect:'bugbear',text:'Ein Gegner deiner Wahl setzt diese Runde aus.',useIcon:'🐝',useLabel:'Runde aussetzen',image:'/assets/specials_new/77_Bugbear.png'},
@@ -124,6 +124,7 @@ const specials = [
   {id:'s95',type:'special',name:'Diabolo – Schattengestalt',effect:'shadowform',text:'Wähle einen Spieler, der ein Artefakt ablegen muss.',useIcon:'🌑',useLabel:'Schattengestalt',image:'/assets/specials_new/95_Diabolo_Schattengestalt.webp'},
   {id:'s96',type:'special',name:'Flawless Sparkle Moon – Zauberkopierer',effect:'artifactcopy',text:'Wähle einen Gegner und eines seiner Artefakte, das du für dich kopierst.',useIcon:'🪄',useLabel:'Zauberkopierer',image:'/assets/specials_new/96_Flawless_Sparkle_Moon_Zauberkopierer.webp'},
   {id:'s97',type:'special',name:'Evil Sci Twi – Zauberklau',effect:'artifactsteal',text:'Wähle einen Gegner und eines seiner Artefakte, das du ihm stiehlst.',useIcon:'✨',useLabel:'Zauberklau',image:'/assets/specials_new/97_Evil_Sci_Twi_Zauberklau.webp'},
+  {id:'s98',type:'special',name:'Sphinx',effect:'sphinx',text:'Lege bis zu 4 Karten deiner Wahl aus deiner Hand ab und ziehe die gleiche Anzahl neuer Karten von deinem Deck nach.',useIcon:'🔄',useLabel:'Kartenwechsel',image:'/assets/specials_new/98_Sphinx_Kartenwechsel_20261012.png'},
 ];
 const artifacts = [
   {id:'a01',type:'artifact',artifactKey:'elements',name:'Elemente der Harmonie',image:'/assets/artifacts/01_Elemente_der_Harmonie.png'},
