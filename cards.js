@@ -73,7 +73,10 @@ const normal = [
   [105,'Lyra',6,7,8,6],
   [106,'Ruby Blood',3,8,8,5],
   [107,'Becky Bat',6,8,3,6],
-  [108,'Sil',7,5,8,6]
+  [108,'Sil',7,5,8,6],
+  [109,'Dinky Doo',5,7,4,9],
+  [110,'Cheese Sandwich',7,8,4,9],
+  [111,'Sassy Saddles',6,6,8,7]
 ].map(([n,name,strength,speed,magic,energy]) => ({
   id:`n${String(n).padStart(2,'0')}`,
   type:'normal',

@@ -1,0 +1,11 @@
+MLP Battle Cards – 3 neue normale Karten
+
+Inhalt: cards.js und public/assets/cards_new/ mit drei Bildern.
+
+GitHub: Im Hauptverzeichnis des Repositories cards.js ersetzen und den Ordner public/assets/cards_new mit den drei WEBP-Dateien ergänzen. Vorhandene Dateien nicht löschen.
+
+Neue Karten: Dinky Doo (5/7/4/9), Cheese Sandwich (7/8/4/9), Sassy Saddles (6/6/8/7). Reihenfolge: Stärke, Geschwindigkeit, Magie, Energie.
+
+Der Server fügt die Karten automatisch dem normalen Ziehstapel hinzu. Die Kartengalerie liest sie ebenfalls aus cards.js.
+
+Nach Hochladen auf GitHub Render-Deployment abwarten; neue Karten erscheinen in frisch gestarteten Spielrunden.
