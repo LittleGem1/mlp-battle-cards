@@ -67,7 +67,7 @@
       stage.appendChild(mote);
     }
     document.body.appendChild(overlay); active=overlay; document.body.classList.add('changeling-swarm-running');
-    try{ audio=new Audio('/assets/sounds/29_wegwirbeln.mp3?v=20261012-fx1'); audio.volume=0.9; audio.play().catch(()=>{});}catch(e){}
+    try{ audio=new Audio('/assets/sounds/changeling_swarmruf_mix.mp3?v=wunsch-restore-20261012'); audio.volume=0.9; audio.play().catch(()=>{});}catch(e){}
     requestAnimationFrame(()=>overlay.classList.add('show'));
     later(1600,()=>overlay.classList.add('reveal-on'));
     later(2140,()=>overlay.classList.add('bonus-on'));
