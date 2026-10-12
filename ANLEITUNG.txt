@@ -1,12 +1,10 @@
-NEUE ZWEI SPECIALS - SWEETIE BOT UND HELEMENTS OF ARMORY
+HELEMENTS OF ARMORY + SWEETIE BOT – FIX V2
 
-1. ZIP im Hauptordner von mlp-battle-cards entpacken.
-2. Dort python INSTALLIEREN.py ausfuehren.
-3. Aktualisierte cards.js, server.js und public/ bei GitHub hochladen.
-4. Render neu bereitstellen.
+1. ZIP im Hauptordner deines mlp-battle-cards-Spiels entpacken.
+2. Dort INSTALLIEREN.py starten (Python muss installiert sein).
+3. Veraenderte cards.js, server.js und public-Ordner in GitHub uebernehmen.
+4. Render neu deployen.
 
-Animationen: Sweetie Bot - Erdbeben und fallende Steine, danach Furzsound; Helements - sechs synchron pulsierende Elementeffekte mit gemeinsamem Klang.
+Helements erhaelt ein fehlendes zufaelliges Artefakt (serverseitig). 6 Elementtoene sind in einer WAV synchron zusammengefuehrt und spielen gleichzeitig. Keine sequentiellen Sounds. Sweetie Bot behaelt Erdbeben, Steine und Furz.
 
-WICHTIG: Da die alten Originalbilder/Original-Sounds nicht im Repo lagen, sind hier NEU gestaltete SVG-Karten und synthetische Sounds enthalten. Die neuen Spezial-Funktionen sind vorlaeufig 1 bzw. 2 Karten nachziehen.
-
-Das Installationsskript sichert die Originaldateien mit Endung .vor_sweetiebot_backup.
+Hinweis: Vorhandene Kartengrafiken aus vorheriger ZIP sind Ersatz-Illustrationen. Nicht live auf Render getestet.
