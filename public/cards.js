@@ -119,6 +119,8 @@ const specials = [
   {id:'s91',type:'special',name:'Lightning Dust',effect:'lightningdust',text:'Wähle einen Gegner, der diese Runde automatisch verliert.',useIcon:'⚡',useLabel:'Rücksichtsloser Angriff',image:'/assets/specials_new/91_Lightning_Dust.png'},
   {id:'s92',type:'special',name:'Gilda Griffon',effect:'gilda',text:'Wähle einen Gegner und nimm zufällig 1 Karte aus seiner Hand.',useIcon:'🦅',useLabel:'Krallehieb',image:'/assets/specials_new/92_Gilda_Griffon.png'},
   {id:'s93',type:'special',name:'Cockatrice',effect:'cockatrice',text:'Versteinert, wähle einen Gegner aus dessen Karte diese Runde aussetzt.',useIcon:'🪨',useLabel:'Versteinert',image:'/assets/specials_new/93_Cockatrice.png'},
+  {id:'s99',type:'special',name:'Sweetie Bot',effect:'sweetiebot',text:'Wähle einen Gegner mit bereits gelegter Karte: Sein Wert in der aktiven Kategorie wird für diese Runde halbiert (aufgerundet).',useIcon:'🤖',useLabel:'Wert halbieren',image:'/assets/sweetie-bot.png'},
+  {id:'s100',type:'special',name:'Helements of Armory',effect:'helements',text:'Erhalte 1 zufälliges Artefakt, das dir noch fehlt.',useIcon:'🪨',useLabel:'Fehlendes Artefakt',image:'/assets/helements-of-armory.png'},
   {id:'s98',type:'special',name:'Sphinx',effect:'sphinx',text:'Lege bis zu 4 Karten deiner Wahl aus deiner Hand ab und ziehe die gleiche Anzahl neuer Karten von deinem Deck nach.',useIcon:'🔄',useLabel:'Kartenwechsel',image:'/assets/specials_new/98_Sphinx_Kartenwechsel_20261012.png'},
 ];
 const artifacts = [
