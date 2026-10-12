@@ -1498,6 +1498,7 @@ function showSpecialBurst(e){
   setTimeout(()=>overlay.remove(),2500);
 }
 socket.on('specialPlayed',showSpecialBurst);
+socket.on('mlpSpecialActivated',e=>{window.MLPRealSpecialEffects?.handle(e);});
 
 let roundIntroTimer=null;
 function categorySound(cat){
