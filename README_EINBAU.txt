@@ -70,3 +70,25 @@ TEST DER SERVER-REGELN
 Für einen tatsächlich spielfertigen Repo-Patch brauche ich den aktuellen Repo-ZIP-
 Stand (z.B. GitHub: Code -> Download ZIP), damit deine echten Eventnamen,
 Round-State-Daten, Goldkarten/Artefakte und Special-Auswahl angeschlossen werden.
+
+NEU: ARENA-ANIMATIONSMENÜ
+========================
+Dateien: public/special-cards/animation-gallery.js, animation-gallery.css
+Separate Testseite: /animationen-test.html
+
+WICHTIG: Den Button in deiner tatsächlichen Arena EINMAL einbinden, z.B.
+  <link rel="stylesheet" href="/special-cards/sweetie-bot.css">
+  <link rel="stylesheet" href="/special-cards/helements-of-armory.css">
+  <link rel="stylesheet" href="/special-cards/animation-gallery.css">
+  <script type="module">
+    import {mountArenaAnimationGallery} from '/special-cards/animation-gallery.js';
+    mountArenaAnimationGallery({onlyWhenArenaVisible:true,arenaSelector:'.arena'});
+  </script>
+
+Wenn dein echter Arenacontainer nicht '.arena' heißt, passe arenaSelector an.
+Bei dynamischen Seitenübergängen mount/unmount passend an die Arena binden.
+Weitere Animationen: addAnimationPreview(name, async ()=>{ ... }).
+Das Menü ist lokal und sendet KEINE WebSocket/Socket.IO-Ereignisse.
+Es zeigt Sweetie Bot und Helements of Armory mit separaten Testkarten und Testwerten.
+Audio sollte im Browser nach dem Button-Klick freigeschaltet sein.
+Die tatsächliche Spieleinbindung ist ohne den aktuellen Repo-Code noch nicht umgesetzt.
