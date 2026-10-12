@@ -29,7 +29,7 @@
     {
       try{
         const sound=new Audio('/assets/sounds/diabolo_shadowform.mp3?v=diabolo-v18');
-        sound.volume=0.64;
+        sound.volume=0.64*Math.max(0,Math.min(1,Number(localStorage.getItem('mlp_sfx_volume')??.55)));
         sound.play().catch(()=>{});
       }catch(_err){}
     }
