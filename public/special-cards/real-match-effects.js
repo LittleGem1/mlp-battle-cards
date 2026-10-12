@@ -1,11 +1,10 @@
 // Real-match effects. Server state is authoritative; animations only illustrate confirmed events.
 import {playSweetieBotAnimation} from './sweetie-bot.js';
 import {playHelementsOfArmoryAnimation} from './helements-of-armory.js';
-const socket=window.socket || (typeof io==='function'?null:null);
 function anchor(){return document.querySelector('#game')||document.body;}
 function sourceImage(src){
  const img=document.createElement('img');
- img.src=src;img.alt='Spezialkarte';img.style.cssText='position:fixed;left:18%;top:40%;width:145px;max-height:260px;object-fit:contain;z-index:1000001;pointer-events:none';
+ img.src=src;img.alt='Spezialkarte';img.style.cssText='position:fixed;left:18%;top:40%;width:145px;max-height:260px;object-fit:contain;z-index:99998;pointer-events:none';
  document.body.append(img);return img;
 }
 function destination(playerId){
