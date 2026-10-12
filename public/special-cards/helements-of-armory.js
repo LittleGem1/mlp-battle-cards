@@ -115,45 +115,40 @@ export async function playHelementsOfArmoryAnimation({
   animate(dust,[{opacity:0},{opacity:.95,offset:.5},{opacity:.55,offset:.86},{opacity:0}],{duration:6200,easing:'linear'});
 
   try {
-    await playMaybe(rumble, muted);
-    const start=performance.now();
-    stoneTimer=setInterval(()=>{
-      for(let i=0;i<2+Math.floor(Math.random()*4);i++) makeStone(layer, Math.random()*window.innerWidth, .8+Math.random()*1.35, Math.random()*360);
-      if(Math.random()<.6) spawnCrack(layer);
-    }, 180);
+    // Beide vorhandenen Tonspuren starten im selben Moment und überlagern sich.
+    // Der Furz steckt bereits in der zweiten Datei und wird NICHT erneut abgespielt.
+    const playToEnd = audio => new Promise(resolve => {
+      let finished=false;
+      const finish=()=>{
+        if(finished)return;
+        finished=true;
+        clearTimeout(timeout);
+        audio.removeEventListener('ended',finish);
+        audio.removeEventListener('error',finish);
+        resolve();
+      };
+      const timeout=setTimeout(finish,25000);
+      audio.addEventListener('ended',finish);
+      audio.addEventListener('error',finish);
+      audio.play().catch(finish);
+    });
+    const soundtrackDone = muted
+      ? wait(5900)
+      : Promise.all([playToEnd(rumble),playToEnd(fart)]);
 
-    // Earthquake section around 6s, matching previous preview timing.
-    while(performance.now()-start < 5900) {
-      await wait(120);
-      if (!document.body.contains(deckElement)) throw new Error('Deck element removed');
-    }
+    stoneTimer=setInterval(()=>{
+      for(let i=0;i<2+Math.floor(Math.random()*4);i++)
+        makeStone(layer,Math.random()*window.innerWidth,.8+Math.random()*1.35,Math.random()*360);
+      if(Math.random()<.6)spawnCrack(layer);
+    },180);
+
+    // Steine und Erdbeben laufen, solange die zwei Tonspuren gemeinsam spielen.
+    await soundtrackDone;
     clearInterval(stoneTimer);
     arena.classList.remove('hoa-earthquake');
 
-    // Fart punchline.
-    
-if (!muted) {
-  await new Promise(resolve => {
-    let finished = false;
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      fart.pause();
-      resolve();
-    };
-
-    fart.addEventListener('ended', finish, { once: true });
-    fart.addEventListener('error', finish, { once: true });
-
-    fart.play().catch(finish);
-
-    // Sicherheitslimit, falls der Sound hängen bleibt
-    setTimeout(finish, 5000);
-  });
-} else {
-  await wait(1200);
-}
-
+    // Jetzt erst: Furzwolke, das serverseitig gewählte fehlende Artefakt
+    // und dessen Flug in die Sammlung. Kein zweiter Furz-Sound.
     const source=point(sourceElement,.5,.5);
     const deck=point(deckElement,.5,.5);
     const burstCenter={x:(source.x+deck.x)/2, y:Math.min(source.y, deck.y)-50};
