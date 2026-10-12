@@ -110,73 +110,49 @@ export async function playHelementsOfArmoryAnimation({
   const rumble=ensureAudio(rumbleUrl, .9);
   const fart=ensureAudio(fartUrl, 1);
   const arena = arenaElement instanceof Element ? arenaElement : document.body;
-  arena.classList.add('hoa-shake-target','hoa-earthquake');
+  arena.classList.add('hoa-shake-target');
   animate(title,[{opacity:0},{opacity:1,offset:.12},{opacity:1,offset:.85},{opacity:0}],{duration:4200,easing:'ease-out'});
   animate(dust,[{opacity:0},{opacity:.95,offset:.5},{opacity:.55,offset:.86},{opacity:0}],{duration:6200,easing:'linear'});
 
   try {
-    // Beide vorhandenen Tonspuren starten im selben Moment und überlagern sich.
-    // Der Furz steckt bereits in der zweiten Datei und wird NICHT erneut abgespielt.
-    const playToEnd = audio => new Promise(resolve => {
-      let finished=false;
-      const finish=()=>{
-        if(finished)return;
-        finished=true;
-        clearTimeout(timeout);
-        audio.removeEventListener('ended',finish);
-        audio.removeEventListener('error',finish);
-        resolve();
-      };
-      const timeout=setTimeout(finish,25000);
-      audio.addEventListener('ended',finish);
-      audio.addEventListener('error',finish);
-      audio.play().catch(finish);
-    });
-    // Furz sitzt am Ende der Furz-Tonspur: die Wolke erscheint bereits
-    // während des Schlussgeräuschs und nicht nach dem Ende beider Dateien.
-    const fartMoment = muted ? wait(4900) : new Promise(resolve=>{
-      let done=false;
-      const finish=()=>{
-        if(done)return;
-        done=true;
-        clearInterval(checkTimer);
-        clearTimeout(fallback);
-        fart.removeEventListener('ended',finish);
-        resolve();
-      };
-      const checkTimer=setInterval(()=>{
-        if(Number.isFinite(fart.duration) && fart.duration>0 &&
-           fart.currentTime >= Math.max(0,fart.duration-0.85))finish();
-      },40);
-      const fallback=setTimeout(finish,15000);
-      fart.addEventListener('ended',finish,{once:true});
-    });
+    // Exakt die Zeitachse der gelieferten Animationsvorschau (3):
+    // 0.10 aktivieren, 0.55 Beben, 2.50 Steinlawine,
+    // 5.80 Stopp, 6.00 Furzwolke, 6.32 Artefakt,
+    // 7.65 Flug, 8.62 erhalten, 10.30 Ende.
+    const began=performance.now();
+    const until=async seconds=>{
+      const remaining=seconds*1000-(performance.now()-began);
+      if(remaining>0)await wait(remaining);
+    };
     if(!muted){
-      // Start gleichzeitig, aber NICHT bis zum Ende des Rumpel-Sounds warten.
-      void playToEnd(rumble);
+      // Beide Dateien der Originalvorschau gleichzeitig starten.
+      // Hier ist kein dritter Ton und keine Wiederholung des Furzes.
+      void rumble.play().catch(()=>{});
       void fart.play().catch(()=>{});
     }
-
+    await until(.55);
+    arena.classList.add('hoa-earthquake');
     stoneTimer=setInterval(()=>{
-      for(let i=0;i<2+Math.floor(Math.random()*4);i++)
+      const elapsed=(performance.now()-began)/1000;
+      if(elapsed>=5.7)return;
+      const intense=elapsed>=2.5;
+      for(let i=0;i<(intense?5:2);i++)
         makeStone(layer,Math.random()*window.innerWidth,.8+Math.random()*1.35,Math.random()*360);
-      if(Math.random()<.6)spawnCrack(layer);
-    },180);
-
-    // Steine und Erdbeben laufen, solange die zwei Tonspuren gemeinsam spielen.
-    await fartMoment;
+      if(Math.random()<.65)spawnCrack(layer);
+    },110);
+    await until(2.5);
+    arena.classList.add('hoa-heavy-earthquake');
+    await until(5.8);
     clearInterval(stoneTimer);
-    rumble.pause();
-    arena.classList.remove('hoa-earthquake');
-
-    // Jetzt erst: Furzwolke, das serverseitig gewählte fehlende Artefakt
-    // und dessen Flug in die Sammlung. Kein zweiter Furz-Sound.
+    arena.classList.remove('hoa-earthquake','hoa-heavy-earthquake');
+    await until(6.0);
+    // Furz ist bereits Teil der Originaltonspur: Wolke genau bei Sekunde 6.
     const source=point(sourceElement,.5,.5);
     const deck=point(deckElement,.5,.5);
     const burstCenter={x:(source.x+deck.x)/2, y:Math.min(source.y, deck.y)-50};
     makeCloud(layer, burstCenter);
-    // Die Tonspur läuft am Furz-Moment weiter: kein zweites Abspielen.
-    await wait(200);
+    // Originalvorschau: Artefakt erscheint bei 6.32 Sekunden.
+    await until(6.32);
 
     const art = makeArtifactCard(layer,{artifactName, artifactIcon, artifactImageUrl});
     art.style.left = `${burstCenter.x}px`; art.style.top = `${burstCenter.y}px`;
@@ -185,7 +161,7 @@ export async function playHelementsOfArmoryAnimation({
       {opacity:1, transform:'translate(-50%,-50%) scale(1.06) rotate(4deg)', offset:.35},
       {opacity:1, transform:'translate(-50%,-50%) scale(1) rotate(0deg)', offset:.55}
     ],{duration:520,easing:'cubic-bezier(.16,.88,.4,1)'});
-    await wait(680);
+    await until(7.65);
 
     if(Number.isFinite(deckCountBefore) && Number.isFinite(deckCountAfter)){
       counterTag=document.createElement('div'); counterTag.className='hoa-counter-pop'; counterTag.textContent=`${deckCountBefore} → ${deckCountAfter}`; layer.appendChild(counterTag);
@@ -199,13 +175,13 @@ export async function playHelementsOfArmoryAnimation({
     ],{duration:820,easing:'cubic-bezier(.15,.86,.35,1)'});
     if(counterTag){ animate(counterTag,[{opacity:0,transform:'scale(.6)'},{opacity:1,transform:'scale(1.05)',offset:.35},{opacity:1,transform:'scale(1)'},{opacity:0}],{duration:1600,easing:'ease-out'}); }
     deckElement.classList.add('hoa-deck-pulse');
-    await wait(350);
+    await until(8.62);
     onArtifactGranted();
-    await wait(1400);
+    await until(10.3);
   } finally {
     clearInterval(stoneTimer);
     try{rumble.pause();fart.pause();}catch{}
-    arena.classList.remove('hoa-earthquake');
+    arena.classList.remove('hoa-earthquake','hoa-heavy-earthquake');
     arena.classList.remove('hoa-shake-target');
     deckElement.classList.remove('hoa-deck-pulse');
     removeLater(layer, 10);
