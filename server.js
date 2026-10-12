@@ -574,6 +574,7 @@ function botApplySpecial(r,p,c){
     const d=drawNormal(r,2),keep=botKeepBestNormal(d,r.category);if(keep)p.hand.push(keep);r.normalDiscard.push(...d.filter(id=>id!==keep));
   }else if(effect==='changeling'){
     p.specialExtra=(p.specialExtra||0)+1;
+    io.to(r.code).emit('changelingSwarmAnimation',{casterId:p.id,casterName:p.name,duration:4300});
   }else if(effect==='nightmare'){
     r.forcedNextCategory='magic';io.to(r.code).emit('specialImpact',{effect:'nightmare',targetIds:[],text:'Die nächste Runde wird automatisch Magie.'});
   }else if(effect==='hydra'){
@@ -933,6 +934,27 @@ function resolveRewardChoice(r,winnerId,chosenId,token){
     // Eine komplette artefaktfreie Goldauswahl verbraucht den Cooldown.
     if((r.artifactRewardCooldown||0)>0){
       r.artifactRewardCooldown=Math.max(0,r.artifactRewardCooldown-1);
+    }
+
+    // Changeling-Bonus: Beim Ziehen dieser Goldkarte wird sofort 1 weitere Goldkarte gewährt.
+    if(chosen.effect==='changeling'){
+      const extraId=drawRewardCandidate(r,p,{allowArtifact:!(r.roundFX?.artifactBlocked),excludeIds:[chosen.id,...unchosen]});
+      const extra=extraId?byId[extraId]:null;
+      if(extra?.type==='artifact'){
+        if(!(p.artifacts||[]).includes(extra.id))p.artifacts.push(extra.id);
+        io.to(r.code).emit('artifactFound',{
+          playerId:p.id,playerName:p.name,card:extra,
+          artifacts:p.artifacts.map(x=>byId[x]).filter(Boolean),
+          collected:new Set(p.artifacts).size,total:artifacts.length
+        });
+        if(!p.isBot)io.to(p.id).emit('rewardDraw',{playerId:p.id,playerName:p.name,kind:'artifact',card:extra});
+      }else if(extra?.type==='special'){
+        p.hand.push(extra.id);
+        if(!p.isBot)io.to(p.id).emit('rewardDraw',{playerId:p.id,playerName:p.name,kind:'special',card:extra});
+      }
+      if(extra){
+        io.to(r.code).emit('notice',`${p.name} erhält durch Changeling sofort 1 zusätzliche Goldkarte!`);
+      }
     }
   }
 
@@ -1897,6 +1919,7 @@ io.on('connection',socket=>{
       socket.emit('specialCardRequest',{title:'Diamond Dogs: Behalte 1 der 2 Karten',cards:d.map(id=>byId[id]).filter(Boolean)});
     }else if(effect==='changeling'){
       p.specialExtra=(p.specialExtra||0)+1;
+      io.to(r.code).emit('changelingSwarmAnimation',{casterId:p.id,casterName:p.name,duration:4300});
       socket.emit('specialDone',{text:'Du darfst diese Runde noch 1 zusätzliche Spezialkarte spielen.'});
     }else if(effect==='nightmare'){
       r.forcedNextCategory='magic';
