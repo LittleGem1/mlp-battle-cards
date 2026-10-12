@@ -187,7 +187,7 @@ export async function playHelementsOfArmoryAnimation({
     // Nach dem vollständigen Furz und Ausblenden der Wolke
     // bleibt die Artefaktkarte weitere drei Sekunden ruhig lesbar.
     await cloudDone;
-    await wait(3000);
+    await wait(6000);
 
     if(Number.isFinite(deckCountBefore) && Number.isFinite(deckCountAfter)){
       counterTag=document.createElement('div'); counterTag.className='hoa-counter-pop'; counterTag.textContent=`${deckCountBefore} → ${deckCountAfter}`; layer.appendChild(counterTag);
