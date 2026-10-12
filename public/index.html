@@ -32,6 +32,12 @@
           <div class="join-box"><input id="roomCode" maxlength="5" placeholder="RAUMCODE" /><button id="joinBtn" class="primary-btn" type="button">Beitreten</button></div>
           <button id="botTestBtn" class="soft-btn bot-test-home" type="button">🤖 Testspiel gegen PonyBot</button>
         </div>
+        <div class="home-audio-settings" aria-label="Audioeinstellungen" style="margin:18px auto 12px;padding:15px 18px;max-width:440px;border:1px solid rgba(180,165,255,.4);border-radius:16px;background:rgba(22,14,58,.58)">
+          <h3 style="margin:0 0 12px">🎧 Audioeinstellungen</h3>
+          <label style="display:flex;align-items:center;gap:12px;margin:9px 0">🎵 Musik <input class="music-volume" aria-label="Musiklautstärke" type="range" min="0" max="100" value="30" style="flex:1;min-width:80px"><span class="music-volume-readout" style="min-width:42px;text-align:right">30%</span></label>
+          <label style="display:flex;align-items:center;gap:12px;margin:9px 0">✨ Effekte <input class="sfx-volume" aria-label="Effektlautstärke" type="range" min="0" max="100" value="55" style="flex:1;min-width:80px"><span class="sfx-volume-readout" style="min-width:42px;text-align:right">55%</span></label>
+          <small style="opacity:.75">0% = stumm · Einstellungen werden gespeichert</small>
+        </div>
         <p class="hint">2–8 Spieler · Start: 6 normale Karten + 1 Spezialkarte · doppelte Karten sind möglich</p>
       </div>
     </section>
@@ -407,7 +413,7 @@
   <div class="music-credit">Ausgewählte Lobby- und Battle-Musik läuft unsichtbar im Hintergrund via YouTube.</div>
   <script src="https://www.youtube.com/iframe_api"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/client.js?v=rewardpreview-20261012"></script>
+  <script src="/client.js?v=audio-settings-20261012"></script>
 
   <script src="/mlp_sieger_special_smolder.js?v=20261010-burnv2"></script>
   <script src="/mlp_arena_volle_hoehe_v7.js?v=20261010-v7a"></script>
