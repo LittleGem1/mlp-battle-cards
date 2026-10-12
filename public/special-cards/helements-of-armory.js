@@ -153,6 +153,10 @@ export async function playHelementsOfArmoryAnimation({
     const deck=point(deckElement,.5,.5);
     const burstCenter={x:(source.x+deck.x)/2, y:Math.min(source.y, deck.y)-50};
     makeCloud(layer, burstCenter);
+    // Die Wolke erhält ihren eigenen hörbaren Furz-Moment aus der vorhandenen Tondatei.
+    if(!muted){
+      try{fart.currentTime=0;await fart.play();}catch(_){}
+    }
     await wait(200);
 
     const art = makeArtifactCard(layer,{artifactName, artifactIcon, artifactImageUrl});
