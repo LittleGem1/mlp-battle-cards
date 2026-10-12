@@ -72,7 +72,7 @@
   function startWindAudio(isPreview){
     let audio=null;
     try{
-      const src=isPreview?'preview_assets/windchaos_tornado.mp3':'/assets/sounds/windchaos_tornado.mp3?v=2';
+      const src='/assets/sounds/windchaos_tornado.mp3?v=windfix-20261012';
       audio=new Audio(src);
       audio.preload='auto';
       audio.volume=.92;
