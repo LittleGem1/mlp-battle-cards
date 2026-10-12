@@ -1,0 +1,9 @@
+MLP Battle Cards – Lili Energie-Fix
+
+Lili (n103): Energie 6 -> 8.
+
+Dateien aus diesem ZIP an denselben Pfaden in GitHub ersetzen:
+- cards.js
+- public/cards.js
+
+Nach Render-Deployment das Spiel mit Strg + F5 neu laden.

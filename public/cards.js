@@ -68,7 +68,7 @@ const normal = [
   [100,'Black Armor',9,5,3,7],
   [101,'Glittershine',7,8,3,9],
   [102,'Voleriton',5,7,6,6],
-  [103,'Lili',8,8,3,6],
+  [103,'Lili',8,8,3,8],
   [104,'Lucky Lucy',8,8,3,5],
   [105,'Lyra',6,7,8,6],
   [106,'Ruby Blood',3,8,8,5],
