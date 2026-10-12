@@ -1,15 +1,12 @@
-MLP Battle Cards - Animationsmenue + Sweetie Bot + Helements of Armory
+NEUE ZWEI SPECIALS - SWEETIE BOT UND HELEMENTS OF ARMORY
 
-Inhalt:
-- Beiden originalen Animationen samt Audio, Bildern und CSS
-- Altes Animations-Testzentrum fuer Lobby und Arena reaktiviert
-- Sweetie Bot / Helements in der Vorschau-Liste aufgenommen
-- Keinerlei Veraenderung des Server-Spielzustands durch die Vorschau
+1. ZIP im Hauptordner von mlp-battle-cards entpacken.
+2. Dort python INSTALLIEREN.py ausfuehren.
+3. Aktualisierte cards.js, server.js und public/ bei GitHub hochladen.
+4. Render neu bereitstellen.
 
-INSTALLATION:
-1) ZIP entpacken.
-2) Den INHALT aus public/ an die entsprechenden Stellen im public/-Ordner deines GitHub-Repos hochladen. Insbesondere public/index.html und public/mlp_animation_center.js ersetzen. Bestehende andere Dateien behalten.
-3) Render-Deploy abwarten; Seite mit Strg+F5 aktualisieren.
-4) In Lobby oder Arena auf 'Animationen ansehen' druecken.
+Animationen: Sweetie Bot - Erdbeben und fallende Steine, danach Furzsound; Helements - sechs synchron pulsierende Elementeffekte mit gemeinsamem Klang.
 
-WICHTIG: Die beiden Special-Effekte sind als sichere VORSCHAU integriert. Die tatsaechliche Spezialkartenvergabe und Wertveraenderung waehrend eines echten Matches verlangen Aenderungen an der serverseitigen Regel-/Eventlogik; das macht dieses Patch bewusst NICHT und behauptet nicht, dass die Karten nun im Ziehstapel sind.
+WICHTIG: Da die alten Originalbilder/Original-Sounds nicht im Repo lagen, sind hier NEU gestaltete SVG-Karten und synthetische Sounds enthalten. Die neuen Spezial-Funktionen sind vorlaeufig 1 bzw. 2 Karten nachziehen.
+
+Das Installationsskript sichert die Originaldateien mit Endung .vor_sweetiebot_backup.
