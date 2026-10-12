@@ -26,6 +26,8 @@
     {left:79, top:23, scale:0.44}, {left:89, top:15, scale:0.48}, {left:94, top:29, scale:0.42}
   ];
   let active=null,audio=null,timers=[];
+  const effectVolume=()=>Math.max(0,Math.min(1,Number(localStorage.getItem('mlp_sfx_volume')??.55)));
+  window.addEventListener('mlp-sfx-volume-change',()=>{if(audio)audio.volume=Math.min(1,effectVolume()*.9);});
   function later(ms,fn){timers.push(setTimeout(fn,ms));}
   function stop(){
     timers.forEach(clearTimeout); timers=[];
@@ -67,7 +69,7 @@
       stage.appendChild(mote);
     }
     document.body.appendChild(overlay); active=overlay; document.body.classList.add('changeling-swarm-running');
-    try{ audio=new Audio('/assets/sounds/changeling_swarmruf_mix.mp3?v=wunsch-restore-20261012'); audio.volume=0.9; audio.play().catch(()=>{});}catch(e){}
+    try{ audio=new Audio('/assets/sounds/changeling_swarmruf_mix.mp3?v=wunsch-restore-20261012'); audio.volume=Math.min(1,effectVolume()*.9); audio.play().catch(()=>{});}catch(e){}
     requestAnimationFrame(()=>overlay.classList.add('show'));
     later(1600,()=>overlay.classList.add('reveal-on'));
     later(2140,()=>overlay.classList.add('bonus-on'));
