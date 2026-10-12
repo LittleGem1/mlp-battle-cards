@@ -40,17 +40,18 @@ function spawnCrack(layer){
   removeLater(el,2050);
 }
 
-function makeCloud(layer, center){
+function makeCloud(layer, center, duration=1500){
   const cloud=document.createElement('div'); cloud.className='hoa-cloud'; cloud.style.left=`${center.x}px`; cloud.style.top=`${center.y}px`;
   cloud.innerHTML='<i></i><i></i><i></i>';
   layer.appendChild(cloud);
   animate(cloud,[
     {opacity:0, transform:'translate(-50%,-50%) scale(.25)'},
-    {opacity:1, transform:'translate(-50%,-50%) scale(1.05)', offset:.35},
-    {opacity:.92, transform:'translate(-50%,-50%) scale(1)', offset:.6},
+    {opacity:1, transform:'translate(-50%,-50%) scale(1.05)', offset:.12},
+    {opacity:.92, transform:'translate(-50%,-50%) scale(1)', offset:.35},
+    {opacity:.65, transform:'translate(-50%,-54%) scale(1.13)', offset:.7},
     {opacity:0, transform:'translate(-50%,-60%) scale(1.26)'}
-  ],{duration:1500,easing:'cubic-bezier(.17,.84,.44,1)'});
-  removeLater(cloud,1600);
+  ],{duration,easing:'cubic-bezier(.17,.84,.44,1)'});
+  removeLater(cloud,duration+100);
 }
 
 function makeArtifactCard(layer, {artifactName='Zufalls-Artefakt', artifactIcon='✦', artifactImageUrl=''}){
@@ -110,55 +111,49 @@ export async function playHelementsOfArmoryAnimation({
   const rumble=ensureAudio(rumbleUrl, .9);
   const fart=ensureAudio(fartUrl, 1);
   const arena = arenaElement instanceof Element ? arenaElement : document.body;
-  arena.classList.add('hoa-shake-target','hoa-earthquake');
+  arena.classList.add('hoa-shake-target');
   animate(title,[{opacity:0},{opacity:1,offset:.12},{opacity:1,offset:.85},{opacity:0}],{duration:4200,easing:'ease-out'});
   animate(dust,[{opacity:0},{opacity:.95,offset:.5},{opacity:.55,offset:.86},{opacity:0}],{duration:6200,easing:'linear'});
 
   try {
-    await playMaybe(rumble, muted);
-    const start=performance.now();
-    stoneTimer=setInterval(()=>{
-      for(let i=0;i<2+Math.floor(Math.random()*4);i++) makeStone(layer, Math.random()*window.innerWidth, .8+Math.random()*1.35, Math.random()*360);
-      if(Math.random()<.6) spawnCrack(layer);
-    }, 180);
-
-    // Earthquake section around 6s, matching previous preview timing.
-    while(performance.now()-start < 5900) {
-      await wait(120);
-      if (!document.body.contains(deckElement)) throw new Error('Deck element removed');
-    }
-    clearInterval(stoneTimer);
-    arena.classList.remove('hoa-earthquake');
-
-    // Fart punchline.
-    
-if (!muted) {
-  await new Promise(resolve => {
-    let finished = false;
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      fart.pause();
-      resolve();
+    // Exakt die Zeitachse der gelieferten Animationsvorschau (3):
+    // 0.10 aktivieren, 0.55 Beben, 2.50 Steinlawine,
+    // 5.80 Stopp, 6.00 Furzwolke, 6.32 Artefakt,
+    // 7.65 Flug, 8.62 erhalten, 10.30 Ende.
+    const began=performance.now();
+    const until=async seconds=>{
+      const remaining=seconds*1000-(performance.now()-began);
+      if(remaining>0)await wait(remaining);
     };
-
-    fart.addEventListener('ended', finish, { once: true });
-    fart.addEventListener('error', finish, { once: true });
-
-    fart.play().catch(finish);
-
-    // Sicherheitslimit, falls der Sound hängen bleibt
-    setTimeout(finish, 5000);
-  });
-} else {
-  await wait(1200);
-}
-
+    if(!muted){
+      // Beide Dateien der Originalvorschau gleichzeitig starten.
+      // Hier ist kein dritter Ton und keine Wiederholung des Furzes.
+      void rumble.play().catch(()=>{});
+      void fart.play().catch(()=>{});
+    }
+    await until(.55);
+    arena.classList.add('hoa-earthquake');
+    stoneTimer=setInterval(()=>{
+      const elapsed=(performance.now()-began)/1000;
+      if(elapsed>=5.7)return;
+      const intense=elapsed>=2.5;
+      for(let i=0;i<(intense?5:2);i++)
+        makeStone(layer,Math.random()*window.innerWidth,.8+Math.random()*1.35,Math.random()*360);
+      if(Math.random()<.65)spawnCrack(layer);
+    },110);
+    await until(2.5);
+    arena.classList.add('hoa-heavy-earthquake');
+    await until(5.8);
+    clearInterval(stoneTimer);
+    arena.classList.remove('hoa-earthquake','hoa-heavy-earthquake');
+    await until(6.0);
+    // Furz ist bereits Teil der Originaltonspur: Wolke genau bei Sekunde 6.
     const source=point(sourceElement,.5,.5);
     const deck=point(deckElement,.5,.5);
     const burstCenter={x:(source.x+deck.x)/2, y:Math.min(source.y, deck.y)-50};
-    makeCloud(layer, burstCenter);
-    await wait(200);
+    makeCloud(layer, burstCenter, 5000);
+    // Originalvorschau: Artefakt erscheint bei 6.32 Sekunden.
+    await until(6.32);
 
     const art = makeArtifactCard(layer,{artifactName, artifactIcon, artifactImageUrl});
     art.style.left = `${burstCenter.x}px`; art.style.top = `${burstCenter.y}px`;
@@ -167,7 +162,9 @@ if (!muted) {
       {opacity:1, transform:'translate(-50%,-50%) scale(1.06) rotate(4deg)', offset:.35},
       {opacity:1, transform:'translate(-50%,-50%) scale(1) rotate(0deg)', offset:.55}
     ],{duration:520,easing:'cubic-bezier(.16,.88,.4,1)'});
-    await wait(680);
+    // Karte bleibt lesbar, während die Wolke bis Sekunde 11 ausblendet.
+    // Danach bleibt sie noch gut zwei Sekunden und fliegt erst dann weg.
+    await until(12.2);
 
     if(Number.isFinite(deckCountBefore) && Number.isFinite(deckCountAfter)){
       counterTag=document.createElement('div'); counterTag.className='hoa-counter-pop'; counterTag.textContent=`${deckCountBefore} → ${deckCountAfter}`; layer.appendChild(counterTag);
@@ -181,13 +178,13 @@ if (!muted) {
     ],{duration:820,easing:'cubic-bezier(.15,.86,.35,1)'});
     if(counterTag){ animate(counterTag,[{opacity:0,transform:'scale(.6)'},{opacity:1,transform:'scale(1.05)',offset:.35},{opacity:1,transform:'scale(1)'},{opacity:0}],{duration:1600,easing:'ease-out'}); }
     deckElement.classList.add('hoa-deck-pulse');
-    await wait(350);
+    await until(13.05);
     onArtifactGranted();
-    await wait(1400);
+    await until(13.6);
   } finally {
     clearInterval(stoneTimer);
     try{rumble.pause();fart.pause();}catch{}
-    arena.classList.remove('hoa-earthquake');
+    arena.classList.remove('hoa-earthquake','hoa-heavy-earthquake');
     arena.classList.remove('hoa-shake-target');
     deckElement.classList.remove('hoa-deck-pulse');
     removeLater(layer, 10);

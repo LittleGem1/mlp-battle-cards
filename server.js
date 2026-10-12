@@ -193,7 +193,7 @@ function playedCardIds(entry){
 function resetRoundFX(r){
   r.roundFX={
     skipped:[],forcedLose:[],protected:[],autoWinner:[],hydra:[],stormKing:[],doubleNormal:[],
-    debuff:{},strengthDebuff:{},artifactBlocked:false
+    debuff:{},strengthDebuff:{},sweetieHalved:[],artifactBlocked:false
   };
   r.specialHistory=[];
 }
@@ -274,6 +274,7 @@ function availableTargets(r,p,mode='any'){
   return roomPlayers(r).filter(t=>{
     if(t.id===p.id||t.surrendered)return false;
     if(mode==='played'&&!playedCardIds(r.played?.[t.id]).length)return false;
+    if(mode==='played_unhalved'&&(!playedCardIds(r.played?.[t.id]).length||r.roundFX?.sweetieHalved?.includes(t.id)))return false;
     if(mode==='hand'&&!t.hand.length)return false;
     if(mode==='artifact'&&!(t.artifacts||[]).length)return false;
     // Kopieren/Stehlen: Nur Gegner mit einem Artefakt, das der Spieler noch nicht hat.
@@ -323,6 +324,35 @@ function applyArtifactMagic(r,caster,target,artifactId,action){
     targetName:target.name,artifact:{id:a.id,name:a.name,image:a.image},duration:2600
   });
   return true;
+}
+
+
+// Sweetie Bot and Helements: only the server decides round modifiers and artifact ownership.
+function applySweetieBot(r,caster,target){
+  if(!r||!caster||!target||caster.id===target.id||target.surrendered)return false;
+  if(!playedCardIds(r.played?.[target.id]).length)return false;
+  if(r.roundFX?.sweetieHalved?.includes(target.id))return false;
+  if(isProtectedFrom(r,target.id,caster.id)){
+    io.to(r.code).emit('specialBlocked',{targetId:target.id,targetName:target.name,sourceName:'Sweetie Bot'});
+    return false;
+  }
+  if(!r.roundFX.sweetieHalved)r.roundFX.sweetieHalved=[];
+  if(!r.roundFX.sweetieHalved.includes(target.id))r.roundFX.sweetieHalved.push(target.id);
+  const played=playedCardIds(r.played[target.id]).map(id=>byId[id]).filter(x=>x?.type==='normal');
+  const base=Math.max(0,...played.map(x=>Number(x[r.category]||0)));
+  const current=Math.max(0,base+(r.roundBuff?.[target.id]?.[r.category]||0)+(r.roundFX?.debuff?.[target.id]||0)+(r.category==='strength'?(r.roundFX?.strengthDebuff?.[target.id]||0):0));
+  io.to(r.code).emit('mlpSpecialActivated',{cardId:'sweetie_bot',casterId:caster.id,targetId:target.id,previousValue:current,newValue:Math.ceil(current/2),category:r.category});
+  return true;
+}
+function grantHelements(r,caster){
+  const missing=artifacts.filter(a=>!(caster.artifacts||[]).includes(a.id));
+  if(!missing.length)return null;
+  const card=missing[Math.floor(Math.random()*missing.length)];
+  const countBefore=new Set(caster.artifacts||[]).size;
+  caster.artifacts.push(card.id);
+  io.to(r.code).emit('mlpSpecialActivated',{cardId:'helements_of_armory',casterId:caster.id,playerId:caster.id,grantedArtifactName:card.name,grantedArtifactImageUrl:card.image,deckCountBefore:countBefore,deckCountAfter:countBefore+1});
+  io.to(r.code).emit('artifactFound',{playerId:caster.id,playerName:caster.name,card,artifacts:caster.artifacts.map(id=>byId[id]).filter(Boolean),collected:countBefore+1,total:artifacts.length});
+  return card;
 }
 
 function requestTarget(socket,r,p,sourceCard,action,mode='any',title='Wähle einen Gegner'){
@@ -519,6 +549,8 @@ function botHasNegative(r,p){
 }
 function botApplySpecial(r,p,c){
   const effect=c.effect;
+  if(effect==='helements'){grantHelements(r,p);gameOverIfNeeded(r);return;}
+  if(effect==='sweetiebot'){const t=botTarget(r,p,'played_unhalved');if(t)applySweetieBot(r,p,t);return;}
   const targetAny=()=>botTarget(r,p,'any');
   const targetHand=()=>botTarget(r,p,'hand');
   if(effect==='artifactcopy'||effect==='artifactsteal'){
@@ -649,6 +681,8 @@ function botUsableSpecials(r,p){
     if(c.effect==='rainbow'||c.effect==='stormking')return r.category==='speed';
     if(c.effect==='applejack')return r.category==='strength';
     if(c.effect==='chrysalis')return history;
+    if(c.effect==='sweetiebot')return botTargets(r,p,'played_unhalved').length>0;
+    if(c.effect==='helements')return (p.artifacts||[]).length<artifacts.length;
     if(c.effect==='ahuizotl')return botTargets(r,p,'played').length>0;
     if(c.effect==='cozy')return botTargets(r,p,'hand').length>0 && p.hand.length>1;
     if(['sludge','maneiac','gilda'].includes(c.effect))return botTargets(r,p,'hand').length>0;
@@ -1347,6 +1381,7 @@ function evaluate(r){
     value+=(r.roundFX?.debuff?.[pid]||0);
     if(r.category==='strength')value+=(r.roundFX?.strengthDebuff?.[pid]||0);
     value=Math.max(0,value);
+    if(r.roundFX?.sweetieHalved?.includes(pid))value=Math.ceil(value/2);
 
     vals.push({
       pid,cardId:c.id,value,base,bonus:value-base,cards:cards.map(x=>x.id),
@@ -1852,6 +1887,8 @@ io.on('connection',socket=>{
     if(effect==='rainbow'&&r.category!=='speed')return socket.emit('errorMsg','Rainbow Dash kann nur bei Schnelligkeit eingesetzt werden.');
     if(effect==='applejack'&&r.category!=='strength')return socket.emit('errorMsg','Applejack kann nur bei Stärke eingesetzt werden.');
     if(effect==='stormking'&&r.category!=='speed')return socket.emit('errorMsg','Storm King wirkt nur bei Schnelligkeit.');
+    if(effect==='sweetiebot'&&!availableTargets(r,p,'played_unhalved').length)return socket.emit('errorMsg','Sweetie Bot benötigt einen noch nicht halbierten Gegner mit gelegter Karte.');
+    if(effect==='helements'&&!artifacts.some(a=>!(p.artifacts||[]).includes(a.id)))return socket.emit('errorMsg','Du besitzt bereits alle Artefakte. Helements bleibt auf deiner Hand.');
     if(effect==='ahuizotl'&&!availableTargets(r,p,'played').length)return socket.emit('errorMsg','Ahuizotl braucht einen Gegner, der seine Karte bereits gelegt hat.');
     if(['tirek','cozy','sludge','bugbear','cockatrice','sombra','ponyshadows','maneiac','lightningdust','gilda'].includes(effect)){
       const mode=['cozy','sludge','maneiac','gilda'].includes(effect)?'hand':'any';
@@ -1872,7 +1909,13 @@ io.on('connection',socket=>{
       io.to(r.code).emit('specialCopied',{playerId:p.id,name:p.name,copied:effectCard});
     }
 
-    if(effect==='artifactcopy'||effect==='artifactsteal'){
+    if(effect==='sweetiebot'){
+      requestTarget(socket,r,p,source,'sweetiebot','played_unhalved','Sweetie Bot: Wessen gelegte Karte wird halbiert?');
+    }else if(effect==='helements'){
+      const granted=grantHelements(r,p);
+      socket.emit('specialDone',{text:granted?'Helements: Ein fehlendes Artefakt erhalten!':'Du besitzt bereits alle Artefakte.'});
+      if(granted)gameOverIfNeeded(r);
+    }else if(effect==='artifactcopy'||effect==='artifactsteal'){
       requestTarget(socket,r,p,source,effect,'artifact_new',effect==='artifactcopy'
         ?'Zauberkopierer: Von welchem Gegner kopierst du ein Artefakt?'
         :'Zauberklau: Von welchem Gegner stiehlst du ein Artefakt?');
@@ -2024,7 +2067,10 @@ io.on('connection',socket=>{
     }
     socket.data.pendingSpecial=null;
 
-    if(action==='artifactcopy'||action==='artifactsteal'){
+    if(action==='sweetiebot'){
+      if(!playedCardIds(r.played?.[target.id]).length||r.roundFX?.sweetieHalved?.includes(target.id)){socket.emit('errorMsg','Gegner hat keine gültige, unhalbierte Karte mehr.');sendState(r);return;}
+      applySweetieBot(r,p,target);
+    }else if(action==='artifactcopy'||action==='artifactsteal'){
       const choices=artifactMagicOptions(p,target);
       if(!choices.length){
         socket.emit('errorMsg','Dieser Gegner hat kein für dich neues Artefakt mehr.');
