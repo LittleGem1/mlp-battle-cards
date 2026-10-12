@@ -49,7 +49,7 @@ function shot(src,dst){
   try {
     // Crucial ordering: let the actual recorded voice line finish before firing.
     if (!muted) {
-      const voice=new Audio(voiceUrl);voice.preload='auto';
+      const voice=new Audio(voiceUrl);voice.preload='auto';voice.volume=Math.max(0,Math.min(1,Number(localStorage.getItem('mlp_sfx_volume')??.55)));
       await new Promise(resolve=>{
         let resolved=false;
         const finish=()=>{if(resolved)return;resolved=true;voice.removeEventListener('ended',finish);voice.removeEventListener('error',finish);resolve();};
