@@ -132,9 +132,30 @@ export async function playHelementsOfArmoryAnimation({
       audio.addEventListener('error',finish);
       audio.play().catch(finish);
     });
-    const soundtrackDone = muted
-      ? wait(5900)
-      : Promise.all([playToEnd(rumble),playToEnd(fart)]);
+    // Furz sitzt am Ende der Furz-Tonspur: die Wolke erscheint bereits
+    // während des Schlussgeräuschs und nicht nach dem Ende beider Dateien.
+    const fartMoment = muted ? wait(4900) : new Promise(resolve=>{
+      let done=false;
+      const finish=()=>{
+        if(done)return;
+        done=true;
+        clearInterval(checkTimer);
+        clearTimeout(fallback);
+        fart.removeEventListener('ended',finish);
+        resolve();
+      };
+      const checkTimer=setInterval(()=>{
+        if(Number.isFinite(fart.duration) && fart.duration>0 &&
+           fart.currentTime >= Math.max(0,fart.duration-0.85))finish();
+      },40);
+      const fallback=setTimeout(finish,15000);
+      fart.addEventListener('ended',finish,{once:true});
+    });
+    if(!muted){
+      // Start gleichzeitig, aber NICHT bis zum Ende des Rumpel-Sounds warten.
+      void playToEnd(rumble);
+      void fart.play().catch(()=>{});
+    }
 
     stoneTimer=setInterval(()=>{
       for(let i=0;i<2+Math.floor(Math.random()*4);i++)
@@ -143,8 +164,9 @@ export async function playHelementsOfArmoryAnimation({
     },180);
 
     // Steine und Erdbeben laufen, solange die zwei Tonspuren gemeinsam spielen.
-    await soundtrackDone;
+    await fartMoment;
     clearInterval(stoneTimer);
+    rumble.pause();
     arena.classList.remove('hoa-earthquake');
 
     // Jetzt erst: Furzwolke, das serverseitig gewählte fehlende Artefakt
@@ -153,10 +175,7 @@ export async function playHelementsOfArmoryAnimation({
     const deck=point(deckElement,.5,.5);
     const burstCenter={x:(source.x+deck.x)/2, y:Math.min(source.y, deck.y)-50};
     makeCloud(layer, burstCenter);
-    // Die Wolke erhält ihren eigenen hörbaren Furz-Moment aus der vorhandenen Tondatei.
-    if(!muted){
-      try{fart.currentTime=0;await fart.play();}catch(_){}
-    }
+    // Die Tonspur läuft am Furz-Moment weiter: kein zweites Abspielen.
     await wait(200);
 
     const art = makeArtifactCard(layer,{artifactName, artifactIcon, artifactImageUrl});
