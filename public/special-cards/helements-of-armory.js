@@ -131,7 +131,29 @@ export async function playHelementsOfArmoryAnimation({
     arena.classList.remove('hoa-earthquake');
 
     // Fart punchline.
-    await playMaybe(fart, muted);
+    
+if (!muted) {
+  await new Promise(resolve => {
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      fart.pause();
+      resolve();
+    };
+
+    fart.addEventListener('ended', finish, { once: true });
+    fart.addEventListener('error', finish, { once: true });
+
+    fart.play().catch(finish);
+
+    // Sicherheitslimit, falls der Sound hängen bleibt
+    setTimeout(finish, 5000);
+  });
+} else {
+  await wait(1200);
+}
+
     const source=point(sourceElement,.5,.5);
     const deck=point(deckElement,.5,.5);
     const burstCenter={x:(source.x+deck.x)/2, y:Math.min(source.y, deck.y)-50};
