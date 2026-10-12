@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>MLP Battle Cards – V7 Bugfix</title>
-  <link rel="stylesheet" href="/style.css?v=7.2" />
+  <link rel="stylesheet" href="/style.css?v=rewardpreview-20261012" />
 
   <link rel="stylesheet" href="/mlp_sieger_special_smolder.css?v=20261010-burnv2" />
   <link rel="stylesheet" href="/mlp_arena_volle_hoehe_v7.css?v=20261010-v7a" />
@@ -121,6 +121,16 @@
       <h2>Ziehe 2 Goldkarten</h2>
       <p>Wähle <strong>eine</strong> davon. Die andere wird zurück in den Goldstapel gemischt.</p>
       <div id="rewardChoiceCards" class="reward-choice-cards"></div>
+      <div id="rewardPreview" class="reward-preview" hidden aria-hidden="true">
+        <div class="reward-preview-inner">
+          <img id="rewardPreviewImage" alt="" src="/assets/special_back_gold.png">
+          <div class="reward-preview-description">
+            <strong id="rewardPreviewName"></strong>
+            <p id="rewardPreviewAbility"></p>
+            <button id="rewardPreviewClose" type="button">← Zurück zur Auswahl</button>
+          </div>
+        </div>
+      </div>
       <small id="rewardChoiceTimer">Wähle deine Belohnung …</small>
     </div>
   </div>
@@ -397,7 +407,7 @@
   <div class="music-credit">Ausgewählte Lobby- und Battle-Musik läuft unsichtbar im Hintergrund via YouTube.</div>
   <script src="https://www.youtube.com/iframe_api"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/client.js?v=7.2"></script>
+  <script src="/client.js?v=rewardpreview-20261012"></script>
 
   <script src="/mlp_sieger_special_smolder.js?v=20261010-burnv2"></script>
   <script src="/mlp_arena_volle_hoehe_v7.js?v=20261010-v7a"></script>
@@ -414,5 +424,7 @@
   <!-- Artefakt-Zauber: nur ein Zusatz-Effekt für Flawless Sparkle Moon / Evil Sci Twi -->
   <script src="/artifact_magic_fx.js?v=artifactmagic-v17"></script>
 
-<!-- V7: Alte V5-Einbindung entfernt; eigenes testbares Vollbild-Layout + Kristall. --></body>
+<!-- V7: Alte V5-Einbindung entfernt; eigenes testbares Vollbild-Layout + Kristall. -->  <link rel="stylesheet" href="/mlp_chat.css?v=1">
+  <script src="/mlp_chat.js?v=1"></script>
+</body>
 </html>

@@ -1598,6 +1598,28 @@ io.on('connection',socket=>{
     const {galleryCards}=require('./host_gallery_autocatalog');
     socket.emit('hostCardGalleryData',{cards:galleryCards(normal,specials,artifacts)});
   });
+  // In-room chat: messages are scoped to the current room and never broadcast globally.
+  socket.on('chatSend', payload=>{
+    const r=getRoom(socket),p=r?.players.get(socket.id);
+    if(!r||!p||p.isBot||p.disconnectedAt)return;
+    if(typeof payload?.text!=='string')return;
+    const message=payload.text.trim().replace(/[\u0000-\u001f\u007f]/g,' ');
+    if(!message||message.length>300){socket.emit('chatError','Nachrichten dürfen höchstens 300 Zeichen haben.');return;}
+    const now=Date.now();
+    const previous=socket.data.chatSendTimes||[];
+    const recent=previous.filter(t=>now-t<10000);
+    if(recent.length>=5){socket.emit('chatError','Bitte etwas langsamer schreiben.');return;}
+    recent.push(now);socket.data.chatSendTimes=recent;
+    const entry={id:`${now}-${socket.id}-${recent.length}`,playerId:p.id,name:p.name,text:message,at:now};
+    if(!Array.isArray(r.chatHistory))r.chatHistory=[];
+    r.chatHistory.push(entry);
+    if(r.chatHistory.length>40)r.chatHistory.splice(0,r.chatHistory.length-40);
+    io.to(r.code).emit('chatMessage',entry);
+  });
+  socket.on('chatHistoryRequest',()=>{
+    const r=getRoom(socket),p=r?.players.get(socket.id);
+    if(r&&p&&!p.isBot)socket.emit('chatHistory',{code:r.code,messages:r.chatHistory||[]});
+  });
   socket.on('resumeRoom',({code,token}={})=>restoreSeat(socket,code,token));
   // Account login: server-side profiles, salted password hashes and revocable sessions.
   // Limit attempted registrations/logins per connection AND address.

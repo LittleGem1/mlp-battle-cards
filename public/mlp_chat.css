@@ -1,0 +1,21 @@
+
+#mlpChatDock{position:fixed;bottom:190px;right:14px;z-index:9000;font-family:system-ui,sans-serif;pointer-events:none}
+#mlpChatDock *{box-sizing:border-box}
+#mlpChatDock button,#mlpChatDock input,#mlpChatDock .mlp-chat-panel{pointer-events:auto}
+#mlpChatToggle{border:2px solid #bfa6ff;border-radius:50px;background:#23244f;color:#fff;padding:11px 16px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px #0009}
+#mlpChatBadge{display:none;margin-left:6px;border-radius:999px;background:#eb477b;color:white;padding:2px 6px;font-size:12px}
+#mlpChatDock.unread #mlpChatBadge{display:inline}
+#mlpChatPanel{display:none;position:absolute;right:0;bottom:52px;width:min(360px,calc(100vw - 24px));height:min(430px,62vh);background:#171a37;color:#fff;border:2px solid #9b9cdc;border-radius:16px;box-shadow:0 16px 45px #000b;overflow:hidden;flex-direction:column}
+#mlpChatDock.open #mlpChatPanel{display:flex}
+#mlpChatHeader{display:flex;align-items:center;justify-content:space-between;background:#26294e;padding:10px 12px;font-weight:800}
+#mlpChatClose{background:transparent;color:#fff;border:0;font-size:22px;cursor:pointer}
+#mlpChatMessages{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:9px;overscroll-behavior:contain}
+.mlp-chat-entry{background:#272c52;border-radius:12px;padding:7px 9px;overflow-wrap:anywhere;font-size:14px;line-height:1.4}
+.mlp-chat-entry.self{background:#2a5473}
+.mlp-chat-entry .who{font-size:12px;color:#e5c4ff;font-weight:800;margin-bottom:3px}
+.mlp-chat-entry .when{font-size:11px;color:#bcc6d4;float:right;margin-left:8px}
+#mlpChatForm{display:flex;gap:6px;padding:9px;border-top:1px solid #555980}
+#mlpChatInput{flex:1;min-width:0;border:1px solid #75769b;border-radius:9px;padding:9px;background:#0d1431;color:#fff}
+#mlpChatSend{background:#6555aa;color:#fff;border:0;border-radius:9px;padding:8px 12px;cursor:pointer}
+#mlpChatError{font-size:12px;color:#ffd8bc;padding:0 12px 7px;min-height:2px}
+@media(max-width:650px){#mlpChatDock{bottom:166px;right:8px}#mlpChatPanel{height:min(390px,56vh)}#mlpChatToggle{padding:9px 12px}}

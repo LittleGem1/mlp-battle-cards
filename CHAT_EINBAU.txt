@@ -1,0 +1,16 @@
+MLP Battle Cards – Ingame-Chat (Lobby und Arena)
+
+Installation:
+Die Dateien im ZIP in denselben Pfaden auf GitHub ersetzen bzw. ergänzen.
+Nach dem Render-Deploy Strg + F5 drücken.
+
+Funktion:
+- Chat-Button unten rechts in der Lobby und im Spiel
+- Nachrichten nur an Mitspieler im selben Raum
+- Nachrichtenübersicht der letzten 40 Nachrichten pro Raum
+- Benachrichtigungszähler für neue Nachrichten
+- maximal 300 Zeichen je Nachricht, bis 5 Nachrichten in 10 Sekunden
+- Server prüft die Raumzugehörigkeit
+- Text wird als Text dargestellt (kein HTML ausgeführt)
+- Keine Änderung an Spielkarten, Spielregeln oder Match-Timern
+- Chat-Verlauf liegt nur im Serverspeicher und wird nach Serverneustart gelöscht
