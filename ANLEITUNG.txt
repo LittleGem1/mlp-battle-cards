@@ -1,10 +1,1 @@
-HELEMENTS OF ARMORY + SWEETIE BOT – FIX V2
-
-1. ZIP im Hauptordner deines mlp-battle-cards-Spiels entpacken.
-2. Dort INSTALLIEREN.py starten (Python muss installiert sein).
-3. Veraenderte cards.js, server.js und public-Ordner in GitHub uebernehmen.
-4. Render neu deployen.
-
-Helements erhaelt ein fehlendes zufaelliges Artefakt (serverseitig). 6 Elementtoene sind in einer WAV synchron zusammengefuehrt und spielen gleichzeitig. Keine sequentiellen Sounds. Sweetie Bot behaelt Erdbeben, Steine und Furz.
-
-Hinweis: Vorhandene Kartengrafiken aus vorheriger ZIP sind Ersatz-Illustrationen. Nicht live auf Render getestet.
+HELEMENTS ORIGINALANIMATION FIX V3\n\nDie ORIGINAL-Animationsvorschau (10,3 Sekunden) inklusive ihrer zwei MP3-Tonspuren ist direkt im public-Ordner enthalten. Beide Tonspuren beginnen gleichzeitig wie im Original. Sweetie Bot bleibt enthalten.\n\n1. ZIP entpacken.\n2. INSTALLIEREN.py in den Hauptordner des entpackten GitHub-Spiels kopieren oder mit dem Spielordner als Argument ausführen. Die mitgelieferte public/assets/new_specials-Struktur muss neben dem Skript liegen.\n3. python INSTALLIEREN.py\n4. Geänderte cards.js, server.js, public/index.html und public/assets/new_specials in GitHub hochladen und Render neu deployen.\n\nHinweis: Der Installer erstellt Backups. Kein vollständiger Render-Multiplayer-Test durchgeführt.\n
