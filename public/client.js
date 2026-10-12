@@ -98,7 +98,7 @@ let accountUsername=localStorage.getItem('mlp_account_name_v1')||'';
 let profileWinReward=null, giftOpened=false;
 let musicEnabled=localStorage.getItem('mlp_music')!=='off', musicMode='home';
 if(localStorage.getItem('mlp_music_fix_v3')!=='1'){musicEnabled=true;localStorage.setItem('mlp_music','on');localStorage.setItem('mlp_music_fix_v3','1');}
-let musicVolume=Math.max(0,Math.min(100,Number(localStorage.getItem('mlp_music_volume')||30)));
+let musicVolume=Math.max(0,Math.min(100,Number(localStorage.getItem('mlp_music_volume')??30)));
 const YT_TRACKS={home:'pWAP7fIwGnI',lobby:'pWAP7fIwGnI',game:'9gBTKiVqprE'};
 let ytPlayer=null,ytReady=false,userInteracted=false;
 const diceAnimations=new Map();
@@ -136,7 +136,7 @@ const BATTLE_SFX = {
 };
 const battleSoundCache=new Map();
 const battleSoundCooldowns=new Map();
-let battleSoundVolume=Math.max(0,Math.min(1,Number(localStorage.getItem('mlp_sfx_volume')||0.55)));
+let battleSoundVolume=Math.max(0,Math.min(1,Number(localStorage.getItem('mlp_sfx_volume')??0.55)));
 const LOBBY_BACKGROUND='/assets/backgrounds/lobby_crystal_cave.png';
 const ARENA_BACKGROUNDS={
   // Arena 1 bleibt exakt wie bisher, da sie bereits funktioniert.
@@ -2406,6 +2406,16 @@ $('#closeGiftBtn').addEventListener('click',()=>$('#giftDialog').close());
 $('#giftDoneBtn').addEventListener('click',()=>$('#giftDialog').close());
 document.querySelectorAll('.music-toggle').forEach(b=>b.addEventListener('click',()=>{ensureAudio();toggleMusic()}));
 document.querySelectorAll('.music-volume').forEach(s=>s.addEventListener('input',e=>setMusicVolume(e.target.value)));
+document.querySelectorAll('.sfx-volume').forEach(el=>el.addEventListener('input',e=>{
+  battleSoundVolume=Math.max(0,Math.min(1,Number(e.target.value)/100));
+  localStorage.setItem('mlp_sfx_volume',String(battleSoundVolume));
+  document.querySelectorAll('.sfx-volume').forEach(slider=>slider.value=String(Math.round(battleSoundVolume*100)));
+  document.querySelectorAll('.sfx-volume-readout').forEach(label=>label.textContent=Math.round(battleSoundVolume*100)+'%');
+  if(crystalSpinAudio)crystalSpinAudio.volume=Math.min(1,battleSoundVolume*1.15);
+  window.dispatchEvent(new Event('mlp-sfx-volume-change'));
+}));
+document.querySelectorAll('.sfx-volume').forEach(el=>el.value=String(Math.round(battleSoundVolume*100)));
+document.querySelectorAll('.sfx-volume-readout').forEach(el=>el.textContent=Math.round(battleSoundVolume*100)+'%');
 updateMusicUI();
 updateHomePreview();
 
