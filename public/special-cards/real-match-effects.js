@@ -1,6 +1,6 @@
 // Real-match effects. Server state is authoritative; animations only illustrate confirmed events.
 import {playSweetieBotAnimation} from './sweetie-bot.js';
-import {playHelementsOfArmoryAnimation} from './helements-of-armory.js?v=hoa-readable-20261012-7';
+import {playHelementsOfArmoryAnimation} from './helements-of-armory.js?v=hoa-audio-20261012-8';
 function anchor(){return document.querySelector('#game')||document.body;}
 function sourceImage(src){
  const img=document.createElement('img');
