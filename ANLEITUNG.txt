@@ -1,7 +1,11 @@
-HELEMENTS OF ARMORY – ORIGINALDATEI
+SWEETIE BOT + HELEMENTS OF ARMORY – KARTEN IM SPIEL REGISTRIEREN
 
-Die Original-HTML ist vollständig enthalten und nicht nachgebaut. Die ingame-Version ergänzt nur die Verbindung zum echten Spiel.
+Diese Version konzentriert sich auf die beiden Karten in der Host-Kartengalerie und ihre Basis-Spielwirkung. Bestehende Animationen bleiben unberuehrt.
 
-Zum Einbauen: ZIP entpacken, den Inhalt in deinen mlp-battle-cards-Hauptordner legen (wo server.js liegt), dort INSTALLIEREN.py mit Python 3 starten. Das Skript aktualisiert cards.js, server.js und public/index.html und legt Backups an. Danach die geänderten Dateien zu GitHub hochladen und Render neu deployen. Ein reines Hochladen der ZIP zu GitHub installiert die Änderungen NICHT.
+1. ZIP in den Hauptordner deines mlp-battle-cards-Spiels entpacken (dort liegen cards.js und server.js).
+2. KARTEN_EINBAUEN.bat doppelklicken (Python muss installiert sein).
+3. Die aktualisierten Dateien cards.js und server.js sowie public/assets/new_specials/*.svg zu GitHub hochladen.
+4. Render-Deploy abwarten und Spiel neu laden.
+5. Als Host in der Lobby auf 'Alle Karten ansehen' klicken und nach Sweetie oder Helements suchen.
 
-Die originalen Audiotracks bleiben in der HTML eingebettet und starten über die Original-Play-Schaltfläche gleichzeitig.
+WICHTIG: Das Programm kann nicht selbst in GitHub schreiben (GitHub-Verbindung hat hier nur Leserechte). Bilder sind vorlaeufige Ersatzgrafiken. Die originalen Animationen werden mit diesem kleinen Kartenfix nicht installiert.
