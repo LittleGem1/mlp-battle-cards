@@ -44,7 +44,7 @@ function makeCloud(layer, center, duration=1500){
   const cloud=document.createElement('div'); cloud.className='hoa-cloud'; cloud.style.left=`${center.x}px`; cloud.style.top=`${center.y}px`;
   cloud.innerHTML='<i></i><i></i><i></i>';
   layer.appendChild(cloud);
-  animate(cloud,[
+  const cloudAnimation=animate(cloud,[
     {opacity:0, transform:'translate(-50%,-50%) scale(.25)'},
     {opacity:1, transform:'translate(-50%,-50%) scale(1.05)', offset:.12},
     {opacity:.92, transform:'translate(-50%,-50%) scale(1)', offset:.35},
@@ -52,6 +52,7 @@ function makeCloud(layer, center, duration=1500){
     {opacity:0, transform:'translate(-50%,-60%) scale(1.26)'}
   ],{duration,easing:'cubic-bezier(.17,.84,.44,1)'});
   removeLater(cloud,duration+100);
+  return {cloud,cloudAnimation};
 }
 
 function makeArtifactCard(layer, {artifactName='Zufalls-Artefakt', artifactIcon='✦', artifactImageUrl=''}){
@@ -151,7 +152,28 @@ export async function playHelementsOfArmoryAnimation({
     const source=point(sourceElement,.5,.5);
     const deck=point(deckElement,.5,.5);
     const burstCenter={x:(source.x+deck.x)/2, y:Math.min(source.y, deck.y)-50};
-    makeCloud(layer, burstCenter, 5000);
+    // Wolke ist an das wirkliche Ende der bereits laufenden Furzspur gekoppelt.
+    // Ihr Beginn bei 6s entspricht dem Furz-Einsatz in der Originalvorschau.
+    const cloudFx=makeCloud(layer, burstCenter, 60000);
+    const fartFinished=muted
+      ? wait(5000)
+      : new Promise(resolve=>{
+          if(fart.ended || fart.error){resolve();return;}
+          const finish=()=>{fart.removeEventListener('ended',finish);fart.removeEventListener('error',finish);resolve();};
+          fart.addEventListener('ended',finish,{once:true});
+          fart.addEventListener('error',finish,{once:true});
+          // Sicherheitsfallback, falls Browser die Tonspur nicht abspielt.
+          setTimeout(finish,15000);
+        });
+    // Wolke bis zum Ende des Sounds sichtbar halten, dann ausblenden.
+    const cloudDone=fartFinished.then(async()=>{
+      cloudFx.cloudAnimation.cancel();
+      await cloudFx.cloud.animate([
+        {opacity:.92,transform:'translate(-50%,-54%) scale(1.13)'},
+        {opacity:0,transform:'translate(-50%,-60%) scale(1.26)'}
+      ],{duration:650,fill:'forwards',easing:'ease-out'}).finished.catch(()=>{});
+      cloudFx.cloud.remove();
+    });
     // Originalvorschau: Artefakt erscheint bei 6.32 Sekunden.
     await until(6.32);
 
@@ -162,9 +184,10 @@ export async function playHelementsOfArmoryAnimation({
       {opacity:1, transform:'translate(-50%,-50%) scale(1.06) rotate(4deg)', offset:.35},
       {opacity:1, transform:'translate(-50%,-50%) scale(1) rotate(0deg)', offset:.55}
     ],{duration:520,easing:'cubic-bezier(.16,.88,.4,1)'});
-    // Karte bleibt lesbar, während die Wolke bis Sekunde 11 ausblendet.
-    // Danach bleibt sie noch gut zwei Sekunden und fliegt erst dann weg.
-    await until(12.2);
+    // Nach dem vollständigen Furz und Ausblenden der Wolke
+    // bleibt die Artefaktkarte weitere drei Sekunden ruhig lesbar.
+    await cloudDone;
+    await wait(3000);
 
     if(Number.isFinite(deckCountBefore) && Number.isFinite(deckCountAfter)){
       counterTag=document.createElement('div'); counterTag.className='hoa-counter-pop'; counterTag.textContent=`${deckCountBefore} → ${deckCountAfter}`; layer.appendChild(counterTag);
@@ -178,9 +201,9 @@ export async function playHelementsOfArmoryAnimation({
     ],{duration:820,easing:'cubic-bezier(.15,.86,.35,1)'});
     if(counterTag){ animate(counterTag,[{opacity:0,transform:'scale(.6)'},{opacity:1,transform:'scale(1.05)',offset:.35},{opacity:1,transform:'scale(1)'},{opacity:0}],{duration:1600,easing:'ease-out'}); }
     deckElement.classList.add('hoa-deck-pulse');
-    await until(13.05);
+    await wait(850);
     onArtifactGranted();
-    await until(13.6);
+    await wait(550);
   } finally {
     clearInterval(stoneTimer);
     try{rumble.pause();fart.pause();}catch{}
