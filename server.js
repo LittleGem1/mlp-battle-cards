@@ -274,6 +274,7 @@ function availableTargets(r,p,mode='any'){
   return roomPlayers(r).filter(t=>{
     if(t.id===p.id||t.surrendered)return false;
     if(mode==='played'&&!playedCardIds(r.played?.[t.id]).length)return false;
+    if(mode==='played_unhalved'&&(!playedCardIds(r.played?.[t.id]).length||r.roundFX?.sweetieHalved?.includes(t.id)))return false;
     if(mode==='hand'&&!t.hand.length)return false;
     if(mode==='artifact'&&!(t.artifacts||[]).length)return false;
     // Kopieren/Stehlen: Nur Gegner mit einem Artefakt, das der Spieler noch nicht hat.
@@ -549,7 +550,7 @@ function botHasNegative(r,p){
 function botApplySpecial(r,p,c){
   const effect=c.effect;
   if(effect==='helements'){grantHelements(r,p);gameOverIfNeeded(r);return;}
-  if(effect==='sweetiebot'){const t=botTarget(r,p,'played');if(t)applySweetieBot(r,p,t);return;}
+  if(effect==='sweetiebot'){const t=botTarget(r,p,'played_unhalved');if(t)applySweetieBot(r,p,t);return;}
   const targetAny=()=>botTarget(r,p,'any');
   const targetHand=()=>botTarget(r,p,'hand');
   if(effect==='artifactcopy'||effect==='artifactsteal'){
@@ -680,7 +681,7 @@ function botUsableSpecials(r,p){
     if(c.effect==='rainbow'||c.effect==='stormking')return r.category==='speed';
     if(c.effect==='applejack')return r.category==='strength';
     if(c.effect==='chrysalis')return history;
-    if(c.effect==='sweetiebot')return botTargets(r,p,'played').some(t=>!r.roundFX?.sweetieHalved?.includes(t.id));
+    if(c.effect==='sweetiebot')return botTargets(r,p,'played_unhalved').length>0;
     if(c.effect==='helements')return (p.artifacts||[]).length<artifacts.length;
     if(c.effect==='ahuizotl')return botTargets(r,p,'played').length>0;
     if(c.effect==='cozy')return botTargets(r,p,'hand').length>0 && p.hand.length>1;
@@ -1886,7 +1887,7 @@ io.on('connection',socket=>{
     if(effect==='rainbow'&&r.category!=='speed')return socket.emit('errorMsg','Rainbow Dash kann nur bei Schnelligkeit eingesetzt werden.');
     if(effect==='applejack'&&r.category!=='strength')return socket.emit('errorMsg','Applejack kann nur bei Stärke eingesetzt werden.');
     if(effect==='stormking'&&r.category!=='speed')return socket.emit('errorMsg','Storm King wirkt nur bei Schnelligkeit.');
-    if(effect==='sweetiebot'&&!availableTargets(r,p,'played').filter(t=>!r.roundFX?.sweetieHalved?.includes(t.id)).length)return socket.emit('errorMsg','Sweetie Bot benötigt einen noch nicht halbierten Gegner mit gelegter Karte.');
+    if(effect==='sweetiebot'&&!availableTargets(r,p,'played_unhalved').length)return socket.emit('errorMsg','Sweetie Bot benötigt einen noch nicht halbierten Gegner mit gelegter Karte.');
     if(effect==='helements'&&!artifacts.some(a=>!(p.artifacts||[]).includes(a.id)))return socket.emit('errorMsg','Du besitzt bereits alle Artefakte. Helements bleibt auf deiner Hand.');
     if(effect==='ahuizotl'&&!availableTargets(r,p,'played').length)return socket.emit('errorMsg','Ahuizotl braucht einen Gegner, der seine Karte bereits gelegt hat.');
     if(['tirek','cozy','sludge','bugbear','cockatrice','sombra','ponyshadows','maneiac','lightningdust','gilda'].includes(effect)){
@@ -1909,7 +1910,7 @@ io.on('connection',socket=>{
     }
 
     if(effect==='sweetiebot'){
-      requestTarget(socket,r,p,source,'sweetiebot','played','Sweetie Bot: Wessen gelegte Karte wird halbiert?');
+      requestTarget(socket,r,p,source,'sweetiebot','played_unhalved','Sweetie Bot: Wessen gelegte Karte wird halbiert?');
     }else if(effect==='helements'){
       const granted=grantHelements(r,p);
       socket.emit('specialDone',{text:granted?'Helements: Ein fehlendes Artefakt erhalten!':'Du besitzt bereits alle Artefakte.'});
