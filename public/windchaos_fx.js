@@ -8,6 +8,8 @@
   const RENDER=document;
   let running=false;
   let oldAudio=null;
+  const effectVolume=()=>Math.max(0,Math.min(1,Number(localStorage.getItem('mlp_sfx_volume')??.55)));
+  window.addEventListener('mlp-sfx-volume-change',()=>{if(oldAudio)oldAudio.volume=Math.min(1,effectVolume()*.92);});
   const clamp=(v,min=0,max=1)=>Math.max(min,Math.min(max,v));
   const ease=v=>1-Math.pow(1-clamp(v),3);
   const random=(a,b)=>a+Math.random()*(b-a);
@@ -75,7 +77,7 @@
       const src='/assets/sounds/windchaos_tornado.mp3?v=windfix-20261012';
       audio=new Audio(src);
       audio.preload='auto';
-      audio.volume=.92;
+      audio.volume=Math.min(1,effectVolume()*.92);
       const kick=()=>{
         const promise=audio.play();
         if(promise&&typeof promise.catch==='function'){
