@@ -1,1 +1,7 @@
-HELEMENTS ORIGINALANIMATION FIX V3\n\nDie ORIGINAL-Animationsvorschau (10,3 Sekunden) inklusive ihrer zwei MP3-Tonspuren ist direkt im public-Ordner enthalten. Beide Tonspuren beginnen gleichzeitig wie im Original. Sweetie Bot bleibt enthalten.\n\n1. ZIP entpacken.\n2. INSTALLIEREN.py in den Hauptordner des entpackten GitHub-Spiels kopieren oder mit dem Spielordner als Argument ausführen. Die mitgelieferte public/assets/new_specials-Struktur muss neben dem Skript liegen.\n3. python INSTALLIEREN.py\n4. Geänderte cards.js, server.js, public/index.html und public/assets/new_specials in GitHub hochladen und Render neu deployen.\n\nHinweis: Der Installer erstellt Backups. Kein vollständiger Render-Multiplayer-Test durchgeführt.\n
+HELEMENTS OF ARMORY – ORIGINALDATEI
+
+Die Original-HTML ist vollständig enthalten und nicht nachgebaut. Die ingame-Version ergänzt nur die Verbindung zum echten Spiel.
+
+Zum Einbauen: ZIP entpacken, den Inhalt in deinen mlp-battle-cards-Hauptordner legen (wo server.js liegt), dort INSTALLIEREN.py mit Python 3 starten. Das Skript aktualisiert cards.js, server.js und public/index.html und legt Backups an. Danach die geänderten Dateien zu GitHub hochladen und Render neu deployen. Ein reines Hochladen der ZIP zu GitHub installiert die Änderungen NICHT.
+
+Die originalen Audiotracks bleiben in der HTML eingebettet und starten über die Original-Play-Schaltfläche gleichzeitig.
