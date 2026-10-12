@@ -127,6 +127,8 @@ const specials = [
   {id:'s95',type:'special',name:'Diabolo – Schattengestalt',effect:'shadowform',text:'Wähle einen Spieler, der ein Artefakt ablegen muss.',useIcon:'🌑',useLabel:'Schattengestalt',image:'/assets/specials_new/95_Diabolo_Schattengestalt.webp'},
   {id:'s96',type:'special',name:'Flawless Sparkle Moon – Zauberkopierer',effect:'artifactcopy',text:'Wähle einen Gegner und eines seiner Artefakte, das du für dich kopierst.',useIcon:'🪄',useLabel:'Zauberkopierer',image:'/assets/specials_new/96_Flawless_Sparkle_Moon_Zauberkopierer.webp'},
   {id:'s97',type:'special',name:'Evil Sci Twi – Zauberklau',effect:'artifactsteal',text:'Wähle einen Gegner und eines seiner Artefakte, das du ihm stiehlst.',useIcon:'✨',useLabel:'Zauberklau',image:'/assets/specials_new/97_Evil_Sci_Twi_Zauberklau.webp'},
+  {id:'s99',type:'special',name:'Sweetie Bot',effect:'sweetiebot',text:'Wähle einen Gegner mit bereits gelegter Karte: Sein Wert in der aktiven Kategorie wird für diese Runde halbiert (aufgerundet).',useIcon:'🤖',useLabel:'Wert halbieren',image:'/assets/sweetie-bot.png'},
+  {id:'s100',type:'special',name:'Helements of Armory',effect:'helements',text:'Erhalte 1 zufälliges Artefakt, das dir noch fehlt.',useIcon:'🪨',useLabel:'Fehlendes Artefakt',image:'/assets/helements-of-armory.png'},
   {id:'s98',type:'special',name:'Sphinx',effect:'sphinx',text:'Lege bis zu 4 Karten deiner Wahl aus deiner Hand ab und ziehe die gleiche Anzahl neuer Karten von deinem Deck nach.',useIcon:'🔄',useLabel:'Kartenwechsel',image:'/assets/specials_new/98_Sphinx_Kartenwechsel_20261012.png'},
 ];
 const artifacts = [
