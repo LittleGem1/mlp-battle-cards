@@ -9,7 +9,7 @@ function animate(el, frames, options){ return el.animate(frames,{ fill:'forwards
 const DEFAULT_RUMBLE = '/assets/helements-rumble.mp3';
 const DEFAULT_FART = '/assets/helements-fart.mp3';
 
-function ensureAudio(url, volume=1){ const a = new Audio(url); a.preload='auto'; a.volume=volume; return a; }
+function ensureAudio(url, volume=1){ const a = new Audio(url); a.preload='auto'; a.volume=volume*Math.max(0,Math.min(1,Number(localStorage.getItem('mlp_sfx_volume')??.55))); return a; }
 function playMaybe(audio, muted){ if(muted) return Promise.resolve(); return audio.play().catch(()=>{}); }
 function removeLater(node, ms=0){ setTimeout(()=>node?.remove(), ms); }
 
