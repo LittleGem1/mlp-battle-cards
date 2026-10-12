@@ -11,7 +11,8 @@
     {id:'cockatrice',title:'Cockatrice',module:'CockatriceEffect',desc:'Eine Karte wird versteinert'}
   ];
   const doc=document;
-  let overlay=null, activeId=null;
+  let overlay=null, activeId=null, previewTimer=null;
+  function showPanel(){if(previewTimer){clearTimeout(previewTimer);previewTimer=null;} overlay?.classList.remove('mlp-anim-preview-playing');}
   const cardImg='/assets/artifacts/01_Elemente_der_Harmonie.png';
   function isAvailable(f){return !!(window[f.module]&&typeof window[f.module].play==='function');}
   function clearEffects(){
@@ -20,12 +21,15 @@
     try{window.ChangelingSwarmFX?.stop?.();}catch(_){}
     try{window.CockatriceEffect?.stop?.();}catch(_){}
   }
-  function stop(){clearEffects();activeId=null;if(overlay)overlay.querySelector('#animCenterState').textContent='Bereit · Wähle eine Animation';}
+  function stop(){showPanel();clearEffects();activeId=null;if(overlay)overlay.querySelector('#animCenterState').textContent='Bereit · Wähle eine Animation';}
   function doPlay(id){
     const f=definitions.find(d=>d.id===id);if(!f)return;
     if(!isAvailable(f)){state('Nicht verfügbar – Effekt-Skript wurde nicht geladen');return;}
     stop();activeId=id;
-    state('Spielt ab: '+f.title+' · Vorschau ohne Einfluss auf das Spiel');
+    state('Abgespielt: '+f.title+' · Vorschau ohne Einfluss auf das Spiel');
+    // Bedienfenster komplett ausblenden, damit die bestehenden Vollbild-Effekte sichtbar sind.
+    overlay?.classList.add('mlp-anim-preview-playing');
+    previewTimer=setTimeout(showPanel,id==='cockatrice'?6100:5300);
     const common={preview:true,casterName:'Vorschau',targetName:'Gegner',duration:4200,
       artifact:{id:'a01',name:'Elemente der Harmonie',image:cardImg}};
     try{
@@ -37,7 +41,7 @@
         case 'wind':window.WindchaosFX.play({isPreview:true});break;
         case 'cockatrice':window.CockatriceEffect.play({targetName:'Vorschau-Gegner',cardImage:cardImg,sound:true});break;
       }
-    }catch(e){state('Fehler beim Starten: '+(e?.message||'unbekannt'));}
+    }catch(e){showPanel();state('Fehler beim Starten: '+(e?.message||'unbekannt'));}
   }
   function state(str){const el=overlay?.querySelector('#animCenterState');if(el)el.textContent=str;}
   function close(){stop();overlay?.remove();overlay=null;}
