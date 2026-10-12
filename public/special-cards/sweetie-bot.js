@@ -28,7 +28,24 @@ export async function playSweetieBotAnimation({sourceElement,targetElement,voice
   const blip=()=>{if(muted)return;try{audioContext??=new (window.AudioContext||window.webkitAudioContext)();const o=audioContext.createOscillator(),g=audioContext.createGain(),t=audioContext.currentTime;o.type='sawtooth';o.frequency.setValueAtTime(130,t);o.frequency.exponentialRampToValueAtTime(50,t+.13);g.gain.setValueAtTime(.07,t);g.gain.exponentialRampToValueAtTime(.001,t+.14);o.connect(g).connect(audioContext.destination);o.start(t);o.stop(t+.15);}catch{}};
   const effectNodes=[];
   function impact(x,y){const el=document.createElement('div');el.className='sb-impact';el.style.left=`${x}px`;el.style.top=`${y}px`;el.innerHTML='<svg viewBox="0 0 180 180"><g stroke="#e2ddff" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M90 90L93 0 M90 90L180 48 M90 90L167 170 M90 90L46 180 M90 90L3 120 M90 90L15 12 M90 90L135 22"/><path d="M93 33L66 17M147 63L156 29M132 128L173 119M69 133L32 156M47 96L23 73M108 62L124 48M98 154L113 175"/><path d="M90 90L61 59L44 67 M90 90L126 78L133 91 M90 90L84 131L64 142"/></g></svg><div class="sb-hole"></div>';layer.append(el);effectNodes.push(el);animate(el,[{opacity:0,transform:'translate(-50%,-50%) scale(.3)'},{opacity:1,transform:'translate(-50%,-50%) scale(1.15)',offset:.25},{opacity:.9,transform:'translate(-50%,-50%) scale(1)'}],{duration:350});}
-  function shot(src,dst){blip();const beam=document.createElement('div');beam.className='sb-shot';const dx=dst.x-src.x,dy=dst.y-src.y;beam.style.cssText=`left:${src.x}px;top:${src.y}px;width:${Math.hypot(dx,dy)}px;transform:rotate(${Math.atan2(dy,dx)}rad)`;layer.appendChild(beam);animate(beam,[{opacity:0,clipPath:'inset(0 100% 0 0)'},{opacity:1,clipPath:'inset(0 0 0 0)'},{opacity:0}],{duration:210});setTimeout(()=>{beam.remove();impact(dst.x,dst.y);animate(flash,[{opacity:.32},{opacity:0}],{duration:180});},130);}
+ 
+function shot(src,dst){
+  blip();
+  const beam=document.createElement('div');
+  beam.className='sb-shot';
+  const dx=dst.x-src.x,dy=dst.y-src.y;
+  beam.style.cssText=`left:${src.x}px;top:${src.y}px;width:${Math.hypot(dx,dy)}px;transform:rotate(${Math.atan2(dy,dx)}rad)`;
+  layer.appendChild(beam);
+  animate(beam,[
+    {opacity:0,clipPath:'inset(0 100% 0 0)'},
+    {opacity:1,clipPath:'inset(0 0 0 0)'},
+    {opacity:0}
+  ],{duration:210});
+  setTimeout(()=>beam.remove(),210);
+  impact(dst.x,dst.y);
+  animate(flash,[{opacity:.32},{opacity:0}],{duration:180});
+}
+
   try {
     // Crucial ordering: let the actual recorded voice line finish before firing.
     if (!muted) {
