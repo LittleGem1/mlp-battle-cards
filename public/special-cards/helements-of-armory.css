@@ -25,3 +25,13 @@
 @keyframes hoa-deck-pulse{0%{box-shadow:0 0 0 0 rgba(110,255,120,.75)}100%{box-shadow:0 0 0 24px rgba(110,255,120,0)}}
 .hoa-counter-pop{position:absolute;right:-8px;top:-12px;min-width:42px;padding:6px 10px;border-radius:999px;background:#70f07e;color:#06200a;font:900 22px/1 system-ui,sans-serif;box-shadow:0 0 18px rgba(112,240,126,.55);opacity:0}
 .hoa-glow-line{position:absolute;height:4px;background:linear-gradient(to right,rgba(166,255,175,0),rgba(188,255,196,.95),rgba(246,255,241,1));transform-origin:left center;filter:drop-shadow(0 0 8px rgba(131,255,131,.8));opacity:0}
+
+/* Helements Vorschau (3): nach 2,5 Sekunden deutlich stärkeres Erdbeben. */
+.hoa-earthquake.hoa-heavy-earthquake{animation:hoa-heavy-shake .067s infinite alternate}
+@keyframes hoa-heavy-shake{
+  from{transform:translate(-12px,8px) rotate(-.45deg) scale(1.015)}
+  to{transform:translate(13px,-11px) rotate(.5deg) scale(1.02)}
+}
+/* Artefakt-Optik der gelieferten Vorschau: goldener Rand, violetter Kristallglanz. */
+.hoa-artifact-card{border:5px solid #e7c86d;background:radial-gradient(circle at 50% 40%,#985ed0,#311c53 70%);box-shadow:inset 0 0 30px #1e0936,0 0 22px #e7b7ff}
+.hoa-artifact-name{color:#ffecaf}
