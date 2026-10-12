@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Helements of Armory – Einbau Beispiel</title>
+  <link rel="stylesheet" href="./helements-of-armory/helements-of-armory.css">
+  <style>
+    body{margin:0;background:radial-gradient(circle at top,#30101c,#0d0b12 60%);font:16px system-ui;color:#ffeef2;min-height:100vh}
+    .wrap{max-width:1200px;margin:0 auto;padding:20px}
+    .arena{position:relative;min-height:100vh;overflow:hidden;background:linear-gradient(180deg,rgba(55,14,31,.14),rgba(0,0,0,.15));}
+    .hud{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+    .left,.right{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
+    .card-img{width:min(34vw,290px);aspect-ratio:2/3;object-fit:cover;border-radius:18px;border:3px solid #8a2d48;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .deck{position:relative;width:180px;height:240px;border-radius:16px;border:3px solid #965366;background:linear-gradient(150deg,#37131e,#160d13);display:grid;place-items:center;box-shadow:0 10px 30px rgba(0,0,0,.38)}
+    .deck::before{content:'Artefakt-Deck';position:absolute;top:16px;left:0;right:0;text-align:center;font-weight:700;letter-spacing:.05em;color:#ffcad7}
+    .count{font:900 64px/1 system-ui;color:#ffe0e7;text-shadow:0 0 12px rgba(255,117,153,.45)}
+    .btn{margin-top:20px;padding:14px 24px;border:0;border-radius:12px;background:#f45a82;color:#160b10;font:800 18px system-ui;cursor:pointer}
+    .note{max-width:680px;color:#e5c7cf}
+  </style>
+</head>
+<body>
+  <div class="arena" id="arena">
+    <div class="wrap">
+      <h1>Helements of Armory – Einbau-Beispiel</h1>
+      <p class="note">Erdbeben, Steinbröckeln, Furzwolke und ein neues Artefakt, das ins Deck fliegt.</p>
+      <div class="hud">
+        <div class="left">
+          <img id="source" class="card-img" src="./assets/helements-of-armory.png" alt="Helements of Armory">
+        </div>
+        <div class="right">
+          <div id="deck" class="deck"><div id="count" class="count">6</div></div>
+        </div>
+      </div>
+      <button id="play" class="btn">Animation starten</button>
+    </div>
+  </div>
+  <script type="module">
+    import { playHelementsOfArmoryAnimation } from './helements-of-armory/helements-of-armory.js';
+    const play = document.getElementById('play');
+    play.addEventListener('click', async () => {
+      play.disabled = true;
+      const count = document.getElementById('count');
+      count.textContent = '6';
+      try {
+        await playHelementsOfArmoryAnimation({
+          sourceElement: document.getElementById('source'),
+          deckElement: document.getElementById('deck'),
+          arenaElement: document.getElementById('arena'),
+          rumbleUrl: './assets/helements-rumble.mp3',
+          fartUrl: './assets/helements-fart.mp3',
+          artifactName: 'Rubin-Krone',
+          artifactIcon: '👑',
+          deckCountBefore: 6,
+          deckCountAfter: 7,
+          onArtifactGranted: () => { count.textContent = '7'; }
+        });
+      } finally {
+        play.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
