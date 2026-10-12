@@ -2094,6 +2094,8 @@ let rewardChoiceToken=null,rewardChoiceClock=null;
 function closeRewardChoice(){
   const o=$('#rewardChoiceOverlay');
   if(o){o.classList.remove('active');o.setAttribute('aria-hidden','true');}
+  const rewardPreview=$('#rewardPreview');
+  if(rewardPreview){rewardPreview.hidden=true;rewardPreview.setAttribute('aria-hidden','true');}
   rewardChoiceToken=null;
   if(rewardChoiceClock){clearInterval(rewardChoiceClock);rewardChoiceClock=null;}
 }
@@ -2102,27 +2104,42 @@ function showRewardChoice(e){
   if(!o||!grid)return;
   rewardChoiceToken=e.token;
   grid.innerHTML='';
+  const preview=$('#rewardPreview');
+  const previewImage=$('#rewardPreviewImage');
+  const previewName=$('#rewardPreviewName');
+  const previewAbility=$('#rewardPreviewAbility');
+  const previewClose=$('#rewardPreviewClose');
+  function closePreview(){
+    if(preview){preview.hidden=true;preview.setAttribute('aria-hidden','true');}
+  }
+  closePreview();
+  if(previewClose)previewClose.onclick=closePreview;
   for(const card of (e.cards||[])){
-    const b=document.createElement('button');
-    b.type='button';
-    b.className=`reward-choice-card ${card.type==='artifact'?'artifact':'special'}`;
-    b.innerHTML=`<span>${card.type==='artifact'?'💎 ARTEFAKT':'✨ SPEZIALKARTE'}</span>
-      <img src="${card.image}" alt="${escapeHtml(card.name)}">
-      <strong>${escapeHtml(card.name)}</strong>
-      <small>${card.type==='artifact'?'Für dein Siegziel sammeln':'Kommt auf deine Hand'}</small>
-      <b>Diese behalten</b>`;
-    bindCardInspector(b,card);
-    b.addEventListener('click',()=>{
+    const box=document.createElement('div');
+    box.className=`reward-choice-card ${card.type==='artifact'?'artifact':'special'}`;
+    const tag=document.createElement('span');tag.textContent=card.type==='artifact'?'💎 ARTEFAKT':'✨ SPEZIALKARTE';
+    const image=document.createElement('img');image.src=card.image;image.alt=card.name;
+    const heading=document.createElement('strong');heading.textContent=card.name;
+    const hint=document.createElement('small');hint.textContent=card.type==='artifact'?'Für dein Siegziel sammeln':'Kommt auf deine Hand';
+    const inspect=document.createElement('button');inspect.type='button';inspect.className='reward-preview-button';inspect.textContent='🔎 Karte ansehen';
+    inspect.addEventListener('click',()=>{
+      if(!rewardChoiceToken || !preview)return;
+      previewImage.src=card.image;previewImage.alt=card.name;
+      previewName.textContent=card.name;
+      previewAbility.textContent=card.text|| (card.type==='artifact'?'Artefakt für deine Sammlung.':'Keine weitere Beschreibung vorhanden.');
+      preview.hidden=false;preview.setAttribute('aria-hidden','false');
+    });
+    const choose=document.createElement('button');choose.type='button';choose.className='reward-select-button';choose.textContent='✓ Diese behalten';
+    choose.addEventListener('click',()=>{
       if(!rewardChoiceToken)return;
-      [...grid.querySelectorAll('button')].forEach(x=>x.disabled=true);
+      grid.querySelectorAll('button').forEach(x=>x.disabled=true);
+      closePreview();
       socket.emit('chooseReward',{cardId:card.id,token:rewardChoiceToken});
     });
-    grid.append(b);
+    box.append(tag,image,heading,hint,inspect,choose);grid.append(box);
   }
-
   o.classList.add('active');o.setAttribute('aria-hidden','false');
   pulseDeck('rewardDeckHud');rewardChime();
-
   let left=Number(e.seconds||18);
   const timer=$('#rewardChoiceTimer');
   if(timer)timer.textContent=`Wähle 1 von 2 · ${left}s`;
@@ -2130,7 +2147,7 @@ function showRewardChoice(e){
   rewardChoiceClock=setInterval(()=>{
     left=Math.max(0,left-1);
     if(timer)timer.textContent=left?`Wähle 1 von 2 · ${left}s`:'Wird automatisch gewählt …';
-    if(left<=0){clearInterval(rewardChoiceClock);rewardChoiceClock=null;}
+    if(left<=0){clearInterval(rewardChoiceClock);rewardChoiceClock=null;closePreview();}
   },1000);
 }
 socket.on('rewardChoice',showRewardChoice);

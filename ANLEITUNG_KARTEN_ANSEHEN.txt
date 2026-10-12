@@ -1,0 +1,11 @@
+MLP Battle Cards – Karten vor Belohnungswahl ansehen
+
+GitHub-Pfade (ZIP entpacken und diese Dateien ersetzen):
+- public/client.js
+- public/index.html
+- public/style.css
+
+Neu: Bei der Wahl zwischen zwei Goldkarten hat jede Karte einen Button „Karte ansehen“. Er öffnet das große Artwork und den Beschreibungstext. Über „Zurück zur Auswahl“ kannst du sie vergleichen. Erst „Diese behalten“ bestätigt die Wahl. Der bestehende Auswahl-Timer läuft weiter.
+
+Nach dem Hochladen auf Render-Deploy warten und die Spielseite mit Strg+F5 aktualisieren.
+Die Änderungen beeinflussen nicht die Karten im Deck oder die serverseitigen Belohnungsregeln.

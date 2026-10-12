@@ -4296,3 +4296,22 @@ body.scene-lobby #crystalDrift * {
 }
 
 .choice-cards .choice-help{width:100%;text-align:center;font-size:14px;opacity:.9;margin:0 0 8px}.choice-cards .choice-pick{display:flex;flex-direction:column;align-items:center;gap:6px;padding:0;border:2px solid transparent;border-radius:16px;background:none;cursor:pointer;color:#fff}.choice-cards .choice-pick.selected{border-color:#75eaff;box-shadow:0 0 0 3px rgba(117,234,255,.22)}.choice-cards .choice-pick span{max-width:150px;font-size:12px;font-weight:700;text-align:center}.choice-actions{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;margin-top:16px}.choice-actions .choice-selection-info{font-weight:800;opacity:.95}.choice-actions .primary,.choice-actions .secondary{border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:10px 16px;font-weight:800;cursor:pointer}.choice-actions .primary{background:linear-gradient(135deg,#4dd8ff,#8d69ff);color:#fff}.choice-actions .secondary{background:rgba(255,255,255,.08);color:#fff}
+
+/* Reward: inspect each of two cards before committing to a choice */
+.reward-choice-card{cursor:default}
+.reward-choice-card:hover{transform:none}
+.reward-choice-card .reward-preview-button,
+.reward-choice-card .reward-select-button{width:100%;border-radius:10px;border:1px solid rgba(255,255,255,.28);color:white;padding:10px 8px;font-size:13px;font-weight:900;cursor:pointer}
+.reward-choice-card .reward-preview-button{background:linear-gradient(135deg,#286c9a,#6842bd)}
+.reward-choice-card .reward-select-button{background:linear-gradient(135deg,#7450ec,#d84bd8)}
+.reward-choice-card.artifact .reward-select-button{background:linear-gradient(135deg,#bd8415,#f0c44f);color:#261600}
+.reward-choice-card button:disabled{opacity:.5;cursor:wait}
+.reward-choice-panel{position:relative}
+.reward-preview[hidden]{display:none!important}
+.reward-preview{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;padding:18px;border-radius:22px;background:rgba(6,9,29,.98);box-shadow:0 0 28px rgba(0,0,0,.8)}
+.reward-preview-inner{width:100%;display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap}
+.reward-preview-inner>img{width:min(250px,45vw);max-height:58vh;object-fit:contain;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.55)}
+.reward-preview-description{width:min(310px,100%);display:grid;justify-items:center;gap:15px}
+.reward-preview-description strong{font-size:clamp(18px,3vw,28px)}
+.reward-preview-description p{font-size:16px;line-height:1.55;white-space:pre-wrap}
+#rewardPreviewClose{padding:12px 16px;border:1px solid #bda7ff;border-radius:12px;background:#493a91;color:white;font-weight:800;cursor:pointer}
