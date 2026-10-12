@@ -1,0 +1,10 @@
+MLP Battle Cards – Bildfix für Dinky Doo, Cheese Sandwich und Sassy Saddles
+
+Ursache: cards.js hat Bilder ab Karten-ID 109 im Ordner /assets/cards statt /assets/cards_new gesucht.
+
+Installation auf GitHub:
+1. Die cards.js aus diesem Paket im Hauptverzeichnis ersetzen.
+2. Die drei WEBP-Bilder aus public/assets/cards_new/ dort ebenfalls hochladen (falls nicht schon vorhanden).
+3. Änderungen committen, Render-Deploy abwarten und Browser ggf. mit Strg+F5 neu laden.
+
+Bereits vorhandene andere Kartenbilder nicht löschen. Alle Spielwerte und Spezialkarten unverändert.
