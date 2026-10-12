@@ -42,7 +42,7 @@
     }
     document.body.appendChild(layer); current=layer; document.body.classList.add('artifactmagic-running');
     const audio=new Audio(stealing?'/assets/sounds/evil_sci_twi_zauberklau.mp3?v=18':'/assets/sounds/flawless_zauberkopierer.mp3?v=18');
-    audio.volume=0.72; currentAudio=audio; audio.play().catch(()=>{});
+    audio.volume=0.72*Math.max(0,Math.min(1,Number(localStorage.getItem('mlp_sfx_volume')??.55))); currentAudio=audio; audio.play().catch(()=>{});
     requestAnimationFrame(()=>layer.classList.add('show'));
     const duration=Math.max(1800,Math.min(Number(evt.duration)||2800,5200));
     setTimeout(stop,duration+180);
