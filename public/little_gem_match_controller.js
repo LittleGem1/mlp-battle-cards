@@ -30,6 +30,14 @@ window.startLittleGemMatch=function startLittleGemMatch(payload){
   hero.querySelectorAll('img').forEach(el=>el.remove());
   const img=new Image();img.src=championImage;img.alt='Little Gem – Magie 9';
   hero.append(img);
+  // The preview starts loading its sample image before the live match data
+  // arrives. Remove any late-loading old Magic-8 image immediately.
+  const guard=new MutationObserver(()=>{
+    hero.querySelectorAll('img').forEach(node=>{
+      if(!node.src.includes('095_Little_Gem_Magie9.svg'))node.remove();
+    });
+  });
+  guard.observe(hero,{childList:true});
   resize();
   begin();
 };
