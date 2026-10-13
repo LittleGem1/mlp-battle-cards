@@ -2139,7 +2139,7 @@ io.on('connection',socket=>{
       });
     }else if(effect==='queen_chandra'){
       socket.data.pendingSpecial={room:r.code,round:r.round,action:'queen_chandra',sourceCardId:source.id,chandraChoicePauseToken:pauseSelectionForChoice(r)};
-      setTimeout(()=>{if(socket.connected&&pendingForCurrentSelection(socket,r)?.action==='queen_chandra')socket.emit('specialCardRequest',{title:'👑 Königin Chandra: Wähle genau eine Spezialkarte',cards:specials.map(c=>({id:c.id,type:c.type,name:c.name,image:c.image,text:c.text}))});},11200);
+      setTimeout(()=>{if(socket.connected&&pendingForCurrentSelection(socket,r)?.action==='queen_chandra')socket.emit('specialCardRequest',{title:'👑 Königin Chandra: Wähle genau eine Spezialkarte',cards:specials.filter(c=>!p.hand.includes(c.id)).map(c=>({id:c.id,type:c.type,name:c.name,image:c.image,text:c.text}))});},11200);
     }else if(effect==='sweetiebot'){
       requestTarget(socket,r,p,source,'sweetiebot','played_unhalved','Sweetie Bot: Wessen gelegte Karte wird halbiert?');
     }else if(effect==='helements'){
@@ -2377,7 +2377,7 @@ io.on('connection',socket=>{
 
     if(action==='queen_chandra'){
       const wished=byId[cardId];
-      if(wished?.type!=='special'||!specials.some(c=>c.id===cardId))return socket.emit('errorMsg','Chandra erlaubt ausschließlich eine Spezialkarte.');
+      if(wished?.type!=='special'||!specials.some(c=>c.id===cardId)||p.hand.includes(cardId))return socket.emit('errorMsg','Bitte eine Spezialkarte auswählen, die nicht bereits auf deiner Hand ist.');
       if(p.hand.length>=MAX_TOTAL_HAND)return socket.emit('errorMsg','Deine Hand ist voll.');
       socket.data.pendingSpecial=null;
       p.hand.push(wished.id);
