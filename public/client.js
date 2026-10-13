@@ -1237,7 +1237,7 @@ function specialTheme(effect=''){
   if(['daybreaker','sunset'].includes(effect))return 'fire';
   if(['stormking','lightningdust','rainbow'].includes(effect))return 'storm';
   if(['nightmare','sombra','ponyshadows','tirek'].includes(effect))return 'shadow';
-  if(['maneiac','starlight','chrysalis','changeling','grogar','trixie'].includes(effect))return 'magic';
+  if(['maneiac','starlight','chrysalis','grogar','trixie'].includes(effect))return 'magic';
   if(['bugbear','hydra','manticore','timberwolves','sludge','gilda'].includes(effect))return 'impact';
   if(['pinkie','twilight','fluttershy','rarity','diamonddogs','flimflam','cozy'].includes(effect))return 'sparkle';
   return 'magic';
