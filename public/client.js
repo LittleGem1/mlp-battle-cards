@@ -2256,7 +2256,32 @@ function startFinisherDemo(){
 }
 
 socket.on('playerGaveUp',e=>{toast(`🏳 ${e.name} hat aufgegeben und schaut jetzt zu.`);beep(180,.14)});
-socket.on('roundWinner',e=>{if(finisherDemoActive)stopFinisherDemo();stopSelectionTimer();$('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;beep(1040,.22);playFinisher(e)});
+// An actual Little Gem (n95) victory overrides ALL regular loser finishers.
+function runLittleGemVictory(e){
+  document.querySelector('#littleGemVictoryFrame')?.remove();
+  const frame=document.createElement('iframe');
+  frame.id='littleGemVictoryFrame';
+  frame.title='Little Gem – Kristall-Asche';
+  frame.allow='autoplay';
+  frame.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;background:#020615;z-index:2147483000;pointer-events:none';
+  frame.src='/little_gem_live.html?v=crystal-ash-20261013';
+  frame.addEventListener('load',()=>{
+    if(!frame.isConnected)return;
+    try{frame.contentWindow.startLittleGemMatch(e)}
+    catch(err){console.error('[MLP] Little Gem animation:',err)}
+  },{once:true});
+  document.body.appendChild(frame);
+  setTimeout(()=>frame.remove(),Math.max(9200,Number(e.duration)||0)+100);
+}
+socket.on('roundWinner',e=>{
+  if(finisherDemoActive)stopFinisherDemo();
+  stopSelectionTimer();
+  $('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;
+  const entries=(e.revealEntries||[]).length?e.revealEntries:lastReveal;
+  const littleGemWon=entries.some(x=>x.pid===e.winnerId&&x.card?.id==='n95');
+  if(littleGemWon){runLittleGemVictory(e);return;}
+  beep(1040,.22);playFinisher(e);
+});
 
 let rewardChoiceToken=null,rewardChoiceClock=null;
 function closeRewardChoice(){
