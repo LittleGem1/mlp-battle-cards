@@ -573,8 +573,8 @@ function applyWindchaos(r,caster){
     t.lastPlayedCardId=null;
     // Hand wird wie zu Spielbeginn neu ausgeteilt, inklusive Abbau der Zeitstrafe.
     t.timeoutPenaltyCount=0;
-    t.hand.push(...drawNormal(r,NORMAL_HAND_TARGET));
-    const specialCard=drawSpecialOnly(r);
+    t.hand.push(...drawNormalForHand(r,t,NORMAL_HAND_TARGET));
+    const specialCard=drawSpecialOnly(r,t.hand);
     if(specialCard)t.hand.push(specialCard);
   }
   // The normal selection clock stays frozen during the card reveal and tornado.
@@ -801,7 +801,7 @@ function botApplySpecial(r,p,c){
       const idx=p.hand.indexOf(id);
       if(idx<0)continue;
       p.hand.splice(idx,1);discardCard(r,id);
-      const replacement=drawEquivalentReplacement(r,id);
+      const replacement=drawEquivalentReplacement(r,id,p);
       if(replacement)drawn.push(replacement);
     }
     if(drawn.length)p.hand.push(...drawn);
@@ -912,7 +912,7 @@ function refillNormalHands(r){
     const cap=Math.max(0,NORMAL_HAND_TARGET-(p.timeoutPenaltyCount||0));
     // Never refill past 7 total cards, including specials won from the gold deck.
     const need=Math.max(0,Math.min(cap-have,MAX_TOTAL_HAND-p.hand.length));
-    const drawn=drawNormal(r,need);
+    const drawn=drawNormalForHand(r,p,need);
     if(drawn.length){
       p.hand.push(...drawn);
       report.push({playerId:p.id,name:p.name,cards:drawn.map(id=>byId[id]).filter(Boolean)});
@@ -939,6 +939,11 @@ function drawRewardCandidate(r,p,{allowArtifact=true,excludeIds=[]}={}){
     if(!card)continue;
 
     if(excluded.has(id)){
+      deferred.push(id);
+      continue;
+    }
+
+    if(card.type==='special'&&p.hand.includes(id)){
       deferred.push(id);
       continue;
     }
@@ -1620,8 +1625,8 @@ function beginMatch(r){
 
   for(const p of ps){
     p.hand=[];p.artifacts=[];p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
-    p.hand.push(...drawNormal(r,NORMAL_HAND_TARGET));
-    const starterSpecial=drawSpecialOnly(r);
+    p.hand.push(...drawNormalForHand(r,p,NORMAL_HAND_TARGET));
+    const starterSpecial=drawSpecialOnly(r,p.hand);
     if(starterSpecial)p.hand.push(starterSpecial);
   }
 
@@ -2466,7 +2471,7 @@ io.on('connection',socket=>{
       if(idx<0)continue;
       p.hand.splice(idx,1);
       discardCard(r,id);
-      const replacement=drawEquivalentReplacement(r,id);
+      const replacement=drawEquivalentReplacement(r,id,p);
       if(replacement)drawn.push(replacement);
     }
     if(drawn.length)p.hand.push(...drawn);
