@@ -2083,7 +2083,7 @@ io.on('connection',socket=>{
       });
     }else if(effect==='queen_chandra'){
       socket.data.pendingSpecial={room:r.code,round:r.round,action:'queen_chandra',sourceCardId:source.id};
-      socket.emit('specialCardRequest',{title:'👑 Königin Chandra erfüllt dir einen Wunsch: Wähle genau eine Spezialkarte',cards:specials.map(c=>({id:c.id,type:c.type,name:c.name,image:c.image,text:c.text}))});
+      setTimeout(()=>{if(socket.connected&&pendingForCurrentSelection(socket,r)?.action==='queen_chandra')socket.emit('specialCardRequest',{title:'👑 Königin Chandra: Wähle genau eine Spezialkarte',cards:specials.map(c=>({id:c.id,type:c.type,name:c.name,image:c.image,text:c.text}))});},8300);
     }else if(effect==='sweetiebot'){
       requestTarget(socket,r,p,source,'sweetiebot','played_unhalved','Sweetie Bot: Wessen gelegte Karte wird halbiert?');
     }else if(effect==='helements'){
