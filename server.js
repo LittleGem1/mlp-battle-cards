@@ -282,6 +282,7 @@ function resetRoundFX(r){
     debuff:{},strengthDebuff:{},sweetieHalved:[],artifactBlocked:false
   };
   r.specialHistory=[];
+  r.revealCardSnapshot=null;
 }
 function fxHas(r,key,id){return !!r.roundFX?.[key]?.includes(id)}
 function fxAdd(r,key,id){
@@ -1468,10 +1469,7 @@ function settleRound(r,winnerId){
   r.phase='result';
   const finisher=pickFinisher(r),duration=4200;
   io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:ids.map(id=>byId[id]).filter(Boolean),finisher,duration,
-    revealEntries:Object.entries(r.played).map(([pid,entry])=>{
-      const p=r.players.get(pid),cardId=playedCardIds(entry)[0];
-      return {pid,name:p?.name||'Spieler',card:byId[cardId]};
-    }).filter(x=>x.card)});
+    revealEntries:(r.revealCardSnapshot||[]).filter(x=>x.card)});
   sendState(r);
   const settledMatch=r.matchId,settledRound=r.round;
   setTimeout(()=>{
@@ -1513,6 +1511,19 @@ function evaluate(r){
     });
   }
 
+  // Players skipped before laying a card still appear in reveal/finisher.
+  // A preview card is not physically played: no extra discard or penalty.
+  for(const p of activePlayers(r)){
+    if(!fxHas(r,'skipped',p.id)||vals.some(x=>x.pid===p.id))continue;
+    const previewId=p.hand.find(id=>byId[id]?.type==='normal');
+    if(!previewId)continue;
+    const c=byId[previewId],value=Math.min(9,Number(c[r.category]||0));
+    vals.push({pid:p.id,cardId:c.id,value,base:value,bonus:0,cards:[],
+      forcedLose:true,skipped:true,previewOnly:true});
+  }
+  r.revealCardSnapshot=vals.map(x=>({...x,card:byId[x.cardId],
+    name:r.players.get(x.pid)?.name||'Spieler'}));
+
   if(!vals.length){
     r.phase='result';r.played={};
     io.to(r.code).emit('notice','Keine spielbaren Karten aufgedeckt. Der Kristall startet die nächste Runde.');
@@ -1529,7 +1540,7 @@ function evaluate(r){
     r.phase='reveal';
     io.to(r.code).emit('reveal',{
       round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],
-      entries:vals.map(x=>({...x,card:byId[x.cardId],name:r.players.get(x.pid)?.name||'?'}))
+      entries:r.revealCardSnapshot
     });
     sendState(r);
     const match=r.matchId,round=r.round;
@@ -1562,7 +1573,7 @@ function evaluate(r){
   r.phase='reveal';
   io.to(r.code).emit('reveal',{
     round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],
-    entries:vals.map(x=>({...x,card:byId[x.cardId],name:r.players.get(x.pid)?.name||'?'}))
+    entries:r.revealCardSnapshot
   });
   sendState(r);
 
