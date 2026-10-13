@@ -62,12 +62,65 @@ function botLater(r,fn,delay=650){
   r.botTimers.push(t);
   return t;
 }
+// Autoritative server clock: during an animation the penalty countdown does not run.
+function clearSelectionAnimationPause(r){
+  if(r.selectionPauseTimer){clearTimeout(r.selectionPauseTimer);r.selectionPauseTimer=null;}
+  r.selectionPauseLocks=null;
+  r.selectionPausedRemainingMs=null;
+  r.selectionPauseUntil=null;
+}
+function refreshSelectionAnimationPause(r){
+  if(r.selectionPauseTimer){clearTimeout(r.selectionPauseTimer);r.selectionPauseTimer=null;}
+  if(r.phase!=='select'){clearSelectionAnimationPause(r);return;}
+  const locks=r.selectionPauseLocks;
+  if(!locks || !Number.isFinite(r.selectionPausedRemainingMs))return;
+  const now=Date.now();
+  for(const [token,lock] of locks)if(lock.until<=now)locks.delete(token);
+  if(!locks.size){
+    const remaining=Math.max(0,r.selectionPausedRemainingMs);
+    clearSelectionAnimationPause(r);
+    r.selectionDeadline=Date.now()+remaining;
+    const match=r.matchId,round=r.round;
+    if(r.selectionTimer)clearTimeout(r.selectionTimer);
+    r.selectionTimer=setTimeout(()=>{
+      if(rooms.has(r.code)&&r.matchId===match&&r.round===round&&r.phase==='select')
+        handleSelectionTimeout(r);
+    },remaining+50);
+    sendState(r);
+    maybeEvaluate(r);
+    return;
+  }
+  r.selectionPauseUntil=Math.max(...[...locks.values()].map(lock=>lock.until));
+  const next=Math.min(...[...locks.values()].map(lock=>lock.until));
+  r.selectionPauseTimer=setTimeout(()=>refreshSelectionAnimationPause(r),Math.max(1,next-now+10));
+  sendState(r);
+}
+function pauseSelectionForAnimation(r,durationMs,{acknowledge=false}={}){
+  if(!r||r.phase!=='select')return null;
+  const now=Date.now();
+  if(!Number.isFinite(r.selectionPausedRemainingMs)){
+    if(!Number.isFinite(r.selectionDeadline))return null;
+    r.selectionPausedRemainingMs=Math.max(0,r.selectionDeadline-now);
+    r.selectionDeadline=null;
+    if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
+  }
+  if(!r.selectionPauseLocks)r.selectionPauseLocks=new Map();
+  const token=crypto.randomUUID();
+  const duration=Math.max(500,Math.min(40000,Number(durationMs)||2700));
+  const waiting=acknowledge
+    ?new Set(roomPlayers(r).filter(p=>!p.isBot&&!p.disconnectedAt).map(p=>p.id))
+    :null;
+  r.selectionPauseLocks.set(token,{until:now+duration,waiting});
+  refreshSelectionAnimationPause(r);
+  return acknowledge?token:null;
+}
 function clearTimers(r){
   r.roundTransitionToken=(r.roundTransitionToken||0)+1;
   for(const key of ['roundTimer','selectionTimer','countdownTimer','readyTimer','rewardChoiceTimer']){
     if(r[key]){clearTimeout(r[key]);r[key]=null;}
   }
   clearBotTimers(r);
+  clearSelectionAnimationPause(r);
   r.selectionDeadline=null;
   r.countdownUntil=null;
   r.windchaosUntil=0; // Windchaos bei Match-Abbruch/Neustart beenden.
@@ -77,7 +130,9 @@ function publicState(r){
   return {
     code:r.code,hostId:r.hostId,phase:r.phase,category:r.category,round:r.round,
     botCardTester:isBotCardTestRoom(r),
-    countdownUntil:r.countdownUntil||null,selectionDeadline:r.selectionDeadline||null,roundIntroUntil:r.roundIntroUntil||null,
+    countdownUntil:r.countdownUntil||null,selectionDeadline:r.selectionDeadline||null,
+    selectionPausedRemainingMs:Number.isFinite(r.selectionPausedRemainingMs)?r.selectionPausedRemainingMs:null,
+    roundIntroUntil:r.roundIntroUntil||null,
     arenaId:r.arenaId||null,arenaSelection:r.arenaSelection||'random',postGameReady:[...(r.postGameReady||new Set())],
     deckCounts:{normal:(r.normalDeck||[]).length,reward:(r.rewardDeck||[]).length},
     players:roomPlayers(r).map(p=>({
@@ -297,6 +352,7 @@ function applyShadowForm(r,caster,target){
   // Verlorenes Artefakt bleibt Teil des Goldstapelsystems und kann neu gefunden werden.
   r.rewardDiscard.push(artifactId);
   const artifact=byId[artifactId];
+  pauseSelectionForAnimation(r,6600);
   io.to(r.code).emit('shadowformAnimation',{
     casterId:caster.id,casterName:caster.name,targetId:target.id,
     targetName:target.name,artifact:{id:artifact.id,name:artifact.name,image:artifact.image},duration:3600
@@ -321,6 +377,7 @@ function applyArtifactMagic(r,caster,target,artifactId,action){
   }
   caster.artifacts.push(artifactId);
   const a=byId[artifactId];
+  pauseSelectionForAnimation(r,5800);
   io.to(r.code).emit('artifactMagicAnimation',{
     action,casterId:caster.id,casterName:caster.name,targetId:target.id,
     targetName:target.name,artifact:{id:a.id,name:a.name,image:a.image},duration:2600
@@ -343,7 +400,8 @@ function applySweetieBot(r,caster,target){
   const played=playedCardIds(r.played[target.id]).map(id=>byId[id]).filter(x=>x?.type==='normal');
   const base=Math.max(0,...played.map(x=>Number(x[r.category]||0)));
   const current=Math.max(0,base+(r.roundBuff?.[target.id]?.[r.category]||0)+(r.roundFX?.debuff?.[target.id]||0)+(r.category==='strength'?(r.roundFX?.strengthDebuff?.[target.id]||0):0));
-  io.to(r.code).emit('mlpSpecialActivated',{cardId:'sweetie_bot',casterId:caster.id,targetId:target.id,previousValue:current,newValue:Math.ceil(current/2),category:r.category});
+  const animationPauseToken=pauseSelectionForAnimation(r,25000,{acknowledge:true});
+  io.to(r.code).emit('mlpSpecialActivated',{animationPauseToken,cardId:'sweetie_bot',casterId:caster.id,targetId:target.id,previousValue:current,newValue:Math.ceil(current/2),category:r.category});
   return true;
 }
 function grantHelements(r,caster){
@@ -352,7 +410,8 @@ function grantHelements(r,caster){
   const card=missing[Math.floor(Math.random()*missing.length)];
   const countBefore=new Set(caster.artifacts||[]).size;
   caster.artifacts.push(card.id);
-  io.to(r.code).emit('mlpSpecialActivated',{cardId:'helements_of_armory',casterId:caster.id,playerId:caster.id,grantedArtifactName:card.name,grantedArtifactImageUrl:card.image,deckCountBefore:countBefore,deckCountAfter:countBefore+1});
+  const animationPauseToken=pauseSelectionForAnimation(r,35000,{acknowledge:true});
+  io.to(r.code).emit('mlpSpecialActivated',{animationPauseToken,cardId:'helements_of_armory',casterId:caster.id,playerId:caster.id,grantedArtifactName:card.name,grantedArtifactImageUrl:card.image,deckCountBefore:countBefore,deckCountAfter:countBefore+1});
   io.to(r.code).emit('artifactFound',{playerId:caster.id,playerName:caster.name,card,artifacts:caster.artifacts.map(id=>byId[id]).filter(Boolean),collected:countBefore+1,total:artifacts.length});
   return card;
 }
@@ -452,15 +511,11 @@ function applyWindchaos(r,caster){
     const specialCard=drawSpecialOnly(r);
     if(specialCard)t.hand.push(specialCard);
   }
-  if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
-  // Die 30-Sekunden-Auswahl beginnt erst, wenn der Tornado verschwunden ist.
-  const turnMs=isBotCardTestRoom(r)?180000:30000;
-  r.selectionDeadline=Date.now()+totalDuration+turnMs;
+  // The normal selection clock stays frozen during the card reveal and tornado.
+  // It resumes with exactly the seconds that were left before Windchaos.
+  pauseSelectionForAnimation(r,totalDuration);
   io.to(r.code).emit('notice',`${caster.name} entfesselt WINDCHAOS! ${targets.length} gegnerische Hand/Hände werden neu verteilt.`);
   sendState(r);
-  r.selectionTimer=setTimeout(()=>{
-    if(rooms.has(r.code)&&r.matchId===match&&r.round===round&&r.phase==='select')handleSelectionTimeout(r);
-  },totalDuration+turnMs+50);
   setTimeout(()=>{
     if(!rooms.has(r.code)||r.matchId!==match||r.round!==round||r.phase!=='select')return;
     r.windchaosUntil=0;
@@ -479,6 +534,9 @@ function consumeSpecial(r,p,c){
   p.specialUsed=(p.specialUsed||0)+1;
   p.botTestSpecialReady=false;
   r.specialHistory.push({playerId:p.id,cardId:c.id,effect:c.effect});
+  // Include the card-reveal animation (2.5s) in the pause.
+  // Longer effects add their own pauses when their animation actually begins.
+  pauseSelectionForAnimation(r,c.effect==='windchaos'?7600:2700);
   io.to(r.code).emit('specialPlayed',{playerId:p.id,name:p.name,card:c});
   return true;
 }
@@ -1132,13 +1190,14 @@ function removePlayerFromRoom(socket,notify=true){
   }
 }
 function maybeEvaluate(r){
-  if(!r||r.phase!=='select'||(r.windchaosUntil||0)>Date.now())return;
+  if(!r||r.phase!=='select'||(r.windchaosUntil||0)>Date.now()||Number.isFinite(r.selectionPausedRemainingMs))return;
   const req=requiredPlayers(r);
   // Effekte wie Starlight / Flim & Flam müssen erst vollständig abgearbeitet
   // sein, bevor die Karten aufgedeckt werden.
   if(req.some(p=>p.pendingForcedDiscard && p.hand.length>0))return;
   if(!req.length){
     if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
+    clearSelectionAnimationPause(r);
     r.selectionDeadline=null;
     r.phase='result';
     io.to(r.code).emit('notice','In dieser Runde kann keine Karte mehr ausgespielt werden. Nächste Runde.');
@@ -1147,6 +1206,7 @@ function maybeEvaluate(r){
   }
   if(req.every(p=>p.selected)){
     if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
+    clearSelectionAnimationPause(r);
     r.selectionDeadline=null;
     evaluate(r);
   }
@@ -1194,8 +1254,10 @@ function gameOverIfNeeded(r){
   return false;
 }
 function handleSelectionTimeout(r){
-  if(!r||r.phase!=='select')return;
+  if(!r||r.phase!=='select'||Number.isFinite(r.selectionPausedRemainingMs))return;
+  if(Number.isFinite(r.selectionDeadline)&&Date.now()+25<r.selectionDeadline)return;
   clearRoomSpecialChoices(r);
+  clearSelectionAnimationPause(r);
   r.selectionTimer=null;r.selectionDeadline=null;
   const req=requiredPlayers(r),late=req.filter(p=>!p.selected);
   if(!late.length){maybeEvaluate(r);return;}
@@ -1228,6 +1290,7 @@ function handleSelectionTimeout(r){
 function advanceRoundIntro(r){
   if(!r||!rooms.has(r.code)||r.phase!=='roundintro')return false;
   if(r.roundTimer){clearTimeout(r.roundTimer);r.roundTimer=null;}
+  clearSelectionAnimationPause(r);
   r.roundIntroUntil=null;r.phase='select';
   const selectionMs=isBotCardTestRoom(r)?180000:30000;
   r.selectionDeadline=Date.now()+selectionMs;
@@ -1244,6 +1307,7 @@ function advanceRoundIntro(r){
 }
 function startRound(r,delay=900){
   if(!r||!rooms.has(r.code)||r.phase==='gameover'||r.phase==='lobby')return;
+  clearSelectionAnimationPause(r);
   if(r.roundTimer)clearTimeout(r.roundTimer);
   if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
   const token=r.roundTransitionToken=(r.roundTransitionToken||0)+1;
@@ -1532,7 +1596,7 @@ function guardRoomProgress(r,now=Date.now()){
   if(['ready','countdown'].includes(r.phase)&&r.players.size<2){resetToLobby(r);return;}
   if(['roundintro','select','reveal','tie','result','rewardchoice'].includes(r.phase)&&gameOverIfNeeded(r))return;
   if(r.phase==='select'){
-    if((r.windchaosUntil||0)>now)return;
+    if((r.windchaosUntil||0)>now||Number.isFinite(r.selectionPausedRemainingMs))return;
     if(!requiredPlayers(r).length){maybeEvaluate(r);return;}
     if(!r.selectionDeadline){
       r.selectionDeadline=now+15000;
@@ -1609,7 +1673,8 @@ const roundGuardInterval=setInterval(()=>{
         io.to(r.code).emit('roundSync',{
           code:r.code,matchId:r.matchId||null,round:r.round,phase:r.phase,
           category:r.category,roundIntroUntil:r.roundIntroUntil||null,
-          selectionDeadline:r.selectionDeadline||null
+          selectionDeadline:r.selectionDeadline||null,
+          selectionPausedRemainingMs:Number.isFinite(r.selectionPausedRemainingMs)?r.selectionPausedRemainingMs:null
         });
       }
     }catch(e){console.error('[MLP] Rundenwächter:',e);}
@@ -1627,6 +1692,17 @@ function canEditLobbyCosmetics(r,playerId){
 
 io.on('connection',socket=>{
   // Host-only read-only gallery. Never sends cards to other players and never changes decks.
+  socket.on('selectionAnimationDone',({token}={})=>{
+    const r=getRoom(socket);
+    if(!r||r.phase!=='select'||!r.players.has(socket.id)||!r.selectionPauseLocks)return;
+    const lock=r.selectionPauseLocks.get(token);
+    if(!lock?.waiting?.has(socket.id))return;
+    lock.waiting.delete(socket.id);
+    if(!lock.waiting.size){
+      r.selectionPauseLocks.delete(token);
+      refreshSelectionAnimationPause(r);
+    }
+  });
   socket.on('hostCardGalleryRequest',()=>{
     const room=getRoom(socket);
     const eligible=room && room.hostId===socket.id && room.players.has(socket.id)
