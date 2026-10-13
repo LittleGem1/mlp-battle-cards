@@ -170,8 +170,21 @@ function enforceHandLimit(r,p){
     else if(byId[excess]?.type==='special')r.rewardDeck.unshift(excess);
   }
 }
+// A player's hand must contain unique card IDs, including after steals and swaps.
+function repairDuplicateHand(r,p){
+  const seen=new Set(),extra=[],kept=[];
+  for(const id of p.hand||[]){if(seen.has(id))extra.push(id);else{seen.add(id);kept.push(id)}}
+  if(!extra.length)return;
+  p.hand=kept;
+  for(const id of extra){if(byId[id]?.type==='special')r.rewardDeck.push(id);else if(byId[id]?.type==='normal')r.normalDeck.push(id)}
+  for(const id of extra){
+    const type=byId[id]?.type;
+    const replacement=type==='special'?drawSpecialOnly(r,p.hand):type==='normal'?drawNormal(r,1,p.hand)[0]:null;
+    if(replacement&&!seen.has(replacement)){p.hand.push(replacement);seen.add(replacement)}
+  }
+}
 function sendState(r){
-  for(const p of roomPlayers(r))enforceHandLimit(r,p);
+  for(const p of roomPlayers(r)){repairDuplicateHand(r,p);enforceHandLimit(r,p);}
   io.to(r.code).emit('roomState',publicState(r));
   for(const p of roomPlayers(r)){
     // Keep opponents' fresh Windchaos hands secret until the tornado finishes.
@@ -212,36 +225,43 @@ function recycleRewardDeck(r){
   r.rewardDeck=shuffle(r.rewardDiscard.splice(0));
   if(!r.rewardDeck.length)r.rewardDeck=buildRewardDeck();
 }
-function drawNormal(r,count=1){
-  const out=[];
+function drawNormal(r,count=1,exclude=[]){
+  const out=[],excluded=new Set(exclude||[]);
   for(let i=0;i<count;i++){
     recycleNormalDeck(r);
-    const id=r.normalDeck.pop();
-    if(id)out.push(id);
+    let idx=r.normalDeck.findLastIndex(id=>!excluded.has(id));
+    if(idx<0&&r.normalDiscard.length){
+      r.normalDeck=shuffle([...r.normalDeck,...r.normalDiscard.splice(0)]);
+      idx=r.normalDeck.findLastIndex(id=>!excluded.has(id));
+    }
+    if(idx<0)break;
+    const [id]=r.normalDeck.splice(idx,1);
+    out.push(id);excluded.add(id);
   }
   return out;
 }
 function drawNormalForHand(r,p,count=1){
-  return drawNormal(r,Math.max(0,Math.min(count,MAX_TOTAL_HAND-p.hand.length)));
+  return drawNormal(r,Math.max(0,Math.min(count,MAX_TOTAL_HAND-p.hand.length)),p.hand);
 }
-function drawSpecialOnly(r){
+function drawSpecialOnly(r,exclude=[]){
+  const excluded=new Set(exclude||[]);
   recycleRewardDeck(r);
-  let idx=r.rewardDeck.findIndex(id=>byId[id]?.type==='special');
-  if(idx<0){
-    r.rewardDeck.push(...r.rewardDiscard.splice(0));
-    r.rewardDeck=shuffle(r.rewardDeck);
-    idx=r.rewardDeck.findIndex(id=>byId[id]?.type==='special');
+  let idx=r.rewardDeck.findLastIndex(id=>byId[id]?.type==='special'&&!excluded.has(id));
+  if(idx<0&&r.rewardDiscard.length){
+    r.rewardDeck=shuffle([...r.rewardDeck,...r.rewardDiscard.splice(0)]);
+    idx=r.rewardDeck.findLastIndex(id=>byId[id]?.type==='special'&&!excluded.has(id));
   }
   if(idx<0)return null;
   return r.rewardDeck.splice(idx,1)[0];
 }
 
-function drawEquivalentReplacement(r,discardedCardId){
+function drawEquivalentReplacement(r,discardedCardId,p=null){
+  const excluded=p?.hand||[];
   const discarded=byId[discardedCardId];
   if(discarded?.type==='special'){
-    return drawSpecialOnly(r) || drawNormal(r,1)[0] || null;
+    return drawSpecialOnly(r,excluded) || drawNormal(r,1,excluded)[0] || null;
   }
-  return drawNormal(r,1)[0] || null;
+  return drawNormal(r,1,excluded)[0] || null;
 }
 
 function discardCard(r,id){
