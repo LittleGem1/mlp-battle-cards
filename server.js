@@ -572,7 +572,7 @@ function consumeSpecial(r,p,c){
   r.specialHistory.push({playerId:p.id,cardId:c.id,effect:c.effect});
   // No custom animation, swarm sound or special-popup for Changeling Joker.
   if(c.effect!=='changelingjoker'){
-    pauseSelectionForAnimation(r,c.effect==='windchaos'?7600:c.effect==='queen_chandra'?8600:2700);
+    pauseSelectionForAnimation(r,c.effect==='windchaos'?7600:c.effect==='queen_chandra'?11300:2700);
     io.to(r.code).emit('specialPlayed',{playerId:p.id,name:p.name,card:c});
   }else io.to(r.code).emit('notice',p.name+' spielt Changeling Joker.');
 
@@ -2083,7 +2083,7 @@ io.on('connection',socket=>{
       });
     }else if(effect==='queen_chandra'){
       socket.data.pendingSpecial={room:r.code,round:r.round,action:'queen_chandra',sourceCardId:source.id};
-      setTimeout(()=>{if(socket.connected&&pendingForCurrentSelection(socket,r)?.action==='queen_chandra')socket.emit('specialCardRequest',{title:'👑 Königin Chandra: Wähle genau eine Spezialkarte',cards:specials.map(c=>({id:c.id,type:c.type,name:c.name,image:c.image,text:c.text}))});},8300);
+      setTimeout(()=>{if(socket.connected&&pendingForCurrentSelection(socket,r)?.action==='queen_chandra')socket.emit('specialCardRequest',{title:'👑 Königin Chandra: Wähle genau eine Spezialkarte',cards:specials.map(c=>({id:c.id,type:c.type,name:c.name,image:c.image,text:c.text}))});},11200);
     }else if(effect==='sweetiebot'){
       requestTarget(socket,r,p,source,'sweetiebot','played_unhalved','Sweetie Bot: Wessen gelegte Karte wird halbiert?');
     }else if(effect==='helements'){
