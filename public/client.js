@@ -2342,7 +2342,7 @@ socket.on('postGameReadyState',e=>{
 socket.on('backToLobby',()=>{if(finisherDemoActive)stopFinisherDemo();waitingForLobbyReset=false;stopCountdown();stopSelectionTimer();hideTieAlert();try{$('#gameOverDialog').close()}catch{};try{$('#giftDialog').close()}catch{};clearTable();show('lobby');setMusicMode('lobby');if(state?.phase==='lobby')renderLobby();toast('Lobby ist bereit für die nächste Runde.')});
 socket.on('roomLeft',()=>{localStorage.removeItem('cc_room_resume_v1');if(finisherDemoActive)stopFinisherDemo();waitingForLobbyReset=false;stopCountdown();stopSelectionTimer();hideTieAlert();state=null;hand=[];clearTable();renderHand();show('home');setMusicMode('lobby');toast('Du hast den Raum verlassen.')});
 function dismissOldSpecialChoices(){
-  for(const id of ['specialChoiceDialog','choiceDialog']){
+  for(const id of ['specialChoiceDialog','choiceDialog','changelingJokerDialog']){
     const d=document.getElementById(id);
     if(d?.open){d.dataset.selectionResolved='1';d.close();}
   }
@@ -2350,6 +2350,61 @@ function dismissOldSpecialChoices(){
 socket.on('specialChoicesCancelled',dismissOldSpecialChoices);
 socket.on('specialTargetRequest',e=>showPlayerChoices(e.title,e.targets,id=>socket.emit('specialTargetChoice',{targetId:id})));
 socket.on('specialCategoryRequest',e=>showCategoryChoices(e.title,e.categories,id=>socket.emit('specialCategoryChoice',{category:id})));
+
+function showChangelingJokerChoices(e){
+  let dialog=document.getElementById('changelingJokerDialog');
+  if(!dialog){
+    dialog=document.createElement('dialog');
+    dialog.id='changelingJokerDialog';
+    dialog.className='changeling-joker-dialog';
+    dialog.innerHTML=`<div class="joker-shell">
+      <div class="joker-head"><div><h2>🃏 Changeling Joker</h2><p>Wähle eine beliebige normale Karte. Sie wird sofort für diese Runde gespielt.</p></div>
+        <button class="joker-close" type="button" aria-label="Auswahl schließen">✕</button></div>
+      <input id="jokerSearch" type="search" placeholder="🔎 Charakterkarte suchen …" autocomplete="off" aria-label="Normale Karte suchen">
+      <p id="jokerCategory" class="joker-category"></p>
+      <div id="jokerList" class="joker-list"></div>
+    </div>`;
+    document.body.append(dialog);
+    dialog.querySelector('.joker-close').addEventListener('click',()=>dialog.close());
+    dialog.addEventListener('close',()=>{
+      if(dialog.dataset.selectionResolved!=='1')socket.emit('cancelSpecialChoice');
+      dialog.dataset.selectionResolved='0';
+    });
+  }
+  if(dialog.open){dialog.dataset.selectionResolved='1';dialog.close();}
+  dialog.dataset.selectionResolved='0';
+  const cards=(Array.isArray(e?.cards)?e.cards:[]).filter(c=>c?.type==='normal');
+  const category=['speed','strength','energy','magic'].includes(e?.category)?e.category:'magic';
+  const names={speed:'⚡ Schnelligkeit',strength:'🏋️ Stärke',energy:'🔋 Energie',magic:'⭐ Magie'};
+  dialog.querySelector('#jokerCategory').textContent='Aktuelle Kategorie: '+names[category]+' · '+cards.length+' normale Karten';
+  const search=dialog.querySelector('#jokerSearch'),list=dialog.querySelector('#jokerList');
+  search.value='';
+  const sorted=cards.sort((a,b)=>(Number(b[category]||0)-Number(a[category]||0))||a.name.localeCompare(b.name,'de'));
+  const draw=()=>{
+    const q=search.value.trim().toLocaleLowerCase('de');
+    list.replaceChildren();
+    const matching=sorted.filter(c=>!q||c.name.toLocaleLowerCase('de').includes(q));
+    if(!matching.length){const p=document.createElement('p');p.textContent='Keine passende Karte gefunden.';list.append(p);}
+    for(const c of matching){
+      const btn=document.createElement('button');btn.type='button';btn.className='joker-card-choice';
+      const image=document.createElement('img');image.src=c.image;image.loading='lazy';image.alt='';
+      image.addEventListener('error',()=>{image.src='/assets/card_back.webp';},{once:true});
+      const text=document.createElement('span');const name=document.createElement('strong');name.textContent=c.name;
+      const value=document.createElement('small');
+      value.textContent=names[category]+': '+Number(c[category]||0)+' · '+['speed','strength','energy','magic'].filter(x=>x!==category).map(x=>({speed:'⚡',strength:'🏋️',energy:'🔋',magic:'⭐'})[x]+c[x]).join('  ');
+      text.append(name,value);btn.append(image,text);
+      btn.addEventListener('click',()=>{
+        dialog.dataset.selectionResolved='1';dialog.close();
+        socket.emit('changelingJokerChoice',{cardId:c.id});
+      });
+      list.append(btn);
+    }
+  };
+  search.oninput=draw;draw();dialog.showModal();
+  search.focus();
+}
+socket.on('changelingJokerChoices',showChangelingJokerChoices);
+
 socket.on('specialCardRequest',e=>showChoices(e.title,e.cards,c=>socket.emit('specialCardChoice',{cardId:c.id})));
 socket.on('specialMultiCardRequest',e=>showMultiChoices(e));
 socket.on('forcedDiscardRequest',e=>showChoices(e.title,e.cards,c=>socket.emit('forcedDiscardChoice',{cardId:c.id})));
