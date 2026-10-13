@@ -2117,7 +2117,7 @@ function playFinisher(e){
   const kind=BATTLE_SFX[e.finisher]?e.finisher:'dust';
   const overlay=$('#finisherOverlay'),winnerBox=$('#finisherWinner'),loserBox=$('#finisherLosers'),headline=$('#finisherHeadline'),impact=$('#finisherImpact');
   if(!overlay||!winnerBox||!loserBox)return animateCapture(e.winnerId);
-  const available=e.demo ? (e.revealEntries||[]) : (lastReveal.length ? lastReveal : (e.revealEntries||[]));
+  const available=e.demo ? (e.revealEntries||[]) : ((e.revealEntries||[]).length ? e.revealEntries : lastReveal);
   const winnerEntry=available.find(x=>x.pid===e.winnerId);
   const losers=available.filter(x=>x.pid!==e.winnerId);
   const labels={fall:'KARTE FÄLLT',melt:'REGEN & ZERFLIESSEN',glass:'GLASBRUCH',portal:'PORTAL',xmark:'ROTES X',shadow:'SCHATTEN',spin:'WEGWIRBELN',meteor:'METEORIT',dust:'MAGISCHER STAUB',heart:'GEBROCHENES GLASHERZ',smolder:'SMOLDERS FEUER',cookie:'KEKS-BISSE'};
