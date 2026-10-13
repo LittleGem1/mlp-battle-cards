@@ -92,7 +92,7 @@ function refreshSelectionAnimationPause(r){
   }
   r.selectionPauseUntil=Math.max(...[...locks.values()].map(lock=>lock.until));
   const next=Math.min(...[...locks.values()].map(lock=>lock.until));
-  r.selectionPauseTimer=setTimeout(()=>refreshSelectionAnimationPause(r),Math.max(1,next-now+10));
+  if(Number.isFinite(next))r.selectionPauseTimer=setTimeout(()=>refreshSelectionAnimationPause(r),Math.max(1,next-now+10));
   sendState(r);
 }
 function pauseSelectionForAnimation(r,durationMs,{acknowledge=false}={}){
@@ -113,6 +113,15 @@ function pauseSelectionForAnimation(r,durationMs,{acknowledge=false}={}){
   r.selectionPauseLocks.set(token,{until:now+duration,waiting});
   refreshSelectionAnimationPause(r);
   return acknowledge?token:null;
+}
+function pauseSelectionForChoice(r){
+  const token=pauseSelectionForAnimation(r,40000,{acknowledge:true});
+  const lock=r.selectionPauseLocks?.get(token);
+  if(lock){lock.until=Infinity;lock.waiting=null;refreshSelectionAnimationPause(r)}
+  return token;
+}
+function finishSelectionChoicePause(r,token){
+  if(token&&r?.selectionPauseLocks?.delete(token))refreshSelectionAnimationPause(r);
 }
 function clearTimers(r){
   r.roundTransitionToken=(r.roundTransitionToken||0)+1;
@@ -484,6 +493,7 @@ function clearSpecialChoice(socket,r,notify=false){
   if(pending?.room===r.code && pending.round===r.round){
     returnUnchosenSpecialCards(r,pending);
     finishJokerChoicePause(r,pending);
+    finishSelectionChoicePause(r,pending.chandraChoicePauseToken);
   }
   const flutter=socket.data.pendingFlutter;
   if(flutter?.room===r.code && flutter.round===r.round){r.normalDeck.unshift(...flutter.choices);}
@@ -2092,7 +2102,7 @@ io.on('connection',socket=>{
           strength:c.strength,speed:c.speed,energy:c.energy,magic:c.magic}))
       });
     }else if(effect==='queen_chandra'){
-      socket.data.pendingSpecial={room:r.code,round:r.round,action:'queen_chandra',sourceCardId:source.id};
+      socket.data.pendingSpecial={room:r.code,round:r.round,action:'queen_chandra',sourceCardId:source.id,chandraChoicePauseToken:pauseSelectionForChoice(r)};
       setTimeout(()=>{if(socket.connected&&pendingForCurrentSelection(socket,r)?.action==='queen_chandra')socket.emit('specialCardRequest',{title:'👑 Königin Chandra: Wähle genau eine Spezialkarte',cards:specials.map(c=>({id:c.id,type:c.type,name:c.name,image:c.image,text:c.text}))});},11200);
     }else if(effect==='sweetiebot'){
       requestTarget(socket,r,p,source,'sweetiebot','played_unhalved','Sweetie Bot: Wessen gelegte Karte wird halbiert?');
@@ -2335,6 +2345,7 @@ io.on('connection',socket=>{
       if(p.hand.length>=MAX_TOTAL_HAND)return socket.emit('errorMsg','Deine Hand ist voll.');
       socket.data.pendingSpecial=null;
       p.hand.push(wished.id);
+      finishSelectionChoicePause(r,pending.chandraChoicePauseToken);
       socket.emit('specialDone',{text:'Dein Wunsch wurde erfüllt: '+wished.name+' ist jetzt auf deiner Hand.'});
       sendState(r);
       return;
