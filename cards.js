@@ -60,7 +60,7 @@ const normal = [
   [59,'Misty Fly',5,9,2,8],
   [60,'Cheerilee',4,5,4,8],
   [94,'Inphenno',7,4,8,5],
-  [95,'Little Gem',5,5,8,3],
+  [95,'Little Gem',5,5,9,3],
   [96,'Mimsch',5,3,7,5],
   [97,'Chandra',4,3,9,6],
   [98,'Wisrana',3,4,7,6],
@@ -85,7 +85,7 @@ const normal = [
   speed,
   magic,
   energy,
-  image:(n===17?'/assets/cards_fixes/17_Cozy_Glow.webp':n>=94&&n<=111?`/assets/cards_new/${String(n).padStart(3,'0')}_${name.replaceAll(' ','_')}.webp`:`/assets/cards/${String(n).padStart(2,'0')}_${name.replaceAll(' ','_')}.webp`) + ([1,43,44,51,52,53,56,58,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108].includes(n)?'?v=kartenQA20261010':'')
+  image:(n===95?'/assets/cards_new/095_Little_Gem_Magie9.svg':n===17?'/assets/cards_fixes/17_Cozy_Glow.webp':n>=94&&n<=111?`/assets/cards_new/${String(n).padStart(3,'0')}_${name.replaceAll(' ','_')}.webp`:`/assets/cards/${String(n).padStart(2,'0')}_${name.replaceAll(' ','_')}.webp`) + ([1,43,44,51,52,53,56,58,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108].includes(n)?'?v=kartenQA20261010':'')
 }));
 
 const specials = [
