@@ -170,17 +170,23 @@ function enforceHandLimit(r,p){
     else if(byId[excess]?.type==='special')r.rewardDeck.unshift(excess);
   }
 }
-// A player's hand must contain unique card IDs, including after steals and swaps.
+// Only NORMAL cards must be unique within a hand.
+// Gold-deck SPECIAL cards may appear several times on the SAME player's hand.
 function repairDuplicateHand(r,p){
-  const seen=new Set(),extra=[],kept=[];
-  for(const id of p.hand||[]){if(seen.has(id))extra.push(id);else{seen.add(id);kept.push(id)}}
-  if(!extra.length)return;
+  const seenNormal=new Set(),extraNormals=[],kept=[];
+  for(const id of p.hand||[]){
+    if(byId[id]?.type==='normal'){
+      if(seenNormal.has(id)){extraNormals.push(id);continue}
+      seenNormal.add(id);
+    }
+    kept.push(id);
+  }
+  if(!extraNormals.length)return;
   p.hand=kept;
-  for(const id of extra){if(byId[id]?.type==='special')r.rewardDeck.push(id);else if(byId[id]?.type==='normal')r.normalDeck.push(id)}
-  for(const id of extra){
-    const type=byId[id]?.type;
-    const replacement=type==='special'?drawSpecialOnly(r,p.hand):type==='normal'?drawNormal(r,1,p.hand)[0]:null;
-    if(replacement&&!seen.has(replacement)){p.hand.push(replacement);seen.add(replacement)}
+  r.normalDeck.push(...extraNormals);
+  for(const id of extraNormals){
+    const replacement=drawNormal(r,1,p.hand)[0];
+    if(replacement)p.hand.push(replacement);
   }
 }
 function sendState(r){
@@ -243,13 +249,13 @@ function drawNormal(r,count=1,exclude=[]){
 function drawNormalForHand(r,p,count=1){
   return drawNormal(r,Math.max(0,Math.min(count,MAX_TOTAL_HAND-p.hand.length)),p.hand);
 }
-function drawSpecialOnly(r,exclude=[]){
-  const excluded=new Set(exclude||[]);
+function drawSpecialOnly(r){
+  // Specials are exempt from the duplicate-hand rule.
   recycleRewardDeck(r);
-  let idx=r.rewardDeck.findLastIndex(id=>byId[id]?.type==='special'&&!excluded.has(id));
+  let idx=r.rewardDeck.findLastIndex(id=>byId[id]?.type==='special');
   if(idx<0&&r.rewardDiscard.length){
     r.rewardDeck=shuffle([...r.rewardDeck,...r.rewardDiscard.splice(0)]);
-    idx=r.rewardDeck.findLastIndex(id=>byId[id]?.type==='special'&&!excluded.has(id));
+    idx=r.rewardDeck.findLastIndex(id=>byId[id]?.type==='special');
   }
   if(idx<0)return null;
   return r.rewardDeck.splice(idx,1)[0];
@@ -940,11 +946,6 @@ function drawRewardCandidate(r,p,{allowArtifact=true,excludeIds=[]}={}){
     if(!card)continue;
 
     if(excluded.has(id)){
-      deferred.push(id);
-      continue;
-    }
-
-    if(card.type==='special'&&p.hand.includes(id)){
       deferred.push(id);
       continue;
     }
@@ -2139,7 +2140,7 @@ io.on('connection',socket=>{
       });
     }else if(effect==='queen_chandra'){
       socket.data.pendingSpecial={room:r.code,round:r.round,action:'queen_chandra',sourceCardId:source.id,chandraChoicePauseToken:pauseSelectionForChoice(r)};
-      setTimeout(()=>{if(socket.connected&&pendingForCurrentSelection(socket,r)?.action==='queen_chandra')socket.emit('specialCardRequest',{title:'👑 Königin Chandra: Wähle genau eine Spezialkarte',cards:specials.filter(c=>!p.hand.includes(c.id)).map(c=>({id:c.id,type:c.type,name:c.name,image:c.image,text:c.text}))});},11200);
+      setTimeout(()=>{if(socket.connected&&pendingForCurrentSelection(socket,r)?.action==='queen_chandra')socket.emit('specialCardRequest',{title:'👑 Königin Chandra: Wähle genau eine Spezialkarte',cards:specials.map(c=>({id:c.id,type:c.type,name:c.name,image:c.image,text:c.text}))});},11200);
     }else if(effect==='sweetiebot'){
       requestTarget(socket,r,p,source,'sweetiebot','played_unhalved','Sweetie Bot: Wessen gelegte Karte wird halbiert?');
     }else if(effect==='helements'){
@@ -2377,7 +2378,7 @@ io.on('connection',socket=>{
 
     if(action==='queen_chandra'){
       const wished=byId[cardId];
-      if(wished?.type!=='special'||!specials.some(c=>c.id===cardId)||p.hand.includes(cardId))return socket.emit('errorMsg','Bitte eine Spezialkarte auswählen, die nicht bereits auf deiner Hand ist.');
+      if(wished?.type!=='special'||!specials.some(c=>c.id===cardId))return socket.emit('errorMsg','Bitte ausschließlich eine Spezialkarte auswählen.');
       if(p.hand.length>=MAX_TOTAL_HAND)return socket.emit('errorMsg','Deine Hand ist voll.');
       socket.data.pendingSpecial=null;
       p.hand.push(wished.id);
