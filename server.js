@@ -1689,7 +1689,7 @@ function guardRoomProgress(r,now=Date.now()){
         sendState(r);scheduleBotDice(r);
       }else{r.phase='result';startRound(r,900);}
     }else if(outcome?.round===r.round && outcome.kind==='all-skipped'){
-      for(const id of Object.values(r.played||{}).flatMap(playedCardIds))discardCard(r,id);
+      for(const id of jokerPlayedCardIds(r))discardCard(r,id);
       r.played={};for(const p of roomPlayers(r))p.selected=null;
       refillNormalHands(r);r.phase='result';sendState(r);
       if(!gameOverIfNeeded(r))startRound(r,950);
