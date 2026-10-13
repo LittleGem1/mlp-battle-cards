@@ -1585,7 +1585,7 @@ function showSpecialBurst(e){
   setTimeout(()=>overlay.classList.add('fade'),1750);
   setTimeout(()=>overlay.remove(),2500);
 }
-socket.on('specialPlayed',e=>{if(e?.card?.effect!=='queen_chandra')showSpecialBurst(e);});
+socket.on('specialPlayed',showSpecialBurst);
 socket.on('mlpSpecialActivated',e=>{
   // The server freezes the penalty clock before announcing this real animation.
   // Report completion so it can resume immediately instead of using its safety timeout.
