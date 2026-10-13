@@ -267,6 +267,7 @@ function isProtectedFrom(r,targetId,sourceId){
   return targetId!==sourceId && fxHas(r,'protected',targetId);
 }
 function emitImpact(r,effect,targetIds,text){
+  if(effect==='cockatrice')pauseSelectionForAnimation(r,6800);
   io.to(r.code).emit('specialImpact',{effect,targetIds:Array.isArray(targetIds)?targetIds:[targetIds],text});
 }
 function discardPlayedEntry(r,pid){
