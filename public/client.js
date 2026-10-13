@@ -785,7 +785,7 @@ socket.on('roomState',s=>{
     if(s.phase==='select'){
       closeCategoryCrystal();
       syncCategoryFromState();
-      startSelectionTimer(s.selectionDeadline);
+      startSelectionTimer(s.selectionDeadline,s.selectionPausedRemainingMs);
     }else if(['reveal','tie','result','rewardchoice'].includes(s.phase)){
       closeCategoryCrystal();syncCategoryFromState();
     }
@@ -1586,7 +1586,13 @@ function showSpecialBurst(e){
   setTimeout(()=>overlay.remove(),2500);
 }
 socket.on('specialPlayed',showSpecialBurst);
-socket.on('mlpSpecialActivated',e=>{window.MLPRealSpecialEffects?.handle(e);});
+socket.on('mlpSpecialActivated',e=>{
+  // The server freezes the penalty clock before announcing this real animation.
+  // Report completion so it can resume immediately instead of using its safety timeout.
+  Promise.resolve().then(()=>window.MLPRealSpecialEffects?.handle(e))
+    .catch(err=>console.error('[MLP animation]',err))
+    .finally(()=>{if(e?.animationPauseToken)socket.emit('selectionAnimationDone',{token:e.animationPauseToken});});
+});
 
 let roundIntroTimer=null;
 function categorySound(cat){
@@ -1782,11 +1788,23 @@ function runCountdown(until){
   tick();
 }
 function stopSelectionTimer(){if(selectionUiTimer){clearInterval(selectionUiTimer);selectionUiTimer=null}const e=$('#selectionTimer');if(e)e.textContent=''}
-function startSelectionTimer(deadline){
-  stopSelectionTimer();if(!deadline)return;const e=$('#selectionTimer');if(!e)return;
+function startSelectionTimer(deadline,pausedRemainingMs=null){
+  stopSelectionTimer();
+  const e=$('#selectionTimer');if(!e)return;
+  if(Number.isFinite(pausedRemainingMs)){
+    const left=Math.max(0,Math.ceil(pausedRemainingMs/1000));
+    e.textContent='⏸ Pausiert · '+left+' Sek. übrig';
+    return; // No visible countdown and no penalty ticks during an animation.
+  }
+  if(!deadline)return;
   let previous=null;
-  const tick=()=>{const left=Math.max(0,Math.ceil((deadline-Date.now())/1000));e.textContent=left?`⏱ ${left} Sek.`:'';if(left!==previous){previous=left;selectionTickSound(left)}if(!left)stopSelectionTimer()};
-  tick();selectionUiTimer=setInterval(tick,180)
+  const tick=()=>{
+    const left=Math.max(0,Math.ceil((deadline-Date.now())/1000));
+    e.textContent=left?`⏱ ${left} Sek.`:'';
+    if(left!==previous){previous=left;selectionTickSound(left)}
+    if(!left)stopSelectionTimer();
+  };
+  tick();selectionUiTimer=setInterval(tick,180);
 }
 
 socket.on('countdown',({seconds,until})=>{hideArenaReady();show('game');setMusicMode('game');ensureAudio();runCountdown(until||Date.now()+(seconds||5)*1000)});
@@ -1798,16 +1816,25 @@ socket.on('roundSync',e=>{
   const order={ready:0,countdown:1,roundintro:2,select:3,reveal:4,tie:5,result:6,rewardchoice:7};
   if(e.round===state.round && (order[e.phase]??-1)<(order[state.phase]??-1))return;
   const changed=e.round!==state.round || e.phase!==state.phase || e.category!==state.category;
+  const clockChanged=e.selectionDeadline!==state.selectionDeadline ||
+    (e.selectionPausedRemainingMs??null)!==(state.selectionPausedRemainingMs??null);
   if(changed){
     state={...state,round:e.round,phase:e.phase,category:e.category,
-      roundIntroUntil:e.roundIntroUntil,selectionDeadline:e.selectionDeadline};
+      roundIntroUntil:e.roundIntroUntil,selectionDeadline:e.selectionDeadline,
+      selectionPausedRemainingMs:e.selectionPausedRemainingMs??null};
     renderGame();
     if(e.phase==='roundintro')showRoundIntro({round:e.round,category:e.category,until:e.roundIntroUntil});
     else{
       closeCategoryCrystal();syncCategoryFromState();
-      if(e.phase==='select')startSelectionTimer(e.selectionDeadline);
+      if(e.phase==='select')startSelectionTimer(e.selectionDeadline,e.selectionPausedRemainingMs);
     }
   }else if(e.phase==='select'){
+    // Keep clock synchronized when animation pause/resume changes without a phase change.
+    if(clockChanged){
+      state.selectionDeadline=e.selectionDeadline;
+      state.selectionPausedRemainingMs=e.selectionPausedRemainingMs??null;
+      startSelectionTimer(e.selectionDeadline,e.selectionPausedRemainingMs);
+    }
     // An earlier client notification cannot leave the crystal overlay open.
     if(document.getElementById('categoryCrystalPortal')?.classList.contains('active'))closeCategoryCrystal();
     syncCategoryFromState();
