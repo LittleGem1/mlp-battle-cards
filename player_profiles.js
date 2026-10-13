@@ -73,6 +73,11 @@ function createProfileStore(databaseUrl) {
         expires_at TIMESTAMPTZ NOT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )`);
+      await pool.query(`CREATE TABLE IF NOT EXISTS mlp_password_recovery (
+        account_id TEXT PRIMARY KEY REFERENCES mlp_player_accounts(id) ON DELETE CASCADE,
+        code_hash TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )`);
       await pool.query('CREATE INDEX IF NOT EXISTS mlp_player_sessions_expiry ON mlp_player_sessions (expires_at)');
     })().catch(error=>{initialization=null;throw error});
     return initialization;
@@ -173,6 +178,53 @@ function createProfileStore(databaseUrl) {
       VALUES ($1,$2,now()+interval '180 days')`,[sessionHash,accountId]);
     return sessionToken;
   }
+  async function issueRecoveryCode(client,accountId){
+    const recoveryCode=crypto.randomBytes(32).toString('hex');
+    await client.query(`INSERT INTO mlp_password_recovery(account_id,code_hash)
+      VALUES($1,$2) ON CONFLICT(account_id) DO UPDATE SET code_hash=$2,created_at=now()`,
+      [accountId,digest(recoveryCode)]);
+    return recoveryCode;
+  }
+  async function accountRecoveryGenerate({sessionToken}={}){
+    await init();
+    if(!validToken(sessionToken))throw new Error('Bitte melde dich zuerst an.');
+    const client=await pool.connect();
+    try{
+      await client.query('BEGIN');
+      const rows=await client.query(`SELECT a.id FROM mlp_player_sessions s
+        JOIN mlp_player_accounts a ON a.id=s.account_id
+        WHERE s.session_hash=$1 AND s.expires_at>now() FOR UPDATE OF a`,[digest(sessionToken.toLowerCase())]);
+      if(!rows.rowCount)throw new Error('Bitte melde dich zuerst an.');
+      const recoveryCode=await issueRecoveryCode(client,rows.rows[0].id);
+      await client.query('COMMIT');
+      return {recoveryCode};
+    }catch(err){await client.query('ROLLBACK');throw err}finally{client.release()}
+  }
+  async function accountPasswordReset({username,recoveryCode,newPassword}={}){
+    await init();
+    const {norm}=normalizeUsername(username);
+    validatePassword(newPassword);
+    if(typeof recoveryCode!=='string'||!/^[a-f0-9]{64}$/i.test(recoveryCode))
+      throw new Error('Benutzername oder Wiederherstellungscode ungültig.');
+    const client=await pool.connect();
+    try{
+      await client.query('BEGIN');
+      const rows=await client.query(`SELECT a.id,r.code_hash FROM mlp_player_accounts a
+        JOIN mlp_password_recovery r ON r.account_id=a.id
+        WHERE a.username_norm=$1 FOR UPDATE OF a,r`,[norm]);
+      const expected=Buffer.from(rows.rows[0]?.code_hash||'00'.repeat(32),'hex');
+      if(!rows.rowCount||!crypto.timingSafeEqual(Buffer.from(digest(recoveryCode.toLowerCase()),'hex'),expected))
+        throw new Error('Benutzername oder Wiederherstellungscode ungültig.');
+      const salt=crypto.randomBytes(16).toString('hex');
+      const passwordHash=await hashPassword(newPassword,salt);
+      await client.query('UPDATE mlp_player_accounts SET password_salt=$1,password_hash=$2 WHERE id=$3',
+        [salt,passwordHash,rows.rows[0].id]);
+      await client.query('DELETE FROM mlp_password_recovery WHERE account_id=$1',[rows.rows[0].id]);
+      await client.query('DELETE FROM mlp_player_sessions WHERE account_id=$1',[rows.rows[0].id]);
+      await client.query('COMMIT');
+      return {ok:true};
+    }catch(err){await client.query('ROLLBACK');throw err}finally{client.release()}
+  }
   async function accountRegister({username,password,oldProfileToken,legacy}={}){
     await init();
     const {name,norm}=normalizeUsername(username);
@@ -216,8 +268,9 @@ function createProfileStore(databaseUrl) {
         VALUES ($1,$2,$3,$4,$5,$6)`,
         [accountId,norm,name,salt,passwordHash,profileRow.id]);
       sessionToken=await issueSession(client,accountId);
+      const recoveryCode=await issueRecoveryCode(client,accountId);
       await client.query('COMMIT');
-      return {sessionToken,username:name,profile:asProfile(profileRow)};
+      return {sessionToken,username:name,profile:asProfile(profileRow),recoveryCode};
     }catch(err){
       await client.query('ROLLBACK');
       if(err.code==='23505')throw new Error('Dieser Benutzername oder dieses Profil wird bereits benutzt.');
@@ -262,6 +315,6 @@ function createProfileStore(databaseUrl) {
   async function accountLogout({sessionToken}={}){
     if(validToken(sessionToken))await pool.query('DELETE FROM mlp_player_sessions WHERE session_hash=$1',[digest(sessionToken.toLowerCase())]);
   }
-  return {init,login,choose,awardWin,accountRegister,accountLogin,accountResume,accountLogout,close:()=>pool.end()};
+  return {init,login,choose,awardWin,accountRegister,accountLogin,accountResume,accountLogout,accountRecoveryGenerate,accountPasswordReset,close:()=>pool.end()};
 }
 module.exports={createProfileStore,ITEMS,FRAMES,STARTER_ITEMS,STARTER_FRAMES,asProfile};
