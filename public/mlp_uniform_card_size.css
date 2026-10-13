@@ -1,0 +1,49 @@
+/* Uniform card proportions for normal and special cards.
+   Keep all art visible. Action buttons remain below the art rather than stretching it. */
+#game #hand .hand-card,
+#game #hand .hand-card.special {
+  --mlp-uniform-card-width:clamp(95px,11vw,128px);
+  width:var(--mlp-uniform-card-width)!important;
+  min-width:var(--mlp-uniform-card-width)!important;
+  max-width:var(--mlp-uniform-card-width)!important;
+  flex:0 0 var(--mlp-uniform-card-width)!important;
+  box-sizing:border-box!important;
+}
+#game #hand .hand-card > img,
+#game #hand .hand-card.special > img {
+  display:block!important;
+  width:100%!important;
+  height:calc(var(--mlp-uniform-card-width) * 1.4)!important;
+  min-height:calc(var(--mlp-uniform-card-width) * 1.4)!important;
+  max-height:calc(var(--mlp-uniform-card-width) * 1.4)!important;
+  aspect-ratio:5/7!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  box-sizing:border-box!important;
+  border-radius:10px!important;
+}
+#game #tableCards .played-card .card-front-face > img,
+#game #tableCards .played-card .card-back-face > img,
+#finisherOverlay .finisher-card-shell > img,
+#finisherOverlay .finisher-card-shell .finisher-card-image,
+#choiceCards button > img,
+#specialChoiceGrid button > img,
+#rewardChoiceCards .reward-choice-card > img {
+  aspect-ratio:5/7!important;
+  object-fit:contain!important;
+  object-position:center!important;
+}
+#game #tableCards .played-card .card-front-face > img,
+#game #tableCards .played-card .card-back-face > img {
+  width:100%!important;
+  height:auto!important;
+}
+#finisherOverlay .finisher-card-shell img {
+  width:100%!important;
+  height:auto!important;
+}
+/* Larger screens do not change special-card artwork dimensions independently. */
+@media(max-width:700px) {
+  #game #hand .hand-card,
+  #game #hand .hand-card.special {--mlp-uniform-card-width:clamp(85px,18vw,110px);}
+}
