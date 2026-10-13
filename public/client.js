@@ -1550,8 +1550,8 @@ function revealCards(e){
   e.entries.forEach((x,i)=>{
     let d=t.querySelector(`[data-player-id="${x.pid}"]`);
     if(!d){d=document.createElement('div');t.append(d)}
-    d.className='played-card reveal-flip'+(x.skipped?' skipped-visible':'');d.dataset.playerId=x.pid;d.style.animationDelay=`${i*.07}s`;
-    const value=x.skipped?'⏸ AUSSETZEN':`${x.value}${x.bonus?` (+${x.bonus})`:''}`;
+    d.className='played-card reveal-flip'+((x.skipped||x.forcedLose)?' skipped-visible':'');d.dataset.playerId=x.pid;d.style.animationDelay=`${i*.07}s`;
+    const value=x.skipped?'⏸ AUSSETZEN':x.forcedLose?'✖ VERLIERT':`${x.value}${x.bonus?` (+${x.bonus})`:''}`;
     d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-front-face"><img src="${x.card.image}" alt="${escapeHtml(x.card.name)}"><span class="value">${value}</span></div></div><div class="who">${escapeHtml(x.name)}</div>`;bindCardInspector(d,x.card);
   });
   $('#roundMessage').textContent='Karten werden verglichen …';playSfx('aufdecken',{gain:.85,cooldown:100});setTimeout(()=>playSfx('vergleich',{gain:.65,cooldown:100}),500);
