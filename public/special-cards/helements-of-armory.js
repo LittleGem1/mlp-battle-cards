@@ -1,215 +1,130 @@
-/**
- * Helements of Armory animation for browser clients.
- * Earthquake + falling stones, then fart cloud and a missing artifact appears in the player's deck.
- * Server remains authoritative for which artifact is granted.
+/* Helements of Armory – native browser animation; no GIF/video.
+ * Audio tracks run in parallel. Rumble -> falling rocks -> giant gas cloud -> artifact.
+ * Scene ends precisely when BOTH audio tracks reach their end (fallback on failed playback).
+ * Compatible with the existing game entry point and server-side artifact selection.
  */
-const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-const point = (el, x=.5, y=.5) => { const r = el.getBoundingClientRect(); return { x:r.left + r.width*x, y:r.top + r.height*y, rect:r }; };
-function animate(el, frames, options){ return el.animate(frames,{ fill:'forwards', easing:'ease', ...options }); }
-const DEFAULT_RUMBLE = '/assets/helements-rumble.mp3';
-const DEFAULT_FART = '/assets/helements-fart.mp3';
+const HOA_DEFAULT_RUMBLE='/assets/helements-rumble.mp3';
+const HOA_DEFAULT_FART='/assets/helements-fart.mp3';
+const hoaClamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const hoaPoint=(el,within)=>{const r=el.getBoundingClientRect(),c=within.getBoundingClientRect();return {x:r.left+r.width/2-c.left,y:r.top+r.height/2-c.top};};
+const hoaSleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+function hoaNode(className,parent,tag='div'){const n=document.createElement(tag);n.className=className;parent.append(n);return n;}
 
-function ensureAudio(url, volume=1){ const a = new Audio(url); a.preload='auto'; a.volume=volume*Math.max(0,Math.min(1,Number(localStorage.getItem('mlp_sfx_volume')??.55))); return a; }
-function playMaybe(audio, muted){ if(muted) return Promise.resolve(); return audio.play().catch(()=>{}); }
-function removeLater(node, ms=0){ setTimeout(()=>node?.remove(), ms); }
-
-function makeStone(layer, x, size=1, rotation=0){
-  const el = document.createElement('div');
-  el.className = Math.random() < .72 ? 'hoa-stone' : 'hoa-debris';
-  const w = el.className === 'hoa-stone' ? 26*size : 12*size;
-  const h = el.className === 'hoa-stone' ? 20*size : 8*size;
-  el.style.left = `${x}px`; el.style.top = `-40px`; el.style.width = `${w}px`; el.style.height = `${h}px`; el.style.transform = `rotate(${rotation}deg)`;
-  layer.appendChild(el);
-  const drift = (Math.random()*220)-110;
-  const endY = window.innerHeight + 60;
-  animate(el,[
-    { transform:`translate(0,0) rotate(${rotation}deg)`, opacity:.95 },
-    { transform:`translate(${drift*0.45}px,${endY*0.55}px) rotate(${rotation+220}deg)`, opacity:.88, offset:.55 },
-    { transform:`translate(${drift}px,${endY}px) rotate(${rotation+520}deg)`, opacity:0 }
-  ],{ duration: 1800 + Math.random()*1200, easing:'cubic-bezier(.18,.62,.35,1)' });
-  removeLater(el, 3400);
-}
-
-function spawnCrack(layer){
-  const el = document.createElement('div');
-  el.className='hoa-crack';
-  const cx = 18 + Math.random()*64, cy = 12 + Math.random()*62;
-  el.innerHTML = `<svg viewBox="0 0 100 100" preserveAspectRatio="none"><g stroke="rgba(255,243,248,.78)" stroke-width="0.65" fill="none" stroke-linecap="round"><path d="M${cx} ${cy} L${cx+8} ${cy-20} L${cx+2} ${cy-31} M${cx} ${cy} L${cx+22} ${cy+10} L${cx+33} ${cy+7} M${cx} ${cy} L${cx-16} ${cy+18} L${cx-24} ${cy+30} M${cx} ${cy} L${cx-20} ${cy-12} L${cx-29} ${cy-24} M${cx} ${cy} L${cx+4} ${cy+20} L${cx+14} ${cy+34}"/><path d="M${cx+7} ${cy-16} L${cx+16} ${cy-24} M${cx+18} ${cy+8} L${cx+28} ${cy+14} M${cx-13} ${cy+13} L${cx-20} ${cy+21} M${cx+5} ${cy+16} L${cx+9} ${cy+28}"/></g></svg>`;
-  layer.appendChild(el);
-  animate(el,[{opacity:0},{opacity:1,offset:.15},{opacity:.7,offset:.75},{opacity:0}],{duration:2000});
-  removeLater(el,2050);
-}
-
-function makeCloud(layer, center, duration=1500){
-  const cloud=document.createElement('div'); cloud.className='hoa-cloud'; cloud.style.left=`${center.x}px`; cloud.style.top=`${center.y}px`;
-  cloud.innerHTML='<i></i><i></i><i></i>';
-  layer.appendChild(cloud);
-  const cloudAnimation=animate(cloud,[
-    {opacity:0, transform:'translate(-50%,-50%) scale(.25)'},
-    {opacity:1, transform:'translate(-50%,-50%) scale(1.05)', offset:.12},
-    {opacity:.92, transform:'translate(-50%,-50%) scale(1)', offset:.35},
-    {opacity:.65, transform:'translate(-50%,-54%) scale(1.13)', offset:.7},
-    {opacity:0, transform:'translate(-50%,-60%) scale(1.26)'}
-  ],{duration,easing:'cubic-bezier(.17,.84,.44,1)'});
-  removeLater(cloud,duration+100);
-  return {cloud,cloudAnimation};
-}
-
-function makeArtifactCard(layer, {artifactName='Zufalls-Artefakt', artifactIcon='✦', artifactImageUrl=''}){
-  const card=document.createElement('div'); card.className='hoa-artifact-card';
-  const imageArea=document.createElement('div'); imageArea.className='hoa-artifact-img';
-  if(artifactImageUrl){const img=document.createElement('img');img.src=artifactImageUrl;img.alt='';imageArea.appendChild(img);}
-  const icon=document.createElement('div');icon.className='hoa-artifact-icon';icon.textContent=artifactIcon;imageArea.appendChild(icon);
-  const label=document.createElement('div');label.className='hoa-artifact-name';label.textContent=artifactName;
-  card.append(imageArea,label);
-  layer.appendChild(card); return card;
-}
-
-function launchGlow(layer, from, to){
-  const line=document.createElement('div'); line.className='hoa-glow-line';
-  const dx=to.x-from.x, dy=to.y-from.y, len=Math.hypot(dx,dy);
-  line.style.left=`${from.x}px`; line.style.top=`${from.y}px`; line.style.width=`${len}px`; line.style.transform=`rotate(${Math.atan2(dy,dx)}rad)`;
-  layer.appendChild(line);
-  animate(line,[{opacity:0,clipPath:'inset(0 100% 0 0)'},{opacity:1,clipPath:'inset(0 0 0 0)',offset:.35},{opacity:0}],{duration:520,easing:'ease-out'});
-  removeLater(line,560);
-}
-
-/**
- * @param {Object} opts
- * @param {HTMLElement} opts.sourceElement card currently activating the effect
- * @param {HTMLElement} opts.deckElement player's deck UI element that receives the new artifact
- * @param {HTMLElement} [opts.arenaElement] element to shake (defaults to document.body)
- * @param {string} [opts.rumbleUrl] public URL of stone crumble / landslide SFX
- * @param {string} [opts.fartUrl] public URL of dramatic fart SFX
- * @param {boolean} [opts.muted] local mute setting
- * @param {string} [opts.artifactName] already server-selected missing artifact name
- * @param {string} [opts.artifactIcon] simple icon or emoji for previewing the granted artifact
- * @param {string} [opts.artifactImageUrl] optional image shown on spawned artifact card
- * @param {number} [opts.deckCountBefore] deck count before card enters
- * @param {number} [opts.deckCountAfter] deck count after card enters
- * @param {Function} [opts.onArtifactGranted] callback after visual grant moment for UI update only
- */
 export async function playHelementsOfArmoryAnimation({
-  sourceElement,
-  deckElement,
-  arenaElement=document.body,
-  rumbleUrl=DEFAULT_RUMBLE,
-  fartUrl=DEFAULT_FART,
-  muted=false,
-  artifactName='Zufälliges Artefakt',
-  artifactIcon='✦',
-  artifactImageUrl='',
-  deckCountBefore,
-  deckCountAfter,
-  onArtifactGranted=()=>{}
-}) {
-  if(!(sourceElement instanceof Element) || !(deckElement instanceof Element)) throw new Error('Helements of Armory: sourceElement und deckElement müssen DOM-Elemente sein.');
-  const layer=document.createElement('div'); layer.className='hoa-fx-layer'; document.body.appendChild(layer);
-  const dust=document.createElement('div'); dust.className='hoa-dust'; layer.appendChild(dust);
-  const title=document.createElement('div'); title.className='hoa-announcement'; title.textContent='HELEMENTS OF ARMORY'; layer.appendChild(title);
-  let counterTag, stoneTimer;
-
-  const rumble=ensureAudio(rumbleUrl, .9);
-  const fart=ensureAudio(fartUrl, 1);
-  const arena = arenaElement instanceof Element ? arenaElement : document.body;
-  arena.classList.add('hoa-shake-target');
-  animate(title,[{opacity:0},{opacity:1,offset:.12},{opacity:1,offset:.85},{opacity:0}],{duration:4200,easing:'ease-out'});
-  animate(dust,[{opacity:0},{opacity:.95,offset:.5},{opacity:.55,offset:.86},{opacity:0}],{duration:6200,easing:'linear'});
-
-  try {
-    // Exakt die Zeitachse der gelieferten Animationsvorschau (3):
-    // 0.10 aktivieren, 0.55 Beben, 2.50 Steinlawine,
-    // 5.80 Stopp, 6.00 Furzwolke, 6.32 Artefakt,
-    // 7.65 Flug, 8.62 erhalten, 10.30 Ende.
-    const began=performance.now();
-    const until=async seconds=>{
-      const remaining=seconds*1000-(performance.now()-began);
-      if(remaining>0)await wait(remaining);
-    };
-    if(!muted){
-      // Beide Dateien der Originalvorschau gleichzeitig starten.
-      // Hier ist kein dritter Ton und keine Wiederholung des Furzes.
-      void rumble.play().catch(()=>{});
-      void fart.play().catch(()=>{});
-    }
-    await until(.55);
-    arena.classList.add('hoa-earthquake');
-    stoneTimer=setInterval(()=>{
-      const elapsed=(performance.now()-began)/1000;
-      if(elapsed>=5.7)return;
-      const intense=elapsed>=2.5;
-      for(let i=0;i<(intense?5:2);i++)
-        makeStone(layer,Math.random()*window.innerWidth,.8+Math.random()*1.35,Math.random()*360);
-      if(Math.random()<.65)spawnCrack(layer);
-    },110);
-    await until(2.5);
-    arena.classList.add('hoa-heavy-earthquake');
-    await until(5.8);
-    clearInterval(stoneTimer);
-    arena.classList.remove('hoa-earthquake','hoa-heavy-earthquake');
-    await until(6.0);
-    // Furz ist bereits Teil der Originaltonspur: Wolke genau bei Sekunde 6.
-    const source=point(sourceElement,.5,.5);
-    const deck=point(deckElement,.5,.5);
-    const burstCenter={x:(source.x+deck.x)/2, y:Math.min(source.y, deck.y)-50};
-    // Wolke ist an das wirkliche Ende der bereits laufenden Furzspur gekoppelt.
-    // Ihr Beginn bei 6s entspricht dem Furz-Einsatz in der Originalvorschau.
-    const cloudFx=makeCloud(layer, burstCenter, 60000);
-    const fartFinished=muted
-      ? wait(5000)
-      : new Promise(resolve=>{
-          if(fart.ended || fart.error){resolve();return;}
-          const finish=()=>{fart.removeEventListener('ended',finish);fart.removeEventListener('error',finish);resolve();};
-          fart.addEventListener('ended',finish,{once:true});
-          fart.addEventListener('error',finish,{once:true});
-          // Sicherheitsfallback, falls Browser die Tonspur nicht abspielt.
-          setTimeout(finish,15000);
-        });
-    // Wolke bis zum Ende des Sounds sichtbar halten, dann ausblenden.
-    const cloudDone=fartFinished.then(async()=>{
-      cloudFx.cloudAnimation.cancel();
-      await cloudFx.cloud.animate([
-        {opacity:.92,transform:'translate(-50%,-54%) scale(1.13)'},
-        {opacity:0,transform:'translate(-50%,-60%) scale(1.26)'}
-      ],{duration:650,fill:'forwards',easing:'ease-out'}).finished.catch(()=>{});
-      cloudFx.cloud.remove();
-    });
-    // Originalvorschau: Artefakt erscheint bei 6.32 Sekunden.
-    await until(6.32);
-
-    const art = makeArtifactCard(layer,{artifactName, artifactIcon, artifactImageUrl});
-    art.style.left = `${burstCenter.x}px`; art.style.top = `${burstCenter.y}px`;
-    animate(art,[
-      {opacity:0, transform:'translate(-50%,-50%) scale(.4) rotate(-13deg)'},
-      {opacity:1, transform:'translate(-50%,-50%) scale(1.06) rotate(4deg)', offset:.35},
-      {opacity:1, transform:'translate(-50%,-50%) scale(1) rotate(0deg)', offset:.55}
-    ],{duration:520,easing:'cubic-bezier(.16,.88,.4,1)'});
-    // Nach dem vollständigen Furz und Ausblenden der Wolke
-    // bleibt die Artefaktkarte weitere drei Sekunden ruhig lesbar.
-    await cloudDone;
-    await wait(6000);
-
-    if(Number.isFinite(deckCountBefore) && Number.isFinite(deckCountAfter)){
-      counterTag=document.createElement('div'); counterTag.className='hoa-counter-pop'; counterTag.textContent=`${deckCountBefore} → ${deckCountAfter}`; layer.appendChild(counterTag);
-      counterTag.style.left = `${deck.rect.right - 6}px`; counterTag.style.top = `${deck.rect.top - 10}px`;
-    }
-    launchGlow(layer, burstCenter, deck);
-    animate(art,[
-      {opacity:1, transform:'translate(-50%,-50%) scale(1) rotate(0deg)', left:`${burstCenter.x}px`, top:`${burstCenter.y}px`},
-      {opacity:1, transform:'translate(-50%,-50%) scale(.74) rotate(8deg)', left:`${burstCenter.x + (deck.x-burstCenter.x)*0.45}px`, top:`${burstCenter.y + (deck.y-burstCenter.y)*0.45}px`, offset:.45},
-      {opacity:0, transform:'translate(-50%,-50%) scale(.18) rotate(14deg)', left:`${deck.x}px`, top:`${deck.y}px`}
-    ],{duration:820,easing:'cubic-bezier(.15,.86,.35,1)'});
-    if(counterTag){ animate(counterTag,[{opacity:0,transform:'scale(.6)'},{opacity:1,transform:'scale(1.05)',offset:.35},{opacity:1,transform:'scale(1)'},{opacity:0}],{duration:1600,easing:'ease-out'}); }
-    deckElement.classList.add('hoa-deck-pulse');
-    await wait(850);
-    onArtifactGranted();
-    await wait(550);
-  } finally {
-    clearInterval(stoneTimer);
-    try{rumble.pause();fart.pause();}catch{}
-    arena.classList.remove('hoa-earthquake','hoa-heavy-earthquake');
-    arena.classList.remove('hoa-shake-target');
-    deckElement.classList.remove('hoa-deck-pulse');
-    removeLater(layer, 10);
+  sourceElement,deckElement,arenaElement=document.querySelector('#game .arena')||document.body,
+  containerElement=null,
+  rumbleUrl=HOA_DEFAULT_RUMBLE,fartUrl=HOA_DEFAULT_FART,
+  muted=false,artifactName='Zufälliges Artefakt',artifactImageUrl='',artifactIcon='💎',
+  deckCountBefore,deckCountAfter,onArtifactGranted=()=>{},onProgress=()=>{},onPhase=()=>{}
+}={}){
+  if(!(sourceElement instanceof Element)||!(deckElement instanceof Element))
+    throw Error('Helements: sourceElement/deckElement müssen existieren.');
+  const parent=containerElement instanceof Element?containerElement:document.body;
+  const arena=arenaElement instanceof Element?arenaElement:document.body;
+  const stage=hoaNode('hoa-rebuilt-stage'+(containerElement?' hoa-rebuilt-contained':''),parent);
+  const canvas=hoaNode('hoa-rebuilt-canvas',stage,'canvas');const ctx=canvas.getContext('2d');
+  const tint=hoaNode('hoa-rebuilt-tint',stage),cracks=hoaNode('hoa-rebuilt-cracks',stage);
+  cracks.innerHTML='<svg viewBox="0 0 100 100" preserveAspectRatio="none"><g fill="none" stroke="#ffc8d8" stroke-width=".42" opacity=".85"><path d="M0 23 L14 28 21 16 32 37 47 41 53 55 61 51 71 65 86 58 100 76"/><path d="M20 0 L30 14 27 33 40 47 39 61 52 71 58 100"/><path d="M100 17 L81 24 71 38 62 31 50 49 41 67 25 74 10 100"/><path d="M5 66 L18 60 35 74 47 65 65 85 90 88"/><path d="M67 0 L58 16 74 29 88 45 100 42"/></g></svg>';
+  const title=hoaNode('hoa-rebuilt-title',stage);title.textContent='HELEMENTS OF ARMORY';
+  const flare=hoaNode('hoa-rebuilt-flare',stage);
+  const shock=hoaNode('hoa-rebuilt-shock',stage);
+  const cloud=hoaNode('hoa-rebuilt-cloud',stage),cloudCore=hoaNode('hoa-rebuilt-cloud-core',cloud);
+  const artifact=hoaNode('hoa-rebuilt-artifact',stage),face=hoaNode('hoa-rebuilt-artifact-face',artifact);
+  if(artifactImageUrl){const img=hoaNode('',face,'img');img.src=artifactImageUrl;img.alt=artifactName;}
+  else{const icon=hoaNode('hoa-rebuilt-artifact-icon',face);icon.textContent=artifactIcon;}
+  const label=hoaNode('',face,'strong');label.textContent=artifactName;
+  const sfxVolume=()=>{
+    try{return hoaClamp(Number(window.__hoaPreviewVolume??localStorage.getItem('mlp_sfx_volume')??.8),0,1)}
+    catch{return hoaClamp(Number(window.__hoaPreviewVolume??.8),0,1)}
+  };
+  const rumble=new Audio(rumbleUrl),fart=new Audio(fartUrl);
+  rumble.preload='auto';fart.preload='auto';rumble.volume=.83*sfxVolume();fart.volume=sfxVolume();
+  const updateVolume=()=>{rumble.volume=.83*sfxVolume();fart.volume=sfxVolume();};
+  window.addEventListener('mlp-sfx-volume-change',updateVolume);
+  let raf=0,playback=true,phase='',prev=0,spawnPool=0,dustPool=0,rocks=[],dusts=[],sparkles=[];
+  let started=performance.now(),dur=8.02,quakeState=0,smokeStarted=false,artifactStarted=false;
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  function setPhase(name){if(phase===name)return;phase=name;onPhase(name);}
+  function resize(){const r=stage.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);return {w:r.width,h:r.height};}
+  let {w,h}=resize();
+  const onResize=()=>{({w,h}=resize());};window.addEventListener('resize',onResize);
+  function makeRock(t,weight){
+    const x=rnd(-w*.08,w*1.08),y=rnd(-100,-20),size=rnd(5,23)*(weight?rnd(1.1,2.2):1);
+    rocks.push({x,y,size,vx:rnd(-150,150)*(weight?1.4:1),vy:rnd(130,350)+weight*130,rot:rnd(0,6),vr:rnd(-8,8),life:rnd(1.4,2.9),age:0,shape:Array.from({length:7},(_,i)=>.7+rnd(0,.5))});
   }
+  function makeDust(x,y){dusts.push({x,y,age:0,life:rnd(.48,1.1),s:rnd(13,55),vx:rnd(-40,40),vy:rnd(-45,-8)});}
+  function startSmoke(){
+    smokeStarted=true;setPhase('💨 DIE RIESIGE FURZWOLKE!');
+    arena.classList.remove('hoa-rebuilt-quake','hoa-rebuilt-extreme');tint.classList.remove('on');cracks.classList.remove('on');
+    shock.classList.add('burst');flare.classList.add('burst');cloud.classList.add('active');
+    const remaining=Math.max(.6,dur-6);
+    cloudCore.style.setProperty('--duration',remaining*1000+'ms');
+    for(let i=0;i<38;i++){
+      const blob=hoaNode('hoa-rebuilt-blob',cloud);
+      let angle=rnd(-Math.PI,0), radius=rnd(10,210),dx=Math.cos(angle)*radius,dy=Math.sin(angle)*radius-rnd(10,125);
+      blob.style.setProperty('--size',rnd(65,196)+'px');
+      blob.style.setProperty('--dx',dx.toFixed(0)+'px');blob.style.setProperty('--dy',dy.toFixed(0)+'px');
+      blob.style.setProperty('--delay',Math.min(130,rnd(0,110))+'ms');
+      blob.style.setProperty('--scale',rnd(1.15,1.8).toFixed(2));
+      blob.style.setProperty('--blur',rnd(7,19)+'px');
+      blob.style.setProperty('--duration',Math.max(400,remaining*1000-130)+'ms');
+    }
+  }
+  function revealArtifact(){
+    artifactStarted=true;setPhase('💎 DAS ARTEFAKT ERSCHEINT ÜBER DER WOLKE!');
+    artifact.classList.add('reveal');
+    for(let i=0;i<18;i++){let dot=hoaNode('hoa-rebuilt-sparkle',stage);const x=50+rnd(-17,17),y=33+rnd(-20,27);dot.style.left=x+'%';dot.style.top=y+'%';dot.style.animationDelay=rnd(0,.85)+'s';sparkles.push(dot);}
+  }
+  function render(time){
+    if(!playback)return;
+    const progressAudio=(!muted&&!fart.paused&&!rumble.paused) ? Math.max(fart.currentTime,rumble.currentTime) : NaN;
+    const t=Math.min(dur,Number.isFinite(progressAudio)&&progressAudio>0?progressAudio:(time-started)/1000);
+    const dt=Math.min(.045,Math.max(0,t-prev));prev=t;
+    ctx.clearRect(0,0,w,h);
+    let intensity=hoaClamp((t-.1)/2.5,0,1),apocalypse=t>=2.3&&t<5.8;
+    if(t>=.3&&t<5.8){
+      if(!quakeState){arena.classList.add('hoa-rebuilt-quake');quakeState=1;setPhase('🌋 ERDBEBEN!');title.classList.add('visible');}
+      if(apocalypse&&quakeState<2){arena.classList.add('hoa-rebuilt-extreme');quakeState=2;cracks.classList.add('on');tint.classList.add('on');setPhase('🪨 TOTALER WELTUNTERGANG!');}
+      const perSec=24+intensity*85;spawnPool+=perSec*dt;while(spawnPool>=1){spawnPool--;makeRock(t,apocalypse?1:0);}
+      dustPool+=(12+intensity*16)*dt;while(dustPool>=1){dustPool--;makeDust(rnd(0,w),rnd(h*.4,h*.95));}
+    }
+    for(let i=rocks.length-1;i>=0;i--){const r=rocks[i];r.age+=dt;r.vy+=dt*300;r.x+=r.vx*dt;r.y+=r.vy*dt;r.rot+=r.vr*dt;
+      if(r.age>r.life||r.y>h+80){if(r.y>h-35&&r.age<r.life)for(let k=0;k<2;k++)makeDust(r.x,h-rnd(0,35));rocks.splice(i,1);continue;}
+      ctx.save();ctx.translate(r.x,r.y);ctx.rotate(r.rot);ctx.globalAlpha=hoaClamp((r.life-r.age)*2);
+      ctx.shadowBlur=13;ctx.shadowColor='rgba(5,1,15,.83)';ctx.beginPath();for(let j=0;j<7;j++){const theta=j*2*Math.PI/7,radius=r.size*r.shape[j];const x=Math.cos(theta)*radius,y=Math.sin(theta)*radius*.72;if(j===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.closePath();
+      const gr=ctx.createLinearGradient(-r.size,-r.size,r.size,r.size);gr.addColorStop(0,'#ece2e3');gr.addColorStop(.28,'#aa9ea7');gr.addColorStop(.66,'#56465b');gr.addColorStop(1,'#1e1726');ctx.fillStyle=gr;ctx.fill();ctx.strokeStyle='#271c36';ctx.lineWidth=1.3;ctx.stroke();ctx.restore();
+    }
+    for(let i=dusts.length-1;i>=0;i--){const d=dusts[i];d.age+=dt;if(d.age>d.life){dusts.splice(i,1);continue;}d.x+=d.vx*dt;d.y+=d.vy*dt;const a=1-d.age/d.life;let rad=d.s*(.6+d.age/d.life);ctx.save();ctx.globalAlpha=a*.32;const g=ctx.createRadialGradient(d.x,d.y,0,d.x,d.y,rad);g.addColorStop(0,'rgba(239,211,203,.85)');g.addColorStop(.6,'rgba(188,156,163,.5)');g.addColorStop(1,'rgba(125,95,126,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(d.x,d.y,rad,0,Math.PI*2);ctx.fill();ctx.restore();}
+    if(t>=5.8&&quakeState){arena.classList.remove('hoa-rebuilt-quake','hoa-rebuilt-extreme');tint.classList.remove('on');cracks.classList.remove('on');quakeState=0;title.classList.remove('visible');}
+    if(t>=6&&!smokeStarted)startSmoke();
+    if(t>=6.18&&!artifactStarted)revealArtifact();
+    onProgress(hoaClamp(t/dur),t,dur);
+    if(t>=dur-.025)return stop();
+    raf=requestAnimationFrame(render);
+  }
+  let endResolve;
+  const finished=new Promise(resolve=>endResolve=resolve);
+  function stop(){
+    if(!playback)return;playback=false;cancelAnimationFrame(raf);
+    arena.classList.remove('hoa-rebuilt-quake','hoa-rebuilt-extreme');
+    window.removeEventListener('resize',onResize);window.removeEventListener('mlp-sfx-volume-change',updateVolume);
+    rumble.pause();fart.pause();
+    if(Number.isFinite(deckCountBefore)&&Number.isFinite(deckCountAfter))deckElement.dataset.hoaNewCount=String(deckCountAfter);
+    onArtifactGranted();stage.remove();setPhase('✅ ARTEFAKT ERHALTEN');endResolve();
+  }
+  function loaded(a){return new Promise(resolve=>{if(Number.isFinite(a.duration)&&a.duration>1)return resolve(a.duration);let ended=false;const done=()=>{if(ended)return;ended=true;resolve(Number.isFinite(a.duration)&&a.duration>1?a.duration:null)};a.addEventListener('loadedmetadata',done,{once:true});a.addEventListener('error',done,{once:true});setTimeout(done,1200);a.load();});}
+  try{
+    const d=await Promise.all([loaded(rumble),loaded(fart)]);
+    dur=Math.max(7.95,...d.filter(x=>Number.isFinite(x)&&x>0));
+    if(!muted){
+      // Crucial: both audio files start here in the same event loop, not sequentially.
+      const results=await Promise.allSettled([rumble.play(),fart.play()]);
+      if(results.every(x=>x.status==='rejected'))setPhase('🔇 Browser blockiert Audio; Animation läuft trotzdem');
+    }
+    started=performance.now();prev=0;raf=requestAnimationFrame(render);
+    // When tracks end naturally, finish; preserve short final frames.
+    const bothEnded=()=>{if((rumble.ended||rumble.error||muted)&&(fart.ended||fart.error||muted))stop();};
+    rumble.addEventListener('ended',bothEnded);fart.addEventListener('ended',bothEnded);
+    return await finished;
+  }catch(e){stop();throw e;}
 }
