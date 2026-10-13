@@ -1782,7 +1782,7 @@ io.on('connection',socket=>{
   const replyAccountError=(err)=>{
     console.error('[MLP] Account:',err.message);
     const publicErrors=['Benutzername:','Passwort muss','Dieser Benutzername','Dieser Benutzername oder','Benutzername oder Passwort',
-      'Deine Anmeldung','Altes Profil','Dieses Profil','Dein alter Profil-Schlüssel'];
+      'Deine Anmeldung','Altes Profil','Dieses Profil','Dein alter Profil-Schlüssel','Benutzername oder Wiederherstellungscode','Bitte melde dich zuerst an.'];
     const friendly=publicErrors.some(prefix=>String(err.message).startsWith(prefix));
     socket.emit('accountError',friendly?err.message:'Account-Datenbank nicht erreichbar. Prüfe DATABASE_URL bei Render.');
   };
@@ -1809,6 +1809,16 @@ io.on('connection',socket=>{
       socket.emit('accountData',result);
     }catch(err){replyAccountError(err)}finally{socket.data.accountBusy=false}
   }
+  socket.on('accountRecoveryGenerate',async ()=>{
+    if(!accountAllowed())return;
+    try{socket.emit('accountRecoveryCode',await profileStore.accountRecoveryGenerate({sessionToken:socket.data.accountSession}))}
+    catch(err){replyAccountError(err)}finally{socket.data.accountBusy=false}
+  });
+  socket.on('accountPasswordReset',async data=>{
+    if(!accountAllowed())return;
+    try{await profileStore.accountPasswordReset(data);socket.emit('accountPasswordResetDone',{message:'Passwort geändert. Bitte neu anmelden.'})}
+    catch(err){replyAccountError(err)}finally{socket.data.accountBusy=false}
+  });
   socket.on('accountRegister',data=>useAccount('accountRegister',data));
   socket.on('accountLogin',data=>useAccount('accountLogin',data));
   socket.on('accountResume',data=>useAccount('accountResume',data));
