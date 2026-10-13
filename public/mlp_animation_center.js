@@ -6,7 +6,6 @@
     {id:'shadow',title:'Diabolo · Schattengestalt',module:'ShadowFormFX',desc:'Schattenwesen verschlingt ein Artefakt'},
     {id:'steal',title:'Zauberklau',module:'ArtifactMagicFX',desc:'Magieketten entreißen ein Artefakt'},
     {id:'copy',title:'Zauberkopierer',module:'ArtifactMagicFX',desc:'Ritual erstellt eine Artefaktkopie'},
-    {id:'swarm',title:'Changeling · Schwarmruf',module:'ChangelingSwarmFX',desc:'Erst Dunkelheit, dann Augen und Changeling-Schwarm'},
     {id:'wind',title:'Windchaos',module:'WindchaosFX',desc:'Ein mächtiger Tornado'},
     {id:'cockatrice',title:'Cockatrice',module:'CockatriceEffect',desc:'Eine Karte wird versteinert'},
     {id:'sweetie',title:'Sweetie Bot',module:'SpecialPreview',desc:'Voiceline, Schüsse, Bildschirmrisse · 8 → 4'},
@@ -20,7 +19,6 @@
   function clearEffects(){
     try{window.ShadowFormFX?.isPlaying?.()&&document.querySelector('.shadowform-overlay')?.remove();}catch(_){}
     try{window.ArtifactMagicFX?.stop?.();}catch(_){}
-    try{window.ChangelingSwarmFX?.stop?.();}catch(_){}
     try{window.CockatriceEffect?.stop?.();}catch(_){}
   }
   function stop(){showPanel();clearEffects();activeId=null;if(overlay)overlay.querySelector('#animCenterState').textContent='Bereit · Wähle eine Animation';}
@@ -46,7 +44,6 @@
         case 'shadow':window.ShadowFormFX.play(common);break;
         case 'steal':window.ArtifactMagicFX.play({...common,action:'artifactsteal'});break;
         case 'copy':window.ArtifactMagicFX.play({...common,action:'artifactcopy'});break;
-        case 'swarm':window.ChangelingSwarmFX.play(common);break;
         case 'wind':window.WindchaosFX.play({isPreview:true});break;
         case 'cockatrice':window.CockatriceEffect.play({targetName:'Vorschau-Gegner',cardImage:cardImg,sound:true});break;
       }
