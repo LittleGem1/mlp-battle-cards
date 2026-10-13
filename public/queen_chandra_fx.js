@@ -52,7 +52,7 @@
     raf=requestAnimationFrame(tick);
   }
   function bind(){
-    if(window.socket&&typeof window.socket.on==='function')window.socket.on('specialPlayed',activate);
+    if(typeof socket!=='undefined'&&socket&&typeof socket.on==='function')socket.on('specialPlayed',activate);
     else setTimeout(bind,250);
   }
   bind();
