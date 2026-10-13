@@ -1,2 +1,2 @@
-import {playSpecialPreview} from './preview-specials.js?v=hoa-readable-20261012-7';
+import {playSpecialPreview} from './preview-specials.js?v=hoa-apocalypse-20261013-1';
 window.SpecialPreview={play:playSpecialPreview};
