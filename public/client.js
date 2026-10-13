@@ -563,13 +563,28 @@ function setupAccountUI(){
       <div style="display:flex;flex-wrap:wrap;gap:8px;">
         <button type="submit" id="mlpAccountLoginBtn" class="soft-btn">🔓 Anmelden</button>
         <button type="button" id="mlpAccountRegisterBtn" class="soft-btn">✨ Neu registrieren</button>
+        <button type="button" id="mlpForgotPasswordBtn" class="soft-btn">🔑 Passwort vergessen?</button>
       </div>
       <small>Beim ersten Registrieren werden die bisherigen Freischaltungen dieses Browsers übernommen, wenn möglich.</small>
     </form>
     <div id="mlpAccountSignedIn" style="display:none;gap:8px;align-items:center;flex-wrap:wrap;">
       <strong id="mlpAccountCurrentName"></strong>
+      <button type="button" id="mlpNewRecoveryBtn" class="soft-btn">🔑 Wiederherstellungscode erneuern</button>
       <button type="button" id="mlpAccountLogoutBtn" class="soft-btn">Abmelden</button>
     </div>`;
+  box.insertAdjacentHTML('beforeend',`<div id="mlpRecoveryPanel" style="display:none;padding:12px;border:1px solid #e4c47c;border-radius:10px">
+    <strong>🔑 Wiederherstellungscode – nur einmal sichtbar</strong><p>Bitte sicher aufbewahren. Wer diesen Code kennt, kann dein Passwort ändern.</p>
+    <code id="mlpRecoveryValue" style="display:block;overflow-wrap:anywhere;user-select:all"></code>
+    <button type="button" id="mlpRecoveryClose" class="soft-btn">Code gespeichert</button>
+  </div>
+  <form id="mlpResetForm" style="display:none;gap:8px;padding:10px;border:1px solid #8bb8ed;border-radius:10px">
+    <strong>Passwort zurücksetzen</strong><small>Du benötigst deinen zuvor gespeicherten Wiederherstellungscode.</small>
+    <label>Benutzername <input id="mlpResetUser" minlength="3" maxlength="24" required autocomplete="username"></label>
+    <label>Wiederherstellungscode <input id="mlpResetSecret" minlength="64" maxlength="64" required autocomplete="off"></label>
+    <label>Neues Passwort <input id="mlpResetPassword" type="password" minlength="10" maxlength="128" required autocomplete="new-password"></label>
+    <button type="submit" class="soft-btn">Passwort zurücksetzen</button>
+    <button type="button" id="mlpResetBack" class="soft-btn">Zurück</button>
+  </form>`);
   target.after(box);
   const accountForm=document.getElementById('mlpAccountForm');
   const usernameField=document.getElementById('mlpAccountUsername');
@@ -594,6 +609,27 @@ function setupAccountUI(){
     }else socket.emit(type,data);
     updateProfileStatus(type==='accountRegister'?'Account wird erstellt …':'Anmeldung wird geprüft …');
   }
+  const resetForm=document.getElementById('mlpResetForm');
+  document.getElementById('mlpForgotPasswordBtn').onclick=()=>{
+    document.getElementById('mlpResetUser').value=usernameField.value.trim();
+    accountForm.style.display='none';resetForm.style.display='grid';
+  };
+  document.getElementById('mlpResetBack').onclick=()=>{resetForm.style.display='none';accountForm.style.display='grid'};
+  resetForm.onsubmit=e=>{
+    e.preventDefault();if(!resetForm.reportValidity())return;
+    socket.emit('accountPasswordReset',{username:document.getElementById('mlpResetUser').value.trim(),
+      recoveryCode:document.getElementById('mlpResetSecret').value.trim(),
+      newPassword:document.getElementById('mlpResetPassword').value});
+    updateProfileStatus('Passwort wird zurückgesetzt …');
+  };
+  document.getElementById('mlpNewRecoveryBtn').onclick=()=>{
+    if(!profileReady)return;
+    if(confirm('Der alte Wiederherstellungscode wird ungültig. Neuen erstellen?'))socket.emit('accountRecoveryGenerate');
+  };
+  document.getElementById('mlpRecoveryClose').onclick=()=>{
+    document.getElementById('mlpRecoveryValue').textContent='';
+    document.getElementById('mlpRecoveryPanel').style.display='none';
+  };
   accountForm.addEventListener('submit',e=>{e.preventDefault();submit('accountLogin')});
   document.getElementById('mlpAccountRegisterBtn').addEventListener('click',()=>submit('accountRegister'));
   document.getElementById('mlpAccountLogoutBtn').addEventListener('click',()=>{
@@ -602,7 +638,8 @@ function setupAccountUI(){
   });
 }
 function showAccountUI(){
-  document.getElementById('mlpAccountForm').style.display=profileReady?'none':'grid';
+  document.getElementById('mlpAccountForm').style.display=profileReady?'none':(document.getElementById('mlpResetForm').style.display==='grid'?'none':'grid');
+  if(profileReady)document.getElementById('mlpResetForm').style.display='none';
   const signed=document.getElementById('mlpAccountSignedIn');
   signed.style.display=profileReady?'flex':'none';
   document.getElementById('mlpAccountCurrentName').textContent=profileReady?'✅ Angemeldet als '+accountUsername:'';
@@ -634,6 +671,20 @@ socket.on('roomResumeFailed',message=>{
 });
 socket.on('roomTakenOver',()=>toast('Die Partie wurde auf einem anderen Fenster wiederhergestellt.'));
 socket.on('disconnect',()=>{if(state)toast('Verbindung unterbrochen – das Spiel versucht automatisch, dich wieder zu verbinden.');});
+function revealRecoveryCode(code){
+  if(!/^[a-f0-9]{64}$/i.test(code||''))return;
+  document.getElementById('mlpRecoveryValue').textContent=code;
+  document.getElementById('mlpRecoveryPanel').style.display='block';
+  updateProfileStatus('🔑 Speichere diesen Wiederherstellungscode sicher.');
+}
+socket.on('accountRecoveryCode',e=>revealRecoveryCode(e?.recoveryCode));
+socket.on('accountPasswordResetDone',e=>{
+  document.getElementById('mlpResetForm').reset();
+  document.getElementById('mlpResetForm').style.display='none';
+  document.getElementById('mlpAccountForm').style.display='grid';
+  updateProfileStatus(e?.message||'Passwort geändert.');
+  toast('✅ Passwort geändert. Bitte neu anmelden.');
+});
 socket.on('accountData',data=>{
   if(!data?.sessionToken||!data.profile)return;
   accountSession=data.sessionToken;
@@ -647,6 +698,7 @@ socket.on('accountData',data=>{
   applyServerProfile(data.profile);
   document.getElementById('mlpAccountPassword').value='';
   showAccountUI();
+  if(data.recoveryCode)revealRecoveryCode(data.recoveryCode);
   updateProfileStatus('✅ Account gespeichert – Rahmen & Items werden automatisch synchronisiert.');
   if(!starterFrameChosen)maybeShowStarterFrame();
 });
