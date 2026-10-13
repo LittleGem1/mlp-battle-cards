@@ -270,10 +270,42 @@ function emitImpact(r,effect,targetIds,text){
   if(effect==='cockatrice')pauseSelectionForAnimation(r,6800);
   io.to(r.code).emit('specialImpact',{effect,targetIds:Array.isArray(targetIds)?targetIds:[targetIds],text});
 }
+// Joker: play a server-validated normal card without taking a player's hand card.
+function commitJokerNormal(r,p,cardId){
+  const card=byId[cardId];
+  if(!r||r.phase!=='select'||!p||p.surrendered||p.selected||
+      !r.roundPlayerIds.includes(p.id)||card?.type!=='normal'||
+      playedCardIds(r.played?.[p.id]).length)return false;
+  let borrowed=false;
+  for(const deck of [r.normalDeck,r.normalDiscard]){
+    const i=deck.indexOf(cardId);
+    if(i>=0){deck.splice(i,1);borrowed=true;break;}
+  }
+  r.played[p.id]={cardIds:[cardId],cardId,jokerVirtual:!borrowed};
+  p.selected=true;p.lastPlayedCardId=cardId;
+  io.to(r.code).emit('cardCommitted',{playerId:p.id,name:p.name});
+  io.to(r.code).emit('playerSelected',{playerId:p.id,name:p.name});
+  if(!p.isBot)io.to(p.id).emit('cardAccepted',{cardId});
+  sendState(r);maybeEvaluate(r);
+  return true;
+}
+function jokerPlayedCardIds(r){
+  return Object.values(r.played||{}).flatMap(e=>playedCardIds(e).filter(id=>!(e.jokerVirtual&&e.cardId===id)));
+}
+function discardJokerPlayedEntry(r,pid){
+  const e=r.played?.[pid];
+  if(!e)return;
+  for(const id of playedCardIds(e))if(!(e.jokerVirtual&&e.cardId===id))discardCard(r,id);
+}
+function finishJokerChoicePause(r,pending){
+  if(!pending?.jokerPauseToken||!r?.selectionPauseLocks)return;
+  const lock=r.selectionPauseLocks.get(pending.jokerPauseToken);
+  if(lock){r.selectionPauseLocks.delete(pending.jokerPauseToken);refreshSelectionAnimationPause(r);}
+}
 function discardPlayedEntry(r,pid){
   const entry=r.played?.[pid];
   if(!entry)return;
-  for(const id of playedCardIds(entry))discardCard(r,id);
+  discardJokerPlayedEntry(r,pid);
   delete r.played[pid];
   const p=r.players.get(pid);if(p)p.selected=null;
 }
@@ -449,7 +481,10 @@ function returnUnchosenSpecialCards(r,pending){
 function clearSpecialChoice(socket,r,notify=false){
   if(!socket)return false;
   const pending=socket.data.pendingSpecial;
-  if(pending?.room===r.code && pending.round===r.round)returnUnchosenSpecialCards(r,pending);
+  if(pending?.room===r.code && pending.round===r.round){
+    returnUnchosenSpecialCards(r,pending);
+    finishJokerChoicePause(r,pending);
+  }
   const flutter=socket.data.pendingFlutter;
   if(flutter?.room===r.code && flutter.round===r.round){r.normalDeck.unshift(...flutter.choices);}
   const had=!!(socket.data.pendingSpecial||socket.data.pendingFlutter||socket.data.pendingRarity);
@@ -500,7 +535,7 @@ function applyWindchaos(r,caster){
       const targetSocket=io.sockets.sockets.get(t.id);
       if(targetSocket)clearSpecialChoice(targetSocket,r,true);
     }
-    for(const id of playedCardIds(r.played?.[t.id]))discardCard(r,id);
+    discardJokerPlayedEntry(r,t.id);
     if(r.played)delete r.played[t.id];
     for(const id of t.hand)discardCard(r,id);
     t.hand=[];
@@ -535,10 +570,12 @@ function consumeSpecial(r,p,c){
   p.specialUsed=(p.specialUsed||0)+1;
   p.botTestSpecialReady=false;
   r.specialHistory.push({playerId:p.id,cardId:c.id,effect:c.effect});
-  // Include the card-reveal animation (2.5s) in the pause.
-  // Longer effects add their own pauses when their animation actually begins.
-  pauseSelectionForAnimation(r,c.effect==='windchaos'?7600:2700);
-  io.to(r.code).emit('specialPlayed',{playerId:p.id,name:p.name,card:c});
+  // No custom animation, swarm sound or special-popup for Changeling Joker.
+  if(c.effect!=='changelingjoker'){
+    pauseSelectionForAnimation(r,c.effect==='windchaos'?7600:2700);
+    io.to(r.code).emit('specialPlayed',{playerId:p.id,name:p.name,card:c});
+  }else io.to(r.code).emit('notice',p.name+' spielt Changeling Joker.');
+
   return true;
 }
 function specialAllowance(){return 1}
@@ -612,6 +649,11 @@ function botHasNegative(r,p){
 }
 function botApplySpecial(r,p,c){
   const effect=c.effect;
+  if(effect==='changelingjoker'){
+    const best=[...normal].sort((a,b)=>Number(b[r.category]||0)-Number(a[r.category]||0))[0];
+    if(best)commitJokerNormal(r,p,best.id);
+    return;
+  }
   if(effect==='helements'){grantHelements(r,p);gameOverIfNeeded(r);return;}
   if(effect==='sweetiebot'){const t=botTarget(r,p,'played_unhalved');if(t)applySweetieBot(r,p,t);return;}
   const targetAny=()=>botTarget(r,p,'any');
@@ -1266,7 +1308,7 @@ function handleSelectionTimeout(r){
   for(const [pid,entry] of Object.entries(r.played)){
     const p=r.players.get(pid);
     if(!p)continue;
-    for(const id of playedCardIds(entry))p.hand.push(id);
+    for(const id of playedCardIds(entry))if(!(entry.jokerVirtual&&entry.cardId===id))p.hand.push(id);
   }
 
   const penalties=[];
@@ -1350,7 +1392,7 @@ function finishRoundCycle(r,winnerId,playedIds){
   if(!r||r.phase!=='result'||!rooms.has(r.code))return;
   const winner=r.players.get(resolveResumedId(r,winnerId));
   if(!winner){
-    for(const id of playedIds)discardCard(r,id);
+    for(const id of jokerPlayedCardIds(r))discardCard(r,id);
     r.played={};
     for(const p of roomPlayers(r))p.selected=null;
     refillNormalHands(r);sendState(r);
@@ -1359,7 +1401,7 @@ function finishRoundCycle(r,winnerId,playedIds){
     return;
   }
 
-  for(const id of playedIds)discardCard(r,id);
+  for(const id of jokerPlayedCardIds(r))discardCard(r,id);
   r.played={};
   for(const p of roomPlayers(r))p.selected=null;
 
@@ -1458,7 +1500,7 @@ function evaluate(r){
     const match=r.matchId,round=r.round;
     setTimeout(()=>{
       if(!rooms.has(r.code)||r.matchId!==match||r.round!==round||r.phase!=='reveal')return;
-      for(const id of Object.values(r.played).flatMap(playedCardIds))discardCard(r,id);
+      for(const id of jokerPlayedCardIds(r))discardCard(r,id);
       r.played={};for(const p of roomPlayers(r))p.selected=null;
       refillNormalHands(r);r.phase='result';sendState(r);
       if(!gameOverIfNeeded(r))startRound(r,950);
@@ -2016,6 +2058,7 @@ io.on('connection',socket=>{
     if(effect==='shadowform'&&!availableTargets(r,p,'artifact').length)return socket.emit('errorMsg','Schattengestalt benötigt einen Gegner mit mindestens einem Artefakt. Die Karte bleibt auf deiner Hand.');
     if(['artifactcopy','artifactsteal'].includes(effect)&&!availableTargets(r,p,'artifact_new').length)return socket.emit('errorMsg','Es gibt derzeit kein gegnerisches Artefakt, das du noch nicht besitzt. Die Karte bleibt auf deiner Hand.');
     if(effect==='manticore'&&!r.normalDiscard.length&&!r.rewardDiscard.length)return socket.emit('errorMsg','Die Ablagestapel sind noch leer.');
+    if(effect==='changelingjoker'&&playedCardIds(r.played?.[p.id]).length)return socket.emit('errorMsg','Changeling Joker muss vor deiner normalen Karte gespielt werden.');
 
     if(!consumeSpecial(r,p,source))return;
 
@@ -2027,7 +2070,18 @@ io.on('connection',socket=>{
       io.to(r.code).emit('specialCopied',{playerId:p.id,name:p.name,copied:effectCard});
     }
 
-    if(effect==='sweetiebot'){
+    if(effect==='changelingjoker'){
+      const jokerPauseToken=pauseSelectionForAnimation(r,40000,{acknowledge:true});
+      const lock=r.selectionPauseLocks?.get(jokerPauseToken);
+      if(lock)lock.waiting=new Set([p.id]);
+      socket.data.pendingSpecial={room:r.code,round:r.round,action:'changelingjoker',sourceCardId:source.id,jokerPauseToken};
+      socket.emit('changelingJokerChoices',{
+        title:'🃏 Changeling Joker: Wähle eine normale Karte',
+        category:r.category,
+        cards:normal.map(c=>({id:c.id,type:c.type,name:c.name,image:c.image,
+          strength:c.strength,speed:c.speed,energy:c.energy,magic:c.magic}))
+      });
+    }else if(effect==='sweetiebot'){
       requestTarget(socket,r,p,source,'sweetiebot','played_unhalved','Sweetie Bot: Wessen gelegte Karte wird halbiert?');
     }else if(effect==='helements'){
       const granted=grantHelements(r,p);
@@ -2245,6 +2299,18 @@ io.on('connection',socket=>{
     sendState(r);
   });
 
+  socket.on('changelingJokerChoice',({cardId}={})=>{
+    const r=getRoom(socket),pending=pendingForCurrentSelection(socket,r),p=r?.players.get(socket.id);
+    if(!pending||pending.action!=='changelingjoker'||!p)return;
+    const chosen=byId[String(cardId||'')];
+    if(chosen?.type!=='normal')return socket.emit('errorMsg','Bitte eine normale Karte wählen.');
+    if(p.selected||playedCardIds(r.played?.[p.id]).length)return socket.emit('errorMsg','Du hast bereits eine normale Karte gelegt.');
+    if(!commitJokerNormal(r,p,chosen.id))return socket.emit('errorMsg','Die normale Karte konnte nicht gespielt werden.');
+    socket.data.pendingSpecial=null;
+    finishJokerChoicePause(r,pending);
+    socket.emit('specialDone',{text:'🃏 Changeling Joker spielt sofort '+chosen.name+'!'});
+    sendState(r);maybeEvaluate(r);
+  });
   socket.on('specialCardChoice',({cardId})=>{
     const r=getRoom(socket),pending=pendingForCurrentSelection(socket,r),p=r?.players.get(socket.id);
     if(!pending||!p)return;
@@ -2394,7 +2460,7 @@ io.on('connection',socket=>{
     // Bereits gelegte Karte sauber zurücknehmen, damit die laufende Runde
     // ohne den aufgegebenen Spieler weiter ausgewertet werden kann.
     const entry=r.played[socket.id];
-    for(const id of playedCardIds(entry))discardCard(r,id);
+    for(const id of playedCardIds(entry))if(!(entry.jokerVirtual&&entry.cardId===id))discardCard(r,id);
     delete r.played[socket.id];
     delete r.roundBuff[socket.id];
     delete r.dice[socket.id];
