@@ -580,7 +580,7 @@ function setupAccountUI(){
   <form id="mlpResetForm" style="display:none;gap:8px;padding:10px;border:1px solid #8bb8ed;border-radius:10px">
     <strong>Passwort zurücksetzen</strong><small>Du benötigst deinen zuvor gespeicherten Wiederherstellungscode.</small>
     <label>Benutzername <input id="mlpResetUser" minlength="3" maxlength="24" required autocomplete="username"></label>
-    <label>Wiederherstellungscode <input id="mlpResetSecret" minlength="64" maxlength="64" required autocomplete="off"></label>
+    <label>Wiederherstellungscode <input id="mlpResetSecret" minlength="16" maxlength="128" required autocomplete="off"></label>
     <label>Neues Passwort <input id="mlpResetPassword" type="password" minlength="10" maxlength="128" required autocomplete="new-password"></label>
     <button type="submit" class="soft-btn">Passwort zurücksetzen</button>
     <button type="button" id="mlpResetBack" class="soft-btn">Zurück</button>
