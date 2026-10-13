@@ -1,6 +1,6 @@
 // Nur lokale Testanimationen. Keine Socket-Events oder serverseitige Kartenänderungen.
 import {playSweetieBotAnimation} from './sweetie-bot.js';
-import {playHelementsOfArmoryAnimation} from './helements-of-armory.js?v=audio-settings-20261012-10';
+import {playHelementsOfArmoryAnimation} from './helements-of-armory.js?v=hoa-apocalypse-20261013-1';
 export async function playSpecialPreview(id){
  const old=document.getElementById('mlp-special-preview-stage');if(old)old.remove();
  const stage=document.createElement('div');stage.id='mlp-special-preview-stage';
@@ -31,7 +31,7 @@ export async function playSpecialPreview(id){
  if(id==='helements')count.textContent='6';
  try{
  if(id==='sweetie')await playSweetieBotAnimation({sourceElement:source,targetElement:target,voiceUrl:'/assets/sweetie-bot-voice.mp3',oldValue:8,newValue:4,onValueReveal:()=>{count.textContent='4';}});
- else await playHelementsOfArmoryAnimation({sourceElement:source,deckElement:target,arenaElement:stage,rumbleUrl:'/assets/helements-rumble.mp3',fartUrl:'/assets/helements-fart.mp3',artifactName:'Test-Artefakt',deckCountBefore:6,deckCountAfter:7,onArtifactGranted:()=>{count.textContent='7';}});
+ else await playHelementsOfArmoryAnimation({sourceElement:source,deckElement:target,arenaElement:stage,containerElement:stage,rumbleUrl:'/assets/helements-rumble.mp3',fartUrl:'/assets/helements-fart.mp3',artifactName:'Test-Artefakt',deckCountBefore:6,deckCountAfter:7,onArtifactGranted:()=>{count.textContent='7';}});
  }catch(e){console.error(e);stage.querySelector('#sp-label').textContent='Fehler: '+e.message;}
  finally{exit.disabled=false;exit.textContent='Schließen';exit.onclick=()=>stage.remove();}
 }
