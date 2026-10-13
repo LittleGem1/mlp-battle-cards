@@ -14,6 +14,12 @@ const io = new Server(server);
 // V18: bereits installierte Bandbreiten-Optimierung erhalten.
 require('./asset_bandwidth_optimization')(app);
 app.get('/assets/cards_new/095_Little_Gem_Magie9.svg',require('./little_gem_card_artwork'));
+// Serve the approved Little Gem preview with its match controller attached.
+app.get('/little_gem_live.html',(req,res)=>{
+  const fs=require('fs');
+  const html=fs.readFileSync(path.join(__dirname,'public/little_gem_match.html'),'utf8');
+  res.type('html').send(html.replace('</body>','<script src="/little_gem_match_controller.js"></script></body>'));
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 const accountAttemptLimits = new Map();
