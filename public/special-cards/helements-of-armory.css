@@ -1,37 +1,51 @@
-.hoa-fx-layer{position:fixed;inset:0;z-index:99999;pointer-events:none;overflow:hidden;isolation:isolate}
-.hoa-shake-target{transform-origin:center center}
-@keyframes hoa-arena-shake{0%{transform:translate(0,0) rotate(0deg)}10%{transform:translate(-6px,2px) rotate(-0.6deg)}20%{transform:translate(8px,-4px) rotate(0.5deg)}30%{transform:translate(-10px,5px) rotate(-0.8deg)}40%{transform:translate(10px,3px) rotate(0.6deg)}50%{transform:translate(-8px,-6px) rotate(-0.7deg)}60%{transform:translate(7px,5px) rotate(0.5deg)}70%{transform:translate(-6px,2px) rotate(-0.4deg)}80%{transform:translate(5px,-4px) rotate(0.35deg)}90%{transform:translate(-3px,2px) rotate(-0.2deg)}100%{transform:translate(0,0) rotate(0deg)}}
-.hoa-earthquake{animation:hoa-arena-shake .25s linear infinite}
-.hoa-announcement{position:absolute;left:50%;top:10%;transform:translateX(-50%);font:900 clamp(20px,3.5vw,42px)/1.1 system-ui,sans-serif;letter-spacing:.06em;color:#ffced7;text-shadow:0 0 22px #ff2f56,0 0 48px #8c0e23;opacity:0;white-space:nowrap}
-.hoa-dust{position:absolute;inset:0;background:radial-gradient(circle at center,rgba(255,130,130,.08),rgba(29,12,15,.18) 60%,rgba(0,0,0,.34));opacity:0;mix-blend-mode:screen}
-.hoa-stone{position:absolute;width:26px;height:20px;background:linear-gradient(145deg,#8f8d91,#53525b 55%,#2b2a32);border-radius:30% 40% 35% 45%;box-shadow:inset -4px -4px 0 rgba(0,0,0,.35), inset 3px 2px 0 rgba(255,255,255,.15),0 0 10px rgba(0,0,0,.35)}
-.hoa-debris{position:absolute;width:10px;height:7px;background:#67626e;border-radius:2px;opacity:.75}
-.hoa-crack{position:absolute;inset:0;opacity:0;mix-blend-mode:screen}
-.hoa-crack svg{width:100%;height:100%}
-.hoa-cloud{position:absolute;width:260px;height:190px;transform:translate(-50%,-50%) scale(.25);opacity:0;filter:drop-shadow(0 0 16px rgba(150,255,100,.45))}
-.hoa-cloud::before,.hoa-cloud::after,.hoa-cloud i{content:"";position:absolute;border-radius:50%;background:radial-gradient(circle at 40% 40%,rgba(224,255,196,.94) 0 16%,rgba(177,234,130,.9) 17% 42%,rgba(122,187,84,.84) 43% 68%,rgba(74,117,47,.48) 69% 100%)}
-.hoa-cloud::before{width:130px;height:98px;left:18px;top:46px}
-.hoa-cloud::after{width:118px;height:88px;left:112px;top:58px}
-.hoa-cloud i:nth-child(1){width:96px;height:78px;left:68px;top:20px}
-.hoa-cloud i:nth-child(2){width:78px;height:64px;left:6px;top:82px}
-.hoa-cloud i:nth-child(3){width:72px;height:56px;left:162px;top:92px}
-.hoa-artifact-card{position:absolute;width:min(22vw,170px);aspect-ratio:2/3;border-radius:16px;border:3px solid #f26c86;background:linear-gradient(180deg,#3a0b16 0%,#1a0a11 100%);box-shadow:0 0 24px rgba(255,48,87,.45), inset 0 0 22px rgba(255,120,153,.18);overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;opacity:0;transform:translate(-50%,-50%) scale(.4) rotate(-12deg)}
-.hoa-artifact-card::before{content:"";position:absolute;inset:8px;border-radius:12px;border:1px solid rgba(255,175,192,.35)}
-.hoa-artifact-img{position:absolute;inset:10px 10px 44px 10px;border-radius:10px;background:radial-gradient(circle at 50% 38%,rgba(255,110,160,.32),rgba(73,13,28,.2) 30%,rgba(0,0,0,.16) 70%),linear-gradient(160deg,#31101b,#09060a)}
-.hoa-artifact-img img{width:100%;height:100%;object-fit:cover;display:block;opacity:.9}
-.hoa-artifact-icon{position:absolute;left:50%;top:42%;width:56px;height:56px;transform:translate(-50%,-50%);border-radius:50%;display:grid;place-items:center;font-size:30px;background:radial-gradient(circle,#ffd1db 0%,#f55580 35%,#87112e 72%,transparent 73%);box-shadow:0 0 24px rgba(255,96,137,.45)}
-.hoa-artifact-name{position:relative;z-index:1;padding:10px 10px 12px;color:#ffe8ee;text-align:center;font:800 clamp(14px,2vw,18px)/1.1 system-ui,sans-serif;text-shadow:0 0 8px rgba(255,73,120,.7)}
-.hoa-deck-pulse{box-shadow:0 0 0 0 rgba(110,255,120,.8)!important;animation:hoa-deck-pulse .65s ease-out 2}
-@keyframes hoa-deck-pulse{0%{box-shadow:0 0 0 0 rgba(110,255,120,.75)}100%{box-shadow:0 0 0 24px rgba(110,255,120,0)}}
-.hoa-counter-pop{position:absolute;right:-8px;top:-12px;min-width:42px;padding:6px 10px;border-radius:999px;background:#70f07e;color:#06200a;font:900 22px/1 system-ui,sans-serif;box-shadow:0 0 18px rgba(112,240,126,.55);opacity:0}
-.hoa-glow-line{position:absolute;height:4px;background:linear-gradient(to right,rgba(166,255,175,0),rgba(188,255,196,.95),rgba(246,255,241,1));transform-origin:left center;filter:drop-shadow(0 0 8px rgba(131,255,131,.8));opacity:0}
-
-/* Helements Vorschau (3): nach 2,5 Sekunden deutlich stärkeres Erdbeben. */
-.hoa-earthquake.hoa-heavy-earthquake{animation:hoa-heavy-shake .067s infinite alternate}
-@keyframes hoa-heavy-shake{
-  from{transform:translate(-12px,8px) rotate(-.45deg) scale(1.015)}
-  to{transform:translate(13px,-11px) rotate(.5deg) scale(1.02)}
+/* Helements of Armory – rebuilt real-time FX, same selectors in preview and live game */
+@keyframes hoa-rebuilt-shake-soft {
+  0%{transform:translate(-3px,2px) rotate(-.15deg)}
+  50%{transform:translate(4px,-3px) rotate(.18deg)}
+  100%{transform:translate(-2px,3px) rotate(-.12deg)}
 }
-/* Artefakt-Optik der gelieferten Vorschau: goldener Rand, violetter Kristallglanz. */
-.hoa-artifact-card{border:5px solid #e7c86d;background:radial-gradient(circle at 50% 40%,#985ed0,#311c53 70%);box-shadow:inset 0 0 30px #1e0936,0 0 22px #e7b7ff}
-.hoa-artifact-name{color:#ffecaf}
+@keyframes hoa-rebuilt-shake-apocalypse {
+  0%{transform:translate(-13px,8px) rotate(-.8deg) scale(1.018)}
+  25%{transform:translate(12px,-10px) rotate(.9deg) scale(1.019)}
+  50%{transform:translate(-10px,-8px) rotate(-.5deg) scale(1.024)}
+  75%{transform:translate(14px,9px) rotate(.7deg) scale(1.018)}
+  100%{transform:translate(-12px,6px) rotate(-.6deg) scale(1.02)}
+}
+.hoa-rebuilt-quake{animation:hoa-rebuilt-shake-soft .13s linear infinite!important;transform-origin:center!important}
+.hoa-rebuilt-quake.hoa-rebuilt-extreme{animation:hoa-rebuilt-shake-apocalypse .075s linear infinite!important}
+.hoa-rebuilt-stage{position:fixed;inset:0;z-index:100250;pointer-events:none;overflow:hidden;isolation:isolate;font-family:system-ui,Arial,sans-serif}
+.hoa-rebuilt-stage.hoa-rebuilt-contained{position:absolute;inset:0;z-index:30;border-radius:inherit}
+.hoa-rebuilt-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:5}
+.hoa-rebuilt-tint{position:absolute;inset:0;z-index:2;opacity:0;pointer-events:none;background:radial-gradient(ellipse at 50% 60%,rgba(247,136,106,.1),rgba(81,24,33,.22) 54%,rgba(13,4,22,.64) 100%);mix-blend-mode:screen}
+.hoa-rebuilt-tint.on{animation:hoa-rebuilt-tint-pulse .24s infinite alternate}
+@keyframes hoa-rebuilt-tint-pulse{from{opacity:.4;filter:brightness(.9)}to{opacity:1;filter:brightness(1.65)}}
+.hoa-rebuilt-cracks{position:absolute;inset:0;z-index:6;opacity:0;mix-blend-mode:screen;filter:drop-shadow(0 0 9px #ffaacc)}
+.hoa-rebuilt-cracks svg{width:100%;height:100%}
+.hoa-rebuilt-cracks.on{opacity:.92;animation:hoa-crack-flicker .12s infinite alternate}
+@keyframes hoa-crack-flicker{from{opacity:.3}to{opacity:.93}}
+.hoa-rebuilt-title{position:absolute;top:9%;left:50%;transform:translateX(-50%);z-index:22;text-align:center;color:#ffe7f7;text-shadow:0 0 12px #d15bff,0 0 34px #9c2477;font-weight:1000;font-size:clamp(18px,3.4vw,39px);letter-spacing:.065em;white-space:nowrap;opacity:0}
+.hoa-rebuilt-title.visible{opacity:1;animation:hoa-title-thrum .28s infinite alternate}
+@keyframes hoa-title-thrum{from{transform:translateX(-50%) scale(1)}to{transform:translateX(-50%) scale(1.02)}}
+.hoa-rebuilt-shock{position:absolute;left:50%;top:66%;height:32px;width:32px;border:8px solid rgba(232,255,188,.75);border-radius:50%;z-index:13;opacity:0;transform:translate(-50%,-50%) scale(.1)}
+.hoa-rebuilt-shock.burst{animation:hoa-rebuilt-shockwave .68s ease-out forwards}
+@keyframes hoa-rebuilt-shockwave{0%{opacity:.85;transform:translate(-50%,-50%) scale(.2);box-shadow:0 0 25px #f5ffb7}100%{opacity:0;transform:translate(-50%,-50%) scale(31);border-width:1px}}
+.hoa-rebuilt-cloud{position:absolute;left:50%;top:66%;width:75%;height:63%;z-index:14;opacity:0;transform:translate(-50%,-50%);filter:drop-shadow(0 0 42px rgba(160,255,103,.5));overflow:visible}
+.hoa-rebuilt-cloud.active{opacity:1}
+.hoa-rebuilt-blob{position:absolute;width:var(--size);height:var(--size);border-radius:50%;left:50%;top:52%;opacity:0;background:radial-gradient(circle at 37% 34%,rgba(247,255,222,.99) 0%,rgba(199,248,158,.96) 22%,rgba(131,208,108,.92) 48%,rgba(64,129,90,.63) 76%,rgba(43,80,55,0) 100%);box-shadow:inset -12px -17px 20px rgba(45,72,44,.12);filter:blur(var(--blur,9px));transform:translate(-50%,-50%) scale(.07);animation:hoa-rebuilt-plume var(--duration,1900ms) cubic-bezier(.08,.85,.18,1) var(--delay,0ms) forwards}
+@keyframes hoa-rebuilt-plume{0%{opacity:0;transform:translate(-50%,-50%) scale(.07)}18%{opacity:.88}60%{opacity:.94}90%{opacity:.86}100%{opacity:.06;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(var(--scale,1.2))}}
+.hoa-rebuilt-cloud-core{position:absolute;inset:12% 6% 3%;border-radius:49%;opacity:.0;background:radial-gradient(ellipse at 50% 60%,rgba(202,246,169,.92),rgba(109,174,98,.55) 50%,transparent 71%);filter:blur(26px)}
+.hoa-rebuilt-cloud.active .hoa-rebuilt-cloud-core{animation:hoa-rebuilt-core var(--duration,1900ms) ease-out forwards}
+@keyframes hoa-rebuilt-core{0%{opacity:0;transform:scale(.2) translateY(60px)}35%{opacity:.8;transform:scale(.95)}86%{opacity:.85;transform:scale(1.08) translateY(-20px)}100%{opacity:0;transform:scale(1.24) translateY(-35px)}}
+.hoa-rebuilt-artifact{position:absolute;left:50%;top:33%;z-index:25;width:clamp(104px,17vw,174px);max-width:31%;aspect-ratio:.69;opacity:0;transform:translate(-50%,52%) rotate(-11deg) scale(.23);filter:drop-shadow(0 0 32px #caff8c);text-align:center}
+.hoa-rebuilt-artifact.reveal{animation:hoa-rebuilt-artifact-rise .85s cubic-bezier(.15,.9,.25,1.2) forwards}
+@keyframes hoa-rebuilt-artifact-rise{0%{opacity:0;transform:translate(-50%,52%) rotate(-13deg) scale(.23)}65%{opacity:1;transform:translate(-50%,-44%) rotate(6deg) scale(1.19)}100%{opacity:1;transform:translate(-50%,-50%) rotate(0) scale(1)}}
+.hoa-rebuilt-artifact-face{width:100%;height:100%;box-sizing:border-box;border:5px solid #e6ce73;border-radius:14px;background:radial-gradient(circle at 50% 41%,#8c5dba,#34174e 66%,#1a0c2a);box-shadow:0 0 28px #eab9ff,inset 0 0 20px #0d0920;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:12px 7px;color:#ffedb6}
+.hoa-rebuilt-artifact-face img{width:100%;max-height:74%;min-height:0;object-fit:contain;filter:drop-shadow(0 0 10px #ffdaf9)}
+.hoa-rebuilt-artifact-icon{display:grid;place-items:center;flex:1;font-size:clamp(39px,9vw,77px);text-shadow:0 0 18px #fff1a2}
+.hoa-rebuilt-artifact-face strong{font-weight:900;font-size:clamp(10px,1.4vw,15px);line-height:1.08;overflow-wrap:anywhere}
+.hoa-rebuilt-sparkle{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff4bf;box-shadow:0 0 12px 4px #ffe1a8;z-index:26;opacity:0;animation:hoa-rebuilt-twinkle 1s ease-in-out infinite alternate}
+@keyframes hoa-rebuilt-twinkle{from{opacity:.12;transform:scale(.35)}to{opacity:1;transform:scale(1.3)}}
+.hoa-rebuilt-flare{position:absolute;inset:0;z-index:27;opacity:0;background:#fff5dc;pointer-events:none}
+.hoa-rebuilt-flare.burst{animation:hoa-rebuilt-flare .42s ease-out forwards}
+@keyframes hoa-rebuilt-flare{0%{opacity:.6}100%{opacity:0}}
+@media (max-width:650px){.hoa-rebuilt-cloud{width:118%;height:58%;top:68%}.hoa-rebuilt-artifact{top:31%}.hoa-rebuilt-title{top:11%;font-size:clamp(13px,4.2vw,26px)}}
