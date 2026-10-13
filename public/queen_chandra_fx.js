@@ -3,7 +3,7 @@
    /assets/specials_new/101_Koenigin_Chandra.png
 */
 (()=>{
-  const DURATION=8600, SPELL=6600, FRAME_PORTION=6000;
+  const INTRO_MS=2600, DURATION=8600, SPELL=6600, FRAME_PORTION=6000;
   let current=null;
   const css=document.createElement('style');
   css.textContent=`
@@ -25,10 +25,13 @@
   function activate(e){
     if(e?.card?.effect!=='queen_chandra')return;
     if(current)current();
+    setTimeout(()=>startTransformation(e), INTRO_MS);
+  }
+  function startTransformation(e){
     const stage=document.createElement('div');stage.className='qc-stage';
     stage.setAttribute('aria-label','Königin Chandra verwandelt sich');
     const panel=document.createElement('div');panel.className='qc-frame';
-    const card=document.createElement('img');card.className='qc-card';card.alt='Königin Chandra';card.src='/assets/specials_new/101_Koenigin_Chandra.png';
+    const card=document.createElement('img');card.className='qc-card';card.alt='Königin Chandra';card.src='/assets/specials_new/101_Koenigin_Chandra_Final.png';card.onerror=()=>{card.src='/assets/specials_new/101_Koenigin_Chandra.png';};
     const glint=document.createElement('div');glint.className='qc-glint';
     stage.append(panel,card,glint);document.body.append(stage);
     const sound=new Audio('/assets/queen_chandra_magic.mp3');
