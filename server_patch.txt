@@ -1,0 +1,63 @@
+2) In server.js sind drei Änderungen nötig.
+
+A) In consumeSpecial(...) die Pause für Königin Chandra erhöhen, damit
+   - normale Kartenanzeige,
+   - Verwandlungsanimation,
+   - kurzes finales Bild
+   vollständig abgespielt werden, bevor die Auswahl erscheint.
+
+Suche:
+  pauseSelectionForAnimation(r,c.effect==='windchaos'?7600:2700);
+
+Ersetze durch:
+  pauseSelectionForAnimation(r,
+    c.effect==='windchaos' ? 7600 :
+    c.effect==='queen_chandra' ? 9800 :
+    2700
+  );
+
+B) Im useSpecial-Zweig die Wirkung queen_chandra ergänzen.
+   WICHTIG: Die Auswahl darf NICHT sofort kommen.
+   Sie muss erst nach normaler Special-Anzeige + Animation + kurzem zweiten Bild erscheinen.
+
+Füge im großen else-if-Block ein:
+
+}else if(effect==='queen_chandra'){
+  const TOTAL_DELAY_MS = 9500; // 2500 normale Kartenanzeige + 5600 Animation + 1400 finales Bild
+  socket.data.pendingSpecial={room:r.code,round:r.round,action:'queen_chandra',sourceCardId:source.id};
+  setTimeout(()=>{
+    const stillPending = pendingForCurrentSelection(socket,r);
+    if(!stillPending || stillPending.action!=='queen_chandra') return;
+    socket.emit('specialCardRequest',{
+      title:'👑 Königin Chandra erfüllt dir einen Wunsch: Wähle genau eine Spezialkarte',
+      cards:specials.map(c=>({
+        id:c.id,
+        type:c.type,
+        name:c.name,
+        image:c.image,
+        text:c.text,
+        useIcon:c.useIcon,
+        useLabel:c.useLabel
+      }))
+    });
+  }, TOTAL_DELAY_MS);
+
+C) Im socket.on('specialCardChoice', ...) die Auswahl exakt einer Spezialkarte absichern.
+   Diese Prüfung am Anfang ergänzen:
+
+if(action==='queen_chandra'){
+  const wished=byId[cardId];
+  if(wished?.type!=='special' || !specials.some(c=>c.id===cardId)){
+    return socket.emit('errorMsg','Königin Chandra erlaubt nur die Wahl einer Spezialkarte.');
+  }
+  socket.data.pendingSpecial=null;
+  p.hand.push(wished.id);
+  socket.emit('specialDone',{text:`Dein Wunsch wurde erfüllt: ${wished.name}.`});
+  sendState(r);
+  return;
+}
+
+Ergebnis:
+- keine normale Karte auswählbar
+- kein Artefakt auswählbar
+- genau eine Spezialkarte auswählbar

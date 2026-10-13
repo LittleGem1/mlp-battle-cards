@@ -1,0 +1,5 @@
+1) In cards.js in das specials-Array diese Karte ergänzen:
+
+{id:'s101',type:'special',name:'Königin Chandra',effect:'queen_chandra',text:'Sie erfüllt dir einen Wunsch.',useIcon:'👑',useLabel:'Ein Wunsch',image:'/assets/specials_new/101_Koenigin_Chandra.png'}
+
+Hinweis: Auf der Karte selbst bleibt nur der Wunsch-Text. Die echte Wirkung bleibt geheim.

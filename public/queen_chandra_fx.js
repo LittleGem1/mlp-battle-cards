@@ -1,62 +1,141 @@
-/* Königin Chandra – native match visual, waits through the 2-second silent end-card hold.
-   Assets (public): /assets/queen_chandra_storyboard.png, /assets/queen_chandra_magic.mp3,
-   /assets/specials_new/101_Koenigin_Chandra.png
+/* Königin Chandra – Spezialeffekt
+Ablauf:
+1) Standard-Spezialkarte wird wie üblich vom Spiel gezeigt.
+2) Nach 2,5 s startet die Verwandlungsanimation.
+3) Danach wird kurz die finale Chandra-Karte gezeigt.
+4) Erst dann soll der Server die Auswahl EINER Spezialkarte öffnen.
+
+Benötigte Assets:
+- /assets/specials_new/101_Koenigin_Chandra.png
+- /assets/specials_new/101_Koenigin_Chandra_Final.png
+- /assets/queen_chandra_storyboard.png
+- /assets/queen_chandra_magic.mp3
 */
 (()=>{
-  const INTRO_MS=2600, DURATION=8600, SPELL=6600, FRAME_PORTION=6000;
-  let current=null;
-  const css=document.createElement('style');
-  css.textContent=`
-  .qc-stage{position:fixed;inset:0;z-index:2147482500;display:grid;place-items:center;background:radial-gradient(ellipse at center,rgba(20,55,109,.97),rgba(3,9,28,.99));overflow:hidden;pointer-events:none;animation:qc-in .35s both}
-  .qc-stage::before{content:"";position:absolute;width:90vmin;height:90vmin;border-radius:50%;border:3px solid #82dfff89;box-shadow:0 0 85px #3fb6ff;animation:qc-spin 5s linear infinite}
-  .qc-stage::after{content:"";position:absolute;inset:0;background:radial-gradient(circle,#ffffff99 0 2px,transparent 3px) 0 0/95px 115px;opacity:.25;animation:qc-spark 6s linear infinite}
-  .qc-frame{position:absolute;width:min(78vmin,720px);aspect-ratio:1;background-image:url('/assets/queen_chandra_storyboard.png');background-size:400% 400%;background-position:0% 0%;background-repeat:no-repeat;box-shadow:0 0 60px #82bfff55;border-radius:12px;opacity:1;transition:opacity .25s}
-  .qc-card{position:absolute;height:min(90vh,860px);max-width:88vw;object-fit:contain;filter:drop-shadow(0 0 25px #7acaffaa);opacity:0;transform:scale(.83);transition:opacity .45s,transform .45s}
-  .qc-stage.qc-reveal .qc-frame{opacity:0}
-  .qc-stage.qc-reveal .qc-card{opacity:1;transform:scale(1)}
-  .qc-glint{position:absolute;inset:0;opacity:0;background:#fff;pointer-events:none}
-  .qc-stage.qc-reveal .qc-glint{animation:qc-flash .55s forwards}
-  @keyframes qc-in{from{opacity:0}to{opacity:1}}
-  @keyframes qc-flash{0%{opacity:0}30%{opacity:.85}100%{opacity:0}}
-  @keyframes qc-spin{to{transform:rotate(360deg)}}
-  @keyframes qc-spark{to{background-position:38px -130px}}
-  `;
-  document.head.append(css);
-  function activate(e){
-    if(e?.card?.effect!=='queen_chandra')return;
-    if(current)current();
-    setTimeout(()=>startTransformation(e), INTRO_MS);
+  const INTRO_BURST_MS = 2500;   // Erst normale Special-Kartenanzeige wie bei allen anderen.
+  const FRAME_TOTAL_MS = 5600;   // 16 Panels der Verwandlung.
+  const FINAL_CARD_HOLD_MS = 1400; // Zweites Bild kurz sichtbar.
+
+  const STORYBOARD = '/assets/queen_chandra_storyboard.png';
+  const FINAL_CARD = '/assets/specials_new/101_Koenigin_Chandra_Final.png';
+  const MAGIC_SOUND = '/assets/queen_chandra_magic.mp3';
+
+  let activeCleanup = null;
+
+  function ensureStyles(){
+    if(document.getElementById('queen-chandra-fx-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'queen-chandra-fx-styles';
+    style.textContent = `
+      .qcfx-overlay{position:fixed;inset:0;z-index:2147482600;display:grid;place-items:center;
+        background:radial-gradient(circle at center, rgba(19,42,92,.96) 0%, rgba(5,10,28,.985) 72%, rgba(3,6,16,.995) 100%);
+        overflow:hidden;pointer-events:none;opacity:0;animation:qcfxFadeIn .28s forwards;}
+      .qcfx-overlay::before{content:"";position:absolute;width:84vmin;height:84vmin;border-radius:50%;
+        border:3px solid rgba(101,214,255,.50);box-shadow:0 0 48px rgba(87,180,255,.38), inset 0 0 24px rgba(87,180,255,.12);
+        animation:qcfxSpin 7s linear infinite;}
+      .qcfx-overlay::after{content:"";position:absolute;inset:-15%;opacity:.32;
+        background:
+          radial-gradient(circle, rgba(255,255,255,.95) 0 1px, transparent 1.8px) 10% 15%/150px 150px,
+          radial-gradient(circle, rgba(121,211,255,.95) 0 1.5px, transparent 2px) 70% 28%/175px 175px,
+          radial-gradient(circle, rgba(255,226,145,.85) 0 1.25px, transparent 2px) 38% 72%/165px 165px;
+        animation:qcfxDrift 10s linear infinite;}
+      .qcfx-frame, .qcfx-final{position:absolute;object-fit:contain;border-radius:14px;}
+      .qcfx-frame{width:min(76vmin, 720px);aspect-ratio:1;background-image:url('${STORYBOARD}');
+        background-size:400% 400%;background-repeat:no-repeat;box-shadow:0 0 52px rgba(83,175,255,.22);}
+      .qcfx-final{height:min(88vh, 980px);max-width:88vw;opacity:0;transform:scale(.86);
+        filter:drop-shadow(0 0 26px rgba(100,198,255,.42));transition:opacity .42s ease, transform .42s cubic-bezier(.2,1.1,.32,1);}
+      .qcfx-overlay.reveal .qcfx-frame{opacity:0;transition:opacity .28s ease;}
+      .qcfx-overlay.reveal .qcfx-final{opacity:1;transform:scale(1);}
+      .qcfx-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;}
+      .qcfx-overlay.reveal .qcfx-flash{animation:qcfxFlash .55s ease forwards;}
+      @keyframes qcfxFadeIn{from{opacity:0}to{opacity:1}}
+      @keyframes qcfxFlash{0%{opacity:0}32%{opacity:.82}100%{opacity:0}}
+      @keyframes qcfxSpin{to{transform:rotate(360deg)}}
+      @keyframes qcfxDrift{to{transform:translateY(24px)}}`;
+    document.head.appendChild(style);
   }
-  function startTransformation(e){
-    const stage=document.createElement('div');stage.className='qc-stage';
-    stage.setAttribute('aria-label','Königin Chandra verwandelt sich');
-    const panel=document.createElement('div');panel.className='qc-frame';
-    const card=document.createElement('img');card.className='qc-card';card.alt='Königin Chandra';card.src='/assets/specials_new/101_Koenigin_Chandra_Final.png';card.onerror=()=>{card.src='/assets/specials_new/101_Koenigin_Chandra.png';};
-    const glint=document.createElement('div');glint.className='qc-glint';
-    stage.append(panel,card,glint);document.body.append(stage);
-    const sound=new Audio('/assets/queen_chandra_magic.mp3');
-    sound.volume=typeof window.battleSoundVolume==='number'?Math.max(0,Math.min(1,window.battleSoundVolume)):0.8;
+
+  function runChandraEffect(){
+    ensureStyles();
+    if(activeCleanup) activeCleanup();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'qcfx-overlay';
+
+    const frame = document.createElement('div');
+    frame.className = 'qcfx-frame';
+
+    const finalCard = document.createElement('img');
+    finalCard.className = 'qcfx-final';
+    finalCard.src = FINAL_CARD;
+    finalCard.alt = 'Königin Chandra';
+
+    const flash = document.createElement('div');
+    flash.className = 'qcfx-flash';
+
+    overlay.append(frame, finalCard, flash);
+    document.body.appendChild(overlay);
+
+    const sound = new Audio(MAGIC_SOUND);
+    try{
+      const vol = (typeof window.battleSoundVolume === 'number') ? Math.max(0, Math.min(1, window.battleSoundVolume)) : 0.8;
+      sound.volume = vol;
+    }catch(err){}
     sound.play().catch(()=>{});
-    let start=performance.now(),raf=0;
-    let ended=false;
-    const cleanup=()=>{if(ended)return;ended=true;cancelAnimationFrame(raf);sound.pause();stage.remove();if(current===cleanup)current=null;};
-    current=cleanup;
-    const tick=now=>{
-      const elapsed=now-start;
-      if(elapsed>=DURATION){cleanup();return;}
-      if(elapsed>=SPELL-450)stage.classList.add('qc-reveal');
-      else {
-        const n=Math.min(15,Math.floor(elapsed/FRAME_PORTION*16));
-        const x=n%4,y=Math.floor(n/4);
-        panel.style.backgroundPosition=(x*100/3)+'% '+(y*100/3)+'%';
-      }
-      raf=requestAnimationFrame(tick);
+
+    let raf = 0;
+    let ended = false;
+    const startedAt = performance.now();
+
+    activeCleanup = ()=>{
+      if(ended) return;
+      ended = true;
+      cancelAnimationFrame(raf);
+      try{ sound.pause(); sound.currentTime = 0; }catch(err){}
+      overlay.remove();
+      if(activeCleanup === cleanup) activeCleanup = null;
     };
-    raf=requestAnimationFrame(tick);
+    const cleanup = activeCleanup;
+
+    function tick(now){
+      if(ended) return;
+      const elapsed = now - startedAt;
+      if(elapsed < FRAME_TOTAL_MS){
+        const idx = Math.min(15, Math.floor((elapsed / FRAME_TOTAL_MS) * 16));
+        const x = idx % 4;
+        const y = Math.floor(idx / 4);
+        frame.style.backgroundPosition = `${(x * 100 / 3).toFixed(4)}% ${(y * 100 / 3).toFixed(4)}%`;
+      }else if(elapsed < FRAME_TOTAL_MS + FINAL_CARD_HOLD_MS){
+        overlay.classList.add('reveal');
+      }else{
+        cleanup();
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
   }
+
+  function onSpecialPlayed(e){
+    if(!e || e.card?.effect !== 'queen_chandra') return;
+    // Erst normale Standardanzeige der Karte abwarten.
+    setTimeout(runChandraEffect, INTRO_BURST_MS);
+  }
+
   function bind(){
-    if(typeof socket!=='undefined'&&socket&&typeof socket.on==='function')socket.on('specialPlayed',activate);
-    else setTimeout(bind,250);
+    if(typeof socket !== 'undefined' && socket && typeof socket.on === 'function'){
+      socket.on('specialPlayed', onSpecialPlayed);
+      return;
+    }
+    setTimeout(bind, 250);
   }
   bind();
+
+  // Export hilfreiche Zeiten für den Server, falls gebraucht.
+  window.QUEEN_CHANDRA_SEQUENCE = {
+    introBurstMs: INTRO_BURST_MS,
+    frameTotalMs: FRAME_TOTAL_MS,
+    finalCardHoldMs: FINAL_CARD_HOLD_MS,
+    totalAfterPlayMs: INTRO_BURST_MS + FRAME_TOTAL_MS + FINAL_CARD_HOLD_MS
+  };
 })();

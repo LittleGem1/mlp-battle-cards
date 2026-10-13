@@ -1,0 +1,5 @@
+4) In public/index.html diese Datei einbinden, am besten kurz vor </body>:
+
+<script src="/queen_chandra_fx.js?v=2"></script>
+
+Die bereits vorhandenen Scripts bleiben unverändert.

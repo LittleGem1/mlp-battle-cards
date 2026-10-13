@@ -1,0 +1,11 @@
+3) In public/client.js darf die normale Standardanzeige NICHT unterdrückt werden.
+
+Sie MUSS weiter aktiv bleiben:
+  socket.on('specialPlayed',showSpecialBurst);
+
+Falls dort für queen_chandra eine Ausnahme eingebaut wurde, diese bitte wieder entfernen.
+Denn die Reihenfolge soll sein:
+- Standard-Kartenanzeige mit Text
+- dann Verwandlung
+- dann kurzes finales Bild
+- dann Auswahlfenster
