@@ -430,6 +430,92 @@ function startBotTestRoom(){
   toast('🤖 PonyBot wird vorbereitet …');
 }
 $('#botTestBtn')?.addEventListener('click',startBotTestRoom);
+
+/* 🧪 ECHTER Bot-Kartentester: kein Mock, sondern regulaere playCard/useSpecial-Events. */
+const botTestDialog=$('#botCardTesterDialog');
+const botTestButton=$('#botCardTesterBtn');
+const botTestSearch=$('#botCardTesterSearch');
+const botTestList=$('#botCardTesterList');
+let botTestCatalog=[],botTestKind='special';
+function botTestAvailable(s=state){
+  return !!(s?.botCardTester && s?.hostId===myId && s?.players?.length===2 &&
+    s.players.some(p=>p.isBot) && !['lobby','gameover'].includes(s.phase));
+}
+function botTestSyncButton(s=state){
+  if(botTestButton)botTestButton.style.display=botTestAvailable(s)?'inline-flex':'none';
+  if(!botTestAvailable(s)&&botTestDialog?.open)botTestDialog.close();
+}
+function botTestRender(){
+  if(!botTestList)return;
+  botTestDialog?.querySelectorAll('[data-bot-test-type]').forEach(btn=>{
+    btn.classList.toggle('active',btn.dataset.botTestType===botTestKind);
+  });
+  const query=(botTestSearch?.value||'').trim().toLocaleLowerCase('de');
+  const cards=botTestCatalog.filter(c=>c.type===botTestKind &&
+    (!query||c.name.toLocaleLowerCase('de').includes(query)||c.text?.toLocaleLowerCase('de').includes(query)));
+  botTestList.replaceChildren();
+  if(!cards.length){
+    const note=document.createElement('p');note.textContent=botTestCatalog.length?'Keine passenden Karten.':'Karten werden geladen …';
+    botTestList.append(note);return;
+  }
+  const allowed=state?.phase==='select'&&!state?.players?.find(p=>p.id===myId)?.selected;
+  const addButton=(parent,label,run)=>{
+    const button=document.createElement('button');button.type='button';button.textContent=label;
+    button.disabled=!allowed;button.title=allowed?'In der echten Runde testen':'Nur während der Kartenauswahl';
+    button.addEventListener('click',()=>{
+      if(!allowed)return;
+      botTestDialog.close();
+      ensureAudio();
+      run();
+    });
+    parent.append(button);
+  };
+  for(const c of cards){
+    const item=document.createElement('article');item.className='bot-test-card';
+    const main=document.createElement('div');main.className='bot-test-card-main';
+    const img=document.createElement('img');img.src=c.image;img.loading='lazy';img.alt=c.name;
+    img.addEventListener('error',()=>{
+      img.src=c.type==='normal'?'/assets/card_back.webp':'/assets/special_back_gold.png';
+    },{once:true});
+    const info=document.createElement('div');info.className='bot-test-card-info';
+    const name=document.createElement('strong');name.textContent=c.name;
+    const desc=document.createElement('small');desc.textContent=c.text||'';
+    info.append(name,desc);main.append(img,info);item.append(main);
+    const buttons=document.createElement('div');buttons.className='bot-test-card-buttons';
+    if(c.type==='artifact'){
+      addButton(buttons,'💎 Mir geben',()=>socket.emit('botTestPlay',{cardId:c.id,target:'self'}));
+      addButton(buttons,'🤖 PonyBot geben',()=>socket.emit('botTestPlay',{cardId:c.id,target:'bot'}));
+    }else{
+      addButton(buttons,'▶ Jetzt ausspielen',()=>socket.emit('botTestPlay',{cardId:c.id}));
+    }
+    item.append(buttons);botTestList.append(item);
+  }
+}
+botTestButton?.addEventListener('click',()=>{
+  if(!botTestAvailable())return;
+  botTestSearch.value='';
+  botTestKind='special';botTestCatalog=[];
+  botTestRender();botTestDialog.showModal();socket.emit('botTestCatalog');
+});
+$('#botCardTesterClose')?.addEventListener('click',()=>botTestDialog.close());
+botTestDialog?.querySelectorAll('[data-bot-test-type]').forEach(button=>{
+  button.addEventListener('click',()=>{botTestKind=button.dataset.botTestType;botTestRender()});
+});
+botTestSearch?.addEventListener('input',botTestRender);
+socket.on('botTestCatalog',e=>{
+  botTestCatalog=Array.isArray(e?.cards)?e.cards:[];
+  if(botTestDialog?.open)botTestRender();
+});
+socket.on('botTestCardReady',e=>{
+  if(e?.type==='artifact'){
+    toast('💎 '+e.targetName+' erhaelt '+e.name+'!');return;
+  }
+  if(!e?.cardId)return;
+  // Nach dem serverseitigen Hand-Update laeuft die gewoehnliche Kartenlogik.
+  socket.emit(e.type==='special'?'useSpecial':'playCard',{cardId:e.cardId});
+  toast('🧪 '+e.name+' wird in der Arena gespielt!');
+});
+
 $('#startBtn').addEventListener('click',()=>{directMusicGesture('lobby');ensureAudio();socket.emit('startGame')});
 $('#arenaReadyBtn')?.addEventListener('click',()=>{directMusicGesture('game');ensureAudio();socket.emit('toggleReady')});
 $('#arenaAccessoryBtn')?.addEventListener('click',()=>{renderAccessoryGrid();$('#accessoryDialog').showModal()});
@@ -632,6 +718,8 @@ socket.on('roomState',s=>{
   if(s.phase!=='select' || (state&&s.round!==state.round))dismissOldSpecialChoices();
   if(finisherDemoActive && s.phase!=='ready')stopFinisherDemo();
   state=s;
+  botTestSyncButton(s);
+  if(botTestDialog?.open)botTestRender();
 
   // WICHTIG:
   // Wenn dieser Spieler nach dem Spiel bereits "Zur Lobby" gedrückt hat,
