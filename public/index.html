@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/mlp_cosmetics_v8.css?v=20261010-cosmetics8a" />
   <link rel="stylesheet" href="/mlp_kristall_buttons_v11.css?v=20261010-v11b" />
   <link rel="stylesheet" href="/mlp_special_hover_kristallton_v12.css?v=20261010-v12" />
+  <link rel="stylesheet" href="/bot_card_tester.css?v=1" />
 
 </head>
 <body class="scene-home">
@@ -62,6 +63,7 @@
         <div class="game-actions">
           <button id="abortBtn" class="danger-btn" type="button">⏹ Spiel abbrechen</button>
           <button id="leaveGameBtn" class="soft-btn" type="button">← Hauptmenü</button>
+          <button id="botCardTesterBtn" class="soft-btn" type="button" style="display:none">🧪 Testkarten</button>
           <div class="music-controls"><button id="musicGameBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
         </div>
 
@@ -409,11 +411,28 @@
     </div>
   </dialog>
 
+  <dialog id="botCardTesterDialog" class="bot-card-tester-dialog" aria-label="PonyBot Testkarten">
+    <div class="bot-card-tester-inner">
+      <div class="bot-card-tester-head">
+        <div><strong>🧪 Testkarten gegen PonyBot</strong><small>Wähle eine Karte – sie wird in der echten Runde gespielt.</small></div>
+        <button id="botCardTesterClose" class="soft-btn" type="button" aria-label="Schließen">✕</button>
+      </div>
+      <p class="bot-card-tester-note">Spiele Spezialkarten <strong>vor</strong> deiner normalen Karte. Manche Effekte brauchen eine gelegte Gegnerkarte oder ein Artefakt. Artefakte kannst du dir oder PonyBot hier direkt geben.</p>
+      <div class="bot-card-tester-filters">
+        <button type="button" data-bot-test-type="special" class="active">✨ Spezialkarten</button>
+        <button type="button" data-bot-test-type="normal">🃏 Normale Karten</button>
+        <button type="button" data-bot-test-type="artifact">💎 Artefakte</button>
+      </div>
+      <input id="botCardTesterSearch" type="search" placeholder="🔎 Karte suchen …" autocomplete="off" aria-label="Karte suchen"/>
+      <div id="botCardTesterList" class="bot-card-tester-list">Karten werden geladen …</div>
+    </div>
+  </dialog>
+
   <div id="ytAudioPlayer" class="yt-audio-player" aria-hidden="true"></div>
   <div class="music-credit">Ausgewählte Lobby- und Battle-Musik läuft unsichtbar im Hintergrund via YouTube.</div>
   <script src="https://www.youtube.com/iframe_api"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/client.js?v=remove-swarm-20261013"></script>
+  <script src="/client.js?v=bot-card-tester-20261013-v1"></script>
 
   <script src="/mlp_sieger_special_smolder.js?v=20261010-burnv2"></script>
   <script src="/mlp_arena_volle_hoehe_v7.js?v=20261010-v7a"></script>
