@@ -217,8 +217,8 @@ function createProfileStore(databaseUrl) {
     try{
       await client.query('BEGIN');
       const rows=await client.query(`SELECT a.id,r.code_hash FROM mlp_player_accounts a
-        JOIN mlp_password_recovery r ON r.account_id=a.id
-        WHERE a.username_norm=$1 FOR UPDATE OF a,r`,[norm]);
+        LEFT JOIN mlp_password_recovery r ON r.account_id=a.id
+        WHERE a.username_norm=$1 FOR UPDATE OF a`,[norm]);
       const expected=Buffer.from(rows.rows[0]?.code_hash||'00'.repeat(32),'hex');
       if(!rows.rowCount||!(sharedValid||(personalValid&&crypto.timingSafeEqual(Buffer.from(digest(submitted.toLowerCase()),'hex'),expected))))
         throw new Error('Benutzername oder Wiederherstellungscode ungültig.');
