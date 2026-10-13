@@ -204,7 +204,14 @@ function createProfileStore(databaseUrl) {
     await init();
     const {norm}=normalizeUsername(username);
     validatePassword(newPassword);
-    if(typeof recoveryCode!=='string'||!/^[a-f0-9]{64}$/i.test(recoveryCode))
+    // Optional shared code for a private friends-only room. Never commit the secret itself.
+    const shared=process.env.MLP_SHARED_RECOVERY_CODE||'';
+    const submitted=typeof recoveryCode==='string'?recoveryCode.trim():'';
+    const sharedValid=shared.length>=16 && shared.length<=128 &&
+      submitted.length===shared.length &&
+      crypto.timingSafeEqual(Buffer.from(submitted,'utf8'),Buffer.from(shared,'utf8'));
+    const personalValid=/^[a-f0-9]{64}$/i.test(submitted);
+    if(!sharedValid&&!personalValid)
       throw new Error('Benutzername oder Wiederherstellungscode ungültig.');
     const client=await pool.connect();
     try{
@@ -213,7 +220,7 @@ function createProfileStore(databaseUrl) {
         JOIN mlp_password_recovery r ON r.account_id=a.id
         WHERE a.username_norm=$1 FOR UPDATE OF a,r`,[norm]);
       const expected=Buffer.from(rows.rows[0]?.code_hash||'00'.repeat(32),'hex');
-      if(!rows.rowCount||!crypto.timingSafeEqual(Buffer.from(digest(recoveryCode.toLowerCase()),'hex'),expected))
+      if(!rows.rowCount||!(sharedValid||(personalValid&&crypto.timingSafeEqual(Buffer.from(digest(submitted.toLowerCase()),'hex'),expected))))
         throw new Error('Benutzername oder Wiederherstellungscode ungültig.');
       const salt=crypto.randomBytes(16).toString('hex');
       const passwordHash=await hashPassword(newPassword,salt);
