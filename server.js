@@ -13,6 +13,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 // V18: bereits installierte Bandbreiten-Optimierung erhalten.
 require('./asset_bandwidth_optimization')(app);
+app.get('/assets/cards_new/095_Little_Gem_Magie9.svg',require('./little_gem_card_artwork'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const accountAttemptLimits = new Map();
@@ -1468,7 +1469,9 @@ function settleRound(r,winnerId){
   }
   r.pendingRoundWinner=winnerId;
   r.phase='result';
-  const finisher=pickFinisher(r),duration=4200;
+  const littleGemWins=(r.revealCardSnapshot||[]).some(x=>x.pid===winnerId&&x.cardId==='n95');
+  const finisher=littleGemWins?'little_gem_crystal_ash':pickFinisher(r);
+  const duration=littleGemWins?9200:4200;
   io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:ids.map(id=>byId[id]).filter(Boolean),finisher,duration,
     revealEntries:(r.revealCardSnapshot||[]).filter(x=>x.card)});
   sendState(r);
