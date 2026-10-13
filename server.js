@@ -572,7 +572,7 @@ function consumeSpecial(r,p,c){
   r.specialHistory.push({playerId:p.id,cardId:c.id,effect:c.effect});
   // No custom animation, swarm sound or special-popup for Changeling Joker.
   if(c.effect!=='changelingjoker'){
-    pauseSelectionForAnimation(r,c.effect==='windchaos'?7600:2700);
+    pauseSelectionForAnimation(r,c.effect==='windchaos'?7600:c.effect==='queen_chandra'?8600:2700);
     io.to(r.code).emit('specialPlayed',{playerId:p.id,name:p.name,card:c});
   }else io.to(r.code).emit('notice',p.name+' spielt Changeling Joker.');
 
@@ -2081,6 +2081,9 @@ io.on('connection',socket=>{
         cards:normal.map(c=>({id:c.id,type:c.type,name:c.name,image:c.image,
           strength:c.strength,speed:c.speed,energy:c.energy,magic:c.magic}))
       });
+    }else if(effect==='queen_chandra'){
+      socket.data.pendingSpecial={room:r.code,round:r.round,action:'queen_chandra',sourceCardId:source.id};
+      socket.emit('specialCardRequest',{title:'👑 Königin Chandra erfüllt dir einen Wunsch: Wähle genau eine Spezialkarte',cards:specials.map(c=>({id:c.id,type:c.type,name:c.name,image:c.image,text:c.text}))});
     }else if(effect==='sweetiebot'){
       requestTarget(socket,r,p,source,'sweetiebot','played_unhalved','Sweetie Bot: Wessen gelegte Karte wird halbiert?');
     }else if(effect==='helements'){
@@ -2315,6 +2318,17 @@ io.on('connection',socket=>{
     const r=getRoom(socket),pending=pendingForCurrentSelection(socket,r),p=r?.players.get(socket.id);
     if(!pending||!p)return;
     const action=pending.action;
+
+    if(action==='queen_chandra'){
+      const wished=byId[cardId];
+      if(wished?.type!=='special'||!specials.some(c=>c.id===cardId))return socket.emit('errorMsg','Chandra erlaubt ausschließlich eine Spezialkarte.');
+      if(p.hand.length>=MAX_TOTAL_HAND)return socket.emit('errorMsg','Deine Hand ist voll.');
+      socket.data.pendingSpecial=null;
+      p.hand.push(wished.id);
+      socket.emit('specialDone',{text:'Dein Wunsch wurde erfüllt: '+wished.name+' ist jetzt auf deiner Hand.'});
+      sendState(r);
+      return;
+    }
 
     if(action==='artifactmagic-card'){
       const target=r.players.get(pending.targetId);
