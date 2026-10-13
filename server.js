@@ -43,6 +43,7 @@ function arenaForNextMatch(r){
 function code(){ const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return Array.from({length:5},()=>a[Math.floor(Math.random()*a.length)]).join(''); }
 function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 function roomPlayers(r){ return [...r.players.values()]; }
+function isBotCardTestRoom(r){return !!r?.botCardTester && r.players.size===2 && roomPlayers(r).some(p=>p.isBot);}
 function getRoom(socket){ return socket.data.room ? rooms.get(socket.data.room) : null; }
 function hasNormalCard(p){ return p.hand.some(id=>byId[id]?.type==='normal'); }
 function activePlayers(r){ return roomPlayers(r).filter(p=>!p.surrendered); }
@@ -75,6 +76,7 @@ function clearTimers(r){
 function publicState(r){
   return {
     code:r.code,hostId:r.hostId,phase:r.phase,category:r.category,round:r.round,
+    botCardTester:isBotCardTestRoom(r),
     countdownUntil:r.countdownUntil||null,selectionDeadline:r.selectionDeadline||null,roundIntroUntil:r.roundIntroUntil||null,
     arenaId:r.arenaId||null,arenaSelection:r.arenaSelection||'random',postGameReady:[...(r.postGameReady||new Set())],
     deckCounts:{normal:(r.normalDeck||[]).length,reward:(r.rewardDeck||[]).length},
@@ -452,12 +454,13 @@ function applyWindchaos(r,caster){
   }
   if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
   // Die 30-Sekunden-Auswahl beginnt erst, wenn der Tornado verschwunden ist.
-  r.selectionDeadline=Date.now()+totalDuration+30000;
+  const turnMs=isBotCardTestRoom(r)?180000:30000;
+  r.selectionDeadline=Date.now()+totalDuration+turnMs;
   io.to(r.code).emit('notice',`${caster.name} entfesselt WINDCHAOS! ${targets.length} gegnerische Hand/Hände werden neu verteilt.`);
   sendState(r);
   r.selectionTimer=setTimeout(()=>{
     if(rooms.has(r.code)&&r.matchId===match&&r.round===round&&r.phase==='select')handleSelectionTimeout(r);
-  },totalDuration+30050);
+  },totalDuration+turnMs+50);
   setTimeout(()=>{
     if(!rooms.has(r.code)||r.matchId!==match||r.round!==round||r.phase!=='select')return;
     r.windchaosUntil=0;
@@ -474,12 +477,13 @@ function consumeSpecial(r,p,c){
   if(i<0)return false;
   p.hand.splice(i,1);r.rewardDiscard.push(c.id);
   p.specialUsed=(p.specialUsed||0)+1;
+  p.botTestSpecialReady=false;
   r.specialHistory.push({playerId:p.id,cardId:c.id,effect:c.effect});
   io.to(r.code).emit('specialPlayed',{playerId:p.id,name:p.name,card:c});
   return true;
 }
 function specialAllowance(){return 1}
-function mayUseSpecial(p){return (p.specialUsed||0)<specialAllowance(p)}
+function mayUseSpecial(p){return (p.specialUsed||0)<specialAllowance(p) || !!p.botTestSpecialReady}
 function forceDiscardChoice(r,target,sourceName){
   if(!target||!target.hand.length)return;
   if(target.pendingForcedDiscard?.timer)clearTimeout(target.pendingForcedDiscard.timer);
@@ -1027,7 +1031,7 @@ function resetToLobby(r){
   r.watchdogTag=null;r.watchdogSince=0;r.resumedIds=Object.create(null);
   r.normalDeck=[];r.normalDiscard=[];r.rewardDeck=[];r.rewardDiscard=[];r.pendingReward=null;r.artifactRewardCooldown=0;r.lastArtifactOfferRound=0;
   for(const p of roomPlayers(r)){
-    p.hand=[];p.artifacts=[];p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.pendingForcedDiscard=null;
+    p.hand=[];p.artifacts=[];p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
   }
   sendState(r);
   io.to(r.code).emit('backToLobby');
@@ -1225,7 +1229,8 @@ function advanceRoundIntro(r){
   if(!r||!rooms.has(r.code)||r.phase!=='roundintro')return false;
   if(r.roundTimer){clearTimeout(r.roundTimer);r.roundTimer=null;}
   r.roundIntroUntil=null;r.phase='select';
-  r.selectionDeadline=Date.now()+30000;
+  const selectionMs=isBotCardTestRoom(r)?180000:30000;
+  r.selectionDeadline=Date.now()+selectionMs;
   io.to(r.code).emit('roundStart',{
     round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],icon:CATEGORY_ICON[r.category],deadline:r.selectionDeadline
   });
@@ -1234,7 +1239,7 @@ function advanceRoundIntro(r){
   if(r.selectionTimer)clearTimeout(r.selectionTimer);
   r.selectionTimer=setTimeout(()=>{
     if(rooms.has(r.code)&&r.matchId===match&&r.round===round&&r.phase==='select')handleSelectionTimeout(r);
-  },30050);
+  },selectionMs+50);
   return true;
 }
 function startRound(r,delay=900){
@@ -1251,7 +1256,7 @@ function startRound(r,delay=900){
     r.pendingRoundWinner=null;r.revealOutcome=null;
     for(const p of roomPlayers(r)){
       if(p.pendingForcedDiscard?.timer)clearTimeout(p.pendingForcedDiscard.timer);
-      p.pendingForcedDiscard=null;p.selected=null;p.specialUsed=0;p.specialExtra=0;
+      p.pendingForcedDiscard=null;p.selected=null;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;
     }
     nextCategory(r);
     r.roundPlayerIds=roomPlayers(r).filter(p=>!p.surrendered&&p.hand.length>0&&hasNormalCard(p)).map(p=>p.id);
@@ -1477,7 +1482,7 @@ function beginMatch(r){
   initDecks(r);
 
   for(const p of ps){
-    p.hand=[];p.artifacts=[];p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.pendingForcedDiscard=null;
+    p.hand=[];p.artifacts=[];p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
     p.hand.push(...drawNormal(r,NORMAL_HAND_TARGET));
     const starterSpecial=drawSpecialOnly(r);
     if(starterSpecial)p.hand.push(starterSpecial);
@@ -1730,6 +1735,7 @@ io.on('connection',socket=>{
     let c;do c=code();while(rooms.has(c));
     const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,arenaSelection:'random',lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null,artifactRewardCooldown:0};
     r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),profileId:socket.data.profile?.id||null,hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
+    r.botCardTester=true;
     rooms.set(c,r);socket.join(c);socket.data.room=c;addBotToRoom(r);offerRoomTicket(socket,r,r.players.get(socket.id));sendState(r);
     socket.emit('notice','🤖 PonyBot wurde als Testgegner hinzugefügt.');
   });
@@ -1793,6 +1799,65 @@ io.on('connection',socket=>{
     if(r.hostId!==socket.id)return socket.emit('errorMsg','Nur der Host kann das Match vorbereiten.');
     if(r.players.size<2)return socket.emit('errorMsg','Mindestens 2 Spieler werden benötigt.');
     enterArenaReady(r);
+  });
+  // Nur im privaten Testmatch mit PonyBot: echte serverseitige Kartenaktionen.
+  socket.on('botTestCatalog',()=>{
+    const r=getRoom(socket);
+    if(!isBotCardTestRoom(r)||r.hostId!==socket.id)return;
+    socket.emit('botTestCatalog',{
+      cards:[...normal,...specials,...artifacts].map(c=>({
+        id:c.id,type:c.type,name:c.name,image:c.image,text:c.text||c.useLabel||''
+      }))
+    });
+  });
+  socket.on('botTestPlay',({cardId,target}={})=>{
+    const r=getRoom(socket),p=r?.players.get(socket.id);
+    if(!isBotCardTestRoom(r)||r.hostId!==socket.id||!p||p.isBot||p.surrendered)
+      return socket.emit('errorMsg','Karten-Tests sind nur fuer den Host im PonyBot-Testspiel erlaubt.');
+    const c=byId[String(cardId||'')];
+    if(!c)return socket.emit('errorMsg','Diese Karte ist nicht im Kartensatz enthalten.');
+    if(c.type==='artifact'){
+      if(r.phase!=='select')return socket.emit('errorMsg','Artefakte koennen waehrend der Kartenauswahl vergeben werden.');
+      const receiver=target==='bot'?roomPlayers(r).find(x=>x.isBot):p;
+      if(!receiver)return;
+      receiver.artifacts=receiver.artifacts||[];
+      if(receiver.artifacts.includes(c.id))return socket.emit('errorMsg',receiver.name+' besitzt dieses Artefakt bereits.');
+      receiver.artifacts.push(c.id);
+      io.to(r.code).emit('artifactFound',{
+        playerId:receiver.id,playerName:receiver.name,card:c,
+        artifacts:receiver.artifacts.map(id=>byId[id]).filter(Boolean),
+        collected:new Set(receiver.artifacts).size,total:artifacts.length
+      });
+      sendState(r);
+      socket.emit('botTestCardReady',{type:'artifact',name:c.name,targetName:receiver.name});
+      gameOverIfNeeded(r);
+      return;
+    }
+    if(r.phase!=='select'||!r.roundPlayerIds.includes(socket.id)||p.selected)
+      return socket.emit('errorMsg','Bitte in der laufenden Kartenauswahl testen, bevor du deine normale Karte legst.');
+    if((r.windchaosUntil||0)>Date.now())return socket.emit('errorMsg','Warte, bis der Windchaos-Tornado vorbei ist.');
+    if(socket.data.pendingSpecial||socket.data.pendingFlutter||socket.data.pendingRarity)
+      return socket.emit('errorMsg','Beende erst die aktuelle Spezialkarten-Auswahl.');
+    // Die Hand bleibt auf maximal 7 Karten; passende Karte wird ausgetauscht.
+    if(!p.hand.includes(c.id)){
+      if(p.hand.length>=MAX_TOTAL_HAND){
+        let i=p.hand.findIndex(id=>byId[id]?.type===c.type);
+        if(i<0)i=p.hand.findIndex(id=>byId[id]?.type==='special');
+        if(i<0)i=p.hand.findIndex(id=>byId[id]?.type==='normal');
+        if(i<0)return socket.emit('errorMsg','Kein freier Platz fuer diese Testkarte.');
+        const [old]=p.hand.splice(i,1);
+        discardCard(r,old);
+      }
+      p.hand.push(c.id);
+    }
+    if(c.type==='special'){
+      // Tester kann Spezial-Effekte mehrmals innerhalb derselben Runde ausloesen.
+      p.botTestSpecialReady=true;
+    }else if(p.lastPlayedCardId===c.id){
+      p.lastPlayedCardId=null;
+    }
+    sendState(r);
+    socket.emit('botTestCardReady',{cardId:c.id,type:c.type,name:c.name});
   });
   socket.on('playCard',({cardId})=>{
     const r=getRoom(socket);
