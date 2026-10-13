@@ -275,7 +275,7 @@
         <article class="tutorial-step" data-step="5">
           <div class="tutorial-copy">
             <h4>6. Spezialkarten, Gleichstand & Sieg</h4>
-            <p>Normalerweise darfst du <strong>1 Spezialkarte pro Runde</strong> einsetzen – Changeling erlaubt dir eine zweite. Manche Spezialkarten lassen dich einen Gegner, eine Handkarte oder sogar die Kategorie auswählen. Verlorene normale Karten werden erst <strong>nach Abschluss der Runde</strong> beim automatischen Auffüllen ersetzt; verlorene Spezialkarten nicht. Bei Gleichstand wird gewürfelt. Sobald ein Spieler <strong>alle drei verschiedenen Artefakte</strong> besitzt, gewinnt er das Match.</p>
+            <p>Normalerweise darfst du <strong>1 Spezialkarte pro Runde</strong> einsetzen. Manche Spezialkarten lassen dich einen Gegner, eine Handkarte oder sogar die Kategorie auswählen. Verlorene normale Karten werden erst <strong>nach Abschluss der Runde</strong> beim automatischen Auffüllen ersetzt; verlorene Spezialkarten nicht. Bei Gleichstand wird gewürfelt. Sobald ein Spieler <strong>alle drei verschiedenen Artefakte</strong> besitzt, gewinnt er das Match.</p>
             <div class="tutorial-special-note"><strong>Wichtig:</strong> Iron Will kann eine Artefaktziehung für die gesamte Runde verhindern. Grogar bestimmt die aktuelle Kategorie selbst. Windigos lassen alle anderen aussetzen. Daybreaker gewinnt die Runde automatisch, sobald eine normale Karte gelegt wurde.</div>
             <div class="tutorial-practice-cta">
               <strong>🎮 Jetzt selbst ausprobieren!</strong>
@@ -287,7 +287,7 @@
             <img class="tutorial-special special-one" src="/assets/specials/64_Spezial_Pinkie_Pie.webp" alt="Pinkie Pie Spezialkarte">
             <img class="tutorial-special special-two" src="/assets/specials_new/80_Grogar.png" alt="Grogar Spezialkarte">
             <img class="tutorial-special special-three" src="/assets/specials_new/91_Lightning_Dust.png" alt="Lightning Dust Spezialkarte">
-            <span class="tutorial-special-rule">Normal: 1 Spezialkarte pro Runde<br><small>Changeling erlaubt eine zweite.</small></span>
+            <span class="tutorial-special-rule">Normal: 1 Spezialkarte pro Runde</span>
           </div>
         </article>
       </div>
@@ -413,7 +413,7 @@
   <div class="music-credit">Ausgewählte Lobby- und Battle-Musik läuft unsichtbar im Hintergrund via YouTube.</div>
   <script src="https://www.youtube.com/iframe_api"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/client.js?v=audio-settings-20261012"></script>
+  <script src="/client.js?v=remove-swarm-20261013"></script>
 
   <script src="/mlp_sieger_special_smolder.js?v=20261010-burnv2"></script>
   <script src="/mlp_arena_volle_hoehe_v7.js?v=20261010-v7a"></script>
@@ -422,15 +422,13 @@
   <script src="/mlp_special_hover_kristallton_v12.js?v=20261010-v12"></script>
   <!-- Bei Windchaos/Schattengestalt hat die Arena freie Sicht: nach der Karte
        wird auch der kleine Special-Hinweis während des Effekts ausgeblendet. -->
-  <style id="special-fx-sequence-style">body.windchaos-running #mlpSpecialNotice,body.shadowform-running #mlpSpecialNotice,body.changeling-swarm-running #mlpSpecialNotice{opacity:0!important;visibility:hidden!important}</style>
+  <style id="special-fx-sequence-style">body.windchaos-running #mlpSpecialNotice,body.shadowform-running #mlpSpecialNotice{opacity:0!important;visibility:hidden!important}</style>
   <!-- Windchaos: ausschließlich diese zusätzliche Special-Animation -->
   <script src="/windchaos_fx.js?v=audio-settings-20261012"></script>
   <!-- Schattengestalt: In-Game-Effekt für Artefaktverlust -->
   <script src="/shadowform_fx.js?v=audio-settings-20261012"></script>
   <!-- Artefakt-Zauber: nur ein Zusatz-Effekt für Flawless Sparkle Moon / Evil Sci Twi -->
   <script src="/artifact_magic_fx.js?v=audio-settings-20261012"></script>
-  <!-- Changeling: Schwarmruf-Animation -->
-  <script src="/changeling_swarm_fx.js?v=audio-settings-20261012"></script>
 
 <!-- V7: Alte V5-Einbindung entfernt; eigenes testbares Vollbild-Layout + Kristall. -->  <link rel="stylesheet" href="/mlp_chat.css?v=1">
   <script src="/mlp_chat.js?v=1"></script>
@@ -441,7 +439,7 @@
   <link rel="stylesheet" href="/special-cards/helements-of-armory.css?v=audio-settings-20261012-10">
   <link rel="stylesheet" href="/special-cards/animation-gallery.css?v=sbhoa1">
   <script type="module" src="/special-cards/preview-bridge.js?v=audio-settings-20261012-10"></script>
-  <script src="/mlp_animation_center.js?v=sbhoa1"></script>
+  <script src="/mlp_animation_center.js?v=remove-swarm-20261013"></script>
   <script type="module" src="/special-cards/real-match-effects.js?v=audio-settings-20261012-10"></script>
 </body>
 </html>
