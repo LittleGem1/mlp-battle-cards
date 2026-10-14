@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mimsch – Magiekrallen · exklusive Siegesanimation</title>
+<style>
+:root {
+  --heroW:min(25vw,310px);
+  --enemyW:min(13.5vw,170px);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{overflow:hidden;font-family:Inter,Arial,sans-serif;background:#02040a;color:#f4fff2}
+#app{position:relative;width:100%;height:100%;overflow:hidden;background:#02040a}
+#bgGif{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.55) contrast(1.05) saturate(1.02);transform:scale(1.04)}
+#vignette{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%, rgba(0,0,0,.12) 0 22%, rgba(0,0,0,.62) 70%, rgba(0,0,0,.86) 100%);pointer-events:none;transition:opacity .35s;opacity:.72}
+body.playing #vignette{opacity:.84}
+#sparkleField{position:absolute;inset:0;pointer-events:none;opacity:0;z-index:3}
+body.playing #sparkleField{opacity:1}
+.spark{position:absolute;width:4px;height:4px;border-radius:50%;background:#c5ffc4;box-shadow:0 0 10px rgba(103,255,100,.9),0 0 22px rgba(103,255,100,.55);animation:floatSpark linear infinite}
+@keyframes floatSpark{from{transform:translateY(6px) scale(.55);opacity:0}10%{opacity:1}to{transform:translateY(-36px) scale(1.15);opacity:0}}
+.controls{position:absolute;left:50%;top:16px;transform:translateX(-50%);display:flex;gap:10px;align-items:center;z-index:100;flex-wrap:wrap;justify-content:center}
+button{appearance:none;border:none;border-radius:999px;padding:12px 18px;font-weight:800;background:linear-gradient(180deg,#1b2437,#121824);color:#f4fff2;box-shadow:0 10px 24px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.15);cursor:pointer}
+button.secondary{background:linear-gradient(180deg,#1f3421,#121b13)}
+.progress{width:min(310px,42vw);height:12px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.45)}
+#bar{height:100%;width:0;background:linear-gradient(90deg,#58ff59,#dfffbf,#58ff59);box-shadow:0 0 18px rgba(88,255,89,.9)}
+.note{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:95;background:rgba(8,14,20,.62);backdrop-filter:blur(8px);padding:10px 14px;border-radius:12px;font-size:14px;text-align:center;max-width:min(92vw,960px)}
+body.playing .note{opacity:0;pointer-events:none}
+.heroWrap{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);width:var(--heroW);aspect-ratio:1024/1536;z-index:20}
+.heroCard{position:absolute;inset:0;border-radius:22px;overflow:hidden;box-shadow:0 26px 46px rgba(0,0,0,.56);z-index:2}
+.heroCard img{width:100%;height:100%;display:block;object-fit:cover}
+body.playing .heroCard{animation:hoverCard 4s ease-in-out infinite}
+@keyframes hoverCard{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.016)}}
+.hornGlow{position:absolute;left:50.9%;top:19%;width:15px;height:15px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,#fff 0,#f5fff2 15%,#caffc3 34%,#86ff84 54%,rgba(39,255,82,.76) 72%,rgba(39,255,82,0) 100%);opacity:0;filter:blur(1px);z-index:5}
+.hornRing{position:absolute;left:50.9%;top:19%;width:20px;height:20px;border-radius:50%;border:2px solid rgba(170,255,167,.82);transform:translate(-50%,-50%) scale(.25);opacity:0;z-index:4}
+.hornBurst{position:absolute;left:50.9%;top:19%;width:0;height:0;border-radius:999px;transform:translate(-50%,-50%);opacity:0;z-index:3;background:radial-gradient(circle, rgba(255,255,255,.98) 0 10%, rgba(189,255,183,.96) 16%, rgba(107,255,105,.58) 42%, rgba(107,255,105,0) 72%);filter:blur(3px)}
+body.playing .hornGlow.active{opacity:1;animation:hornPulse .8s ease-in-out infinite alternate}
+body.playing .hornRing.active{opacity:1;animation:ringOut .9s ease-out infinite}
+body.playing .hornBurst.active{opacity:1;animation:burstGrow 1s ease-out forwards}
+@keyframes hornPulse{from{transform:translate(-50%,-50%) scale(.76);filter:blur(1px)}to{transform:translate(-50%,-50%) scale(1.65);filter:blur(5px)}}
+@keyframes ringOut{0%{transform:translate(-50%,-50%) scale(.25);opacity:0}15%{opacity:.95}100%{transform:translate(-50%,-50%) scale(6.4);opacity:0}}
+@keyframes burstGrow{0%{width:10px;height:10px;opacity:.2}40%{width:42px;height:42px;opacity:.7}72%{width:102px;height:102px;opacity:1}100%{width:60px;height:60px;opacity:.8}}
+.enemy{position:absolute;width:var(--enemyW);aspect-ratio:1024/1536;border-radius:18px;overflow:hidden;z-index:10;transform:rotate(var(--r));box-shadow:0 16px 30px rgba(0,0,0,.52);background:linear-gradient(180deg,#1c2435,#0a111a 62%,#05080d)}
+.enemy::before{content:"";position:absolute;inset:9px;border-radius:14px;border:3px solid rgba(229,236,255,.78);box-shadow:inset 0 0 0 2px rgba(255,255,255,.05)}
+.enemy::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 18%, rgba(255,255,255,.16), transparent 28%)}
+.enemy .sig{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:78px;opacity:.74}
+.enemy .nm{position:absolute;left:12px;right:12px;bottom:14px;text-align:center;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.08);font-weight:800;font-size:14px}
+.enemy.hit{animation:enemyHit .2s linear 2}
+@keyframes enemyHit{0%{transform:translate(0,0) rotate(var(--r))}25%{transform:translate(6px,-2px) rotate(calc(var(--r) + 1deg))}50%{transform:translate(-6px,2px) rotate(calc(var(--r) - 1deg))}100%{transform:translate(0,0) rotate(var(--r))}}
+.enemy .trailHit{position:absolute;inset:0;pointer-events:none;opacity:0}
+.enemy .trailHit svg,.enemy .cuts svg,.enemy .ashes svg{width:100%;height:100%}
+.enemy .cuts,.enemy .ashes{position:absolute;inset:0;pointer-events:none;opacity:0}
+.enemy .piece{position:absolute;inset:0;opacity:0;background:linear-gradient(180deg,#1c2435,#0a111a 62%,#05080d)}
+.enemy .piece .inner{position:absolute;inset:9px;border-radius:14px;border:3px solid rgba(229,236,255,.78)}
+.enemy .piece .sigIn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:78px;opacity:.74}
+.enemy .piece .nmIn{position:absolute;left:12px;right:12px;bottom:14px;text-align:center;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.08);font-weight:800;font-size:14px}
+.enemy.phase1 .piece.p1,.enemy.phase2 .piece.p1,.enemy.phase3 .piece.p1,.enemy.phase4 .piece.p1{opacity:1}
+.enemy.phase2 .piece.p2,.enemy.phase3 .piece.p2,.enemy.phase4 .piece.p2{opacity:1}
+.enemy.phase3 .piece.p3,.enemy.phase4 .piece.p3{opacity:1}
+.enemy.phase4 .piece.p4{opacity:1}
+.enemy.phase1 .piece.p1{animation:piece1 .95s ease forwards}
+.enemy.phase2 .piece.p2{animation:piece2 1s ease forwards}
+.enemy.phase3 .piece.p3{animation:piece3 1s ease forwards}
+.enemy.phase4 .piece.p4{animation:piece4 1.16s ease forwards}
+@keyframes piece1{0%{opacity:0;transform:translate(0,0) rotate(0)}14%{opacity:1}100%{opacity:0;transform:translate(-92px,-28px) rotate(-13deg)}}
+@keyframes piece2{0%{opacity:0;transform:translate(0,0) rotate(0)}14%{opacity:1}100%{opacity:0;transform:translate(104px,-16px) rotate(15deg)}}
+@keyframes piece3{0%{opacity:0;transform:translate(0,0) rotate(0)}14%{opacity:1}100%{opacity:0;transform:translate(-44px,114px) rotate(-14deg)}}
+@keyframes piece4{0%{opacity:0;transform:translate(0,0) rotate(0)}14%{opacity:1}100%{opacity:0;transform:translate(66px,136px) rotate(20deg)}}
+.enemy.showCuts .cuts{opacity:1;animation:cutFlash .52s ease-out forwards}
+.enemy.showTrail .trailHit{opacity:1;animation:trailFlash .34s ease-out forwards}
+@keyframes cutFlash{0%{opacity:0;filter:drop-shadow(0 0 0 rgba(103,255,100,0))}28%{opacity:1;filter:drop-shadow(0 0 18px rgba(103,255,100,1))}100%{opacity:.24;filter:drop-shadow(0 0 5px rgba(103,255,100,.4))}}
+@keyframes trailFlash{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+.enemy.ashen{opacity:0;transform:scale(.8) rotate(var(--r));transition:opacity .84s ease, transform .84s ease}
+.enemy.ashen .ashes{opacity:1;animation:ashFloat 1.24s ease forwards}
+@keyframes ashFloat{0%{opacity:0;transform:translateY(0) scale(.95)}18%{opacity:1}100%{opacity:0;transform:translateY(-88px) scale(1.18)}}
+#arcLayer{position:absolute;inset:0;pointer-events:none;z-index:28}
+#arcLayer path{fill:none;stroke-linecap:round}
+.arc{filter:drop-shadow(0 0 6px rgba(103,255,100,.95));stroke-dasharray:120;stroke-dashoffset:120;animation:dash .32s ease-out forwards}
+@keyframes dash{to{stroke-dashoffset:0}}
+.clawScratch{position:absolute;inset:0;pointer-events:none;z-index:32}
+.clawScratch path.main{fill:none;stroke:#67ff64;stroke-width:7.5;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 10px rgba(103,255,100,.95))}
+.clawScratch path.inner{fill:none;stroke:#f2fff0;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;opacity:.96}
+#flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 50%, rgba(173,255,170,.82), rgba(173,255,170,0) 36%);mix-blend-mode:screen;opacity:0;z-index:40}
+#flash.show{animation:flash .22s ease-out forwards}
+@keyframes flash{0%{opacity:0}20%{opacity:.9}100%{opacity:0}}
+body.shake #app{animation:screenShake .2s linear 1}
+@keyframes screenShake{0%{transform:translate(0,0)}25%{transform:translate(5px,-3px)}50%{transform:translate(-6px,3px)}75%{transform:translate(4px,2px)}100%{transform:translate(0,0)}}
+@media (max-width:980px){:root{--heroW:min(35vw,270px);--enemyW:min(18vw,145px)} .progress{width:min(180px,38vw)}}
+
+
+/* Actual live opponents are rendered as four real image fragments.
+   Every successive strike rips one fragment away permanently. */
+body.game-mode .controls,body.game-mode .note{display:none!important}
+.enemy.real-card{background:transparent!important;border:0}
+.enemy.real-card::before,.enemy.real-card::after,.enemy.real-card .sig,.enemy.real-card .nm{display:none!important}
+.enemy.real-card .piece.real-fragment{opacity:1;background-repeat:no-repeat;background-size:100% 100%;background-position:center;will-change:transform,opacity}
+.enemy.real-card .piece.real-fragment .inner,.enemy.real-card .piece.real-fragment .sigIn,.enemy.real-card .piece.real-fragment .nmIn{display:none}
+.enemy.real-card.phase1 .piece.p1{animation:piece1 .95s ease forwards}
+.enemy.real-card.phase2 .piece.p2{animation:piece2 1s ease forwards}
+.enemy.real-card.phase3 .piece.p3{animation:piece3 1s ease forwards}
+.enemy.real-card.phase4 .piece.p4{animation:piece4 1.16s ease forwards}
+</style>
+</head>
+<body>
+<div id="app">
+  <img id="bgGif" src="/assets/finisher/mimsch_magic_claws.gif" alt="Mimsch Hintergrund-GIF">
+  <div id="sparkleField"></div>
+  <div id="vignette"></div>
+  <div id="flash"></div>
+  <div class="controls">
+    <button id="playBtn">▶ Animation abspielen</button>
+    <button id="soundBtn" class="secondary">🔊 Ton an</button>
+    <div class="progress"><div id="bar"></div></div>
+  </div>
+  <div class="heroWrap" id="heroWrap">
+    <div class="heroCard"><img src="/assets/cards_new/096_Mimsch_9_8.png" alt="Mimsch Karte – Stärke 9, Magie 8"></div>
+    <div class="hornBurst" id="hornBurst"></div>
+    <div class="hornRing" id="hornRing"></div>
+    <div class="hornGlow" id="hornGlow"></div>
+  </div>
+
+  <div id="e1" class="enemy" style="left:6%;top:18%;--r:-10deg"><div class="sig">☾</div><div class="nm">Gegner 1</div><div class="trailHit"></div><div class="cuts"></div><div class="ashes"></div></div>
+  <div id="e2" class="enemy" style="left:17%;top:58%;--r:-4deg"><div class="sig">✦</div><div class="nm">Gegner 2</div><div class="trailHit"></div><div class="cuts"></div><div class="ashes"></div></div>
+  <div id="e3" class="enemy" style="right:17%;top:58%;--r:4deg"><div class="sig">♞</div><div class="nm">Gegner 3</div><div class="trailHit"></div><div class="cuts"></div><div class="ashes"></div></div>
+  <div id="e4" class="enemy" style="right:6%;top:18%;--r:10deg"><div class="sig">❖</div><div class="nm">Gegner 4</div><div class="trailHit"></div><div class="cuts"></div><div class="ashes"></div></div>
+
+  <svg id="arcLayer" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+
+  <audio id="magicSoundAsset" preload="auto" src="/assets/finisher/mimsch_unicorn_magic.mp3"></audio>
+  <audio id="slashSoundAsset" preload="auto" src="/assets/finisher/mimsch_werewolf_slash.mp3"></audio>
+  <div class="note">Mimsch V10 – Dein Hornmagie-Sound plus ein echter Krallenhieb aus deiner neuen Aufnahme bei jedem Treffer. GIF, Karte (9 / 8) und Zerfetz-Animation bleiben unverändert.</div>
+</div>
+<script>
+let enemies=[...document.querySelectorAll('.enemy')];
+const playBtn=document.getElementById('playBtn');
+const soundBtn=document.getElementById('soundBtn');
+const bar=document.getElementById('bar');
+const hornGlow=document.getElementById('hornGlow');
+const hornRing=document.getElementById('hornRing');
+const hornBurst=document.getElementById('hornBurst');
+const sparkleField=document.getElementById('sparkleField');
+const arcLayer=document.getElementById('arcLayer');
+const flash=document.getElementById('flash');
+let running=false, raf=0, start=0, timers=[];
+const DURATION=7600; const S={on:true};
+
+function makeSparkleField(){
+  sparkleField.innerHTML='';
+  for(let i=0;i<36;i++){
+    const s=document.createElement('div'); s.className='spark';
+    s.style.left=(Math.random()*100)+'%'; s.style.top=(Math.random()*100)+'%';
+    s.style.animationDuration=(2+Math.random()*3).toFixed(2)+'s';
+    s.style.animationDelay=(-Math.random()*4).toFixed(2)+'s';
+    s.style.opacity=(.2+Math.random()*.55).toFixed(2);
+    sparkleField.appendChild(s);
+  }
+}
+makeSparkleField();
+
+function clearTimers(){ timers.forEach(clearTimeout); timers=[]; cancelAnimationFrame(raf); }
+
+function initPieces(e){
+  e.querySelectorAll('.piece').forEach(x=>x.remove());
+  const sig=e.querySelector('.sig')?.textContent||'✦'; const nm=e.querySelector('.nm')?.textContent||'Gegner';
+  const clips=[
+    'polygon(0 0, 58% 0, 44% 52%, 0 58%)',
+    'polygon(58% 0, 100% 0, 100% 48%, 56% 55%)',
+    'polygon(0 58%, 48% 51%, 62% 100%, 0 100%)',
+    'polygon(48% 51%, 100% 47%, 100% 100%, 62% 100%)'
+  ];
+  clips.forEach((clip,i)=>{
+    const p=document.createElement('div'); p.className='piece p'+(i+1); p.style.clipPath=clip;
+    if(e.dataset.cardImage){
+      // Every chunk contains a masked part of the real opposing card art.
+      p.classList.add('real-fragment');
+      p.style.backgroundImage='url('+JSON.stringify(e.dataset.cardImage)+')';
+      p.innerHTML='';
+    }else{
+      p.innerHTML='<div class="inner"></div><div class="sigIn">'+sig+'</div><div class="nmIn">'+nm+'</div>';
+    }
+    e.appendChild(p);
+  });
+}
+enemies.forEach(initPieces);
+
+// The only sound source is the user-supplied Unicorn Horn Magic MP3.
+// The clip lasts ~1.83 seconds, so it is played once for the initial charge
+// and again at the start of each claw-attack wave.
+const magicSoundSource=document.getElementById('magicSoundAsset');
+const slashSoundSource=document.getElementById('slashSoundAsset');
+const activeMagicSounds=new Set();
+const activeSlashSounds=new Set();
+function stopMagicSounds(){
+  for(const audio of activeMagicSounds){audio.pause();audio.currentTime=0;}
+  activeMagicSounds.clear();
+}
+function stopSlashSounds(){
+  for(const audio of activeSlashSounds){audio.pause();audio.currentTime=0;}
+  activeSlashSounds.clear();
+}
+function playMagicSound(volume=0.85){
+  if(!S.on)return;
+  const clip=magicSoundSource.cloneNode(true);
+  clip.volume=volume;
+  clip.muted=false;
+  activeMagicSounds.add(clip);
+  clip.addEventListener('ended',()=>activeMagicSounds.delete(clip),{once:true});
+  clip.play().catch(err=>{
+    activeMagicSounds.delete(clip);
+    console.debug('Ton wird im Browser blockiert:',err);
+  });
+}
+function playSlashSound(volume=0.72){
+  if(!S.on)return;
+  const clip=slashSoundSource.cloneNode(true);
+  clip.volume=volume;
+  clip.muted=false;
+  activeSlashSounds.add(clip);
+  clip.addEventListener('ended',()=>activeSlashSounds.delete(clip),{once:true});
+  clip.play().catch(err=>{
+    activeSlashSounds.delete(clip);
+    console.debug('Slash-Ton wird im Browser blockiert:',err);
+  });
+}
+function reset(){
+  stopMagicSounds();
+  stopSlashSounds();
+  clearTimers(); running=false; document.body.classList.remove('playing','shake'); bar.style.width='0%';
+  hornGlow.classList.remove('active'); hornRing.classList.remove('active'); hornBurst.classList.remove('active');
+  arcLayer.innerHTML='';
+  enemies.forEach(e=>{ e.className='enemy'; e.querySelector('.trailHit').innerHTML=''; e.querySelector('.cuts').innerHTML=''; e.querySelector('.ashes').innerHTML=''; initPieces(e); });
+}
+
+function doFlash(){ flash.classList.remove('show'); void flash.offsetWidth; flash.classList.add('show'); }
+function doShake(){ document.body.classList.remove('shake'); void document.body.offsetWidth; document.body.classList.add('shake'); setTimeout(()=>document.body.classList.remove('shake'),210); }
+function pt(el,rx=.5,ry=.5){ const r=el.getBoundingClientRect(); return {x:r.left+r.width*rx, y:r.top+r.height*ry}; }
+
+function drawArc(targetEl){
+  const s=pt(document.getElementById('heroWrap'),.509,.19); const t=pt(targetEl,.5,.45);
+  const w=window.innerWidth,h=window.innerHeight;
+  const x1=s.x/w*100, y1=s.y/h*100, x2=t.x/w*100, y2=t.y/h*100;
+  const mx=(x1+x2)/2, my=(y1+y2)/2 - 6;
+  const off=Math.min(2.2, Math.hypot(x2-x1,y2-y1)/18);
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+  [-off,0,off].forEach((d,i)=>{
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d', `M ${x1.toFixed(2)} ${(y1+d).toFixed(2)} Q ${mx.toFixed(2)} ${(my+d*3).toFixed(2)} ${x2.toFixed(2)} ${(y2+d*1.8).toFixed(2)}`);
+    p.setAttribute('stroke', i===1?'rgba(103,255,100,.88)':'rgba(230,255,225,.92)');
+    p.setAttribute('stroke-width', i===1?'1.8':'0.65');
+    p.setAttribute('class','arc');
+    g.appendChild(p);
+  });
+  arcLayer.appendChild(g);
+  setTimeout(()=>g.remove(),360);
+}
+
+function scratchSVG(){
+  return `<svg class="clawScratch" viewBox="0 0 100 100" preserveAspectRatio="none">
+    <path class="main" d="M12 20 C28 27, 54 33, 88 48"/>
+    <path class="main" d="M18 12 C35 18, 62 25, 92 39"/>
+    <path class="main" d="M14 42 C28 48, 48 56, 73 71"/>
+    <path class="inner" d="M12 20 C28 27, 54 33, 88 48"/>
+    <path class="inner" d="M18 12 C35 18, 62 25, 92 39"/>
+    <path class="inner" d="M14 42 C28 48, 48 56, 73 71"/>
+  </svg>`;
+}
+function cutSVG(stage){
+  const sets=[
+    ['M10 20 L88 46','M18 10 L91 36','M16 42 L73 71'],
+    ['M12 28 L82 58','M26 16 L89 44','M20 59 L76 84'],
+    ['M8 34 L68 75','M32 22 L90 61','M12 67 L59 92'],
+    ['M16 13 L89 84','M8 54 L58 95','M46 8 L96 47']
+  ][stage-1];
+  return '<svg viewBox="0 0 100 100">'+sets.map(d=>'<path d="'+d+'" stroke="#f2fff0" stroke-width="2.3" stroke-linecap="round"/><path d="'+d+'" stroke="#67ff64" stroke-width="5.2" stroke-linecap="round" opacity=".78" style="filter:drop-shadow(0 0 8px rgba(103,255,100,.95))"/>').join('')+'</svg>';
+}
+function ashSVG(){
+  return '<svg viewBox="0 0 100 100">'+Array.from({length:46},()=>{ const x=(Math.random()*76+10).toFixed(1), y=(Math.random()*56+18).toFixed(1), dx=(Math.random()*18-9).toFixed(1), dy=(Math.random()*32+12).toFixed(1), r=(Math.random()*1.55+.45).toFixed(2); return '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="rgba(136,136,136,.86)"><animate attributeName="cx" values="'+x+';'+(+x+ +dx).toFixed(1)+'" dur="1.2s" fill="freeze"/><animate attributeName="cy" values="'+y+';'+(y-dy)+'" dur="1.2s" fill="freeze"/><animate attributeName="opacity" values="0;1;.82;0" dur="1.2s" fill="freeze"/></circle>'; }).join('')+'</svg>';
+}
+
+function strike(enemy,stage){
+  drawArc(enemy); playSlashSound(0.74); doFlash(); doShake();
+  enemy.querySelector('.trailHit').innerHTML=scratchSVG();
+  enemy.querySelector('.cuts').innerHTML=cutSVG(stage);
+  // Preserve earlier detached fragments when the next claw hits.
+  enemy.classList.remove('showTrail','showCuts','hit','ashen');
+  void enemy.offsetWidth;
+  enemy.classList.add('showTrail','showCuts','hit','phase'+stage);
+  if(stage===4){
+    setTimeout(()=>{ enemy.querySelector('.ashes').innerHTML=ashSVG(); enemy.classList.add('ashen'); },170);
+  }
+}
+
+function tick(){ const p=Math.min(1,(performance.now()-start)/DURATION); bar.style.width=(p*100).toFixed(1)+'%'; if(running&&p<1) raf=requestAnimationFrame(tick); }
+
+function begin(){
+  reset(); running=true; document.body.classList.add('playing'); start=performance.now(); tick();
+  playMagicSound(0.90);
+  hornGlow.classList.add('active'); hornRing.classList.add('active');
+  timers.push(setTimeout(()=>{ hornBurst.classList.add('active'); doFlash(); },380));
+  const seq=[];
+  const waves=[{start:1450,end:2630},{start:3060,end:4130},{start:4560,end:5540},{start:5850,end:6740}];
+  for(let stage=1;stage<=4;stage++){
+    const wave=waves[stage-1];
+    const step=enemies.length>1?Math.min(330,(wave.end-wave.start)/(enemies.length-1)):0;
+    enemies.forEach((enemy,i)=>seq.push([enemy,stage,Math.round(wave.start+step*i)]));
+  }
+  seq.forEach(([enemy,stage,delay])=>timers.push(setTimeout(()=>strike(enemy,stage),delay)));
+  // Synchronized with the first hit of each cluster (including the final rip).
+  for(const delay of [1450,3080,4580,5900]){
+    timers.push(setTimeout(()=>playMagicSound(0.82),delay));
+  }
+  timers.push(setTimeout(()=>{ hornBurst.classList.remove('active'); hornGlow.classList.remove('active'); hornRing.classList.remove('active'); },6850));
+  timers.push(setTimeout(()=>{ running=false; bar.style.width='100%'; stopMagicSounds(); stopSlashSounds(); },DURATION));
+}
+
+playBtn.addEventListener('click',begin);
+soundBtn.addEventListener('click',()=>{
+  S.on=!S.on;
+  soundBtn.textContent=S.on?'🔊 Ton an':'🔇 Ton aus';
+  if(!S.on){stopMagicSounds(); stopSlashSounds();}
+  else if(running)playMagicSound(0.85);
+});
+window.addEventListener('resize',makeSparkleField);
+
+
+/* Match mode: use the SAME approved GIF, exact card and uploaded MP3s,
+   but replace the sample opponents with the actual reveal for this round. */
+window.startMimschMatch=function(payload){
+  document.body.classList.add('game-mode');
+  const revealed=Array.isArray(payload?.revealEntries)?payload.revealEntries:
+    Array.isArray(payload?.entries)?payload.entries:[];
+  const others=revealed.filter(x=>x.pid!==payload.winnerId&&x.card?.image).slice(0,7);
+  const slots=[
+    [13,35,-10],[26,70,-5],[74,70,5],[87,35,10],
+    [10,74,-12],[90,74,12],[50,20,0]
+  ];
+  enemies.forEach(e=>e.remove());
+  enemies=[];
+  const arena=document.getElementById('app');
+  others.forEach((entry,i)=>{
+    const [left,top,rot]=slots[i];
+    const enemy=document.createElement('div');
+    enemy.className='enemy real-card';
+    enemy.style.left=left+'%';
+    enemy.style.top=top+'%';
+    enemy.style.setProperty('--r',rot+'deg');
+    enemy.style.transform='translate(-50%,-50%) rotate('+rot+'deg)';
+    enemy.dataset.cardImage=entry.card.image;
+    enemy.dataset.name=entry.name||entry.card.name||'Gegner';
+    enemy.innerHTML='<div class="trailHit"></div><div class="cuts"></div><div class="ashes"></div>';
+    arena.appendChild(enemy);
+    initPieces(enemy);
+    enemies.push(enemy);
+  });
+  begin();
+};
+</script>
+
+</body>
+</html>
