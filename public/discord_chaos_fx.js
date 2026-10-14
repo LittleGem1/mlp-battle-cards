@@ -25,7 +25,10 @@
       // The original spoken quote must finish BEFORE any visual effect starts.
       audio=new Audio('/assets/discord_chaos_voice.mp3');
       audio.preload='auto';
-      audio.volume=Math.max(0,Math.min(1,Number(localStorage.getItem('mlp_sfx_volume')??0.55)));
+      // Give the voice more presence without overriding the player's mute setting.
+      audio.volume=Math.max(0,Math.min(1,Number(localStorage.getItem('mlp_sfx_volume')??0.55)*1.65));
+      window.setDiscordVoiceDucking?.(true);
+      try {
       await new Promise(resolve=>{
         let done=false;
         const finish=()=>{if(done)return;done=true;resolve();};
@@ -35,6 +38,10 @@
         const attempt=audio.play();
         if(attempt&&typeof attempt.catch==='function')attempt.catch(()=>{clearTimeout(safety);setTimeout(finish,4441);});
       });
+      } finally {
+        // Bring the exact user-selected music level back after the voice line.
+        window.setDiscordVoiceDucking?.(false);
+      }
       const data=categories[event?.category]||categories.magic;
       root=document.createElement('div');
       root.id='discordChaosOverlay';
@@ -82,6 +89,7 @@
     }catch(err){
       console.error('[Discord Chaos]',err);
     }finally{
+      window.setDiscordVoiceDucking?.(false);
       if(spin)clearInterval(spin);
       if(audio){audio.pause();audio.src='';}
       document.body.classList.remove('discord-chaos-flipped','discord-chaos-active');
