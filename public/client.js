@@ -2158,12 +2158,13 @@ function playFinisher(e){
   if(e.demo)finisherDemoStageTimer=timer;
 }
 
-// 🎬 In-Game-Test aller zwölf echten Verlierer-Animationen, ohne Match-Eingriffe.
+// 🎬 In-Game-Test normaler Finisher plus Mimschs exklusive Siegesanimation, ohne Match-Eingriffe.
 const FINISHER_DEMO_TYPES=[
   ['fall','Karte fällt'],['melt','Regen & Zerfließen'],['glass','Glasbruch'],
   ['portal','Portal'],['xmark','Rotes X'],['shadow','Schatten'],
   ['spin','Wegwirbeln'],['meteor','Meteorit'],['dust','Magischer Staub'],
-  ['heart','Herzbrechen'],['smolder','Smolders Feuer'],['cookie','Keks-Bisse']
+  ['heart','Herzbrechen'],['smolder','Smolders Feuer'],['cookie','Keks-Bisse'],
+  ['mimsch_magic_claws','Mimsch – Magiekrallen']
 ];
 function ensureFinisherDemoControls(){
   if(!document.getElementById('finisherDemoStyles')){
@@ -2188,7 +2189,7 @@ function ensureFinisherDemoControls(){
     controls.id='finisherDemoControls';
     controls.setAttribute('role','group');
     controls.setAttribute('aria-label','Verlierer-Animationen testen');
-    controls.innerHTML='<strong id="finisherDemoStatus">🎬 1 / 12</strong><button id="finisherDemoNext" type="button">⏭ Nächste</button><button id="finisherDemoStop" class="demo-stop" type="button">⏹ Test beenden</button>';
+    controls.innerHTML='<strong id="finisherDemoStatus">🎬 1 / 13</strong><button id="finisherDemoNext" type="button">⏭ Nächste</button><button id="finisherDemoStop" class="demo-stop" type="button">⏹ Test beenden</button>';
     document.body.append(controls);
     controls.querySelector('#finisherDemoNext').addEventListener('click',nextFinisherDemo);
     controls.querySelector('#finisherDemoStop').addEventListener('click',stopFinisherDemo);
@@ -2206,6 +2207,8 @@ function clearFinisherDemoStage(){
     const impact=$('#finisherImpact');if(impact)impact.className='finisher-impact';
   }
   document.body.classList.remove('finisher-running');
+  // Extra character finishers use iframes rather than standard overlays.
+  document.getElementById('mimschVictoryFrame')?.remove();
 }
 function stopFinisherDemo(){
   if(!finisherDemoActive)return;
@@ -2219,14 +2222,33 @@ function runFinisherDemoStep(){
   if(state?.phase!=='ready'){stopFinisherDemo();return;}
   if(finisherDemoIndex>=FINISHER_DEMO_TYPES.length){
     stopFinisherDemo();
-    toast('🎬 Alle 12 Verlierer-Animationen abgespielt!');
+    toast('🎬 Alle 13 Animationen abgespielt!');
     return;
   }
   clearFinisherDemoStage();
   const [kind,label]=FINISHER_DEMO_TYPES[finisherDemoIndex];
   const controls=ensureFinisherDemoControls();
-  controls.querySelector('#finisherDemoStatus').textContent=`🎬 ${finisherDemoIndex+1}/12 · ${label}`;
+  controls.querySelector('#finisherDemoStatus').textContent=`🎬 ${finisherDemoIndex+1}/${FINISHER_DEMO_TYPES.length} · ${label}`;
   const token=finisherDemoToken;
+  if(kind==='mimsch_magic_claws'){
+    const winnerId='mimsch-demo-champion';
+    runMimschVictory({
+      demo:true,finisher:kind,winnerId,winnerName:'Mimsch',duration:8500,
+      revealEntries:[
+        {pid:winnerId,name:'Mimsch',card:{id:'n96',name:'Mimsch',image:'/assets/cards_new/096_Mimsch_9_8.png'}},
+        {pid:'mimsch-demo-1',name:'Applejack',card:{id:'n1',name:'Applejack',image:'/assets/cards/01_Applejack.webp'}},
+        {pid:'mimsch-demo-2',name:'Musterkarte',card:{id:'n2',name:'Musterkarte',image:'/assets/cards/02_Fluttershy.webp'}},
+        {pid:'mimsch-demo-3',name:'Gegner',card:{id:'n3',name:'Gegner',image:'/assets/cards/03_Rainbow_Dash.webp'}}
+      ]
+    });
+    document.getElementById('mimschVictoryFrame')?.style.setProperty('z-index','2147482990');
+    finisherDemoStageTimer=setTimeout(()=>{
+      if(!finisherDemoActive||token!==finisherDemoToken)return;
+      finisherDemoIndex++;
+      finisherDemoGapTimer=setTimeout(runFinisherDemoStep,450);
+    },8700);
+    return;
+  }
   playFinisher({
     demo:true,demoToken:token,finisher:kind,duration:4600,
     winnerId:'finisher-demo-sieger',
