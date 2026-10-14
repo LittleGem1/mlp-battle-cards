@@ -463,7 +463,8 @@ function registerSunsetMirror(r,caster,target){
 function clearNegativeEffects(r,pid){
   const wasSkipped=fxHas(r,'skipped',pid);
   fxRemove(r,'skipped',pid);fxRemove(r,'forcedLose',pid);
-  if(r.roundFX){delete r.roundFX.debuff[pid];delete r.roundFX.strengthDebuff[pid];}
+  if(r.roundFX){delete r.roundFX.debuff[pid];delete r.roundFX.strengthDebuff[pid];
+    r.roundFX.sombraTributes=(r.roundFX.sombraTributes||[]).filter(e=>e.targetId!==pid);}
   const p=r.players.get(pid);
   if(wasSkipped&&p&&!p.surrendered&&hasNormalCard(p)&&!r.roundPlayerIds.includes(pid))r.roundPlayerIds.push(pid);
   if(p?.pendingForcedDiscard){
@@ -1047,7 +1048,7 @@ function botUsableSpecials(r,p){
 }
 function botMaybeUseSpecial(r,p,forced=false){
   if((r?.windchaosUntil||0)>Date.now())return false;
-  if(!r||r.phase!=='select'||!p?.isBot||!r.roundPlayerIds.includes(p.id)||!mayUseSpecial(p)||r.specialReadGate)return false;
+  if(!r||r.phase!=='select'||r.discordResolved||!p?.isBot||!r.roundPlayerIds.includes(p.id)||!mayUseSpecial(p)||r.specialReadGate)return false;
   const usable=botUsableSpecials(r,p);if(!usable.length)return false;
   let chance=forced?.86:.42;
   if(new Set(p.artifacts||[]).size>=2)chance+=.08;
@@ -1526,6 +1527,9 @@ function maybeEvaluate(r){
     }
     if(r.finalSpecialTimer){clearTimeout(r.finalSpecialTimer);r.finalSpecialTimer=null;}
     if(r.discordPending&&!r.discordResolved){
+      // A timeout-driven automatic card placement may have cleared the clock.
+      // Re-establish a deadline so the animation ALWAYS acquires a real pause lock.
+      if(!Number.isFinite(r.selectionDeadline))r.selectionDeadline=Date.now()+6000;
       r.discordResolved=true;
       const options=CATEGORIES.filter(cat=>cat!==r.category&&!wouldMakeThreeCategories(r,cat,{replaceCurrent:true}));
       if(options.length){
@@ -2764,6 +2768,7 @@ io.on('connection',socket=>{
   socket.on('useSpecial',({cardId}={})=>{
     const r=getRoom(socket);
     if(!r||r.phase!=='select')return socket.emit('errorMsg','Spezialkarten nur während der Auswahl.');
+    if(r.discordResolved)return socket.emit('errorMsg','Discords Umgekehrte Welt wird gerade ausgewertet.');
     const p=r.players.get(socket.id),card=byId[cardId];
     if(!p||p.surrendered||!r.roundPlayerIds.includes(p.id)||!card||card.type!=='special'||!p.hand.includes(cardId))
       return socket.emit('errorMsg','Diese Spezialkarte ist gerade nicht spielbar.');
