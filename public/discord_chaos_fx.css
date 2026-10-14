@@ -1,0 +1,123 @@
+
+/* Discord – Umgekehrte Welt. Visual only; the Node server owns the results. */
+#discordChaosOverlay{
+  position:fixed;inset:0;pointer-events:none;z-index:2147483000;
+  color:#fff;text-align:center;font-family:Georgia,"Times New Roman",serif;
+  opacity:0;transition:opacity .35s ease;
+  overflow:hidden;isolation:isolate
+}
+#discordChaosOverlay.discord-chaos-visible{opacity:1}
+#discordChaosOverlay .discord-chaos-vignette{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 44%,#5b27af12 0%,#25103d55 68%,#130724b8 100%);
+}
+body.discord-chaos-active .arena{
+  transition:transform 1800ms cubic-bezier(.36,-.15,.16,1.13)!important;
+  transform-origin:50% 50%!important;
+  will-change:transform,filter;
+}
+body.discord-chaos-flipped .arena{
+  transform:rotate(180deg) scale(.93)!important;
+  filter:hue-rotate(32deg) saturate(1.4)!important;
+}
+#discordChaosOverlay .discord-chaos-card{
+  position:absolute;left:50%;top:47%;width:min(20vw,190px);height:auto;max-height:51vh;
+  object-fit:contain;opacity:.9;transform:translate(-50%,-50%) scale(.72) rotate(-8deg);
+  filter:drop-shadow(0 0 25px #ac70e5c0) drop-shadow(0 12px 14px #050414);
+  transition:transform 1s,opacity .5s;
+}
+#discordChaosOverlay.discord-chaos-visible .discord-chaos-card{
+  transform:translate(-50%,-50%) scale(1.06) rotate(4deg)
+}
+#discordChaosOverlay.discord-chaos-snap .discord-chaos-card{
+  opacity:0;transform:translate(-65%,-74%) scale(.4) rotate(25deg)
+}
+#discordChaosOverlay .discord-chaos-figure{
+  position:absolute;z-index:3;left:50%;top:48%;
+  width:min(52vw,550px);max-height:78vh;object-fit:contain;opacity:0;
+  transform:translate(-50%,-48%) scale(.15) rotate(-26deg);
+  filter:drop-shadow(0 11px 18px #000e) drop-shadow(0 0 25px #aa61f1c0);
+  transition:opacity .7s,transform 1.2s cubic-bezier(.16,1.2,.26,1)
+}
+#discordChaosOverlay.discord-chaos-snap .discord-chaos-figure{
+  opacity:1;transform:translate(-50%,-50%) scale(1.04) rotate(-7deg)
+}
+#discordChaosOverlay.discord-chaos-roll .discord-chaos-figure{
+  opacity:0;transform:translate(75%,-125%) rotate(45deg) scale(.35)
+}
+#discordChaosOverlay .discord-chaos-burst{
+  position:absolute;inset:0;z-index:4;opacity:0;
+  background:radial-gradient(ellipse at 58% 38%,#fff8e8ed 0%,#b873f9b9 5%,#8f3cf364 20%,transparent 64%)
+}
+#discordChaosOverlay.discord-chaos-snap .discord-chaos-burst{
+  animation:discord-chaos-explosion 900ms ease-out both
+}
+@keyframes discord-chaos-explosion{
+  0%{opacity:0;transform:scale(.1)}20%{opacity:.95;transform:scale(1)}
+  100%{opacity:0;transform:scale(1.8)}
+}
+#discordChaosOverlay .discord-chaos-spell{
+  position:absolute;z-index:6;top:12%;left:3%;right:3%;
+  font-size:clamp(30px,5.7vw,80px);font-weight:bold;color:#fff4bf;
+  opacity:0;transform:translateY(24px) scale(.65) rotate(-6deg);
+  text-shadow:0 3px 10px #170629,0 0 21px #bb78fa,0 0 50px #e49aff;
+  transition:opacity .65s,transform .75s
+}
+#discordChaosOverlay.discord-chaos-title .discord-chaos-spell{
+  opacity:1;transform:translateY(0) scale(1) rotate(-3deg)
+}
+#discordChaosOverlay .discord-chaos-rule{
+  position:absolute;z-index:7;top:29%;left:0;right:0;padding:0 15px;
+  font:1000 clamp(13px,2.4vw,28px) system-ui,sans-serif;letter-spacing:.08em;
+  opacity:0;transform:scale(.8);transition:opacity .4s,transform .4s;
+  text-shadow:0 2px 9px #070315,0 0 20px #f3a3ff
+}
+#discordChaosOverlay.discord-chaos-subtitle .discord-chaos-rule{
+  opacity:1;transform:scale(1)
+}
+#discordChaosOverlay.discord-chaos-roll .discord-chaos-spell,
+#discordChaosOverlay.discord-chaos-roll .discord-chaos-rule{opacity:0}
+#discordChaosOverlay .discord-chaos-dice{
+  position:absolute;z-index:9;top:50%;left:50%;
+  width:clamp(125px,17vw,220px);height:clamp(125px,17vw,220px);
+  border-radius:24%;border:6px ridge #ffdaa0;background:linear-gradient(135deg,#aa47d1,#4323a6 58%,#0d427e);
+  box-shadow:inset 5px 5px 22px #fff5,0 0 30px #e7a2fb,0 20px 45px #000d;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  transform:translate(-50%,-50%) rotate(-12deg);
+  opacity:0;transition:opacity .5s
+}
+#discordChaosOverlay .discord-chaos-symbol{font:normal clamp(40px,6vw,77px) system-ui}
+#discordChaosOverlay .discord-chaos-label{
+  font:950 clamp(16px,2.2vw,26px) system-ui,sans-serif;text-shadow:0 2px 5px #160624
+}
+#discordChaosOverlay.discord-chaos-roll .discord-chaos-dice{opacity:1;animation:discord-chaos-diceroll .2s linear infinite alternate}
+#discordChaosOverlay.discord-chaos-roll-ended .discord-chaos-dice{animation:none;transform:translate(-50%,-50%) rotate(-8deg)}
+@keyframes discord-chaos-diceroll{
+  from{transform:translate(-58%,-57%) rotate(-35deg) scale(.91)}
+  to{transform:translate(-40%,-45%) rotate(48deg) scale(1.09)}
+}
+#discordChaosOverlay .discord-chaos-last{
+  position:absolute;z-index:11;bottom:9%;left:5%;right:5%;
+  padding:17px 22px;border:2px solid #fbe6a3;border-radius:18px;
+  background:linear-gradient(90deg,#2c114ecd,#7c48cbe0,#35115add);
+  box-shadow:0 0 25px #bc71f7,0 8px 30px #070311;
+  font:1000 clamp(18px,3.3vw,45px) system-ui,sans-serif;color:#ffebad;
+  text-shadow:0 2px 8px #190632;opacity:0;
+  transform:translateY(50px) rotate(-3deg) scale(.85);transition:opacity .65s,transform .7s
+}
+#discordChaosOverlay.discord-chaos-low .discord-chaos-last{
+  opacity:1;transform:translateY(0) rotate(-2deg) scale(1)
+}
+#discordChaosOverlay.discord-chaos-low .discord-chaos-dice{opacity:.3}
+#discordChaosOverlay.discord-chaos-done{opacity:0;transition:opacity .8s}
+@media(max-width:700px){
+  #discordChaosOverlay .discord-chaos-card{width:min(44vw,190px)}
+  #discordChaosOverlay .discord-chaos-figure{width:85vw;max-height:65vh}
+  #discordChaosOverlay .discord-chaos-spell{top:19%}
+  #discordChaosOverlay .discord-chaos-rule{top:35%}
+  #discordChaosOverlay .discord-chaos-last{bottom:15%}
+}
+@media(prefers-reduced-motion:reduce){
+  body.discord-chaos-active .arena{transition-duration:.4s!important}
+  #discordChaosOverlay .discord-chaos-dice{animation-duration:1.2s}
+}
