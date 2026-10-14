@@ -2264,7 +2264,7 @@ function runLittleGemVictory(e){
   frame.title='Little Gem – Kristall-Asche';
   frame.allow='autoplay';
   frame.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;background:#020615;z-index:2147483000;pointer-events:none';
-  frame.src='/little_gem_live.html?v=crystal-ash-20261013';
+  frame.src='/little_gem_live.html?v=gem-hit-cards-20261014';
   frame.addEventListener('load',()=>{
     if(!frame.isConnected)return;
     try{frame.contentWindow.startLittleGemMatch(e)}
