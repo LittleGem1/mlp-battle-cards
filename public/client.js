@@ -99,6 +99,13 @@ let profileWinReward=null, giftOpened=false;
 let musicEnabled=localStorage.getItem('mlp_music')!=='off', musicMode='home';
 if(localStorage.getItem('mlp_music_fix_v3')!=='1'){musicEnabled=true;localStorage.setItem('mlp_music','on');localStorage.setItem('mlp_music_fix_v3','1');}
 let musicVolume=Math.max(0,Math.min(100,Number(localStorage.getItem('mlp_music_volume')??30)));
+let discordVoiceDucking=false;
+// Temporarily lower only the background music while Discord speaks.
+function effectiveMusicVolume(){return discordVoiceDucking?Math.round(musicVolume*0.12):musicVolume;}
+window.setDiscordVoiceDucking=active=>{
+  discordVoiceDucking=!!active;
+  try{if(ytReady&&ytPlayer)ytPlayer.setVolume(effectiveMusicVolume());}catch(e){}
+};
 const YT_TRACKS={home:'pWAP7fIwGnI',lobby:'pWAP7fIwGnI',game:'9gBTKiVqprE'};
 let ytPlayer=null,ytReady=false,userInteracted=false;
 const diceAnimations=new Map();
@@ -1433,7 +1440,7 @@ function initYouTubeMusic(){
             // Prime the player muted. Muted autoplay is allowed by modern browsers
             // and makes the later user-triggered unmute far more reliable.
             ytPlayer.mute();
-            ytPlayer.setVolume(musicVolume);
+            ytPlayer.setVolume(effectiveMusicVolume());
             ytPlayer.playVideo();
             musicPrimeDone=true;
           }catch(e){}
@@ -1471,7 +1478,7 @@ function directMusicGesture(mode=null){
   try{
     const id=YT_TRACKS[musicMode]||YT_TRACKS.lobby;
     const current=ytPlayer.getVideoData?.().video_id;
-    ytPlayer.setVolume(musicVolume);
+    ytPlayer.setVolume(effectiveMusicVolume());
     if(!musicEnabled){
       ytPlayer.mute();ytPlayer.pauseVideo();return;
     }
@@ -1494,7 +1501,7 @@ function syncMusic(){
     return;
   }
   try{
-    ytPlayer.setVolume(musicVolume);
+    ytPlayer.setVolume(effectiveMusicVolume());
     if(!musicEnabled){
       ytPlayer.mute();
       ytPlayer.pauseVideo();
@@ -1534,7 +1541,7 @@ function setMusicVolume(v){
   localStorage.setItem('mlp_music_volume',String(musicVolume));
   if(ytReady&&ytPlayer){
     try{
-      ytPlayer.setVolume(musicVolume);
+      ytPlayer.setVolume(effectiveMusicVolume());
       if(musicEnabled){ytPlayer.unMute();ytPlayer.playVideo();}
     }catch(e){}
   }
@@ -1559,7 +1566,7 @@ function startMusicWatchdog(){
       if(stateNow!==YT.PlayerState.PLAYING&&stateNow!==YT.PlayerState.BUFFERING){
         const id=YT_TRACKS[musicMode]||YT_TRACKS.lobby;
         if(ytPlayer.getVideoData?.().video_id!==id)ytPlayer.loadVideoById({videoId:id,startSeconds:0});
-        ytPlayer.setVolume(musicVolume);ytPlayer.unMute();ytPlayer.playVideo();
+        ytPlayer.setVolume(effectiveMusicVolume());ytPlayer.unMute();ytPlayer.playVideo();
       }
     }catch(e){}
   },2200);
