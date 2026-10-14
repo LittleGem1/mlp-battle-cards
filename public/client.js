@@ -2278,7 +2278,7 @@ socket.on('roundWinner',e=>{
   stopSelectionTimer();
   $('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;
   const entries=(e.revealEntries||[]).length?e.revealEntries:lastReveal;
-  const littleGemWon=entries.some(x=>x.pid===e.winnerId&&x.card?.id==='n95');
+  const littleGemWon=e.finisher==='little_gem_crystal_ash'||entries.some(x=>x.pid===e.winnerId&&x.card?.id==='n95');
   if(littleGemWon){runLittleGemVictory(e);return;}
   beep(1040,.22);playFinisher(e);
 });
