@@ -1278,6 +1278,7 @@ function restoreSeat(socket,roomCode,ticket){
   if(p.disconnectTimer){clearTimeout(p.disconnectTimer);p.disconnectTimer=null;}
   p.disconnectedAt=null;
   r.players.delete(oldId);p.id=newId;r.players.set(newId,p);
+  if(r.specialReadGate?.waiting?.delete(oldId))r.specialReadGate.waiting.add(newId);
   r.resumedIds ||= Object.create(null);
   if(oldId!==newId)r.resumedIds[oldId]=newId;
   if(r.hostId===oldId)r.hostId=newId;
@@ -2431,6 +2432,8 @@ io.on('connection',socket=>{
       fxAdd(r,'doubleNormal',p.id);
       const already=playedCardIds(r.played?.[p.id]).length;
       if(already===1){
+        if(!hasNormalCard(p))p.hand.push(...drawNormalForHand(r,p,1));
+        // The first card was already committed; make the extra slot playable.
         p.selected=false;
         socket.emit('extraNormalNeeded',{remaining:1,source:'Timberwolves'});
       }
