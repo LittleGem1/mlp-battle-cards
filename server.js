@@ -620,8 +620,22 @@ function applyWindchaos(r,caster){
 function finishSpecialReadGate(r){
   const gate=r?.specialReadGate;if(!gate)return;
   r.specialReadGate=null;
-  finishSelectionChoicePause(r,gate.pauseToken);
+  // First dismiss every reader's modal; only THEN broadcast the visual
+  // animation and begin the effect. Keep the penalty timer paused throughout.
   io.to(r.code).emit('specialReadFinished',{token:gate.token});
+  if(r.phase==='select'){
+    const c=byId[gate.cardId],p=r.players.get(resolveResumedId(r,gate.casterId));
+    if(c&&p){
+      if(c.effect!=='changelingjoker'){
+        pauseSelectionForAnimation(r,c.effect==='windchaos'?7600:c.effect==='queen_chandra'?11300:2700);
+        io.to(r.code).emit('specialPlayed',{playerId:p.id,name:p.name,card:c});
+      }else io.to(r.code).emit('notice',p.name+' spielt Changeling Joker.');
+    }
+    if(typeof gate.afterRead==='function'){
+      try{gate.afterRead();}catch(err){console.error('[MLP] Spezialeffekt nach Lesebestätigung:',err);}
+    }
+  }
+  finishSelectionChoicePause(r,gate.pauseToken);
   if(r.phase==='select'){sendState(r);scheduleBotsForSelect(r);maybeEvaluate(r);}
 }
 function updateSpecialReadGate(r,now=Date.now()){
@@ -638,11 +652,11 @@ function startSpecialReadGate(r,p,c){
   if(!r.specialReadConfirm||r.phase!=='select')return;
   const waiting=new Set(roomPlayers(r).filter(x=>!x.isBot&&!x.surrendered&&!x.disconnectedAt).map(x=>x.id));
   const pauseToken=pauseSelectionForChoice(r);
-  const gate={token:crypto.randomUUID(),round:r.round,pauseToken,waiting,cardId:c.id,name:p.name,expiresAt:Date.now()+120000};
+  const gate={token:crypto.randomUUID(),round:r.round,pauseToken,waiting,cardId:c.id,casterId:p.id,name:p.name,expiresAt:Date.now()+120000};
   r.specialReadGate=gate;
   io.to(r.code).emit('specialReadRequired',{token:gate.token,round:r.round,
     name:p.name,card:c,waiting:[...waiting].map(id=>r.players.get(id)?.name||'Spieler')});
-  if(!waiting.size)finishSpecialReadGate(r);
+  if(!waiting.size)setTimeout(()=>updateSpecialReadGate(r),0);
 }
 function consumeSpecial(r,p,c){
   const i=p.hand.indexOf(c.id);
@@ -652,12 +666,15 @@ function consumeSpecial(r,p,c){
   p.normalPlayBlockedUntil=Date.now()+1000;
   p.botTestSpecialReady=false;
   r.specialHistory.push({playerId:p.id,cardId:c.id,effect:c.effect});
-  // No custom animation, swarm sound or special-popup for Changeling Joker.
-  if(c.effect!=='changelingjoker'){
-    pauseSelectionForAnimation(r,c.effect==='windchaos'?7600:c.effect==='queen_chandra'?11300:2700);
-    io.to(r.code).emit('specialPlayed',{playerId:p.id,name:p.name,card:c});
-  }else io.to(r.code).emit('notice',p.name+' spielt Changeling Joker.');
+  // Begin the optional read phase before any visual is broadcast.
+  // If enabled, the effect and all visuals run ONLY after all acknowledgements.
   startSpecialReadGate(r,p,c);
+  if(!r.specialReadGate){
+    if(c.effect!=='changelingjoker'){
+      pauseSelectionForAnimation(r,c.effect==='windchaos'?7600:c.effect==='queen_chandra'?11300:2700);
+      io.to(r.code).emit('specialPlayed',{playerId:p.id,name:p.name,card:c});
+    }else io.to(r.code).emit('notice',p.name+' spielt Changeling Joker.');
+  }
   return true;
 }
 function specialAllowance(){return 1}
