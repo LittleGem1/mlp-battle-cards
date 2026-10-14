@@ -1376,7 +1376,7 @@ function renderHand(){
 }
 
 function ensureAudio(){userInteracted=true;try{const A=window.AudioContext||window.webkitAudioContext;if(A){if(!ensureAudio.ctx)ensureAudio.ctx=new A();if(ensureAudio.ctx.state==='suspended')ensureAudio.ctx.resume();}}catch(e){}syncMusic();return ensureAudio.ctx||null;}
-function tone(freq=620,dur=.1,gain=.045,type='sine',when=0){const ctx=ensureAudio.ctx;if(!ctx)return;const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.value=freq;const t=ctx.currentTime+when;g.gain.setValueAtTime(gain,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+dur);}
+function tone(freq=620,dur=.1,gain=.045,type='sine',when=0){const ctx=ensureAudio.ctx;if(!ctx)return;const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.value=freq;const t=ctx.currentTime+when;g.gain.setValueAtTime(Math.max(.0001,gain*battleSoundVolume),t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+dur);}
 function beep(freq=620,dur=.1){ /* V4: stumme alte UI-Pieptöne statt Doppelton */ }
 function diceRollSound(){playSfx('wuerfel_rollt',{gain:.85,cooldown:250})}
 function diceLandSound(v){playSfx('wuerfel_ergebnis',{gain:.8,cooldown:150})}
@@ -1979,7 +1979,7 @@ socket.on('playerSelected',()=>beep(300,.05));
 socket.on('cardAccepted',()=>{$('#roundMessage').textContent='✓ Deine Karte liegt – warte auf die anderen.';beep(360,.06)});
 socket.on('reveal',revealCards);
 function noiseBurst(duration=.15,gain=.06,when=0){
-  const ctx=ensureAudio.ctx;if(!ctx)return;const len=Math.max(1,Math.floor(ctx.sampleRate*duration));const b=ctx.createBuffer(1,len,ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);const src=ctx.createBufferSource(),g=ctx.createGain();src.buffer=b;g.gain.value=gain;src.connect(g);g.connect(ctx.destination);src.start(ctx.currentTime+when);
+  const ctx=ensureAudio.ctx;if(!ctx)return;const len=Math.max(1,Math.floor(ctx.sampleRate*duration));const b=ctx.createBuffer(1,len,ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);const src=ctx.createBufferSource(),g=ctx.createGain();src.buffer=b;g.gain.value=gain*battleSoundVolume;src.connect(g);g.connect(ctx.destination);src.start(ctx.currentTime+when);
 }
 function finisherSound(type){
   ensureAudio();
@@ -2407,7 +2407,7 @@ socket.on('roundWinner',e=>{
     if(state?.round!==round||!['result','rewardchoice'].includes(state?.phase))return;
     $('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;
     roundWinnerDisplayTimer=null;
-  },Math.max(0,Number(e.duration)||4200)+150);
+  },Math.max((e.finisher==='little_gem_crystal_ash'||e.finisher==='mimsch_magic_claws')?0:4400,Number(e.duration)||4200)+200);
   const entries=(e.revealEntries||[]).length?e.revealEntries:lastReveal;
   const littleGemWon=e.finisher==='little_gem_crystal_ash'||entries.some(x=>x.pid===e.winnerId&&x.card?.id==='n95');
   if(littleGemWon){runLittleGemVictory(e);return;}
