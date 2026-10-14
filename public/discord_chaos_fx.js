@@ -1,6 +1,8 @@
 (function installDiscordChaos(){
   'use strict';
   let playing=false;
+  const playedTokens=new Set();
+  let voiceContext=null;
   const categories={strength:['🏋️','Stärke'],speed:['⚡','Schnelligkeit'],magic:['⭐','Magie'],energy:['🔋','Energie']};
   function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
   function sfx(freq=930){
@@ -18,15 +20,37 @@
     }catch(e){}
   }
   async function play(event){
+    const key=String(event?.animationPauseToken||event?.round||'');
+    if(key&&playedTokens.has(key))return;
     if(playing)return;
+    if(key){playedTokens.add(key);if(playedTokens.size>80)playedTokens.delete(playedTokens.values().next().value);}
     playing=true;
-    let root=null,audio=null,spin=null;
+    let root=null,audio=null,spin=null,sourceNode=null,voiceGain=null;
     try{
       // The original spoken quote must finish BEFORE any visual effect starts.
       audio=new Audio('/assets/discord_chaos_voice.mp3');
       audio.preload='auto';
       // Give the voice more presence without overriding the player's mute setting.
-      audio.volume=Math.max(0,Math.min(1,Number(localStorage.getItem('mlp_sfx_volume')??0.55)*1.65));
+      const configured=Math.max(0,Math.min(1,Number(localStorage.getItem('mlp_sfx_volume')??0.55)));
+      audio.volume=configured===0?0:1;
+      // Audio element volume caps at 1. WebAudio gain makes Discord genuinely
+      // louder than the music, with a compressor protecting against clipping.
+      if(configured>0){
+        try{
+          const AC=window.AudioContext||window.webkitAudioContext;
+          if(AC){
+            voiceContext=new AC();
+            sourceNode=voiceContext.createMediaElementSource(audio);
+            voiceGain=voiceContext.createGain();
+            const limiter=voiceContext.createDynamicsCompressor();
+            limiter.threshold.value=-10;limiter.knee.value=8;limiter.ratio.value=9;
+            limiter.attack.value=.003;limiter.release.value=.22;
+            voiceGain.gain.value=2.35*configured;
+            sourceNode.connect(voiceGain);voiceGain.connect(limiter);limiter.connect(voiceContext.destination);
+            voiceContext.resume().catch(()=>{});
+          }
+        }catch(err){console.warn('[Discord] Audio boost fallback',err);audio.volume=Math.min(1,configured);}
+      }
       window.setDiscordVoiceDucking?.(true);
       try {
       await new Promise(resolve=>{
@@ -92,6 +116,7 @@
       window.setDiscordVoiceDucking?.(false);
       if(spin)clearInterval(spin);
       if(audio){audio.pause();audio.src='';}
+      if(voiceContext){voiceContext.close().catch(()=>{});voiceContext=null;}
       document.body.classList.remove('discord-chaos-flipped','discord-chaos-active');
       root?.remove();
       playing=false;
