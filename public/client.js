@@ -1738,7 +1738,7 @@ socket.on('specialPlayed',showSpecialBurst);
 socket.on('mlpSpecialActivated',e=>{
   // The server freezes the penalty clock before announcing this real animation.
   // Report completion so it can resume immediately instead of using its safety timeout.
-  Promise.resolve().then(()=>window.MLPRealSpecialEffects?.handle(e))
+  Promise.resolve().then(()=>e?.cardId==='discord' ? window.DiscordChaosFX?.play(e) : window.MLPRealSpecialEffects?.handle(e))
     .catch(err=>console.error('[MLP animation]',err))
     .finally(()=>{if(e?.animationPauseToken)socket.emit('selectionAnimationDone',{token:e.animationPauseToken});});
 });
@@ -2690,14 +2690,15 @@ socket.on('specialCardRequest',e=>showChoices(e.title,e.cards,c=>socket.emit('sp
 socket.on('specialMultiCardRequest',e=>showMultiChoices(e));
 socket.on('forcedDiscardRequest',e=>showChoices(e.title,e.cards,c=>socket.emit('forcedDiscardChoice',{cardId:c.id})));
 socket.on('extraNormalNeeded',e=>toast(`🌲 ${e.source}: Lege noch ${e.remaining} normale Karte${e.remaining===1?'':'n'}.`));
+socket.on('discordNormalRequired',e=>{toast(e?.message||'🙃 Discord: Du musst noch eine normale Karte legen!');showSpecialNotice({name:'Discord',detail:'Lege jetzt unbedingt eine normale Karte. Ohne sie kann die Runde nicht enden.'});});
 socket.on('bonusDraw',e=>{cardShuffleSound();toast(`🐲 ${e.source}: Du erhältst 1 zusätzliche normale Karte.`)});
 socket.on('categoryOverride',e=>{
   if(state&&e.round&&e.round!==state.round)return;
   if(state&&e.category)state.category=e.category;
   // Keep the existing elements: Grogar must never delete the crystal HUD.
   categoryHud(e.icon,e.label,e.round);
-  toast(`🔔 ${e.source} bestimmt: ${e.icon} ${e.label}`);
-  specialFxSound('grogar');
+  toast(e.source==='Discord' ? `🙃 Discord verdreht die Runde: ${e.icon} ${e.label} – niedrigster Wert gewinnt!` : `🔔 ${e.source} bestimmt: ${e.icon} ${e.label}`);
+  if(e.source!=='Discord')specialFxSound('grogar');
 });
 socket.on('specialCopied',e=>toast(`♟ ${e.name} kopiert ${e.copied?.name||'eine Spezialkarte'}.`));
 socket.on('playerSkipped',e=>{
