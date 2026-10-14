@@ -913,7 +913,11 @@ function botMaybeUseSpecial(r,p,forced=false){
 function botCommitNormal(r,p){
   if((r?.windchaosUntil||0)>Date.now())return false;
   if(!r||r.phase!=='select'||!p?.isBot||p.selected||p.surrendered||!r.roundPlayerIds.includes(p.id))return;
-  if(r.specialReadGate||Date.now()<(p.normalPlayBlockedUntil||0))return;
+  if(r.specialReadGate)return;
+  if(Date.now()<(p.normalPlayBlockedUntil||0)){
+    botLater(r,()=>botCommitNormal(r,p),Math.max(70,p.normalPlayBlockedUntil-Date.now()+80));
+    return;
+  }
   const needed=fxHas(r,'doubleNormal',p.id)?2:1;
   const ids=botChooseNormalIds(r,p,needed);
   if(!ids.length)return;
