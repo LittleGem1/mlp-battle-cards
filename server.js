@@ -1440,6 +1440,7 @@ function maybeEvaluate(r){
   // sein, bevor die Karten aufgedeckt werden.
   if(req.some(p=>p.pendingForcedDiscard && p.hand.length>0))return;
   if(!req.length){
+    recordNoWinRound(r,null);grantHydraStreakRewards(r);
     if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
     clearSelectionAnimationPause(r);
     r.selectionDeadline=null;
@@ -1556,6 +1557,8 @@ function handleSelectionTimeout(r){
   }
   for(const p of req)p.selected=null;
   r.played={};r.roundBuff={};r.roundPlayerIds=[];
+  recordNoWinRound(r,null);
+  grantHydraStreakRewards(r);
   io.to(r.code).emit('roundTimeout',{penalties,message:'Zeit abgelaufen! Strafkarte verloren. Sie wird nicht automatisch ersetzt.'});
   sendState(r);
   if(gameOverIfNeeded(r))return;
@@ -1837,6 +1840,7 @@ function evaluate(r){
     name:r.players.get(x.pid)?.name||'Spieler'}));
 
   if(!vals.length){
+    recordNoWinRound(r,null);grantHydraStreakRewards(r);
     r.phase='result';r.played={};
     io.to(r.code).emit('notice','Keine spielbaren Karten aufgedeckt. Der Kristall startet die nächste Runde.');
     startRound(r,700);return;
@@ -1846,6 +1850,7 @@ function evaluate(r){
   const auto=vals.filter(x=>fxHas(r,'autoWinner',x.pid)&&!x.forcedLose);
   let contenders=auto.length?auto:vals.filter(x=>!x.forcedLose);
   if(!contenders.length){
+    recordNoWinRound(r,null);
     r.revealOutcome={round:r.round,kind:'all-skipped'};
     // Everyone with a visible card was disabled. Reveal them all as inactive,
     // discard once and continue cleanly without awarding an undeserved win.
@@ -1860,6 +1865,7 @@ function evaluate(r){
       if(!rooms.has(r.code)||r.matchId!==match||r.round!==round||r.phase!=='reveal')return;
       for(const id of jokerPlayedCardIds(r))discardCard(r,id);
       r.played={};for(const p of roomPlayers(r))p.selected=null;
+      grantHydraStreakRewards(r);
       refillNormalHands(r);r.phase='result';sendState(r);
       if(!gameOverIfNeeded(r))startRound(r,950);
     },2200);
@@ -2066,6 +2072,7 @@ function guardRoomProgress(r,now=Date.now()){
     }else if(outcome?.round===r.round && outcome.kind==='all-skipped'){
       for(const id of jokerPlayedCardIds(r))discardCard(r,id);
       r.played={};for(const p of roomPlayers(r))p.selected=null;
+      grantHydraStreakRewards(r);
       refillNormalHands(r);r.phase='result';sendState(r);
       if(!gameOverIfNeeded(r))startRound(r,950);
     }else{
