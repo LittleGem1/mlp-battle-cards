@@ -136,6 +136,7 @@ function clearTimers(r){
     if(r[key]){clearTimeout(r[key]);r[key]=null;}
   }
   clearBotTimers(r);
+  r.specialReadGate=null;
   clearSelectionAnimationPause(r);
   r.selectionDeadline=null;
   r.countdownUntil=null;
@@ -145,6 +146,7 @@ function clearTimers(r){
 function publicState(r){
   return {
     code:r.code,hostId:r.hostId,phase:r.phase,category:r.category,round:r.round,
+    specialReadConfirm:!!r.specialReadConfirm,
     botCardTester:isBotCardTestRoom(r),
     countdownUntil:r.countdownUntil||null,selectionDeadline:r.selectionDeadline||null,
     selectionPausedRemainingMs:Number.isFinite(r.selectionPausedRemainingMs)?r.selectionPausedRemainingMs:null,
@@ -156,7 +158,7 @@ function publicState(r){
       normalCount:p.hand.filter(id=>byId[id]?.type==='normal').length,
       specialCount:p.hand.filter(id=>byId[id]?.type==='special').length,
       artifacts:(p.artifacts||[]).map(id=>byId[id]).filter(Boolean),
-      artifactCount:new Set(p.artifacts||[]).size,timeoutPenaltyCount:p.timeoutPenaltyCount||0,normalRefillTarget:Math.max(0,NORMAL_HAND_TARGET-(p.timeoutPenaltyCount||0)),
+      artifactCount:new Set(p.artifacts||[]).size,lossStreak:p.lossStreak||0,timeoutPenaltyCount:p.timeoutPenaltyCount||0,normalRefillTarget:Math.max(0,NORMAL_HAND_TARGET-(p.timeoutPenaltyCount||0)),
       selected:!!p.selected,ready:!!p.ready,surrendered:!!p.surrendered,isBot:!!p.isBot,connected:!!p.isBot||!p.disconnectedAt,
       eliminated:!!p.surrendered,lastPlayedCardId:p.lastPlayedCardId||null,
       skipped:fxHas(r,'skipped',p.id),hasPlayedCard:playedCardIds(r.played?.[p.id]).length>0
@@ -607,11 +609,41 @@ function applyWindchaos(r,caster){
   return true;
 }
 
+// Host-controlled group read receipt, with the selection timer stopped on
+// the server. Bots are automatically marked read; abandoned rooms recover.
+function finishSpecialReadGate(r){
+  const gate=r?.specialReadGate;if(!gate)return;
+  r.specialReadGate=null;
+  finishSelectionChoicePause(r,gate.pauseToken);
+  io.to(r.code).emit('specialReadFinished',{token:gate.token});
+  if(r.phase==='select'){sendState(r);scheduleBotsForSelect(r);maybeEvaluate(r);}
+}
+function updateSpecialReadGate(r,now=Date.now()){
+  const gate=r?.specialReadGate;if(!gate)return;
+  if(r.phase!=='select'){finishSpecialReadGate(r);return;}
+  for(const id of gate.waiting){
+    const p=r.players.get(id);
+    if(!p||p.isBot||p.surrendered||(p.disconnectedAt&&now-p.disconnectedAt>8000))gate.waiting.delete(id);
+  }
+  if(!gate.waiting.size||now>=gate.expiresAt){finishSpecialReadGate(r);return;}
+  io.to(r.code).emit('specialReadUpdate',{token:gate.token,waiting:[...gate.waiting].map(id=>r.players.get(id)?.name||'Spieler')});
+}
+function startSpecialReadGate(r,p,c){
+  if(!r.specialReadConfirm||r.phase!=='select')return;
+  const waiting=new Set(roomPlayers(r).filter(x=>!x.isBot&&!x.surrendered&&!x.disconnectedAt).map(x=>x.id));
+  const pauseToken=pauseSelectionForChoice(r);
+  const gate={token:crypto.randomUUID(),round:r.round,pauseToken,waiting,expiresAt:Date.now()+120000};
+  r.specialReadGate=gate;
+  io.to(r.code).emit('specialReadRequired',{token:gate.token,round:r.round,
+    name:p.name,card:c,waiting:[...waiting].map(id=>r.players.get(id)?.name||'Spieler')});
+  if(!waiting.size)finishSpecialReadGate(r);
+}
 function consumeSpecial(r,p,c){
   const i=p.hand.indexOf(c.id);
   if(i<0)return false;
   p.hand.splice(i,1);r.rewardDiscard.push(c.id);
   p.specialUsed=(p.specialUsed||0)+1;
+  p.normalPlayBlockedUntil=Date.now()+1000;
   p.botTestSpecialReady=false;
   r.specialHistory.push({playerId:p.id,cardId:c.id,effect:c.effect});
   // No custom animation, swarm sound or special-popup for Changeling Joker.
@@ -619,7 +651,7 @@ function consumeSpecial(r,p,c){
     pauseSelectionForAnimation(r,c.effect==='windchaos'?7600:c.effect==='queen_chandra'?11300:2700);
     io.to(r.code).emit('specialPlayed',{playerId:p.id,name:p.name,card:c});
   }else io.to(r.code).emit('notice',p.name+' spielt Changeling Joker.');
-
+  startSpecialReadGate(r,p,c);
   return true;
 }
 function specialAllowance(){return 1}
@@ -848,7 +880,7 @@ function botUsableSpecials(r,p){
 }
 function botMaybeUseSpecial(r,p,forced=false){
   if((r?.windchaosUntil||0)>Date.now())return false;
-  if(!r||r.phase!=='select'||!p?.isBot||p.selected||!r.roundPlayerIds.includes(p.id)||!mayUseSpecial(p))return false;
+  if(!r||r.phase!=='select'||!p?.isBot||p.selected||!r.roundPlayerIds.includes(p.id)||!mayUseSpecial(p)||r.specialReadGate)return false;
   const usable=botUsableSpecials(r,p);if(!usable.length)return false;
   let chance=forced?.86:.42;
   if(new Set(p.artifacts||[]).size>=2)chance+=.08;
@@ -876,6 +908,7 @@ function botMaybeUseSpecial(r,p,forced=false){
 function botCommitNormal(r,p){
   if((r?.windchaosUntil||0)>Date.now())return false;
   if(!r||r.phase!=='select'||!p?.isBot||p.selected||p.surrendered||!r.roundPlayerIds.includes(p.id))return;
+  if(r.specialReadGate||Date.now()<(p.normalPlayBlockedUntil||0))return;
   const needed=fxHas(r,'doubleNormal',p.id)?2:1;
   const ids=botChooseNormalIds(r,p,needed);
   if(!ids.length)return;
@@ -1168,14 +1201,14 @@ function requiredPlayers(r){ return (r.roundPlayerIds||[]).map(id=>r.players.get
 function resetToLobby(r){
   clearTimers(r);
   clearRoomSpecialChoices(r);
-  r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;
+  r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;r.specialReadGate=null;
   r.round=0;r.played={};r.dice={};r.tieIds=[];r.roundBuff={};r.roundPlayerIds=[];
   r.pendingRoundWinner=null;
   r.postGameReady=new Set();r.forceNextCategoryDifferent=false;r.forcedNextCategory=null;resetRoundFX(r);
   r.watchdogTag=null;r.watchdogSince=0;r.resumedIds=Object.create(null);
   r.normalDeck=[];r.normalDiscard=[];r.rewardDeck=[];r.rewardDiscard=[];r.pendingReward=null;r.artifactRewardCooldown=0;r.lastArtifactOfferRound=0;
   for(const p of roomPlayers(r)){
-    p.hand=[];p.artifacts=[];p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
+    p.hand=[];p.artifacts=[];p.lossStreak=0;p.normalPlayBlockedUntil=0;p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
   }
   sendState(r);
   io.to(r.code).emit('backToLobby');
@@ -1400,6 +1433,7 @@ function startRound(r,delay=900){
   r.rewardPrepDueAt=0;
   r.rewardPreparationStarted=false;
   r.watchdogTag=null;
+  r.specialReadGate=null;
   clearSelectionAnimationPause(r);
   if(r.roundTimer)clearTimeout(r.roundTimer);
   if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
@@ -1671,7 +1705,7 @@ function beginMatch(r){
   initDecks(r);
 
   for(const p of ps){
-    p.hand=[];p.artifacts=[];p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
+    p.hand=[];p.artifacts=[];p.lossStreak=0;p.normalPlayBlockedUntil=0;p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
     p.hand.push(...drawNormalForHand(r,p,NORMAL_HAND_TARGET));
     const starterSpecial=drawSpecialOnly(r,p.hand);
     if(starterSpecial)p.hand.push(starterSpecial);
@@ -1715,6 +1749,7 @@ function maybeStartWhenReady(r){
 // All deadlines are LONGER than the normal animations/round timeouts.
 function guardRoomProgress(r,now=Date.now()){
   if(!rooms.has(r.code)||['lobby','gameover'].includes(r.phase))return;
+  if(r.specialReadGate)updateSpecialReadGate(r,now);
   const tag=`${r.matchId||'no-match'}:${r.round}:${r.phase}`;
   if(r.watchdogTag!==tag){r.watchdogTag=tag;r.watchdogSince=now;return;}
   const age=now-r.watchdogSince;
@@ -1950,17 +1985,29 @@ io.on('connection',socket=>{
       socket.emit('profileSaved',{accessory:result.accessory,frame:result.frame});
     }catch(err){console.error('[MLP] Kosmetik speichern:',err);socket.emit('profileSaveError','Item-/Rahmen-Auswahl konnte nicht gespeichert werden.');}
   });
+  socket.on('setSpecialReadConfirm',({enabled}={})=>{
+    const r=getRoom(socket);
+    if(!r||r.phase!=='lobby'||r.hostId!==socket.id)return;
+    r.specialReadConfirm=!!enabled;
+    sendState(r);
+  });
+  socket.on('specialReadAcknowledged',({token}={})=>{
+    const r=getRoom(socket),gate=r?.specialReadGate;
+    if(!r||!gate||r.phase!=='select'||gate.token!==token||gate.round!==r.round)return;
+    gate.waiting.delete(socket.id);
+    updateSpecialReadGate(r);
+  });
   socket.on('createRoom',({name,accessory,frame})=>{
     if(profileStore&&!socket.data.profile)return socket.emit('errorMsg','Bitte zuerst dein dauerhaftes Spielerprofil laden.');
     let c;do c=code();while(rooms.has(c));
-    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,arenaSelection:'random',lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null,artifactRewardCooldown:0};
+    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',specialReadConfirm:false,category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,arenaSelection:'random',lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null,artifactRewardCooldown:0};
     r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),profileId:socket.data.profile?.id||null,hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     rooms.set(c,r);socket.join(c);socket.data.room=c;offerRoomTicket(socket,r,r.players.get(socket.id));sendState(r);
   });
   socket.on('createBotRoom',({name,accessory,frame})=>{
     if(profileStore&&!socket.data.profile)return socket.emit('errorMsg','Bitte zuerst dein dauerhaftes Spielerprofil laden.');
     let c;do c=code();while(rooms.has(c));
-    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,arenaSelection:'random',lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null,artifactRewardCooldown:0};
+    const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',specialReadConfirm:false,category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,arenaSelection:'random',lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null,artifactRewardCooldown:0};
     r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),profileId:socket.data.profile?.id||null,hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     r.botCardTester=true;
     rooms.set(c,r);socket.join(c);socket.data.room=c;addBotToRoom(r);offerRoomTicket(socket,r,r.players.get(socket.id));sendState(r);
@@ -2090,9 +2137,11 @@ io.on('connection',socket=>{
     const r=getRoom(socket);
     if(r&&(r.windchaosUntil||0)>Date.now())return socket.emit('errorMsg','Bitte warte, bis der Windchaos-Tornado vorbei ist.');
     if(!r||r.phase!=='select')return socket.emit('errorMsg','Gerade kann keine Karte gespielt werden.');
+    if(r.specialReadGate)return socket.emit('errorMsg','Warte, bis alle die Spezialkarte gelesen haben.');
     if(!r.roundPlayerIds.includes(socket.id))return socket.emit('errorMsg','Du bist in dieser Runde nicht aktiv.');
     const p=r.players.get(socket.id),c=byId[cardId];
     if(p?.surrendered)return socket.emit('errorMsg','Du hast aufgegeben und schaust nur noch zu.');
+    if(p&&Date.now()<(p.normalPlayBlockedUntil||0))return socket.emit('errorMsg','Bitte warte eine Sekunde nach der Spezialkarte.');
     if(!p||!c||c.type!=='normal'||!p.hand.includes(cardId))return socket.emit('errorMsg','Diese Karte kann nicht gespielt werden.');
     if(p.selected)return socket.emit('errorMsg','Du hast bereits alle Karten für diese Runde gewählt.');
     if(socket.data.pendingSpecial||socket.data.pendingFlutter||socket.data.pendingRarity){
@@ -2130,6 +2179,7 @@ io.on('connection',socket=>{
     const r=getRoom(socket);
     if(r&&(r.windchaosUntil||0)>Date.now())return socket.emit('errorMsg','Bitte warte, bis der Windchaos-Tornado vorbei ist.');
     if(!r||r.phase!=='select')return socket.emit('errorMsg','Spezialkarten nur während der Auswahl.');
+    if(r.specialReadGate)return socket.emit('errorMsg','Zuerst müssen alle die Spezialkarte lesen.');
     const p=r.players.get(socket.id),source=byId[cardId];
     if(p?.surrendered)return socket.emit('errorMsg','Du hast aufgegeben und schaust nur noch zu.');
     if(!p||!source||source.type!=='special'||!p.hand.includes(cardId))return;
