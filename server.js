@@ -132,11 +132,12 @@ function finishSelectionChoicePause(r,token){
 }
 function clearTimers(r){
   r.roundTransitionToken=(r.roundTransitionToken||0)+1;
-  for(const key of ['roundTimer','selectionTimer','countdownTimer','readyTimer','rewardChoiceTimer','finalSpecialTimer']){
+  for(const key of ['roundTimer','selectionTimer','countdownTimer','readyTimer','rewardChoiceTimer','finalSpecialTimer','specialSequenceTimer']){
     if(r[key]){clearTimeout(r[key]);r[key]=null;}
   }
   clearBotTimers(r);
   r.specialReadGate=null;
+  r.specialSequence=null;
   r.finalSpecialWindowUntil=0;
   clearSelectionAnimationPause(r);
   r.selectionDeadline=null;
@@ -684,6 +685,83 @@ function consumeSpecial(r,p,c){
     }else io.to(r.code).emit('notice',p.name+' spielt Changeling Joker.');
   }
   return true;
+}
+// Serialize special cards from ALL players of one room. The first request
+// wins FIFO order; no later effect or animation can begin before the previous
+// animation, reading screen and target choices have finished.
+function startSpecialSequence(r,socket,cardId){
+  if(!r||r.phase!=='select')return;
+  let seq=r.specialSequence;
+  if(!seq){
+    seq={active:null,queue:[],matchId:r.matchId,round:r.round,
+      pauseToken:pauseSelectionForChoice(r)};
+    r.specialSequence=seq;
+  }
+  if(seq.active){
+    seq.queue.push({playerId:socket.id,cardId,matchId:r.matchId,round:r.round});return;
+  }
+  const p=r.players.get(socket.id),card=byId[cardId];
+  if(!p||p.surrendered||!card||card.type!=='special'||!p.hand.includes(cardId)||!mayUseSpecial(p)){
+    socket.emit('notice','Die wartende Spezialkarte ist nicht mehr verfügbar.');
+    tickSpecialSequence(r);return;
+  }
+  seq.active={playerId:p.id,cardId,startedAt:Date.now()};
+  const used=p.specialUsed||0;
+  try{
+    // This is the normal, server-validated implementation of every card.
+    socket.specialSequenceExecute(cardId);
+  }catch(err){console.error('[MLP] Spezialkarten-Warteschlange:',err);}
+  if((p.specialUsed||0)===used){
+    seq.active=null;
+    tickSpecialSequence(r);
+    return;
+  }
+  // Even cards with no custom visual get their own 2.7s presentation.
+  tickSpecialSequence(r);
+}
+function tickSpecialSequence(r){
+  const seq=r?.specialSequence;
+  if(!seq)return;
+  if(r.specialSequenceTimer){clearTimeout(r.specialSequenceTimer);r.specialSequenceTimer=null;}
+  const valid=rooms.has(r.code)&&r.phase==='select'&&r.matchId===seq.matchId&&r.round===seq.round;
+  if(!valid){r.specialSequence=null;return;}
+  const active=seq.active,now=Date.now();
+  if(active){
+    const currentId=resolveResumedId(r,active.playerId);
+    const socket=io.sockets.sockets.get(currentId);
+    const waitingChoice=!!(socket?.data?.pendingSpecial||socket?.data?.pendingFlutter||
+      socket?.data?.pendingRarity);
+    const pendingDiscard=roomPlayers(r).some(p=>p.pendingForcedDiscard);
+    const otherLocks=!![...(r.selectionPauseLocks?.keys()||[])].find(id=>id!==seq.pauseToken);
+    const needsMore=!!r.specialReadGate||waitingChoice||pendingDiscard||otherLocks||
+      (r.windchaosUntil||0)>now;
+    if(needsMore&&now-active.startedAt<150000){
+      r.specialSequenceTimer=setTimeout(()=>tickSpecialSequence(r),250);return;
+    }
+    if(needsMore&&now-active.startedAt>=150000){
+      // Recover from abandoned target-choice dialogs. Never freeze the room.
+      if(socket)clearSpecialChoice(socket,r,true);
+      if(r.specialReadGate)finishSpecialReadGate(r);
+    }
+    seq.active=null;
+  }
+  while(seq.queue.length){
+    const next=seq.queue.shift(),id=resolveResumedId(r,next.playerId);
+    const socket=io.sockets.sockets.get(id);
+    if(!socket||!socket.connected||next.round!==r.round||next.matchId!==r.matchId)continue;
+    const p=r.players.get(id);
+    if(!p||p.surrendered||!p.hand.includes(next.cardId)||!mayUseSpecial(p))continue;
+    io.to(r.code).emit('specialQueueAdvance',{playerName:p.name,cardId:next.cardId});
+    startSpecialSequence(r,socket,next.cardId);
+    return;
+  }
+  r.specialSequence=null;
+  finishSelectionChoicePause(r,seq.pauseToken);
+  if(r.deferredGameOver){
+    const pending=r.deferredGameOver;r.deferredGameOver=null;
+    const champ=r.players.get(resolveResumedId(r,pending.championId));
+    if(champ)endGame(r,champ,pending.reason);
+  }else if(r.phase==='select'){sendState(r);scheduleBotsForSelect(r);maybeEvaluate(r);}
 }
 function specialAllowance(){return 1}
 function mayUseSpecial(p){return (p.specialUsed||0)<specialAllowance(p) || !!p.botTestSpecialReady}
@@ -1243,7 +1321,7 @@ function requiredPlayers(r){ return (r.roundPlayerIds||[]).map(id=>r.players.get
 function resetToLobby(r){
   clearTimers(r);
   clearRoomSpecialChoices(r);
-  r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;r.specialReadGate=null;
+  r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;r.specialReadGate=null;r.specialSequence=null;
   r.round=0;r.played={};r.dice={};r.tieIds=[];r.roundBuff={};r.roundPlayerIds=[];
   r.pendingRoundWinner=null;
   r.postGameReady=new Set();r.forceNextCategoryDifferent=false;r.forcedNextCategory=null;resetRoundFX(r);
@@ -1498,6 +1576,7 @@ function startRound(r,delay=900){
   r.rewardPreparationStarted=false;
   r.watchdogTag=null;
   r.specialReadGate=null;
+  r.specialSequence=null;
   r.finalSpecialWindowUntil=0;
   clearSelectionAnimationPause(r);
   if(r.roundTimer)clearTimeout(r.roundTimer);
@@ -2286,7 +2365,7 @@ io.on('connection',socket=>{
     io.to(r.code).emit('playerSelected',{playerId:socket.id,name:p.name});
     sendState(r);maybeEvaluate(r);setTimeout(()=>{try{maybeEvaluate(r)}catch(e){}},180);
   });
-  socket.on('useSpecial',({cardId})=>{
+  function executeSpecialRequest(socket,cardId){
     const r=getRoom(socket);
     if(r&&(r.windchaosUntil||0)>Date.now())return socket.emit('errorMsg','Bitte warte, bis der Windchaos-Tornado vorbei ist.');
     if(!r||r.phase!=='select')return socket.emit('errorMsg','Spezialkarten nur während der Auswahl.');
@@ -2505,6 +2584,23 @@ io.on('connection',socket=>{
       r.specialReadGate.afterRead=applyUsedSpecial;
       sendState(r);
     }else applyUsedSpecial();
+  }
+  socket.specialSequenceExecute=cardId=>executeSpecialRequest(socket,cardId);
+  socket.on('useSpecial',({cardId}={})=>{
+    const r=getRoom(socket);
+    if(!r||r.phase!=='select')return socket.emit('errorMsg','Spezialkarten nur während der Auswahl.');
+    const p=r.players.get(socket.id),card=byId[cardId];
+    if(!p||p.surrendered||!r.roundPlayerIds.includes(p.id)||!card||card.type!=='special'||!p.hand.includes(cardId))
+      return socket.emit('errorMsg','Diese Spezialkarte ist gerade nicht spielbar.');
+    if(!mayUseSpecial(p))return socket.emit('errorMsg','Du hast dein Spezialkarten-Limit für diese Runde erreicht.');
+    if(r.specialSequence?.active){
+      if(r.specialSequence.queue.some(x=>resolveResumedId(r,x.playerId)===p.id))
+        return socket.emit('notice','Deine Spezialkarte wartet bereits in der Warteschlange.');
+      r.specialSequence.queue.push({playerId:p.id,cardId,matchId:r.matchId,round:r.round});
+      socket.emit('specialQueued',{cardId,position:r.specialSequence.queue.length});
+      return;
+    }
+    startSpecialSequence(r,socket,cardId);
   });
 
   socket.on('cancelSpecialChoice',()=>{
