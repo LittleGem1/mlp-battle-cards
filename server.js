@@ -166,7 +166,7 @@ function publicState(r){
       normalCount:p.hand.filter(id=>byId[id]?.type==='normal').length,
       specialCount:p.hand.filter(id=>byId[id]?.type==='special').length,
       artifacts:(p.artifacts||[]).map(id=>byId[id]).filter(Boolean),
-      artifactCount:new Set(p.artifacts||[]).size,lossStreak:p.lossStreak||0,timeoutPenaltyCount:p.timeoutPenaltyCount||0,normalRefillTarget:Math.max(0,NORMAL_HAND_TARGET-(p.timeoutPenaltyCount||0)),
+      artifactCount:new Set(p.artifacts||[]).size,lossStreak:p.lossStreak||0,noWinStreak:p.noWinStreak||0,timeoutPenaltyCount:p.timeoutPenaltyCount||0,normalRefillTarget:Math.max(0,NORMAL_HAND_TARGET-(p.timeoutPenaltyCount||0)),
       selected:!!p.selected,ready:!!p.ready,surrendered:!!p.surrendered,isBot:!!p.isBot,connected:!!p.isBot||!p.disconnectedAt,
       eliminated:!!p.surrendered,lastPlayedCardId:p.lastPlayedCardId||null,
       skipped:fxHas(r,'skipped',p.id),hasPlayedCard:playedCardIds(r.played?.[p.id]).length>0
@@ -736,10 +736,10 @@ function tickSpecialSequence(r){
     const otherLocks=!![...(r.selectionPauseLocks?.keys()||[])].find(id=>id!==seq.pauseToken);
     const needsMore=!!r.specialReadGate||waitingChoice||pendingDiscard||otherLocks||
       (r.windchaosUntil||0)>now;
-    if(needsMore&&now-active.startedAt<150000){
+    if(needsMore&&now-active.startedAt<220000){
       r.specialSequenceTimer=setTimeout(()=>tickSpecialSequence(r),250);return;
     }
-    if(needsMore&&now-active.startedAt>=150000){
+    if(needsMore&&now-active.startedAt>=220000){
       // Recover from abandoned target-choice dialogs. Never freeze the room.
       if(socket)clearSpecialChoice(socket,r,true);
       if(r.specialReadGate)finishSpecialReadGate(r);
