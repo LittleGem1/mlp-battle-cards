@@ -132,12 +132,13 @@ function finishSelectionChoicePause(r,token){
 }
 function clearTimers(r){
   r.roundTransitionToken=(r.roundTransitionToken||0)+1;
-  for(const key of ['roundTimer','selectionTimer','countdownTimer','readyTimer','rewardChoiceTimer','finalSpecialTimer','specialSequenceTimer']){
+  for(const key of ['roundTimer','selectionTimer','countdownTimer','readyTimer','rewardChoiceTimer','finalSpecialTimer','specialSequenceTimer','deferredGameOverTimer']){
     if(r[key]){clearTimeout(r[key]);r[key]=null;}
   }
   clearBotTimers(r);
   r.specialReadGate=null;
   r.specialSequence=null;
+  r.deferredGameOver=null;
   r.finalSpecialWindowUntil=0;
   clearSelectionAnimationPause(r);
   r.selectionDeadline=null;
@@ -1321,7 +1322,7 @@ function requiredPlayers(r){ return (r.roundPlayerIds||[]).map(id=>r.players.get
 function resetToLobby(r){
   clearTimers(r);
   clearRoomSpecialChoices(r);
-  r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;r.specialReadGate=null;r.specialSequence=null;
+  r.phase='lobby';r.category=null;r.categoryHistory=[];r.roundIntroUntil=null;r.arenaId=null;r.readyLock=false;r.specialReadGate=null;r.specialSequence=null;r.deferredGameOver=null;
   r.round=0;r.played={};r.dice={};r.tieIds=[];r.roundBuff={};r.roundPlayerIds=[];
   r.pendingRoundWinner=null;
   r.postGameReady=new Set();r.forceNextCategoryDifferent=false;r.forcedNextCategory=null;resetRoundFX(r);
@@ -1474,6 +1475,20 @@ function maybeEvaluate(r){
 }
 function endGame(r,champion,reason='artifacts'){
   if(!r||r.phase==='gameover'||!champion)return true;
+  if(r.specialSequence?.active){
+    r.deferredGameOver ||= {championId:champion.id,reason};return true;
+  }
+  // Respect the animation deadline even if some effect tries to end the
+  // match early. No Champion/Return-to-Lobby dialog over the animation.
+  if(Number.isFinite(r.finisherEndsAt)&&Date.now()<r.finisherEndsAt){
+    const match=r.matchId,round=r.round,delay=r.finisherEndsAt-Date.now()+180;
+    if(!r.deferredGameOverTimer)r.deferredGameOverTimer=setTimeout(()=>{
+      r.deferredGameOverTimer=null;
+      if(rooms.has(r.code)&&r.phase!=='gameover'&&r.matchId===match&&r.round===round)
+        endGame(r,champion,reason);
+    },delay);
+    return true;
+  }
   clearTimers(r);r.phase='gameover';r.postGameReady=new Set(roomPlayers(r).filter(p=>p.isBot).map(p=>p.id));
   // Rewards are awarded by the SERVER, once per completed match, and committed
   // in Postgres before informing the winner. No browser-generated win claims.
@@ -1577,6 +1592,7 @@ function startRound(r,delay=900){
   r.watchdogTag=null;
   r.specialReadGate=null;
   r.specialSequence=null;
+  r.deferredGameOver=null;
   r.finalSpecialWindowUntil=0;
   clearSelectionAnimationPause(r);
   if(r.roundTimer)clearTimeout(r.roundTimer);
