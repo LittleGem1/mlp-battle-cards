@@ -1393,6 +1393,13 @@ function advanceRoundIntro(r){
 }
 function startRound(r,delay=900){
   if(!r||!rooms.has(r.code)||r.phase==='gameover'||r.phase==='lobby')return;
+  // A next-round transition is now scheduled. Clear all old finisher
+  // deadlines so the watchdog cannot restart or interrupt this transition.
+  r.finisherEndsAt=null;
+  r.resultCycleFinishing=false;
+  r.rewardPrepDueAt=0;
+  r.rewardPreparationStarted=false;
+  r.watchdogTag=null;
   clearSelectionAnimationPause(r);
   if(r.roundTimer)clearTimeout(r.roundTimer);
   if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
@@ -1432,7 +1439,11 @@ function startRound(r,delay=900){
   },delay);
 }
 function finishRoundCycle(r,winnerId,playedIds){
-  if(!r||r.phase!=='result'||!rooms.has(r.code))return;
+  if(!r||r.phase!=='result'||!rooms.has(r.code)||r.resultCycleFinishing)return;
+  // Exactly-once finalization: a slow finisher and the watchdog must never
+  // finish the same round twice or skip the winner's gold-card reward.
+  r.resultCycleFinishing=true;
+  r.finisherEndsAt=null;
   const winner=r.players.get(resolveResumedId(r,winnerId));
   if(!winner){
     for(const id of jokerPlayedCardIds(r))discardCard(r,id);
@@ -1453,10 +1464,19 @@ function finishRoundCycle(r,winnerId,playedIds){
   sendState(r);
 
   const capturedMatch=r.matchId,capturedRound=r.round;
+  r.rewardPrepDueAt=Date.now()+900;
   setTimeout(()=>{
     if(!rooms.has(r.code)||r.phase!=='result'||r.round!==capturedRound||r.matchId!==capturedMatch)return;
-    beginRewardChoice(r,winner.id);
+    startFinisherReward(r,winner.id);
   },900);
+}
+// The finisher's scheduled callback and watchdog share this exactly-once path.
+function startFinisherReward(r,winnerId){
+  if(!r||!rooms.has(r.code)||r.phase!=='result'||r.rewardPreparationStarted)return;
+  r.rewardPreparationStarted=true;
+  r.rewardPrepDueAt=0;
+  r.finisherEndsAt=null;
+  beginRewardChoice(r,winnerId);
 }
 const FINISHERS=['fall','melt','glass','portal','xmark','shadow','spin','meteor','dust','heart','smolder','cookie'];
 function pickFinisher(r){
@@ -1474,12 +1494,16 @@ function settleRound(r,winnerId){
   }
   r.pendingRoundWinner=winnerId;
   r.phase='result';
+  r.resultCycleFinishing=false;
+  r.rewardPreparationStarted=false;
+  r.rewardPrepDueAt=0;
   const littleGemWins=(r.revealCardSnapshot||[]).some(x=>x.pid===winnerId&&x.cardId==='n95');
   const mimschWins=(r.revealCardSnapshot||[]).some(x=>x.pid===winnerId&&x.cardId==='n96');
   // Unique victory finishers override ALL standard loser animations.
   const finisher=littleGemWins?'little_gem_crystal_ash':
     mimschWins?'mimsch_magic_claws':pickFinisher(r);
   const duration=littleGemWins?9200:mimschWins?8500:4200;
+  r.finisherEndsAt=Date.now()+duration+220;
   io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:ids.map(id=>byId[id]).filter(Boolean),finisher,duration,
     revealEntries:(r.revealCardSnapshot||[]).filter(x=>x.card)});
   sendState(r);
@@ -1723,11 +1747,27 @@ function guardRoomProgress(r,now=Date.now()){
     else startRound(r,900);
     return;
   }
-  if(r.phase==='result'&&age>9000){
-    // A timed callback may have lost its winner during a disconnect.
-    const winner=r.players.get(resolveResumedId(r,r.pendingRoundWinner));
-    if(winner&&Object.keys(r.played||{}).length){finishRoundCycle(r,winner.id,Object.values(r.played).flatMap(playedCardIds));}
-    else startRound(r,900);
+  if(r.phase==='result'){
+    // Gem's 9.2s and Mimsch's 8.5s finishers intentionally outlast the
+    // ordinary 9s watchdog. Do not intervene until their official end.
+    if(Number.isFinite(r.finisherEndsAt)&&now<r.finisherEndsAt+1200)return;
+    if(r.resultCycleFinishing){
+      // The finisher was settled, but the gold-card transition callback
+      // might be missing (tab suspended / delayed). Recover it once.
+      if(!r.rewardPreparationStarted&&Number.isFinite(r.rewardPrepDueAt)&&r.rewardPrepDueAt>0&&now>r.rewardPrepDueAt+1500){
+        const winner=r.players.get(resolveResumedId(r,r.pendingRoundWinner));
+        if(winner)startFinisherReward(r,winner.id);
+        else startRound(r,900);
+      }
+      return;
+    }
+    // A next-round timer from a no-winner result is already in progress.
+    if(r.roundTimer)return;
+    if(age>9000||(Number.isFinite(r.finisherEndsAt)&&now>=r.finisherEndsAt+1200)){
+      const winner=r.players.get(resolveResumedId(r,r.pendingRoundWinner));
+      if(winner)finishRoundCycle(r,winner.id,Object.values(r.played||{}).flatMap(playedCardIds));
+      else startRound(r,900);
+    }
     return;
   }
   if(r.phase==='reveal'&&age>6000){
