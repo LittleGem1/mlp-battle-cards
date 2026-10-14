@@ -2273,6 +2273,24 @@ function runLittleGemVictory(e){
   document.body.appendChild(frame);
   setTimeout(()=>frame.remove(),Math.max(9200,Number(e.duration)||0)+100);
 }
+// Mimsch's magic-claw attack uses actual revealed opponent card art and
+// both user-provided sounds. It exclusively replaces the normal finisher.
+function runMimschVictory(e){
+  document.getElementById('mimschVictoryFrame')?.remove();
+  const frame=document.createElement('iframe');
+  frame.id='mimschVictoryFrame';
+  frame.title='Mimsch – Magiekrallen-Siegesanimation';
+  frame.allow='autoplay';
+  frame.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;background:#020615;z-index:2147483000;pointer-events:none';
+  frame.src='/mimsch_finisher.html?v=mimsch-magic-claws-20261014';
+  frame.addEventListener('load',()=>{
+    if(!frame.isConnected)return;
+    try{frame.contentWindow.startMimschMatch(e)}
+    catch(err){console.error('[MLP] Mimsch-Finisher konnte nicht gestartet werden:',err)}
+  },{once:true});
+  document.body.appendChild(frame);
+  setTimeout(()=>{if(frame.isConnected)frame.remove()},Math.max(8500,Number(e.duration)||0)+100);
+}
 socket.on('roundWinner',e=>{
   if(finisherDemoActive)stopFinisherDemo();
   stopSelectionTimer();
@@ -2280,6 +2298,8 @@ socket.on('roundWinner',e=>{
   const entries=(e.revealEntries||[]).length?e.revealEntries:lastReveal;
   const littleGemWon=e.finisher==='little_gem_crystal_ash'||entries.some(x=>x.pid===e.winnerId&&x.card?.id==='n95');
   if(littleGemWon){runLittleGemVictory(e);return;}
+  const mimschWon=e.finisher==='mimsch_magic_claws'||entries.some(x=>x.pid===e.winnerId&&x.card?.id==='n96');
+  if(mimschWon){runMimschVictory(e);return;}
   beep(1040,.22);playFinisher(e);
 });
 
