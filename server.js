@@ -1213,7 +1213,7 @@ function resetToLobby(r){
   r.watchdogTag=null;r.watchdogSince=0;r.resumedIds=Object.create(null);
   r.normalDeck=[];r.normalDiscard=[];r.rewardDeck=[];r.rewardDiscard=[];r.pendingReward=null;r.artifactRewardCooldown=0;r.lastArtifactOfferRound=0;
   for(const p of roomPlayers(r)){
-    p.hand=[];p.artifacts=[];p.lossStreak=0;p.normalPlayBlockedUntil=0;p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
+    p.hand=[];p.artifacts=[];p.lossStreak=0;p.lossStreakRewardPending=false;p.normalPlayBlockedUntil=0;p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
   }
   sendState(r);
   io.to(r.code).emit('backToLobby');
@@ -1570,7 +1570,7 @@ function settleRound(r,winnerId){
   r.phase='result';
   for(const p of roomPlayers(r)){
     if(p.surrendered)continue;
-    if(p.id===winnerId){p.lossStreak=0;p.lossStreakRewardPending=false;}
+    if(p.id===winnerId){p.lossStreak=0;/* Pending gold stays owed until actually awarded. */}
     else{
       p.lossStreak=(p.lossStreak||0)+1;
       if(p.lossStreak>=3){p.lossStreak=0;p.lossStreakRewardPending=true;}
@@ -1753,7 +1753,7 @@ function beginMatch(r){
   initDecks(r);
 
   for(const p of ps){
-    p.hand=[];p.artifacts=[];p.lossStreak=0;p.normalPlayBlockedUntil=0;p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
+    p.hand=[];p.artifacts=[];p.lossStreak=0;p.lossStreakRewardPending=false;p.normalPlayBlockedUntil=0;p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
     p.hand.push(...drawNormalForHand(r,p,NORMAL_HAND_TARGET));
     const starterSpecial=drawSpecialOnly(r,p.hand);
     if(starterSpecial)p.hand.push(starterSpecial);
