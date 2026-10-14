@@ -1329,7 +1329,7 @@ function resetToLobby(r){
   r.watchdogTag=null;r.watchdogSince=0;r.resumedIds=Object.create(null);
   r.normalDeck=[];r.normalDiscard=[];r.rewardDeck=[];r.rewardDiscard=[];r.pendingReward=null;r.artifactRewardCooldown=0;r.lastArtifactOfferRound=0;
   for(const p of roomPlayers(r)){
-    p.hand=[];p.artifacts=[];p.lossStreak=0;p.lossStreakRewardPending=false;p.normalPlayBlockedUntil=0;p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
+    p.hand=[];p.artifacts=[];p.noWinStreak=0;p.hydraRewardsPending=0;p.lossStreak=0;p.lossStreakRewardPending=false;p.normalPlayBlockedUntil=0;p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
   }
   sendState(r);
   io.to(r.code).emit('backToLobby');
@@ -1634,6 +1634,43 @@ function startRound(r,delay=900){
 }
 // Three consecutive round losses grant one random card from the REAL gold
 // deck. This is done after the finisher, never during the reveal animation.
+// Independent five-no-win streak: separate from 3-loss random gold cards.
+function recordNoWinRound(r,winnerId=null){
+  if(!r||!r.matchId||!r.round)return;
+  const key=r.matchId+':'+r.round;
+  if(r.noWinRecordedRound===key)return;
+  r.noWinRecordedRound=key;
+  const resolved=winnerId?resolveResumedId(r,winnerId):null;
+  for(const p of roomPlayers(r)){
+    if(p.surrendered)continue;
+    if(p.id===resolved){p.noWinStreak=0;continue;}
+    p.noWinStreak=(p.noWinStreak||0)+1;
+    if(p.noWinStreak>=5){p.noWinStreak=0;p.hydraRewardsPending=(p.hydraRewardsPending||0)+1;}
+  }
+}
+function grantHydraStreakRewards(r){
+  const hydra=byId.s76;
+  if(!hydra||hydra.type!=='special')return;
+  for(const p of roomPlayers(r)){
+    if(p.surrendered)continue;
+    while((p.hydraRewardsPending||0)>0){
+      if(p.hand.length>=MAX_TOTAL_HAND){
+        const idx=p.hand.findIndex(id=>byId[id]?.type==='normal');
+        if(idx<0)break; // Never erase another special: keep Hydra owed.
+        r.normalDeck.push(p.hand.splice(idx,1)[0]);
+      }
+      let physical=false;
+      for(const pile of [r.rewardDeck,r.rewardDiscard]){
+        const at=pile.lastIndexOf(hydra.id);
+        if(at>=0){pile.splice(at,1);physical=true;break;}
+      }
+      p.hand.push(hydra.id);
+      p.hydraRewardsPending--;
+      io.to(r.code).emit('hydraStreakReward',{playerId:p.id,name:p.name,cardName:hydra.name});
+      if(!p.isBot)io.to(p.id).emit('hydraStreakRewardPrivate',{card:hydra,fromDeck:physical});
+    }
+  }
+}
 function grantLossStreakBonuses(r){
   for(const p of roomPlayers(r)){
     if(!p.lossStreakRewardPending||p.surrendered)continue;
@@ -1686,6 +1723,7 @@ function finishRoundCycle(r,winnerId,playedIds){
   r.played={};
   for(const p of roomPlayers(r))p.selected=null;
   grantLossStreakBonuses(r);
+  grantHydraStreakRewards(r);
 
   refillNormalHands(r);
 
@@ -1721,6 +1759,7 @@ function settleRound(r,winnerId){
     if(gameOverIfNeeded(r))return;
     r.phase='result';startRound(r,1000);return;
   }
+  recordNoWinRound(r,winnerId);
   r.pendingRoundWinner=winnerId;
   r.phase='result';
   for(const p of roomPlayers(r)){
@@ -1908,7 +1947,7 @@ function beginMatch(r){
   initDecks(r);
 
   for(const p of ps){
-    p.hand=[];p.artifacts=[];p.lossStreak=0;p.lossStreakRewardPending=false;p.normalPlayBlockedUntil=0;p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
+    p.hand=[];p.artifacts=[];p.noWinStreak=0;p.hydraRewardsPending=0;p.lossStreak=0;p.lossStreakRewardPending=false;p.normalPlayBlockedUntil=0;p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
     p.hand.push(...drawNormalForHand(r,p,NORMAL_HAND_TARGET));
     const starterSpecial=drawSpecialOnly(r,p.hand);
     if(starterSpecial)p.hand.push(starterSpecial);
