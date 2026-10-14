@@ -1476,8 +1476,11 @@ function settleRound(r,winnerId){
   r.pendingRoundWinner=winnerId;
   r.phase='result';
   const littleGemWins=(r.revealCardSnapshot||[]).some(x=>x.pid===winnerId&&x.cardId==='n95');
-  const finisher=littleGemWins?'little_gem_crystal_ash':pickFinisher(r);
-  const duration=littleGemWins?9200:4200;
+  const mimschWins=(r.revealCardSnapshot||[]).some(x=>x.pid===winnerId&&x.cardId==='n96');
+  // Unique victory finishers override ALL standard loser animations.
+  const finisher=littleGemWins?'little_gem_crystal_ash':
+    mimschWins?'mimsch_magic_claws':pickFinisher(r);
+  const duration=littleGemWins?9200:mimschWins?8500:4200;
   io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:ids.map(id=>byId[id]).filter(Boolean),finisher,duration,
     revealEntries:(r.revealCardSnapshot||[]).filter(x=>x.card)});
   sendState(r);
