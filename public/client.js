@@ -1741,11 +1741,36 @@ socket.on('specialQueued',e=>{
 socket.on('specialQueueAdvance',e=>{
   if(e?.playerName)toast('✨ Jetzt ist '+e.playerName+'s Spezialkarte dran.');
 });
-socket.on('specialPlayed',showSpecialBurst);
+socket.on('specialPlayed',e=>{
+  // Discord owns the arena: do not show the generic card burst above its scene.
+  if(e?.card?.effect==='discord')return;
+  showSpecialBurst(e);
+});
+socket.on('specialsRefunded',e=>{
+  if((e?.refunded||[]).some(x=>x.playerId===myId))
+    toast('↩ Rundenabbruch: Deine eingesetzte Spezialkarte ist wieder auf deiner Hand.');
+  if(state)renderGame();
+});
 socket.on('mlpSpecialActivated',e=>{
   // The server freezes the penalty clock before announcing this real animation.
   // Report completion so it can resume immediately instead of using its safety timeout.
-  Promise.resolve().then(()=>e?.cardId==='discord' ? window.DiscordChaosFX?.play(e) : window.MLPRealSpecialEffects?.handle(e))
+  const playRealAnimation=async()=>{
+    if(e?.cardId!=='discord')return window.MLPRealSpecialEffects?.handle(e);
+    // Discord has priority. Wait briefly for the external script instead of
+    // acknowledging an undefined handler and silently skipping the animation.
+    document.querySelectorAll('.special-burst').forEach(node=>node.remove());
+    const notice=document.getElementById('mlpSpecialNotice');
+    if(notice)notice.classList.remove('visible');
+    for(let attempt=0;attempt<40&&!window.DiscordChaosFX?.play;attempt++)
+      await new Promise(resolve=>setTimeout(resolve,100));
+    if(!window.DiscordChaosFX?.play){
+      console.error('[Discord] Animation script missing: not silently acknowledging');
+      toast('Discords Animation konnte nicht geladen werden. Bitte Seite neu laden.');
+      return new Promise(resolve=>setTimeout(resolve,13000));
+    }
+    return window.DiscordChaosFX.play(e);
+  };
+  Promise.resolve().then(playRealAnimation)
     .catch(err=>console.error('[MLP animation]',err))
     .finally(()=>{if(e?.animationPauseToken)socket.emit('selectionAnimationDone',{token:e.animationPauseToken});});
 });
