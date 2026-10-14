@@ -324,9 +324,17 @@ function emitImpact(r,effect,targetIds,text){
 // Joker: play a server-validated normal card without taking a player's hand card.
 function commitJokerNormal(r,p,cardId){
   const card=byId[cardId];
-  if(!r||r.phase!=='select'||!p||p.surrendered||p.selected||
-      !r.roundPlayerIds.includes(p.id)||card?.type!=='normal'||
-      playedCardIds(r.played?.[p.id]).length)return false;
+  if(!r||r.phase!=='select'||!p||p.surrendered||
+      !r.roundPlayerIds.includes(p.id)||card?.type!=='normal')return false;
+  // If the normal was already placed, Changeling Joker replaces it with the
+  // chosen card. Return the original physical cards to the player's hand.
+  const previous=r.played?.[p.id];
+  if(previous){
+    for(const id of playedCardIds(previous)){
+      if(!(previous.jokerVirtual&&previous.cardId===id))p.hand.push(id);
+    }
+    delete r.played[p.id];
+  }
   let borrowed=false;
   for(const deck of [r.normalDeck,r.normalDiscard]){
     const i=deck.indexOf(cardId);
@@ -2319,7 +2327,7 @@ io.on('connection',socket=>{
     if(effect==='shadowform'&&!availableTargets(r,p,'artifact').length)return socket.emit('errorMsg','Schattengestalt benötigt einen Gegner mit mindestens einem Artefakt. Die Karte bleibt auf deiner Hand.');
     if(['artifactcopy','artifactsteal'].includes(effect)&&!availableTargets(r,p,'artifact_new').length)return socket.emit('errorMsg','Es gibt derzeit kein gegnerisches Artefakt, das du noch nicht besitzt. Die Karte bleibt auf deiner Hand.');
     if(effect==='manticore'&&!r.normalDiscard.length&&!r.rewardDiscard.length)return socket.emit('errorMsg','Die Ablagestapel sind noch leer.');
-    if(effect==='changelingjoker'&&playedCardIds(r.played?.[p.id]).length)return socket.emit('errorMsg','Changeling Joker muss vor deiner normalen Karte gespielt werden.');
+    // Changeling Joker may replace an already placed normal card.
 
     if(!consumeSpecial(r,p,source))return;
     // When read receipts are enabled, no visual or card effect starts until
@@ -2420,7 +2428,15 @@ io.on('connection',socket=>{
       socket.data.pendingSpecial={room:r.code,round:r.round,action:'manticore',sourceCardId:source.id,choices:pool};
       socket.emit('specialCardRequest',{title:'Manticore: Nimm 1 Karte aus dem Ablagestapel zurück',cards:pool.map(x=>byId[x.id]).filter(Boolean)});
     }else if(effect==='timberwolves'){
-      fxAdd(r,'doubleNormal',p.id);socket.emit('specialDone',{text:'Lege diese Runde 2 normale Karten. Der höhere Kategorienwert zählt.'});
+      fxAdd(r,'doubleNormal',p.id);
+      const already=playedCardIds(r.played?.[p.id]).length;
+      if(already===1){
+        p.selected=false;
+        socket.emit('extraNormalNeeded',{remaining:1,source:'Timberwolves'});
+      }
+      socket.emit('specialDone',{text:already===1
+        ?'Timberwolves: Deine erste Karte liegt schon. Lege jetzt eine zweite normale Karte.'
+        :'Lege diese Runde 2 normale Karten. Der höhere Kategorienwert zählt.'});
     }else if(effect==='grogar'){
       socket.data.pendingSpecial={room:r.code,round:r.round,action:'grogar',sourceCardId:source.id};
       socket.emit('specialCategoryRequest',{title:'Grogar: Wähle die Kategorie',categories:CATEGORIES.filter(id=>!wouldMakeThreeCategories(r,id,{replaceCurrent:true})).map(id=>({id,label:CATEGORY_LABEL[id],icon:CATEGORY_ICON[id]}))});
@@ -2579,7 +2595,7 @@ io.on('connection',socket=>{
     if(!pending||pending.action!=='changelingjoker'||!p)return;
     const chosen=byId[String(cardId||'')];
     if(chosen?.type!=='normal')return socket.emit('errorMsg','Bitte eine normale Karte wählen.');
-    if(p.selected||playedCardIds(r.played?.[p.id]).length)return socket.emit('errorMsg','Du hast bereits eine normale Karte gelegt.');
+    // Replacing a placed normal card is allowed during the reaction window.
     if(!commitJokerNormal(r,p,chosen.id))return socket.emit('errorMsg','Die normale Karte konnte nicht gespielt werden.');
     socket.data.pendingSpecial=null;
     finishJokerChoicePause(r,pending);
