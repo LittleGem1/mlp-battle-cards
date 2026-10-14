@@ -4,7 +4,11 @@
 window.startLittleGemMatch=function startLittleGemMatch(payload){
   document.body.classList.add('game-mode');
   startOverlay.classList.add('hidden');
-  const actual=(payload?.entries||[]).filter(x=>x.pid!==payload.winnerId&&x.card?.image).slice(0,7);
+  // The round server emits "revealEntries", not "entries". A mismatch here
+  // previously removed every real opponent from Little Gem's victory scene.
+  const revealed=Array.isArray(payload?.revealEntries)?payload.revealEntries:
+    Array.isArray(payload?.entries)?payload.entries:[];
+  const actual=revealed.filter(x=>x.pid!==payload.winnerId&&x.card?.image).slice(0,7);
   const slots=[
     [13.5,47,-13],[30,60,-7],[70,60,7],[86.5,47,13],
     [12,31,-17],[88,31,17],[50,81,0]
@@ -25,7 +29,7 @@ window.startLittleGemMatch=function startLittleGemMatch(payload){
     arena.insertBefore(el,hero);
     losers.push(el);
   });
-  const champion=(payload?.entries||[]).find(x=>x.pid===payload.winnerId);
+  const champion=revealed.find(x=>x.pid===payload.winnerId);
   const championImage='/assets/cards_new/095_Little_Gem_Magie9.svg';
   hero.querySelectorAll('img').forEach(el=>el.remove());
   const img=new Image();img.src=championImage;img.alt='Little Gem – Magie 9';
