@@ -770,6 +770,7 @@ socket.on('roomState',s=>{
   if(s.phase!=='select' || (state&&s.round!==state.round))dismissOldSpecialChoices();
   if(finisherDemoActive && s.phase!=='ready')stopFinisherDemo();
   state=s;
+  syncSpecialReadFromState(s);
   botTestSyncButton(s);
   if(botTestDialog?.open)botTestRender();
 
@@ -955,6 +956,12 @@ function renderLobby(){
     botBtn.textContent=hasBot?'🤖 Test-Bot entfernen':'🤖 Test-Bot hinzufügen';
     botBtn.disabled=!hasBot&&state.players.length>=8;
   }
+  const toggle=document.getElementById('specialReadConfirmToggle');
+  const setting=document.getElementById('specialReadLobbySetting');
+  const label=document.getElementById('specialReadSettingStatus');
+  if(setting){setting.style.display='flex';}
+  if(toggle){toggle.checked=!!state.specialReadConfirm;toggle.disabled=myId!==state.hostId;}
+  if(label)label.textContent=myId===state.hostId?'Du kannst diese Option vor dem Match ändern.':'Nur der Host kann die Option ändern.';
   updateMusicUI();
 }
 
@@ -1240,6 +1247,8 @@ function buildHandCard(c,me,normals,blockedId){
       ensureAudio();
       if(blocked)return toast('Diese Karte hast du gerade gespielt – nimm eine andere.');
       if(state?.phase!=='select')return toast('Warte auf die nächste Auswahl.');
+      if(Date.now()<recentSpecialNormalLockUntil)return toast('Warte noch 1 Sekunde nach der Spezialkarte.');
+      if(activeSpecialReadToken)return toast('Erst müssen alle die Spezialkarte gelesen haben.');
       if(me?.selected)return toast('Du hast schon eine Karte gelegt.');
       el.dataset.pendingPlay='1';socket.emit('playCard',{cardId:c.id});
     };
@@ -1607,6 +1616,60 @@ function stopDiceAnimation(e){
   const d=diceTile(e.playerId,e.name),face=d.querySelector('.dice-face');d.classList.remove('rolling-live');face.textContent=['⚀','⚁','⚂','⚃','⚄','⚅'][e.value-1];d.classList.add('dice-landed');toast(`${e.name} würfelt ${e.value}`);diceLandSound(e.value)
 }
 
+// Read-receipt screen for optional host rule. Only the server may release
+// the paused penalty clock; the client just sends a one-time acknowledgement.
+let activeSpecialReadToken=null;
+function closeSpecialReadPrompt(){
+  activeSpecialReadToken=null;
+  document.getElementById('mlpSpecialReadPrompt')?.remove();
+}
+function updateSpecialReadWaiting(waiting=[]){
+  const p=document.getElementById('mlpSpecialReadWaiting');
+  if(p)p.textContent=waiting.length?'Noch nicht bestätigt: '+waiting.join(', '):'Alle haben gelesen. Weiter geht’s!';
+}
+function showSpecialReadPrompt(e){
+  if(!e?.token)return;
+  if(state?.phase!=='select')return;
+  const existing=document.getElementById('mlpSpecialReadPrompt');
+  if(activeSpecialReadToken===e.token&&existing){updateSpecialReadWaiting(e.waiting);return;}
+  closeSpecialReadPrompt();activeSpecialReadToken=e.token;
+  const cover=document.createElement('div');
+  cover.id='mlpSpecialReadPrompt';cover.setAttribute('role','dialog');
+  cover.setAttribute('aria-modal','true');cover.setAttribute('aria-label','Spezialkarte lesen');
+  cover.style.cssText='position:fixed;inset:0;z-index:2147483200;display:grid;place-items:center;background:#03050bdc;backdrop-filter:blur(7px);padding:15px;pointer-events:auto';
+  const card=e.card||{};
+  cover.innerHTML=`<section style="max-width:520px;width:100%;max-height:94vh;overflow:auto;background:linear-gradient(145deg,#1b1a3b,#101828);border:2px solid #b6a5ff;border-radius:22px;color:#f4f0ff;padding:21px;text-align:center;box-shadow:0 16px 90px #000b">
+    <h2 style="font-size:23px;margin:0 0 8px">📖 Spezialkarte lesen</h2>
+    <p style="margin:5px 0 14px">${escapeHtml(e.name||'Ein Spieler')} spielt <strong>${escapeHtml(card.name||'eine Spezialkarte')}</strong></p>
+    ${card.image?`<img src="${escapeHtml(card.image)}" alt="${escapeHtml(card.name||'Spezialkarte')}" style="max-height:32vh;max-width:65%;object-fit:contain;border-radius:10px">`:''}
+    <p style="font-size:17px;line-height:1.5;padding:10px;background:#ffffff12;border-radius:12px">${escapeHtml(card.text||card.useLabel||'Spezialeffekt')}</p>
+    <p style="color:#b5e6fa">⏸ Die Strafzeit ist angehalten, bis alle bestätigt haben.</p>
+    <button id="mlpSpecialReadAck" type="button" style="font-size:18px;padding:13px 26px;border:1px solid #c8ffda;border-radius:12px;color:#08221b;background:#b1ffba;font-weight:900;cursor:pointer">✅ Gelesen</button>
+    <p id="mlpSpecialReadWaiting" style="color:#c9bbff;font-size:14px"></p>
+  </section>`;
+  document.body.append(cover);
+  cover.querySelector('#mlpSpecialReadAck').addEventListener('click',()=>{
+    if(activeSpecialReadToken!==e.token)return;
+    const b=cover.querySelector('#mlpSpecialReadAck');
+    b.disabled=true;b.textContent='✅ Bestätigt – warte auf die anderen';
+    socket.emit('specialReadAcknowledged',{token:e.token});
+  });
+  updateSpecialReadWaiting(e.waiting);
+}
+function syncSpecialReadFromState(s){
+  if(s?.phase==='select'&&s.specialReadGate)showSpecialReadPrompt(s.specialReadGate);
+  else if(activeSpecialReadToken)closeSpecialReadPrompt();
+}
+socket.on('specialReadRequired',showSpecialReadPrompt);
+socket.on('specialReadUpdate',e=>{if(e.token===activeSpecialReadToken)updateSpecialReadWaiting(e.waiting)});
+socket.on('specialReadFinished',e=>{if(e.token===activeSpecialReadToken)closeSpecialReadPrompt()});
+socket.on('lossStreakReward',e=>{
+  toast('🎁 '+e.name+' erhält nach 3 verlorenen Runden eine zufällige Goldkarte!');
+});
+socket.on('lossStreakRewardPrivate',e=>{
+  if(e?.card)toast('🎁 Deine Trost-Goldkarte: '+e.card.name);
+});
+let recentSpecialNormalLockUntil=0;
 let specialNoticeTimer=null;
 function showSpecialNotice({name,source,target='',effect='',detail=''}={}){
   let bar=document.getElementById('mlpSpecialNotice');
@@ -1620,6 +1683,7 @@ function showSpecialNotice({name,source,target='',effect='',detail=''}={}){
 }
 function showSpecialBurst(e){
   const effect=e.card?.effect||'',theme=specialTheme(effect);
+  if(e.playerId===myId)recentSpecialNormalLockUntil=Date.now()+1000;
   showSpecialNotice({name:e.card?.name,source:e.name,detail:e.card?.text||e.card?.useLabel});
   specialFxSound(effect);
   const icons={ice:'❄',fire:'☀',storm:'⚡',shadow:'☾',magic:'✦',impact:'✹',sparkle:'✨'};
@@ -2302,7 +2366,7 @@ function runLittleGemVictory(e){
   frame.src='/little_gem_live.html?v=gem-hit-cards-20261014';
   frame.addEventListener('load',()=>{
     if(!frame.isConnected)return;
-    try{frame.contentWindow.startLittleGemMatch(e)}
+    try{frame.contentWindow.littleGemSfxVolume=battleSoundVolume;frame.contentWindow.startLittleGemMatch(e)}
     catch(err){console.error('[MLP] Little Gem animation:',err)}
   },{once:true});
   document.body.appendChild(frame);
@@ -2320,16 +2384,29 @@ function runMimschVictory(e){
   frame.src='/mimsch_finisher.html?v=mimsch-magic-claws-20261014';
   frame.addEventListener('load',()=>{
     if(!frame.isConnected)return;
-    try{frame.contentWindow.startMimschMatch(e)}
+    try{frame.contentWindow.mlpSfxVolume=battleSoundVolume;frame.contentWindow.startMimschMatch(e)}
     catch(err){console.error('[MLP] Mimsch-Finisher konnte nicht gestartet werden:',err)}
   },{once:true});
   document.body.appendChild(frame);
   setTimeout(()=>{if(frame.isConnected)frame.remove()},Math.max(8500,Number(e.duration)||0)+100);
 }
+let roundWinnerDisplayTimer=null;
+function cancelRoundWinnerBanner(){
+  if(roundWinnerDisplayTimer){clearTimeout(roundWinnerDisplayTimer);roundWinnerDisplayTimer=null;}
+}
+socket.on('roundIntro',cancelRoundWinnerBanner);
+socket.on('gameOver',cancelRoundWinnerBanner);
 socket.on('roundWinner',e=>{
   if(finisherDemoActive)stopFinisherDemo();
   stopSelectionTimer();
-  $('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;
+  cancelRoundWinnerBanner();
+  const round=e.round||state?.round;
+  // The winner text appears only when the entire finisher has ended.
+  roundWinnerDisplayTimer=setTimeout(()=>{
+    if(state?.round!==round||!['result','rewardchoice'].includes(state?.phase))return;
+    $('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;
+    roundWinnerDisplayTimer=null;
+  },Math.max(0,Number(e.duration)||4200)+150);
   const entries=(e.revealEntries||[]).length?e.revealEntries:lastReveal;
   const littleGemWon=e.finisher==='little_gem_crystal_ash'||entries.some(x=>x.pid===e.winnerId&&x.card?.id==='n95');
   if(littleGemWon){runLittleGemVictory(e);return;}
@@ -2706,6 +2783,10 @@ $('#closeGameOverBtn').addEventListener('click',()=>$('#gameOverDialog').close()
 $('#rewardBtn').addEventListener('click',()=>{try{$('#gameOverDialog').close()}catch{};$('#giftResult').textContent='';$('#giftBox').style.display='inline-block';$('#giftDialog').showModal()});
 $('#closeGiftBtn').addEventListener('click',()=>$('#giftDialog').close());
 $('#giftDoneBtn').addEventListener('click',()=>$('#giftDialog').close());
+document.getElementById('specialReadConfirmToggle')?.addEventListener('change',e=>{
+  if(state?.phase==='lobby'&&myId===state.hostId)
+    socket.emit('setSpecialReadConfirm',{enabled:!!e.target.checked});
+});
 document.querySelectorAll('.music-toggle').forEach(b=>b.addEventListener('click',()=>{ensureAudio();toggleMusic()}));
 document.querySelectorAll('.music-volume').forEach(s=>s.addEventListener('input',e=>setMusicVolume(e.target.value)));
 document.querySelectorAll('.sfx-volume').forEach(el=>el.addEventListener('input',e=>{
@@ -2714,6 +2795,10 @@ document.querySelectorAll('.sfx-volume').forEach(el=>el.addEventListener('input'
   document.querySelectorAll('.sfx-volume').forEach(slider=>slider.value=String(Math.round(battleSoundVolume*100)));
   document.querySelectorAll('.sfx-volume-readout').forEach(label=>label.textContent=Math.round(battleSoundVolume*100)+'%');
   if(crystalSpinAudio)crystalSpinAudio.volume=Math.min(1,battleSoundVolume*1.15);
+  for(const id of ['mimschVictoryFrame','littleGemVictoryFrame']){
+    const win=document.getElementById(id)?.contentWindow;
+    if(win){try{win.mlpSfxVolume=battleSoundVolume;win.littleGemSfxVolume=battleSoundVolume;}catch(e){}}
+  }
   window.dispatchEvent(new Event('mlp-sfx-volume-change'));
 }));
 document.querySelectorAll('.sfx-volume').forEach(el=>el.value=String(Math.round(battleSoundVolume*100)));
