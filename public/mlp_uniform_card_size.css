@@ -2,7 +2,7 @@
    Keep all art visible. Action buttons remain below the art rather than stretching it. */
 #game #hand .hand-card,
 #game #hand .hand-card.special {
-  --mlp-uniform-card-width:clamp(95px,11vw,128px);
+  --mlp-uniform-card-width:clamp(112px,13vw,154px);
   width:var(--mlp-uniform-card-width)!important;
   min-width:var(--mlp-uniform-card-width)!important;
   max-width:var(--mlp-uniform-card-width)!important;
@@ -45,5 +45,26 @@
 /* Larger screens do not change special-card artwork dimensions independently. */
 @media(max-width:700px) {
   #game #hand .hand-card,
-  #game #hand .hand-card.special {--mlp-uniform-card-width:clamp(85px,18vw,110px);}
+  #game #hand .hand-card.special {--mlp-uniform-card-width:clamp(100px,22vw,124px);}
+}
+
+/* Hand readability boost: wider full artwork for BOTH normal and special
+   cards, with scrolling rather than squeezing them back down. */
+#game .arena #hand,
+#game .arena #hand:not(.large-hand),
+#game .arena #hand.large-hand {
+  width:min(1360px,100%)!important;
+  max-width:100%!important;
+}
+#game #hand .hand-card.special .special-text-strip strong {
+  font-size:12px!important;
+  line-height:1.25!important;
+}
+#game #hand .hand-card.special .special-text-strip span {
+  font-size:11px!important;
+  line-height:1.3!important;
+}
+@media(max-width:700px) {
+  #game #hand .hand-card.special .special-text-strip strong{font-size:11px!important}
+  #game #hand .hand-card.special .special-text-strip span{font-size:10px!important}
 }
