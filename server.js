@@ -773,8 +773,12 @@ function botApplySpecial(r,p,c){
   }else if(effect==='timberwolves'){
     fxAdd(r,'doubleNormal',p.id);
   }else if(effect==='grogar'){
-    let best='strength',bestVal=-1;
-    for(const cat of CATEGORIES){const v=Math.max(0,...botNormalCards(p,cat).map(x=>x[cat]||0));if(v>bestVal){bestVal=v;best=cat;}}
+    let best=r.category,bestVal=-1;
+    for(const cat of CATEGORIES){
+      if(wouldMakeThreeCategories(r,cat,{replaceCurrent:true}))continue;
+      const v=Math.max(0,...botNormalCards(p,cat).map(x=>x[cat]||0));
+      if(v>bestVal){bestVal=v;best=cat;}
+    }
     r.category=best;if(Array.isArray(r.categoryHistory)&&r.categoryHistory.length)r.categoryHistory[r.categoryHistory.length-1]=best;
     io.to(r.code).emit('categoryOverride',{round:r.round,category:best,label:CATEGORY_LABEL[best],icon:CATEGORY_ICON[best],source:'Grogar'});
   }else if(effect==='sombra'){
@@ -1137,30 +1141,25 @@ function resolveRewardChoice(r,winnerId,chosenId,token){
   startRound(r,1800);
   return true;
 }
+// Categories are independently random. Two identical consecutive rolls are fine,
+// but a third consecutive roll of the same category is never allowed.
+function wouldMakeThreeCategories(r,category,{replaceCurrent=false}={}){
+  const history=Array.isArray(r.categoryHistory)?r.categoryHistory:[];
+  const preceding=replaceCurrent?history.slice(0,-1):history;
+  return preceding.length>=2 &&
+    preceding[preceding.length-1]===category &&
+    preceding[preceding.length-2]===category;
+}
 function nextCategory(r){
-  if(!Array.isArray(r.categoryHistory)) r.categoryHistory=[];
-  const previous=r.category;
-
-  if(r.forcedNextCategory&&CATEGORIES.includes(r.forcedNextCategory)){
-    r.category=r.forcedNextCategory;
-    r.forcedNextCategory=null;
-    r.forceNextCategoryDifferent=false;
-    r.categoryHistory.push(r.category);
-    if(r.categoryHistory.length>3)r.categoryHistory=r.categoryHistory.slice(-3);
-    return;
-  }
-
-  const last3=r.categoryHistory.slice(-3);
-  const blocked=last3.length===3&&last3.every(c=>c===last3[0])?last3[0]:null;
-  let choices=blocked?CATEGORIES.filter(c=>c!==blocked):[...CATEGORIES];
-  // Every genuinely new round receives a different category; a forced category
-  // selected by Grogar remains the explicit exception handled above.
-  if(previous&&choices.length>1){
-    const different=choices.filter(c=>c!==previous);
-    if(different.length)choices=different;
-  }
+  if(!Array.isArray(r.categoryHistory))r.categoryHistory=[];
+  const choices=CATEGORIES.filter(c=>!wouldMakeThreeCategories(r,c));
+  const forced=r.forcedNextCategory;
+  r.forcedNextCategory=null;
   r.forceNextCategoryDifferent=false;
-  r.category=choices[Math.floor(Math.random()*choices.length)];
+  // Nightmare Moon's forced category is honored unless that would cause
+  // three identical categories in a row.
+  r.category=forced&&choices.includes(forced)?forced:
+    choices[Math.floor(Math.random()*choices.length)];
   r.categoryHistory.push(r.category);
   if(r.categoryHistory.length>3)r.categoryHistory=r.categoryHistory.slice(-3);
 }
@@ -2227,7 +2226,7 @@ io.on('connection',socket=>{
       fxAdd(r,'doubleNormal',p.id);socket.emit('specialDone',{text:'Lege diese Runde 2 normale Karten. Der höhere Kategorienwert zählt.'});
     }else if(effect==='grogar'){
       socket.data.pendingSpecial={room:r.code,round:r.round,action:'grogar',sourceCardId:source.id};
-      socket.emit('specialCategoryRequest',{title:'Grogar: Wähle die Kategorie',categories:CATEGORIES.map(id=>({id,label:CATEGORY_LABEL[id],icon:CATEGORY_ICON[id]}))});
+      socket.emit('specialCategoryRequest',{title:'Grogar: Wähle die Kategorie',categories:CATEGORIES.filter(id=>!wouldMakeThreeCategories(r,id,{replaceCurrent:true})).map(id=>({id,label:CATEGORY_LABEL[id],icon:CATEGORY_ICON[id]}))});
     }else if(effect==='sombra'){
       fxAdd(r,'protected',p.id);
       requestTarget(socket,r,p,source,'sombra','any','King Sombra: Welcher Gegner verliert 2 Stärke?');
@@ -2363,6 +2362,8 @@ io.on('connection',socket=>{
   socket.on('specialCategoryChoice',({category})=>{
     const r=getRoom(socket),pending=pendingForCurrentSelection(socket,r);
     if(!pending||pending.action!=='grogar'||!CATEGORIES.includes(category))return;
+    if(wouldMakeThreeCategories(r,category,{replaceCurrent:true}))
+      return socket.emit('errorMsg','Eine Kategorie darf höchstens zweimal hintereinander erscheinen. Wähle eine andere.');
     socket.data.pendingSpecial=null;
     r.category=category;
     if(Array.isArray(r.categoryHistory)&&r.categoryHistory.length)r.categoryHistory[r.categoryHistory.length-1]=category;
