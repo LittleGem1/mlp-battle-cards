@@ -191,6 +191,11 @@ const magicSoundSource=document.getElementById('magicSoundAsset');
 const slashSoundSource=document.getElementById('slashSoundAsset');
 const activeMagicSounds=new Set();
 const activeSlashSounds=new Set();
+window.updateMimschSoundVolume=function(v){
+  window.mlpSfxVolume=Math.max(0,Math.min(1,Number(v)||0));
+  for(const sound of [...activeMagicSounds,...activeSlashSounds])
+    sound.volume=Math.max(0,Math.min(1,Number(sound.dataset.baseVolume||.8)*window.mlpSfxVolume));
+};
 function stopMagicSounds(){
   for(const audio of activeMagicSounds){audio.pause();audio.currentTime=0;}
   activeMagicSounds.clear();
@@ -202,7 +207,8 @@ function stopSlashSounds(){
 function playMagicSound(volume=0.85){
   if(!S.on)return;
   const clip=magicSoundSource.cloneNode(true);
-  clip.volume=volume;
+  clip.dataset.baseVolume=String(volume);
+  clip.volume=Math.max(0,Math.min(1,volume*Number(window.mlpSfxVolume??1)));
   clip.muted=false;
   activeMagicSounds.add(clip);
   clip.addEventListener('ended',()=>activeMagicSounds.delete(clip),{once:true});
@@ -214,7 +220,8 @@ function playMagicSound(volume=0.85){
 function playSlashSound(volume=0.72){
   if(!S.on)return;
   const clip=slashSoundSource.cloneNode(true);
-  clip.volume=volume;
+  clip.dataset.baseVolume=String(volume);
+  clip.volume=Math.max(0,Math.min(1,volume*Number(window.mlpSfxVolume??1)));
   clip.muted=false;
   activeSlashSounds.add(clip);
   clip.addEventListener('ended',()=>activeSlashSounds.delete(clip),{once:true});
