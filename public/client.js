@@ -2395,6 +2395,7 @@ function cancelRoundWinnerBanner(){
   if(roundWinnerDisplayTimer){clearTimeout(roundWinnerDisplayTimer);roundWinnerDisplayTimer=null;}
 }
 socket.on('roundIntro',cancelRoundWinnerBanner);
+socket.on('roundStart',cancelRoundWinnerBanner);
 socket.on('gameOver',cancelRoundWinnerBanner);
 socket.on('roundWinner',e=>{
   if(finisherDemoActive)stopFinisherDemo();
@@ -2797,7 +2798,7 @@ document.querySelectorAll('.sfx-volume').forEach(el=>el.addEventListener('input'
   if(crystalSpinAudio)crystalSpinAudio.volume=Math.min(1,battleSoundVolume*1.15);
   for(const id of ['mimschVictoryFrame','littleGemVictoryFrame']){
     const win=document.getElementById(id)?.contentWindow;
-    if(win){try{win.mlpSfxVolume=battleSoundVolume;win.littleGemSfxVolume=battleSoundVolume;}catch(e){}}
+    if(win){try{win.mlpSfxVolume=battleSoundVolume;win.littleGemSfxVolume=battleSoundVolume;win.updateMimschSoundVolume?.(battleSoundVolume);}catch(e){}}
   }
   window.dispatchEvent(new Event('mlp-sfx-volume-change'));
 }));
