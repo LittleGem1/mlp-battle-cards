@@ -1532,23 +1532,27 @@ function maybeEvaluate(r){
       if(!Number.isFinite(r.selectionDeadline))r.selectionDeadline=Date.now()+6000;
       r.discordResolved=true;
       const options=CATEGORIES.filter(cat=>cat!==r.category&&!wouldMakeThreeCategories(r,cat,{replaceCurrent:true}));
-      if(options.length){
-        r.category=options[Math.floor(Math.random()*options.length)];
-        if(Array.isArray(r.categoryHistory)&&r.categoryHistory.length)
-          r.categoryHistory[r.categoryHistory.length-1]=r.category;
-      }
+      const chosen=options[Math.floor(Math.random()*options.length)]||r.category;
+      // Secret until the animation finishes: no early HUD/category spoilers.
+      r.discordNewCategory=chosen;
       r.roundFX.discordReverse=true;
       const animationPauseToken=pauseSelectionForAnimation(r,23000,{acknowledge:true});
       io.to(r.code).emit('mlpSpecialActivated',{
         cardId:'discord',casterId:r.discordPending.casterId,animationPauseToken,
-        category:r.category,categoryLabel:CATEGORY_LABEL[r.category],
-        categoryIcon:CATEGORY_ICON[r.category],reverse:true,round:r.round
+        category:chosen,categoryLabel:CATEGORY_LABEL[chosen],
+        categoryIcon:CATEGORY_ICON[chosen],reverse:true,round:r.round
       });
+      sendState(r);return;
+    }
+    if(r.discordPending&&r.discordResolved&&r.discordNewCategory&&!r.discordCategoryApplied){
+      r.discordCategoryApplied=true;
+      r.category=r.discordNewCategory;
+      if(Array.isArray(r.categoryHistory)&&r.categoryHistory.length)
+        r.categoryHistory[r.categoryHistory.length-1]=r.category;
       io.to(r.code).emit('categoryOverride',{
         round:r.round,category:r.category,label:CATEGORY_LABEL[r.category],
         icon:CATEGORY_ICON[r.category],source:'Discord'
       });
-      sendState(r);return;
     }
     if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
     clearSelectionAnimationPause(r);
