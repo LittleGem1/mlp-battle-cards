@@ -1472,6 +1472,39 @@ function startRound(r,delay=900){
     },4000);
   },delay);
 }
+// Three consecutive round losses grant one random card from the REAL gold
+// deck. This is done after the finisher, never during the reveal animation.
+function grantLossStreakBonuses(r){
+  for(const p of roomPlayers(r)){
+    if(!p.lossStreakRewardPending||p.surrendered)continue;
+    p.lossStreakRewardPending=false;
+    const id=drawRewardCandidate(r,p,{allowArtifact:!r.roundFX?.artifactBlocked});
+    if(!id)continue;
+    const card=byId[id];
+    if(!card)continue;
+    if(card.type==='artifact'){
+      if(!(p.artifacts||[]).includes(id))p.artifacts.push(id);
+      io.to(r.code).emit('artifactFound',{playerId:p.id,playerName:p.name,card,
+        artifacts:p.artifacts.map(x=>byId[x]).filter(Boolean),
+        collected:new Set(p.artifacts).size,total:artifacts.length});
+    }else if(card.type==='special'){
+      if(p.hand.length>=MAX_TOTAL_HAND){
+        const normalIndex=p.hand.findIndex(x=>byId[x]?.type==='normal');
+        if(normalIndex>=0)r.normalDeck.push(p.hand.splice(normalIndex,1)[0]);
+        else{
+          returnRewardCandidate(r,id);
+          io.to(p.id).emit('notice','Drei Niederlagen: Hand voll. Deine Gold-Belohnung kann erst bei freiem Platz vergeben werden.');
+          p.lossStreakRewardPending=true;
+          continue;
+        }
+      }
+      p.hand.push(id);
+    }
+    io.to(r.code).emit('lossStreakReward',{playerId:p.id,name:p.name,
+      kind:card.type});
+    if(!p.isBot)io.to(p.id).emit('lossStreakRewardPrivate',{card});
+  }
+}
 function finishRoundCycle(r,winnerId,playedIds){
   if(!r||r.phase!=='result'||!rooms.has(r.code)||r.resultCycleFinishing)return;
   // Exactly-once finalization: a slow finisher and the watchdog must never
@@ -1492,10 +1525,12 @@ function finishRoundCycle(r,winnerId,playedIds){
   for(const id of jokerPlayedCardIds(r))discardCard(r,id);
   r.played={};
   for(const p of roomPlayers(r))p.selected=null;
+  grantLossStreakBonuses(r);
 
   refillNormalHands(r);
 
   sendState(r);
+  if(gameOverIfNeeded(r))return;
 
   const capturedMatch=r.matchId,capturedRound=r.round;
   r.rewardPrepDueAt=Date.now()+900;
@@ -1528,6 +1563,14 @@ function settleRound(r,winnerId){
   }
   r.pendingRoundWinner=winnerId;
   r.phase='result';
+  for(const p of roomPlayers(r)){
+    if(p.surrendered)continue;
+    if(p.id===winnerId){p.lossStreak=0;p.lossStreakRewardPending=false;}
+    else{
+      p.lossStreak=(p.lossStreak||0)+1;
+      if(p.lossStreak>=3){p.lossStreak=0;p.lossStreakRewardPending=true;}
+    }
+  }
   r.resultCycleFinishing=false;
   r.rewardPreparationStarted=false;
   r.rewardPrepDueAt=0;
