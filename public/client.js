@@ -1685,6 +1685,13 @@ socket.on('specialReadFinished',e=>{if(e.token===activeSpecialReadToken)closeSpe
 socket.on('lossStreakReward',e=>{
   toast('🎁 '+e.name+' erhält nach 3 verlorenen Runden eine zufällige Goldkarte!');
 });
+socket.on('hydraStreakReward',e=>{
+  toast('🐲 '+(e?.name||'Ein Spieler')+' bekommt nach 5 Runden ohne Sieg die Hydra!');
+  if(state)renderGame();
+});
+socket.on('hydraStreakRewardPrivate',e=>{
+  toast('🐲 5 Runden ohne Sieg: Du erhältst automatisch HYDRA!');
+});
 socket.on('lossStreakRewardPrivate',e=>{
   if(e?.card)toast('🎁 Deine Trost-Goldkarte: '+e.card.name);
 });
@@ -1720,6 +1727,13 @@ function showSpecialBurst(e){
   setTimeout(()=>overlay.classList.add('fade'),1750);
   setTimeout(()=>overlay.remove(),2500);
 }
+socket.on('specialQueued',e=>{
+  const count=Math.max(1,Number(e?.position)||1);
+  toast('⏳ Deine Spezialkarte wartet: Platz '+count+' in der Animations-Warteschlange.');
+});
+socket.on('specialQueueAdvance',e=>{
+  if(e?.playerName)toast('✨ Jetzt ist '+e.playerName+'s Spezialkarte dran.');
+});
 socket.on('specialPlayed',showSpecialBurst);
 socket.on('mlpSpecialActivated',e=>{
   // The server freezes the penalty clock before announcing this real animation.
@@ -2409,6 +2423,8 @@ function runMimschVictory(e){
   document.body.appendChild(frame);
   setTimeout(()=>{if(frame.isConnected)frame.remove()},Math.max(8500,Number(e.duration)||0)+100);
 }
+let lastVictoryAnimationEndsAt=0;
+let endGameDialogWaitTimer=null;
 let roundWinnerDisplayTimer=null;
 function cancelRoundWinnerBanner(){
   if(roundWinnerDisplayTimer){clearTimeout(roundWinnerDisplayTimer);roundWinnerDisplayTimer=null;}
@@ -2417,6 +2433,7 @@ socket.on('roundIntro',cancelRoundWinnerBanner);
 socket.on('roundStart',cancelRoundWinnerBanner);
 socket.on('gameOver',cancelRoundWinnerBanner);
 socket.on('roundWinner',e=>{
+  lastVictoryAnimationEndsAt=Date.now()+Math.max(4400,Number(e?.duration)||4200)+140;
   if(finisherDemoActive)stopFinisherDemo();
   stopSelectionTimer();
   cancelRoundWinnerBanner();
@@ -2539,11 +2556,18 @@ socket.on('tieAgain',e=>setupDice(e,'Schon wieder Gleichstand – nochmal würfe
 socket.on('diceRolling',startDiceAnimation);
 socket.on('diceRolled',stopDiceAnimation);
 socket.on('gameOver',e=>{
-  $('#roundMessage').textContent=`👑 ${e.winnerName} ist Champion!`;
-  $('#gameOverTitle').textContent=`👑 ${e.winnerName} gewinnt!`;
-  $('#gameOverText').textContent='Die Partie ist beendet. Jeder entscheidet selbst, wann er zurück in die Lobby geht. Es gibt keine zusätzliche Bestätigung. Sobald alle zurück sind, kann der Host direkt die nächste Runde vorbereiten.';
-  pendingGift=e.winnerId===myId;profileWinReward=null;giftOpened=false;$('#rewardBtn').style.display=pendingGift?'inline-block':'none';
-  if(!$('#gameOverDialog').open)$('#gameOverDialog').showModal();
+  if(endGameDialogWaitTimer){clearTimeout(endGameDialogWaitTimer);endGameDialogWaitTimer=null;}
+  const showAfterAnimations=()=>{
+    endGameDialogWaitTimer=null;
+    $('#roundMessage').textContent=`👑 ${e.winnerName} ist Champion!`;
+    $('#gameOverTitle').textContent=`👑 ${e.winnerName} gewinnt!`;
+    $('#gameOverText').textContent='Die Partie ist beendet. Jeder entscheidet selbst, wann er zurück in die Lobby geht. Es gibt keine zusätzliche Bestätigung. Sobald alle zurück sind, kann der Host direkt die nächste Runde vorbereiten.';
+    pendingGift=e.winnerId===myId;profileWinReward=null;giftOpened=false;$('#rewardBtn').style.display=pendingGift?'inline-block':'none';
+    if(!$('#gameOverDialog').open)$('#gameOverDialog').showModal();
+  };
+  const delay=Math.max(0,lastVictoryAnimationEndsAt-Date.now());
+  if(delay>0)endGameDialogWaitTimer=setTimeout(showAfterAnimations,delay);
+  else showAfterAnimations();
 });
 socket.on('postGameWaiting',e=>{
   waitingForLobbyReset=true;
