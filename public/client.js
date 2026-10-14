@@ -2279,6 +2279,19 @@ function startFinisherDemo(){
 
 socket.on('playerGaveUp',e=>{toast(`🏳 ${e.name} hat aufgegeben und schaut jetzt zu.`);beep(180,.14)});
 // An actual Little Gem (n95) victory overrides ALL regular loser finishers.
+// Remove character finishers when the server advances phase. This is also
+// used when the fallback watchdog recovered a missed transition.
+function clearCharacterFinisherFrames(){
+  document.getElementById('littleGemVictoryFrame')?.remove();
+  document.getElementById('mimschVictoryFrame')?.remove();
+}
+socket.on('roomState',s=>{
+  if(s?.phase&&s.phase!=='result'&&s.phase!=='reveal'&&s.phase!=='tie')
+    clearCharacterFinisherFrames();
+});
+socket.on('roundIntro',clearCharacterFinisherFrames);
+socket.on('rewardChoiceWaiting',clearCharacterFinisherFrames);
+socket.on('gameOver',clearCharacterFinisherFrames);
 function runLittleGemVictory(e){
   document.querySelector('#littleGemVictoryFrame')?.remove();
   const frame=document.createElement('iframe');
