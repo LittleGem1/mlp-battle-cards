@@ -1167,6 +1167,15 @@ function openCardInspect(card){
   if(!card)return;
   const overlay=$('#cardInspectOverlay'),front=$('#cardInspectFront'),name=$('#cardInspectName');
   front.src=card.image;front.alt=card.name||'Karte';name.textContent=(card.name||'Karte')+(card.type==='special'?' · '+(card.text||'Spezialeffekt'):'');
+  const face=document.querySelector('#cardInspectCard .card-inspect-front');
+  if(face){
+    face.querySelector('.trixie-art-effect')?.remove();
+    if(card.effect==='trixie'){
+      const description=document.createElement('div');description.className='trixie-art-effect trixie-inspect-effect';
+      description.textContent='🎩 Hebt alle negativen gegnerischen Spezialeffekte auf dir in dieser Runde auf.';
+      face.append(description);
+    }
+  }
   const back=$('#cardInspectBack');
   if(back)back.src=(card.type==='special'||card.type==='artifact')?'/assets/special_back_gold.png':'/assets/card_back.webp';
   inspectRotationY=0;inspectRotationX=0;applyInspectRotation();
@@ -1237,7 +1246,17 @@ function buildHandCard(c,me,normals,blockedId){
   const el=document.createElement('div');
   el.className=`hand-card ${c.type==='special'?`special effect-${c.effect||'generic'}`:''} ${blocked?'recently-played disabled':''} ${newlyDrawn.has(c.id)?'drawing-in':''}`;
   el.dataset.cardId=c.id;
-  const img=document.createElement('img');img.src=c.image;img.alt=c.name;img.loading='eager';img.addEventListener('error',()=>{img.src=(c.type==='special'||c.type==='artifact')?'/assets/special_back_gold.png':'/assets/card_back.webp';el.classList.add('missing-art')},{once:true});el.append(img);bindCardInspector(el,c);
+  const img=document.createElement('img');img.src=c.image;img.alt=c.name;img.loading='eager';img.addEventListener('error',()=>{img.src=(c.type==='special'||c.type==='artifact')?'/assets/special_back_gold.png':'/assets/card_back.webp';el.classList.add('missing-art')},{once:true});el.append(img);
+  if(c.effect==='trixie'){
+    // Her effect is printed visually OVER the card illustration as well as
+    // in the ordinary special text strip and enlarged 360° card viewer.
+    const rule=document.createElement('div');
+    rule.className='trixie-art-effect';
+    rule.textContent='🎩 Hebt negative gegnerische Effekte auf dir auf';
+    rule.title=c.text||'';
+    el.append(rule);
+  }
+  bindCardInspector(el,c);
 
   if(c.type==='normal'){
     if(blocked){const lock=document.createElement('div');lock.className='recent-lock';lock.textContent='⏳ Gerade gespielt';el.append(lock)}
@@ -1283,7 +1302,7 @@ function buildHandCard(c,me,normals,blockedId){
 
     actions.append(read,use);
     el.append(actions);
-    if(state?.phase!=='select'||me?.selected){use.disabled=true;use.title='Spezialkarte während der Kartenauswahl und vor der normalen Karte spielen';}
+    if(state?.phase!=='select'){use.disabled=true;use.title='Spezialkarten sind bis zur Aufdeckung spielbar – auch nach deiner normalen Karte.';}
 
     // V5: Kontrolliere das Hover-Verhalten DIREKT am DOM-Element.
     // Aeltere Stylesheets haben die Aktionen mit !important dauerhaft sichtbar
