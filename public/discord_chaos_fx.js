@@ -50,6 +50,7 @@
         <div class="discord-chaos-last">🙃 DER KLEINSTE WERT GEWINNT!</div>
       `;
       document.body.append(root);
+      document.body.classList.add('discord-chaos-active');
       // Discord appears first, just like the approved standalone preview.
       root.classList.add('discord-chaos-visible');
       await sleep(1250);
@@ -83,7 +84,7 @@
     }finally{
       if(spin)clearInterval(spin);
       if(audio){audio.pause();audio.src='';}
-      document.body.classList.remove('discord-chaos-flipped');
+      document.body.classList.remove('discord-chaos-flipped','discord-chaos-active');
       root?.remove();
       playing=false;
     }
