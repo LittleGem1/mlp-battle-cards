@@ -132,11 +132,12 @@ function finishSelectionChoicePause(r,token){
 }
 function clearTimers(r){
   r.roundTransitionToken=(r.roundTransitionToken||0)+1;
-  for(const key of ['roundTimer','selectionTimer','countdownTimer','readyTimer','rewardChoiceTimer']){
+  for(const key of ['roundTimer','selectionTimer','countdownTimer','readyTimer','rewardChoiceTimer','finalSpecialTimer']){
     if(r[key]){clearTimeout(r[key]);r[key]=null;}
   }
   clearBotTimers(r);
   r.specialReadGate=null;
+  r.finalSpecialWindowUntil=0;
   clearSelectionAnimationPause(r);
   r.selectionDeadline=null;
   r.countdownUntil=null;
@@ -885,7 +886,7 @@ function botUsableSpecials(r,p){
 }
 function botMaybeUseSpecial(r,p,forced=false){
   if((r?.windchaosUntil||0)>Date.now())return false;
-  if(!r||r.phase!=='select'||!p?.isBot||p.selected||!r.roundPlayerIds.includes(p.id)||!mayUseSpecial(p)||r.specialReadGate)return false;
+  if(!r||r.phase!=='select'||!p?.isBot||!r.roundPlayerIds.includes(p.id)||!mayUseSpecial(p)||r.specialReadGate)return false;
   const usable=botUsableSpecials(r,p);if(!usable.length)return false;
   let chance=forced?.86:.42;
   if(new Set(p.artifacts||[]).size>=2)chance+=.08;
@@ -901,12 +902,19 @@ function botMaybeUseSpecial(r,p,forced=false){
     effective=copy;
   }
   if(!consumeSpecial(r,p,source))return false;
-  if(source.effect==='chrysalis'){
-    const latest=r.specialHistory[r.specialHistory.length-1];
-    if(latest)latest.resolvedCardId=effective.id;
-    io.to(r.code).emit('specialCopied',{playerId:p.id,name:p.name,copied:effective});
-  }
-  botApplySpecial(r,p,effective);
+  const applyBotSpecial=()=>{
+    if(r.phase!=='select')return;
+    if(source.effect==='chrysalis'){
+      const latest=r.specialHistory[r.specialHistory.length-1];
+      if(latest)latest.resolvedCardId=effective.id;
+      io.to(r.code).emit('specialCopied',{playerId:p.id,name:p.name,copied:effective});
+    }
+    botApplySpecial(r,p,effective);
+    sendState(r);
+    maybeEvaluate(r);
+  };
+  if(r.specialReadGate)r.specialReadGate.afterRead=applyBotSpecial;
+  else applyBotSpecial();
   sendState(r);
   return true;
 }
@@ -1317,6 +1325,9 @@ function removePlayerFromRoom(socket,notify=true){
     setTimeout(()=>{if(rooms.has(r.code)&&r.phase==='gameover')resetToLobby(r)},250);
   }
 }
+// Allow the last player an actual chance to respond with a special even when
+// all ordinary cards have already been placed. This window is server-authoritative.
+const POST_PLAY_SPECIAL_WINDOW_MS=4300;
 function maybeEvaluate(r){
   if(!r||r.phase!=='select'||(r.windchaosUntil||0)>Date.now()||Number.isFinite(r.selectionPausedRemainingMs))return;
   const req=requiredPlayers(r);
@@ -1333,6 +1344,24 @@ function maybeEvaluate(r){
     return;
   }
   if(req.every(p=>p.selected)){
+    // A pending special choice may be initiated before or after an ordinary card.
+    if(req.some(p=>{
+      const socket=io.sockets.sockets.get(p.id);
+      return socket?.data?.pendingSpecial||socket?.data?.pendingFlutter||socket?.data?.pendingRarity;
+    }))return;
+    if(!r.finalSpecialWindowUntil)r.finalSpecialWindowUntil=Date.now()+POST_PLAY_SPECIAL_WINDOW_MS;
+    const wait=r.finalSpecialWindowUntil-Date.now();
+    if(wait>0){
+      if(!r.finalSpecialTimer){
+        const match=r.matchId,round=r.round;
+        r.finalSpecialTimer=setTimeout(()=>{
+          r.finalSpecialTimer=null;
+          if(rooms.has(r.code)&&r.matchId===match&&r.round===round&&r.phase==='select')maybeEvaluate(r);
+        },wait+20);
+      }
+      return;
+    }
+    if(r.finalSpecialTimer){clearTimeout(r.finalSpecialTimer);r.finalSpecialTimer=null;}
     if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
     clearSelectionAnimationPause(r);
     r.selectionDeadline=null;
@@ -1443,6 +1472,7 @@ function startRound(r,delay=900){
   r.rewardPreparationStarted=false;
   r.watchdogTag=null;
   r.specialReadGate=null;
+  r.finalSpecialWindowUntil=0;
   clearSelectionAnimationPause(r);
   if(r.roundTimer)clearTimeout(r.roundTimer);
   if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
@@ -2224,6 +2254,9 @@ io.on('connection',socket=>{
 
     p.selected=true;
     p.lastPlayedCardId=cardId;
+    // Keep the window open for late tactical specials (also for the final player).
+    r.finalSpecialWindowUntil=0;
+    if(r.finalSpecialTimer){clearTimeout(r.finalSpecialTimer);r.finalSpecialTimer=null;}
     io.to(r.code).emit('playerSelected',{playerId:socket.id,name:p.name});
     sendState(r);maybeEvaluate(r);setTimeout(()=>{try{maybeEvaluate(r)}catch(e){}},180);
   });
@@ -2235,7 +2268,8 @@ io.on('connection',socket=>{
     const p=r.players.get(socket.id),source=byId[cardId];
     if(p?.surrendered)return socket.emit('errorMsg','Du hast aufgegeben und schaust nur noch zu.');
     if(!p||!source||source.type!=='special'||!p.hand.includes(cardId))return;
-    if(p.selected)return socket.emit('errorMsg','Du hast schon deine normale Karte vollständig gelegt.');
+    // Specials are legal after committing your normal card, until reveal starts.
+    if(!r.roundPlayerIds.includes(p.id))return socket.emit('errorMsg','Du spielst diese Runde nicht aktiv mit.');
     if(socket.data.pendingSpecial||socket.data.pendingFlutter||socket.data.pendingRarity){
       const old=socket.data.pendingSpecial||socket.data.pendingFlutter||socket.data.pendingRarity;
       if(old.round!==r.round||old.room!==r.code)clearSpecialChoice(socket,r,true);
@@ -2271,6 +2305,10 @@ io.on('connection',socket=>{
     if(effect==='changelingjoker'&&playedCardIds(r.played?.[p.id]).length)return socket.emit('errorMsg','Changeling Joker muss vor deiner normalen Karte gespielt werden.');
 
     if(!consumeSpecial(r,p,source))return;
+    // When read receipts are enabled, no visual or card effect starts until
+    // every human has acknowledged. The server clock remains paused.
+    const applyUsedSpecial=()=>{
+      if(!rooms.has(r.code)||r.phase!=='select')return;
 
     // Bei Chrysalis wird visuell Chrysalis gezeigt, aber mechanisch der kopierte Effekt ausgeführt.
     if(source.effect==='chrysalis'){
@@ -2426,6 +2464,11 @@ io.on('connection',socket=>{
 
     sendState(r);
     maybeEvaluate(r);
+    };
+    if(r.specialReadGate){
+      r.specialReadGate.afterRead=applyUsedSpecial;
+      sendState(r);
+    }else applyUsedSpecial();
   });
 
   socket.on('cancelSpecialChoice',()=>{
