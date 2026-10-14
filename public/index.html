@@ -55,6 +55,11 @@
           <button id="lobbyAccessoryBtn" class="soft-btn" type="button">✨ Items & Rahmen</button>
           <button id="botLobbyBtn" class="soft-btn" type="button">🤖 Test-Bot hinzufügen</button>
           <button id="leaveLobbyBtn" class="soft-btn" type="button">← Hauptmenü</button>
+          <label id="specialReadLobbySetting" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#161d3cd9;border:1px solid #b4a0ef66;border-radius:12px;padding:10px 12px">
+            <input id="specialReadConfirmToggle" type="checkbox" style="width:19px;height:19px;accent-color:#a87cff">
+            <span>📖 Spezialkarten: Alle müssen „Gelesen“ bestätigen</span>
+            <small id="specialReadSettingStatus" style="opacity:.8">Host-Einstellung · bei Aktivierung pausiert die Strafzeit</small>
+          </label>
           <div class="music-controls"><button id="musicLobbyBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
         </div>
       </div>
@@ -66,7 +71,11 @@
           <button id="abortBtn" class="danger-btn" type="button">⏹ Spiel abbrechen</button>
           <button id="leaveGameBtn" class="soft-btn" type="button">← Hauptmenü</button>
           <button id="botCardTesterBtn" class="soft-btn" type="button" style="display:none">🧪 Testkarten</button>
-          <div class="music-controls"><button id="musicGameBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button><input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke"></div>
+          <div class="music-controls" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+            <button id="musicGameBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px">🎵 Musik <input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke im Spiel"><span class="music-volume-readout">30%</span></label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px">✨ Effekte <input class="sfx-volume" type="range" min="0" max="100" value="55" aria-label="Effektlautstärke im Spiel"><span class="sfx-volume-readout">55%</span></label>
+          </div>
         </div>
 
         <div id="arenaReadyPanel" class="arena-ready-panel" hidden>
