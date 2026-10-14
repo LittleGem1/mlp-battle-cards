@@ -2405,7 +2405,13 @@ socket.on('roundWinner',e=>{
   // The winner text appears only when the entire finisher has ended.
   roundWinnerDisplayTimer=setTimeout(()=>{
     if(state?.round!==round||!['result','rewardchoice'].includes(state?.phase))return;
-    $('#roundMessage').textContent=`🏆 ${e.winnerName} gewinnt die Runde!`;
+    const isMimschCard=e.finisher==='mimsch_magic_claws';
+    const isGemCard=e.finisher==='little_gem_crystal_ash';
+    $('#roundMessage').textContent=isMimschCard
+      ? '🏆 Die Karte Mimsch gewinnt diese Runde'
+      : isGemCard
+        ? '🏆 Die Karte Little Gem gewinnt diese Runde'
+        : `🏆 ${e.winnerName} gewinnt die Runde!`;
     roundWinnerDisplayTimer=null;
   },Math.max((e.finisher==='little_gem_crystal_ash'||e.finisher==='mimsch_magic_claws')?0:4400,Number(e.duration)||4200)+200);
   const entries=(e.revealEntries||[]).length?e.revealEntries:lastReveal;
