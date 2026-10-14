@@ -147,6 +147,11 @@ function publicState(r){
   return {
     code:r.code,hostId:r.hostId,phase:r.phase,category:r.category,round:r.round,
     specialReadConfirm:!!r.specialReadConfirm,
+    specialReadGate:r.specialReadGate?{
+      token:r.specialReadGate.token,round:r.specialReadGate.round,
+      name:r.specialReadGate.name,card:byId[r.specialReadGate.cardId],
+      waiting:[...r.specialReadGate.waiting].map(id=>r.players.get(id)?.name||'Spieler')
+    }:null,
     botCardTester:isBotCardTestRoom(r),
     countdownUntil:r.countdownUntil||null,selectionDeadline:r.selectionDeadline||null,
     selectionPausedRemainingMs:Number.isFinite(r.selectionPausedRemainingMs)?r.selectionPausedRemainingMs:null,
@@ -632,7 +637,7 @@ function startSpecialReadGate(r,p,c){
   if(!r.specialReadConfirm||r.phase!=='select')return;
   const waiting=new Set(roomPlayers(r).filter(x=>!x.isBot&&!x.surrendered&&!x.disconnectedAt).map(x=>x.id));
   const pauseToken=pauseSelectionForChoice(r);
-  const gate={token:crypto.randomUUID(),round:r.round,pauseToken,waiting,expiresAt:Date.now()+120000};
+  const gate={token:crypto.randomUUID(),round:r.round,pauseToken,waiting,cardId:c.id,name:p.name,expiresAt:Date.now()+120000};
   r.specialReadGate=gate;
   io.to(r.code).emit('specialReadRequired',{token:gate.token,round:r.round,
     name:p.name,card:c,waiting:[...waiting].map(id=>r.players.get(id)?.name||'Spieler')});
