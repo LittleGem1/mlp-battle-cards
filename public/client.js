@@ -2383,12 +2383,14 @@ function clearCharacterFinisherFrames(){
   document.getElementById('mimschVictoryFrame')?.remove();
 }
 socket.on('roomState',s=>{
-  if(s?.phase&&s.phase!=='result'&&s.phase!=='reveal'&&s.phase!=='tie')
+  // The final game-over packet must NEVER tear down a locally still-playing
+  // character finisher. Those frames remove themselves after playback.
+  if(s?.phase&&!['result','reveal','tie','gameover'].includes(s.phase))
     clearCharacterFinisherFrames();
 });
 socket.on('roundIntro',clearCharacterFinisherFrames);
 socket.on('rewardChoiceWaiting',clearCharacterFinisherFrames);
-socket.on('gameOver',clearCharacterFinisherFrames);
+// Intentionally do not remove victory frames on gameOver; wait until their local playback ends.
 function runLittleGemVictory(e){
   document.querySelector('#littleGemVictoryFrame')?.remove();
   const frame=document.createElement('iframe');
@@ -2397,13 +2399,19 @@ function runLittleGemVictory(e){
   frame.allow='autoplay';
   frame.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;background:#020615;z-index:2147483000;pointer-events:none';
   frame.src='/little_gem_live.html?v=gem-read-volume-20261014';
+  const maxDuration=Math.max(9200,Number(e.duration)||0);
+  const fallback=setTimeout(()=>frame.remove(),maxDuration+5000);
   frame.addEventListener('load',()=>{
     if(!frame.isConnected)return;
-    try{frame.contentWindow.littleGemSfxVolume=battleSoundVolume;frame.contentWindow.startLittleGemMatch(e)}
-    catch(err){console.error('[MLP] Little Gem animation:',err)}
+    try{
+      frame.contentWindow.littleGemSfxVolume=battleSoundVolume;
+      frame.contentWindow.startLittleGemMatch(e);
+      lastVictoryAnimationEndsAt=Math.max(lastVictoryAnimationEndsAt,Date.now()+maxDuration+180);
+    }catch(err){console.error('[MLP] Little Gem animation:',err)}
+    clearTimeout(fallback);
+    setTimeout(()=>frame.remove(),maxDuration+180);
   },{once:true});
   document.body.appendChild(frame);
-  setTimeout(()=>frame.remove(),Math.max(9200,Number(e.duration)||0)+100);
 }
 // Mimsch's magic-claw attack uses actual revealed opponent card art and
 // both user-provided sounds. It exclusively replaces the normal finisher.
@@ -2415,13 +2423,19 @@ function runMimschVictory(e){
   frame.allow='autoplay';
   frame.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;background:#020615;z-index:2147483000;pointer-events:none';
   frame.src='/mimsch_finisher.html?v=mimsch-read-volume-20261014';
+  const maxDuration=Math.max(8500,Number(e.duration)||0);
+  const fallback=setTimeout(()=>frame.remove(),maxDuration+5000);
   frame.addEventListener('load',()=>{
     if(!frame.isConnected)return;
-    try{frame.contentWindow.mlpSfxVolume=battleSoundVolume;frame.contentWindow.startMimschMatch(e)}
-    catch(err){console.error('[MLP] Mimsch-Finisher konnte nicht gestartet werden:',err)}
+    try{
+      frame.contentWindow.mlpSfxVolume=battleSoundVolume;
+      frame.contentWindow.startMimschMatch(e);
+      lastVictoryAnimationEndsAt=Math.max(lastVictoryAnimationEndsAt,Date.now()+maxDuration+180);
+    }catch(err){console.error('[MLP] Mimsch-Finisher konnte nicht gestartet werden:',err)}
+    clearTimeout(fallback);
+    setTimeout(()=>{if(frame.isConnected)frame.remove()},maxDuration+180);
   },{once:true});
   document.body.appendChild(frame);
-  setTimeout(()=>{if(frame.isConnected)frame.remove()},Math.max(8500,Number(e.duration)||0)+100);
 }
 let lastVictoryAnimationEndsAt=0;
 let endGameDialogWaitTimer=null;
@@ -2559,6 +2573,14 @@ socket.on('gameOver',e=>{
   if(endGameDialogWaitTimer){clearTimeout(endGameDialogWaitTimer);endGameDialogWaitTimer=null;}
   const showAfterAnimations=()=>{
     endGameDialogWaitTimer=null;
+    const remaining=Math.max(0,lastVictoryAnimationEndsAt-Date.now());
+    const localFrame=document.getElementById('littleGemVictoryFrame')||
+      document.getElementById('mimschVictoryFrame');
+    if(remaining>0||(localFrame&&Date.now()<lastVictoryAnimationEndsAt+5000)){
+      endGameDialogWaitTimer=setTimeout(showAfterAnimations,
+        remaining>0?Math.min(remaining+30,500):160);
+      return;
+    }
     $('#roundMessage').textContent=`👑 ${e.winnerName} ist Champion!`;
     $('#gameOverTitle').textContent=`👑 ${e.winnerName} gewinnt!`;
     $('#gameOverText').textContent='Die Partie ist beendet. Jeder entscheidet selbst, wann er zurück in die Lobby geht. Es gibt keine zusätzliche Bestätigung. Sobald alle zurück sind, kann der Host direkt die nächste Runde vorbereiten.';
