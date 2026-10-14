@@ -1296,7 +1296,7 @@ function buildHandCard(c,me,normals,blockedId){
     use.addEventListener('click',e=>{
       e.stopPropagation();ensureAudio();
       if(state?.phase!=='select')return toast('Spezialkarten nur während der Auswahl.');
-      if(me?.selected)return toast('Du hast deine normale Karte bereits vollständig gelegt.');
+      // Special cards remain available after a normal card while select is open.
       socket.emit('useSpecial',{cardId:c.id});
     });
 
@@ -1995,7 +1995,7 @@ socket.on('roundStart',e=>{
 });
 socket.on('cardCommitted',addCommitGhost);
 socket.on('playerSelected',()=>beep(300,.05));
-socket.on('cardAccepted',()=>{$('#roundMessage').textContent='✓ Deine Karte liegt – warte auf die anderen.';beep(360,.06)});
+socket.on('cardAccepted',()=>{$('#roundMessage').textContent='✓ Deine Karte liegt! Spezialkarten kannst du noch bis zur Aufdeckung ausspielen.';beep(360,.06)});
 socket.on('reveal',revealCards);
 function noiseBurst(duration=.15,gain=.06,when=0){
   const ctx=ensureAudio.ctx;if(!ctx)return;const len=Math.max(1,Math.floor(ctx.sampleRate*duration));const b=ctx.createBuffer(1,len,ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);const src=ctx.createBufferSource(),g=ctx.createGain();src.buffer=b;g.gain.value=gain*battleSoundVolume;src.connect(g);g.connect(ctx.destination);src.start(ctx.currentTime+when);
