@@ -2363,7 +2363,7 @@ function runLittleGemVictory(e){
   frame.title='Little Gem – Kristall-Asche';
   frame.allow='autoplay';
   frame.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;background:#020615;z-index:2147483000;pointer-events:none';
-  frame.src='/little_gem_live.html?v=gem-hit-cards-20261014';
+  frame.src='/little_gem_live.html?v=gem-read-volume-20261014';
   frame.addEventListener('load',()=>{
     if(!frame.isConnected)return;
     try{frame.contentWindow.littleGemSfxVolume=battleSoundVolume;frame.contentWindow.startLittleGemMatch(e)}
@@ -2381,7 +2381,7 @@ function runMimschVictory(e){
   frame.title='Mimsch – Magiekrallen-Siegesanimation';
   frame.allow='autoplay';
   frame.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;background:#020615;z-index:2147483000;pointer-events:none';
-  frame.src='/mimsch_finisher.html?v=mimsch-magic-claws-20261014';
+  frame.src='/mimsch_finisher.html?v=mimsch-read-volume-20261014';
   frame.addEventListener('load',()=>{
     if(!frame.isConnected)return;
     try{frame.contentWindow.mlpSfxVolume=battleSoundVolume;frame.contentWindow.startMimschMatch(e)}
