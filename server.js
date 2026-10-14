@@ -720,6 +720,28 @@ function startSpecialReadGate(r,p,c){
     name:p.name,card:c,waiting:[...waiting].map(id=>r.players.get(id)?.name||'Spieler')});
   if(!waiting.size)setTimeout(()=>updateSpecialReadGate(r),0);
 }
+// A cancelled round must never permanently consume an unresolved action card.
+function refundCancelledRoundSpecials(r,reason='Runde ohne Wertung'){
+  const history=Array.isArray(r.specialHistory)?r.specialHistory:[];
+  const refunded=[];
+  for(const entry of history){
+    const player=r.players.get(resolveResumedId(r,entry.playerId));
+    if(!player||player.surrendered||!byId[entry.cardId])continue;
+    // Only undo cards that actually went into the reward discard this round.
+    const index=r.rewardDiscard.lastIndexOf(entry.cardId);
+    if(index<0)continue;
+    r.rewardDiscard.splice(index,1);
+    player.hand.push(entry.cardId);
+    player.specialUsed=Math.max(0,(player.specialUsed||0)-1);
+    refunded.push({playerId:player.id,card:byId[entry.cardId]});
+  }
+  if(refunded.length){
+    io.to(r.code).emit('specialsRefunded',{reason,refunded:refunded.map(x=>({playerId:x.playerId,cardName:x.card.name}))});
+    for(const item of refunded)io.to(item.playerId).emit('notice','↩ Deine Spezialkarte '+item.card.name+' wurde zurückgegeben: '+reason+'.');
+  }
+  r.specialHistory=[];
+  return refunded.length;
+}
 function consumeSpecial(r,p,c){
   const i=p.hand.indexOf(c.id);
   if(i<0)return false;
@@ -1498,6 +1520,7 @@ function maybeEvaluate(r){
   // sein, bevor die Karten aufgedeckt werden.
   if(req.some(p=>p.pendingForcedDiscard && p.hand.length>0))return;
   if(!req.length){
+    refundCancelledRoundSpecials(r,'Runde ohne spielbare Karten');
     recordNoWinRound(r,null);grantHydraStreakRewards(r);
     if(r.selectionTimer){clearTimeout(r.selectionTimer);r.selectionTimer=null;}
     clearSelectionAnimationPause(r);
@@ -1642,6 +1665,7 @@ function handleSelectionTimeout(r){
     sendState(r);maybeEvaluate(r);return;
   }
 
+  refundCancelledRoundSpecials(r,'Rundenabbruch durch Zeitablauf');
   for(const [pid,entry] of Object.entries(r.played)){
     const p=r.players.get(pid);
     if(!p)continue;
@@ -1960,6 +1984,7 @@ function evaluate(r){
     name:r.players.get(x.pid)?.name||'Spieler'}));
 
   if(!vals.length){
+    refundCancelledRoundSpecials(r,'Runde ohne gültige Karten');
     recordNoWinRound(r,null);grantHydraStreakRewards(r);
     r.phase='result';r.played={};
     io.to(r.code).emit('notice','Keine spielbaren Karten aufgedeckt. Der Kristall startet die nächste Runde.');
