@@ -51,6 +51,17 @@ body.game-mode main{width:100vw;max-width:none;margin:0}
 body.game-mode header,body.game-mode .toolbar,body.game-mode .timeline,body.game-mode .caption,body.game-mode .note{display:none!important}
 body.game-mode .stage-shell{padding:0!important;border-radius:0!important;width:min(100vw,177.78vh);margin:auto;box-shadow:none!important}
 body.game-mode #arena{border-radius:0!important;min-height:0}
+/* A hit now appears exactly on the targeted opposing card, not elsewhere
+   in the arena. The image itself fractures before turning to particles. */
+.loser .gem-impact-scars{position:absolute;inset:0;z-index:9;border-radius:7px;opacity:0;pointer-events:none;background:
+linear-gradient(128deg,transparent 0 30%,#a9fffff0 31%,#064a9bd9 32%,transparent 34%),
+linear-gradient(54deg,transparent 0 43%,#e9ffffe8 44%,#2878b6d9 45%,transparent 48%),
+linear-gradient(145deg,transparent 0 57%,#7befffdd 58%,#0b569ab3 60%,transparent 62%);
+mix-blend-mode:screen;filter:drop-shadow(0 0 7px #37eaff);}
+.loser.gem-hit .gem-impact-scars,.loser.crumbling .gem-impact-scars{opacity:1;animation:gemScars .6s ease-out forwards}
+.loser.gem-hit img{filter:brightness(2) contrast(1.3) saturate(.5)}
+.loser.crumbling img{filter:grayscale(1) brightness(.32) contrast(1.6)}
+@keyframes gemScars{0%{opacity:0;filter:brightness(4) drop-shadow(0 0 26px #fff)}35%{opacity:1;filter:brightness(3) drop-shadow(0 0 14px #24dbff)}100%{opacity:.9;filter:brightness(1) drop-shadow(0 0 4px #48eaff)}}
 </style>
 </head>
 <body>
@@ -89,7 +100,7 @@ const glyph='<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"><defs
 document.querySelectorAll('.wing').forEach(w=>w.innerHTML=glyph);
 // Load the actual in-game card art; the gradient fallback remains usable offline.
 document.querySelectorAll('[data-img]').forEach(el=>{const img=new Image();img.alt=el.dataset.name;img.decoding='async';img.referrerPolicy='no-referrer';img.onload=()=>el.append(img);img.src=el.dataset.img});
-let running=false,muted=false,runToken=0,clockStarted=0,particles=[],rafId=0,timers=[],audioCtx=null,voices=[];
+let running=false,muted=false,runToken=0,clockStarted=0,particles=[],rafId=0,timers=[],audioCtx=null,voices=[],targetedBeams=[];
 const DURATION=8600;
 function after(ms,fn){const token=runToken;timers.push(setTimeout(()=>{if(token===runToken)fn()},ms))}
 function localRect(el){const e=el.getBoundingClientRect(),b=arena.getBoundingClientRect();return{x:e.left-b.left,y:e.top-b.top,w:e.width,h:e.height,cx:e.left-b.left+e.width/2,cy:e.top-b.top+e.height/2}}
@@ -105,17 +116,67 @@ function finalSound(){[523,659,784,1046].forEach((f,i)=>oscillator(f,i*.13,1.7,.
 function addAsh(target){const r=localRect(target),count=235;for(let i=0;i<count;i++){const x=r.x+Math.random()*r.w,y=r.y+Math.random()*r.h,vx=(Math.random()-.5)*105,vy=-32-Math.random()*142,s=Math.random()*3.3+.7;particles.push({kind:'ash',x,y,vx,vy,gravity:25+Math.random()*28,life:0,maxLife:1+Math.random()*2.2,size:s,rot:Math.random()*Math.PI*2,turn:(Math.random()-.5)*3,tone:Math.random()})}}
 function spark(x,y,num=30,speed=110){for(let i=0;i<num;i++){const a=Math.random()*Math.PI*2,v=speed*(.3+Math.random());particles.push({kind:'spark',x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,gravity:0,life:0,maxLife:.35+Math.random()*.9,size:1+Math.random()*2.5,tone:Math.random()})}}
 function screenXY(){const h=localRect(hero);return {x:h.cx,y:h.cy}}
+function ensureGemImpactMarks(){for(const el of losers){if(!el.querySelector('.gem-impact-scars')){const mark=document.createElement('div');mark.className='gem-impact-scars';el.appendChild(mark)}}}
 function randomChargeSparks(){const h=localRect(hero),a=Math.random()*Math.PI*2,rad=(.85+Math.random())*h.w;const x=h.cx+Math.cos(a)*rad,y=h.cy+Math.sin(a)*rad*.8;particles.push({kind:'charge',x,y,vx:(h.cx-x)*(.8+Math.random()*.7),vy:(h.cy-y)*(.8+Math.random()*.7),life:0,maxLife:.45+Math.random()*.4,size:1+Math.random()*3})}
 function drawBolt(from,to,offsetAlpha=.8){ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.shadowBlur=25;ctx.shadowColor='#11eaff';const pieces=11;for(let layer=0;layer<3;layer++){ctx.beginPath();ctx.moveTo(from.x,from.y);for(let i=1;i<pieces;i++){const p=i/pieces,xx=from.x+(to.x-from.x)*p,yy=from.y+(to.y-from.y)*p,spread=(1-p)*19;ctx.lineTo(xx+(Math.random()-.5)*spread,yy+(Math.random()-.5)*spread)}ctx.lineTo(to.x,to.y);ctx.strokeStyle=['#005df55c','#2cf6ffc5','#fff'][layer];ctx.lineWidth=[16,5,1.3][layer];ctx.globalAlpha=offsetAlpha;ctx.stroke()}ctx.restore()}
 function render(time){const r=arena.getBoundingClientRect(),w=r.width,h=r.height;ctx.clearRect(0,0,w,h);const now=performance.now(),elapsed=running?now-clockStarted:0,dt=Math.min(.04,(time-(render.lastTime||time))/1000);render.lastTime=time;
  if(running&&elapsed>=2200&&elapsed<=4250){for(let i=0;i<3;i++)randomChargeSparks()}
- if(running&&elapsed>=3920&&elapsed<=5100){const start=screenXY(),pulse=1-Math.min(1,(elapsed-3920)/1200);losers.forEach((target,i)=>{if(!target.classList.contains('shocked')&&!target.classList.contains('crumbling'))return;drawBolt(start,((p)=>({x:p.cx,y:p.cy}))(localRect(target)),(.15+.66*pulse))});if(elapsed<4350){ctx.save();ctx.globalAlpha=(4350-elapsed)/850;ctx.fillStyle='#9af8ff';ctx.beginPath();ctx.arc(start.x,start.y,Math.max(0,(elapsed-3920)*.7),0,Math.PI*2);ctx.strokeStyle='#9af8ff';ctx.lineWidth=3;ctx.stroke();ctx.restore()}}
+ if(running&&targetedBeams.length){
+  const origin=screenXY(),nowMs=performance.now();
+  for(let i=targetedBeams.length-1;i>=0;i--){
+    const shot=targetedBeams[i],age=nowMs-shot.startedAt;
+    if(age>680){targetedBeams.splice(i,1);continue}
+    const rect=localRect(shot.target),dest={x:rect.cx,y:rect.cy};
+    const travel=Math.min(1,age/240),ease=1-Math.pow(1-travel,3);
+    const head={x:origin.x+(dest.x-origin.x)*ease,y:origin.y+(dest.y-origin.y)*ease};
+    const alpha=age<300?.92:Math.max(0,(680-age)/380)*.64;
+    drawBolt(origin,head,alpha);
+    spark(head.x,head.y,age<240?1:2,50);
+    if(age>=240&&age<415){
+      ctx.save();ctx.beginPath();ctx.arc(dest.x,dest.y,4+Math.max(0,age-240)*.12,0,Math.PI*2);
+      ctx.strokeStyle='#d6ffff';ctx.shadowColor='#38eaff';ctx.shadowBlur=25;
+      ctx.globalAlpha=Math.max(0,1-(age-240)/175);ctx.lineWidth=3;ctx.stroke();ctx.restore();
+    }
+  }
+}
  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life+=dt;if(p.life>=p.maxLife){particles.splice(i,1);continue}const u=p.life/p.maxLife;p.vx*=1-dt*(p.kind==='ash'?.32:.95);p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=(p.gravity||0)*dt;if(p.kind==='ash')p.rot+=p.turn*dt;let alpha=(1-u)*(p.kind==='ash'?.83:1),size=p.size*(p.kind==='charge'?1-u*.8:1);ctx.save();ctx.globalAlpha=alpha;ctx.translate(p.x,p.y);ctx.rotate(p.rot||0);ctx.shadowBlur=p.kind==='ash'?5:13;ctx.shadowColor=p.kind==='ash'?'#608b9f':'#b6ffff';ctx.fillStyle=p.kind==='ash'?(p.tone<.24?'#aee4e3':p.tone<.55?'#738995':p.tone<.82?'#344357':'#132033'):(p.tone<.2?'#ffffff':'#6bf6ff');ctx.fillRect(-size/2,-size/2,size,p.kind==='ash'?size*(.7+Math.random()*.4):size*2);ctx.restore()}
  if(running){const p=Math.min(100,(elapsed/DURATION)*100);progress.style.width=p+'%';if(elapsed>=DURATION){running=false;playBtn.disabled=false;playBtn.textContent='↻ Animation erneut abspielen';progress.style.width='100%';status.textContent='Fertig · Little Gem hat gewonnen';arena.classList.add('ended');}}
  rafId=requestAnimationFrame(render)}
 rafId=requestAnimationFrame(render);
-function reset(){runToken++;timers.forEach(clearTimeout);timers=[];voices.forEach(x=>{try{x.stop(0)}catch{}});voices=[];particles=[];ctx.clearRect(0,0,canvas.width,canvas.height);arena.classList.remove('darkening','glowing','charging','blasting','ended');losers.forEach(el=>el.classList.remove('shocked','crumbling'));victory.classList.remove('visible');startOverlay.classList.add('hidden');progress.style.width='0%'}
-function begin(){reset();running=true;clockStarted=performance.now();playBtn.disabled=true;playBtn.textContent='✦ Zauber wirkt …';status.textContent='Arena bereitet den Siegzauber vor …';getAudio();after(570,()=>{arena.classList.add('darkening');status.textContent='Die Arena wird dunkel …'});after(1450,()=>{arena.classList.add('glowing');status.textContent='💎 Kristallflügel leuchten türkisblau';chargeSound();});after(2670,()=>{arena.classList.add('charging');status.textContent='Magie wird gesammelt …'});after(3860,()=>{arena.classList.add('blasting');status.textContent='⚡ POWER BEAM!';beamSound();spark(screenXY().x,screenXY().y,70,260)});losers.forEach((el,i)=>{after(4000+i*130,()=>{el.classList.add('shocked');spark(localRect(el).cx,localRect(el).cy,16,90)});after(4210+i*220,()=>{el.classList.remove('shocked');el.classList.add('crumbling');addAsh(el);ashSound(i);status.textContent='Die Verliererkarten zerfallen zu Asche …'})});after(5950,()=>{arena.classList.remove('charging','blasting');status.textContent='Die Asche verweht …'});after(6700,()=>{victory.classList.add('visible');finalSound();status.textContent='🏆 Little Gem gewinnt mit Kristall-Asche!'});}
+function reset(){runToken++;timers.forEach(clearTimeout);timers=[];voices.forEach(x=>{try{x.stop(0)}catch{}});voices=[];particles=[];targetedBeams=[];ctx.clearRect(0,0,canvas.width,canvas.height);arena.classList.remove('darkening','glowing','charging','blasting','ended');losers.forEach(el=>el.classList.remove('shocked','crumbling','gem-hit'));victory.classList.remove('visible');startOverlay.classList.add('hidden');progress.style.width='0%'}
+function begin(){
+  reset();ensureGemImpactMarks();running=true;clockStarted=performance.now();
+  playBtn.disabled=true;playBtn.textContent='✦ Zauber wirkt …';
+  status.textContent='Arena bereitet den Siegzauber vor …';getAudio();
+  after(570,()=>{arena.classList.add('darkening');status.textContent='Die Arena wird dunkel …'});
+  after(1450,()=>{arena.classList.add('glowing');status.textContent='💎 Kristallflügel leuchten türkisblau';chargeSound()});
+  after(2670,()=>{arena.classList.add('charging');status.textContent='Magie wird gesammelt …'});
+  after(3860,()=>{arena.classList.add('blasting');status.textContent='⚡ POWER BEAM!';beamSound();spark(screenXY().x,screenXY().y,70,260)});
+  // Every beam travels across the screen and reaches its own real opponent.
+  // Damage, impact sparks, ashes and hit audio begin ONLY at that collision.
+  const count=losers.length,gap=Math.min(570,count>1?2100/(count-1):0);
+  losers.forEach((target,i)=>{
+    const launch=3910+i*gap;
+    after(launch,()=>{
+      targetedBeams.push({target,startedAt:performance.now()});
+      const from=screenXY();spark(from.x,from.y,12,130);
+      status.textContent='💎 Der Kristallstrahl zielt auf '+(target.dataset.name||'eine Gegnerkarte');
+    });
+    after(launch+240,()=>{
+      target.classList.add('gem-hit','shocked');
+      const rect=localRect(target);spark(rect.cx,rect.cy,75,175);
+      ashSound(i);
+      status.textContent='⚡ Treffer! '+(target.dataset.name||'Gegnerkarte')+' wird zu Asche';
+    });
+    after(launch+370,()=>{
+      target.classList.remove('shocked');
+      target.classList.add('crumbling');
+      addAsh(target);
+    });
+  });
+  after(6300,()=>{arena.classList.remove('charging','blasting');status.textContent='Die Asche verweht …'});
+  after(7350,()=>{victory.classList.add('visible');finalSound();status.textContent='🏆 Little Gem gewinnt mit Kristall-Asche!'});
+}
 playBtn.addEventListener('click',begin);
 soundBtn.addEventListener('click',()=>{muted=!muted;soundBtn.textContent=muted?'🔇 Ton aus':'🔊 Ton an';soundBtn.setAttribute('aria-pressed',String(!muted));if(muted)voices.forEach(x=>{try{x.stop(0)}catch{}})});
 </script>
