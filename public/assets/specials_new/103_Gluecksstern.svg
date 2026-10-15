@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="1000" viewBox="0 0 700 1000" role="img" aria-label="Glücksstern – Zweite Chance, Spezialkarte">
+<defs>
+<linearGradient id="back" x2=".8" y2="1"><stop stop-color="#11092d"/><stop offset=".5" stop-color="#3c175d"/><stop offset="1" stop-color="#0c173f"/></linearGradient>
+<linearGradient id="gold" x2="1" y2="1"><stop stop-color="#fff9c5"/><stop offset=".25" stop-color="#f9c85d"/><stop offset=".65" stop-color="#ab6e29"/><stop offset="1" stop-color="#ffedb2"/></linearGradient>
+<radialGradient id="aura"><stop stop-color="#d6ff80"/><stop offset=".3" stop-color="#9cf46b" stop-opacity=".85"/><stop offset=".7" stop-color="#20b78b" stop-opacity=".3"/><stop offset="1" stop-color="#6be8ff" stop-opacity="0"/></radialGradient>
+<linearGradient id="leaf" x2="1" y2="1"><stop stop-color="#ebff8e"/><stop offset=".4" stop-color="#64d66d"/><stop offset="1" stop-color="#008f79"/></linearGradient>
+<filter id="glow"><feGaussianBlur stdDeviation="16"/></filter>
+<filter id="shadow"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#010415" flood-opacity=".85"/></filter>
+<pattern id="stars" width="95" height="100" patternUnits="userSpaceOnUse"><path d="M13 17v15m-7-7h14M75 67v10m-5-5h10" stroke="#e9c5ff" stroke-opacity=".45" stroke-width="2"/><circle cx="60" cy="14" r="1.8" fill="#a8f8dd"/></pattern>
+</defs>
+<rect width="700" height="1000" rx="42" fill="url(#back)"/>
+<rect width="700" height="1000" rx="42" fill="url(#stars)"/>
+<rect x="15" y="15" width="670" height="970" rx="35" fill="none" stroke="url(#gold)" stroke-width="20"/>
+<rect x="34" y="34" width="632" height="932" rx="22" fill="none" stroke="#f3d381" stroke-width="3"/>
+<path d="M65 220Q350 167 635 220V755Q350 808 65 755Z" fill="#151138" stroke="#d4a95a" stroke-width="5"/>
+<ellipse cx="350" cy="472" rx="293" ry="290" fill="url(#aura)"/>
+<g stroke="#cbff9f" fill="none" opacity=".75"><circle cx="350" cy="464" r="228" stroke-width="2" stroke-dasharray="4 13"/><circle cx="350" cy="464" r="193" stroke-width="4" stroke-opacity=".5"/><path d="M165 356l370 218M165 574l370-218" stroke-width="2" stroke-opacity=".5"/></g>
+<g transform="translate(350 468)" filter="url(#shadow)">
+<path d="M-5 12 Q60 155 7 247" fill="none" stroke="#177e5b" stroke-width="24" stroke-linecap="round"/>
+<path d="M0 0 C-90-195-225-175-216-80 C-214-5-112 60 0 0Z" fill="url(#leaf)" stroke="#dbff91" stroke-width="11"/>
+<path d="M0 0 C80-195 221-172 218-75 C209 11 105 66 0 0Z" fill="url(#leaf)" stroke="#dbff91" stroke-width="11"/>
+<path d="M0 0 C-182 37-165 203-66 224 C21 228 63 108 0 0Z" fill="url(#leaf)" stroke="#dbff91" stroke-width="11"/>
+<path d="M0 0 C186 44 154 207 67 226 C-21 236-61 115 0 0Z" fill="url(#leaf)" stroke="#dbff91" stroke-width="11"/>
+<circle r="36" fill="url(#gold)" stroke="#fff9cc" stroke-width="8"/>
+<path d="M0-24 7-7 25 0 7 7 0 24-7 7-25 0-7-7Z" fill="#fff9dc"/>
+</g>
+<g fill="#fffbd1"><path d="M132 364l8 21 21 8-21 8-8 21-8-21-21-8 21-8Z"/><path d="M547 283l10 24 24 10-24 10-10 24-10-24-24-10 24-10Z"/><path d="M568 604l7 18 18 7-18 7-7 18-7-18-18-7 18-7Z"/><path d="M120 623l7 17 17 7-17 7-7 17-7-17-17-7 17-7Z"/></g>
+<rect x="65" y="70" width="570" height="118" rx="19" fill="#171034" stroke="#eacc80" stroke-width="4"/>
+<text x="350" y="112" fill="#e7d0f8" text-anchor="middle" font-family="Georgia,serif" font-size="23" font-weight="bold" letter-spacing="6">SPEZIALKARTE</text>
+<text x="350" y="162" fill="url(#gold)" text-anchor="middle" font-family="Georgia,serif" font-size="53" font-weight="bold">GLÜCKSSTERN</text>
+<rect x="74" y="775" width="552" height="168" rx="16" fill="#160f39" stroke="url(#gold)" stroke-width="5"/>
+<text x="350" y="815" text-anchor="middle" fill="#fcdea4" font-family="Georgia,serif" font-size="29" font-weight="bold">ZWEITE CHANCE</text>
+<text x="350" y="852" text-anchor="middle" fill="#fcfbf2" font-family="Arial,sans-serif" font-size="23" font-weight="bold">Nach 6 Niederlagen erhältlich</text>
+<text x="350" y="884" text-anchor="middle" fill="#b7ffb7" font-family="Arial,sans-serif" font-size="28" font-weight="bold">+50 % Chance auf starke Karten</text>
+<text x="350" y="915" text-anchor="middle" fill="#f8e8fd" font-family="Arial,sans-serif" font-size="20">Werte 7–9 · bis zum nächsten Sieg</text>
+</svg>
