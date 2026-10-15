@@ -121,3 +121,26 @@ body.discord-chaos-flipped .arena{
   body.discord-chaos-active .arena{transition-duration:.4s!important}
   #discordChaosOverlay .discord-chaos-dice{animation-duration:1.2s}
 }
+
+
+/* Music-synchronised violet lightning from the approved Discord preview. */
+#discordChaosOverlay .discord-chaos-lightning-flash{
+  position:absolute;inset:0;z-index:12;
+  background:#f9ebff;opacity:0;
+  pointer-events:none;transition:opacity 95ms;
+}
+#discordChaosOverlay .discord-chaos-lightning-layer{
+  position:absolute;inset:0;z-index:13;
+  pointer-events:none;overflow:hidden;
+}
+#discordChaosOverlay .discord-chaos-lightning-layer svg{
+  position:absolute;inset:0;width:100%;height:100%;
+  filter:drop-shadow(0 0 8px #b789ff) drop-shadow(0 0 24px #8141ff);
+  animation:discord-preview-bolt .3s linear both;
+}
+@keyframes discord-preview-bolt{
+  0%,30%{opacity:1}
+  48%{opacity:.15}
+  65%{opacity:.98}
+  100%{opacity:0}
+}
