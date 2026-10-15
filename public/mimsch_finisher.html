@@ -89,6 +89,18 @@ body.shake #app{animation:screenShake .2s linear 1}
 @media (max-width:980px){:root{--heroW:min(35vw,270px);--enemyW:min(18vw,145px)} .progress{width:min(180px,38vw)}}
 
 
+/* Ensure the real cards are readable before being torn into fragments.
+   The source is the authoritative list of cards physically played this round. */
+.enemy.real-card .real-card-visible{
+  display:block;width:100%;height:100%;position:absolute;inset:0;
+  object-fit:fill;border-radius:14px;z-index:0;
+  box-shadow:inset 0 0 20px #0008;
+  transition:opacity .12s;
+}
+.enemy.real-card.phase1 .real-card-visible,
+.enemy.real-card.phase2 .real-card-visible,
+.enemy.real-card.phase3 .real-card-visible,
+.enemy.real-card.phase4 .real-card-visible{opacity:0}
 /* Actual live opponents are rendered as four real image fragments.
    Every successive strike rips one fragment away permanently. */
 body.game-mode .controls,body.game-mode .note{display:none!important}
@@ -236,7 +248,7 @@ function reset(){
   clearTimers(); running=false; document.body.classList.remove('playing','shake'); bar.style.width='0%';
   hornGlow.classList.remove('active'); hornRing.classList.remove('active'); hornBurst.classList.remove('active');
   arcLayer.innerHTML='';
-  enemies.forEach(e=>{ e.className='enemy'; e.querySelector('.trailHit').innerHTML=''; e.querySelector('.cuts').innerHTML=''; e.querySelector('.ashes').innerHTML=''; initPieces(e); });
+  enemies.forEach(e=>{ e.className=e.dataset.cardImage?'enemy real-card':'enemy'; e.querySelector('.trailHit').innerHTML=''; e.querySelector('.cuts').innerHTML=''; e.querySelector('.ashes').innerHTML=''; initPieces(e); });
 }
 
 function doFlash(){ flash.classList.remove('show'); void flash.offsetWidth; flash.classList.add('show'); }
@@ -335,9 +347,11 @@ window.addEventListener('resize',makeSparkleField);
    but replace the sample opponents with the actual reveal for this round. */
 window.startMimschMatch=function(payload){
   document.body.classList.add('game-mode');
-  const revealed=Array.isArray(payload?.revealEntries)?payload.revealEntries:
-    Array.isArray(payload?.entries)?payload.entries:[];
-  const others=revealed.filter(x=>x.pid!==payload.winnerId&&x.card?.image).slice(0,7);
+  const physical=Array.isArray(payload?.playedCards)?payload.playedCards:[];
+  // Use the actual server-validated cards committed this round.
+  // The reveal fallback only supports previews recorded by an older server.
+  const revealed=physical.length?physical:(Array.isArray(payload?.revealEntries)?payload.revealEntries:[]);
+  const others=revealed.filter(x=>x.pid!==payload.winnerId&&x.card?.image&&!x.previewOnly).slice(0,7);
   const slots=[
     [13,35,-10],[26,70,-5],[74,70,5],[87,35,10],
     [10,74,-12],[90,74,12],[50,20,0]
@@ -356,6 +370,12 @@ window.startMimschMatch=function(payload){
     enemy.dataset.cardImage=entry.card.image;
     enemy.dataset.name=entry.name||entry.card.name||'Gegner';
     enemy.innerHTML='<div class="trailHit"></div><div class="cuts"></div><div class="ashes"></div>';
+    const actualCard=document.createElement('img');
+    actualCard.className='real-card-visible';
+    actualCard.src=entry.card.image;
+    actualCard.alt=(entry.card.name||'Gespielte Karte')+' – gespielt von '+enemy.dataset.name;
+    actualCard.onerror=()=>console.warn('[Mimsch] Kartenbild nicht geladen:',actualCard.src);
+    enemy.prepend(actualCard);
     arena.appendChild(enemy);
     initPieces(enemy);
     enemies.push(enemy);
