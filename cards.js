@@ -131,7 +131,7 @@ const specials = [
   {id:'s100',type:'special',name:'Helements of Armory',effect:'helements',text:'Erhalte 1 zufälliges Artefakt, das dir noch fehlt.',useIcon:'🪨',useLabel:'Fehlendes Artefakt',image:'/assets/helements-of-armory.png'},
   {id:'s101',type:'special',name:'Königin Chandra',effect:'queen_chandra',text:'Sie erfüllt dir einen Wunsch.',useIcon:'👑',useLabel:'Ein Wunsch',image:'/assets/specials_new/101_Koenigin_Chandra.png'},
   {id:'s102',type:'special',name:'Discord',effect:'discord',text:'Umgekehrte Welt: Nachdem alle normale Karten gelegt haben, wird eine andere zufällige Kategorie bestimmt. Der niedrigste Wert gewinnt diese Runde!',useIcon:'🙃',useLabel:'Umgekehrte Welt',image:'/assets/specials_new/102_Discord.webp'},
-  {id:'s103',type:'special',name:'Glücksstern – Zweite Chance',effect:'luck',text:'Nach 6 verlorenen Runden erhalten: Aktiviere 50% Chance auf starke Karten (Wert 7–9 der aktuellen Kategorie) bei jedem normalen Nachziehen, bis du wieder gewinnst.',useIcon:'🍀',useLabel:'50% Glücksbonus',image:'/assets/specials_new/103_Gluecksstern.svg'},
+  {id:'s103',type:'special',name:'Glücksstern – Zweite Chance',effect:'luck',text:'Nach 6 verlorenen Runden erhalten: Aktiviere 50% Chance auf starke Karten (Gesamtwert mindestens 27) bei jedem normalen Nachziehen, bis du wieder gewinnst.',useIcon:'🍀',useLabel:'50% Glücksbonus',image:'/assets/specials_new/103_Gluecksstern.svg'},
   {id:'s98',type:'special',name:'Sphinx',effect:'sphinx',text:'Lege bis zu 4 Karten deiner Wahl aus deiner Hand ab und ziehe die gleiche Anzahl neuer Karten von deinem Deck nach.',useIcon:'🔄',useLabel:'Kartenwechsel',image:'/assets/specials_new/98_Sphinx_Kartenwechsel_20261012.png'},
 ];
 const artifacts = [
