@@ -166,7 +166,7 @@ function publicState(r){
       normalCount:p.hand.filter(id=>byId[id]?.type==='normal').length,
       specialCount:p.hand.filter(id=>byId[id]?.type==='special').length,
       artifacts:(p.artifacts||[]).map(id=>byId[id]).filter(Boolean),
-      artifactCount:new Set(p.artifacts||[]).size,lossStreak:p.lossStreak||0,noWinStreak:p.noWinStreak||0,timeoutPenaltyCount:p.timeoutPenaltyCount||0,normalRefillTarget:Math.max(0,NORMAL_HAND_TARGET-(p.timeoutPenaltyCount||0)),
+      artifactCount:new Set(p.artifacts||[]).size,lossStreak:p.lossStreak||0,noWinStreak:p.noWinStreak||0,consecutiveLosses:p.consecutiveLosses||0,roundWins:p.roundWins||0,luckBoostActive:!!p.luckBoostActive,timeoutPenaltyCount:p.timeoutPenaltyCount||0,normalRefillTarget:Math.max(0,NORMAL_HAND_TARGET-(p.timeoutPenaltyCount||0)),
       selected:!!p.selected,ready:!!p.ready,surrendered:!!p.surrendered,isBot:!!p.isBot,connected:!!p.isBot||!p.disconnectedAt,
       eliminated:!!p.surrendered,lastPlayedCardId:p.lastPlayedCardId||null,
       skipped:fxHas(r,'skipped',p.id),hasPlayedCard:playedCardIds(r.played?.[p.id]).length>0
@@ -223,7 +223,8 @@ function buildNormalDeck(){
 }
 function buildRewardDeck(){
   const deck=[];
-  for(let i=0;i<REWARD_SPECIAL_COPIES;i++)deck.push(...specials.map(c=>c.id));
+  // Glücksstern is exclusively earned after six actual losses, never randomly drawn.
+  for(let i=0;i<REWARD_SPECIAL_COPIES;i++)deck.push(...specials.filter(c=>c.effect!=='luck').map(c=>c.id));
 
   // Jedes Artefakt ist exakt gleich selten. Die Reihenfolge ist komplett zufällig:
   // Elemente, Kristall Herz oder Star Swirls Tagebuch können jeweils zuerst kommen.
@@ -264,7 +265,31 @@ function drawNormal(r,count=1,exclude=[]){
   return out;
 }
 function drawNormalForHand(r,p,count=1){
-  return drawNormal(r,Math.max(0,Math.min(count,MAX_TOTAL_HAND-p.hand.length)),p.hand);
+  const limit=Math.max(0,Math.min(count,MAX_TOTAL_HAND-p.hand.length));
+  if(!p?.luckBoostActive)return drawNormal(r,limit,p.hand);
+  const drawn=[],excluded=new Set(p.hand);
+  for(let i=0;i<limit;i++){
+    recycleNormalDeck(r);
+    let id=null;
+    // Exact bonus rule: each normal draw has a 50% chance to be selected
+    // from the category's 7–9 cards instead of the usual random deck draw.
+    if(Math.random()<.5){
+      const eligible=[];
+      const category=r.category||'magic';
+      for(let j=0;j<r.normalDeck.length;j++){
+        const candidate=r.normalDeck[j];
+        if(!excluded.has(candidate)&&byId[candidate]?.[category]>=7)eligible.push(j);
+      }
+      if(eligible.length){
+        const idx=eligible[Math.floor(Math.random()*eligible.length)];
+        id=r.normalDeck.splice(idx,1)[0];
+      }
+    }
+    if(!id)id=drawNormal(r,1,[...excluded])[0];
+    if(!id)break;
+    drawn.push(id);excluded.add(id);
+  }
+  return drawn;
 }
 function drawSpecialOnly(r){
   // Specials are exempt from the duplicate-hand rule.
@@ -1001,6 +1026,8 @@ function botApplySpecial(r,p,c){
     const t=botTarget(r,p,'played');if(t)registerSombraTribute(r,p,t);
   }else if(effect==='daybreaker'){
     fxAdd(r,'autoWinner',p.id);
+  }else if(effect==='luck'){
+    p.luckBoostActive=true;
   }else if(effect==='ironwill'){
     r.roundFX.artifactBlocked=true;io.to(r.code).emit('specialImpact',{effect:'ironwill',targetIds:[],text:'Artefaktziehungen sind für diese Runde blockiert.'});
   }else if(effect==='ponyshadows'){
@@ -1049,6 +1076,7 @@ function botUsableSpecials(r,p){
     if(c.effect==='rainbow'||c.effect==='stormking')return r.category==='speed';
     if(c.effect==='applejack')return r.category==='strength';
     if(c.effect==='chrysalis')return history;
+    if(c.effect==='luck')return !p.luckBoostActive;
     if(c.effect==='sweetiebot')return botTargets(r,p,'played_unhalved').length>0;
     if(c.effect==='helements')return (p.artifacts||[]).length<artifacts.length;
     if(c.effect==='ahuizotl')return botTargets(r,p,'played').length>0;
@@ -1409,7 +1437,7 @@ function resetToLobby(r){
   r.watchdogTag=null;r.watchdogSince=0;r.resumedIds=Object.create(null);
   r.normalDeck=[];r.normalDiscard=[];r.rewardDeck=[];r.rewardDiscard=[];r.pendingReward=null;r.artifactRewardCooldown=0;r.lastArtifactOfferRound=0;
   for(const p of roomPlayers(r)){
-    p.hand=[];p.artifacts=[];p.noWinStreak=0;p.hydraRewardsPending=0;p.lossStreak=0;p.lossStreakRewardPending=false;p.normalPlayBlockedUntil=0;p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
+    p.hand=[];p.artifacts=[];p.roundWins=0;p.consecutiveLosses=0;p.luckBoostActive=false;p.luckRewardPending=0;p.noWinStreak=0;p.hydraRewardsPending=0;p.lossStreak=0;p.lossStreakRewardPending=false;p.normalPlayBlockedUntil=0;p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
   }
   sendState(r);
   io.to(r.code).emit('backToLobby');
@@ -1510,9 +1538,8 @@ function removePlayerFromRoom(socket,notify=true){
     setTimeout(()=>{if(rooms.has(r.code)&&r.phase==='gameover')resetToLobby(r)},250);
   }
 }
-// Allow the last player an actual chance to respond with a special even when
-// all ordinary cards have already been placed. This window is server-authoritative.
-const POST_PLAY_SPECIAL_WINDOW_MS=4300;
+// Normal cards are revealed immediately when all required players have
+// committed; tactical specials must be played before the final commitment.
 function maybeEvaluate(r){
   if(!r||r.phase!=='select'||(r.windchaosUntil||0)>Date.now()||Number.isFinite(r.selectionPausedRemainingMs))return;
   const req=requiredPlayers(r);
@@ -1536,18 +1563,7 @@ function maybeEvaluate(r){
       const socket=io.sockets.sockets.get(p.id);
       return socket?.data?.pendingSpecial||socket?.data?.pendingFlutter||socket?.data?.pendingRarity;
     }))return;
-    if(!r.finalSpecialWindowUntil)r.finalSpecialWindowUntil=Date.now()+POST_PLAY_SPECIAL_WINDOW_MS;
-    const wait=r.finalSpecialWindowUntil-Date.now();
-    if(wait>0){
-      if(!r.finalSpecialTimer){
-        const match=r.matchId,round=r.round;
-        r.finalSpecialTimer=setTimeout(()=>{
-          r.finalSpecialTimer=null;
-          if(rooms.has(r.code)&&r.matchId===match&&r.round===round&&r.phase==='select')maybeEvaluate(r);
-        },wait+20);
-      }
-      return;
-    }
+    // No artificial 4.3-second delay after the last card.
     if(r.finalSpecialTimer){clearTimeout(r.finalSpecialTimer);r.finalSpecialTimer=null;}
     if(r.discordPending&&!r.discordResolved){
       // A timeout-driven automatic card placement may have cleared the clock.
@@ -1628,7 +1644,8 @@ function endGame(r,champion,reason='artifacts'){
     winnerId:champion.id,winnerName:champion.name,reason,
     artifacts:(champion.artifacts||[]).map(id=>byId[id]).filter(Boolean),
     counts:roomPlayers(r).map(p=>({
-      id:p.id,name:p.name,count:p.hand.length,artifactCount:new Set(p.artifacts||[]).size
+      id:p.id,name:p.name,count:p.hand.length,artifactCount:new Set(p.artifacts||[]).size,
+      roundWins:p.roundWins||0,consecutiveLosses:p.consecutiveLosses||0
     }))
   });
   sendState(r);return true;
@@ -1833,6 +1850,24 @@ function grantLossStreakBonuses(r){
     if(!p.isBot)io.to(p.id).emit('lossStreakRewardPrivate',{card});
   }
 }
+function grantLuckStreakCards(r){
+  const luck=byId.s103;
+  if(!luck)return;
+  for(const p of roomPlayers(r)){
+    if(p.surrendered)continue;
+    while((p.luckRewardPending||0)>0){
+      if(p.hand.length>=MAX_TOTAL_HAND){
+        const normalIndex=p.hand.findIndex(id=>byId[id]?.type==='normal');
+        if(normalIndex<0)break;
+        r.normalDeck.push(p.hand.splice(normalIndex,1)[0]);
+      }
+      p.hand.push(luck.id);
+      p.luckRewardPending--;
+      io.to(r.code).emit('luckStreakReward',{playerId:p.id,name:p.name});
+      if(!p.isBot)io.to(p.id).emit('luckStreakRewardPrivate',{card:luck});
+    }
+  }
+}
 function finishRoundCycle(r,winnerId,playedIds){
   if(!r||r.phase!=='result'||!rooms.has(r.code)||r.resultCycleFinishing)return;
   // Exactly-once finalization: a slow finisher and the watchdog must never
@@ -1855,6 +1890,7 @@ function finishRoundCycle(r,winnerId,playedIds){
   for(const p of roomPlayers(r))p.selected=null;
   grantLossStreakBonuses(r);
   grantHydraStreakRewards(r);
+  grantLuckStreakCards(r);
 
   refillNormalHands(r);
 
@@ -1893,10 +1929,17 @@ function settleRound(r,winnerId){
   recordNoWinRound(r,winnerId);
   r.pendingRoundWinner=winnerId;
   r.phase='result';
+  // One round win is counted server-side exactly once, never in the browser.
+  winner.roundWins=(winner.roundWins||0)+1;
   for(const p of roomPlayers(r)){
     if(p.surrendered)continue;
-    if(p.id===winnerId){p.lossStreak=0;/* Pending gold stays owed until actually awarded. */}
-    else{
+    if(p.id===winnerId){
+      p.lossStreak=0;
+      p.consecutiveLosses=0;
+      p.luckBoostActive=false; // A win ends the comeback boost.
+    }else{
+      p.consecutiveLosses=(p.consecutiveLosses||0)+1;
+      if(p.consecutiveLosses%6===0)p.luckRewardPending=(p.luckRewardPending||0)+1;
       p.lossStreak=(p.lossStreak||0)+1;
       if(p.lossStreak>=3){p.lossStreak=0;p.lossStreakRewardPending=true;}
     }
@@ -2099,7 +2142,7 @@ function beginMatch(r){
   initDecks(r);
 
   for(const p of ps){
-    p.hand=[];p.artifacts=[];p.noWinStreak=0;p.hydraRewardsPending=0;p.lossStreak=0;p.lossStreakRewardPending=false;p.normalPlayBlockedUntil=0;p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
+    p.hand=[];p.artifacts=[];p.roundWins=0;p.consecutiveLosses=0;p.luckBoostActive=false;p.luckRewardPending=0;p.noWinStreak=0;p.hydraRewardsPending=0;p.lossStreak=0;p.lossStreakRewardPending=false;p.normalPlayBlockedUntil=0;p.timeoutPenaltyCount=0;p.selected=null;p.lastPlayedCardId=null;p.ready=false;p.surrendered=false;p.specialUsed=0;p.specialExtra=0;p.botTestSpecialReady=false;p.pendingForcedDiscard=null;
     p.hand.push(...drawNormalForHand(r,p,NORMAL_HAND_TARGET));
     const starterSpecial=drawSpecialOnly(r,p.hand);
     if(starterSpecial)p.hand.push(starterSpecial);
@@ -2567,7 +2610,8 @@ io.on('connection',socket=>{
 
     p.selected=true;
     p.lastPlayedCardId=cardId;
-    // Keep the window open for late tactical specials (also for the final player).
+    // When the last player commits, reveal immediately unless a genuine
+    // special animation/choice is still in progress.
     r.finalSpecialWindowUntil=0;
     if(r.finalSpecialTimer){clearTimeout(r.finalSpecialTimer);r.finalSpecialTimer=null;}
     io.to(r.code).emit('playerSelected',{playerId:socket.id,name:p.name});
@@ -2601,6 +2645,7 @@ io.on('connection',socket=>{
     const effect=effectCard.effect;
 
     // Vorbedingungen VOR dem Verbrauch prüfen.
+    if(effect==='luck'&&p.luckBoostActive)return socket.emit('errorMsg','Dein Glücksstern ist bereits aktiv. Die Karte bleibt auf deiner Hand.');
     if(effect==='rainbow'&&r.category!=='speed')return socket.emit('errorMsg','Rainbow Dash kann nur bei Schnelligkeit eingesetzt werden.');
     if(effect==='applejack'&&r.category!=='strength')return socket.emit('errorMsg','Applejack kann nur bei Stärke eingesetzt werden.');
     if(effect==='stormking'&&r.category!=='speed')return socket.emit('errorMsg','Storm King wirkt nur bei Schnelligkeit.');
@@ -2664,6 +2709,9 @@ io.on('connection',socket=>{
     }else if(effect==='windchaos'){
       applyWindchaos(r,p);
       socket.emit('specialDone',{text:'WINDCHAOS! Alle Gegner erhalten 6 normale und 1 neue Special-Karte.'});
+    }else if(effect==='luck'){
+      p.luckBoostActive=true;
+      socket.emit('specialDone',{text:'🍀 Glücksstern aktiv! Beim Nachziehen besteht pro Karte eine 50% Chance auf einen Wert von 7–9 in der aktiven Kategorie – bis zu deinem nächsten Sieg.'});
     }else if(effect==='rainbow'){
       r.roundBuff[p.id]={...(r.roundBuff[p.id]||{}),speed:(r.roundBuff[p.id]?.speed||0)+2};
       socket.emit('specialDone',{text:'+2 Schnelligkeit.'});
