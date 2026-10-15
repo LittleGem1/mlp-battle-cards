@@ -271,14 +271,15 @@ function drawNormalForHand(r,p,count=1){
   for(let i=0;i<limit;i++){
     recycleNormalDeck(r);
     let id=null;
-    // Exact bonus rule: each normal draw has a 50% chance to be selected
-    // from the category's 7–9 cards instead of the usual random deck draw.
+    // Exact bonus rule: every normal draw has a 50% chance to select
+    // an all-round strong card (four-stat sum >= 27) instead of a random card.
     if(Math.random()<.5){
       const eligible=[];
-      const category=r.category||'magic';
       for(let j=0;j<r.normalDeck.length;j++){
         const candidate=r.normalDeck[j];
-        if(!excluded.has(candidate)&&byId[candidate]?.[category]>=7)eligible.push(j);
+        const card=byId[candidate];
+        const total=card?(card.strength+card.speed+card.energy+card.magic):0;
+        if(!excluded.has(candidate)&&total>=27)eligible.push(j);
       }
       if(eligible.length){
         const idx=eligible[Math.floor(Math.random()*eligible.length)];
@@ -2789,7 +2790,7 @@ io.on('connection',socket=>{
       socket.emit('specialDone',{text:'WINDCHAOS! Alle Gegner erhalten 6 normale und 1 neue Special-Karte.'});
     }else if(effect==='luck'){
       p.luckBoostActive=true;
-      socket.emit('specialDone',{text:'🍀 Glücksstern aktiv! Beim Nachziehen besteht pro Karte eine 50% Chance auf einen Wert von 7–9 in der aktiven Kategorie – bis zu deinem nächsten Sieg.'});
+      socket.emit('specialDone',{text:'🍀 Glücksstern aktiv! Beim Nachziehen besteht pro Karte eine 50% Chance auf eine starke Karte mit Gesamtwert mindestens 27 – bis zu deinem nächsten Sieg.'});
     }else if(effect==='rainbow'){
       r.roundBuff[p.id]={...(r.roundBuff[p.id]||{}),speed:(r.roundBuff[p.id]?.speed||0)+2};
       socket.emit('specialDone',{text:'+2 Schnelligkeit.'});
