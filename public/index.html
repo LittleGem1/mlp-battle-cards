@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>MLP Battle Cards – V7 Bugfix</title>
-  <link rel="stylesheet" href="/style.css?v=roundstats-luck-fix-20261015" />
+  <link rel="stylesheet" href="/style.css?v=eleria-hover-score-crystal-20261015-2" />
 
   <link rel="stylesheet" href="/mlp_sieger_special_smolder.css?v=20261010-burnv2" />
   <link rel="stylesheet" href="/mlp_arena_volle_hoehe_v7.css?v=20261010-v7a" />
@@ -71,6 +71,7 @@
           <button id="abortBtn" class="danger-btn" type="button">⏹ Spiel abbrechen</button>
           <button id="leaveGameBtn" class="soft-btn" type="button">← Hauptmenü</button>
           <button id="botCardTesterBtn" class="soft-btn" type="button" style="display:none">🧪 Testkarten</button>
+          <button id="roundWinsBtn" class="soft-btn" type="button" hidden>🏆 Rundensiege ansehen</button>
           <div class="music-controls" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
             <button id="musicGameBtn" class="soft-btn music-toggle" type="button">🔇 Musik stumm</button>
             <label style="display:flex;align-items:center;gap:5px;font-size:13px">🎵 Musik <input class="music-volume" type="range" min="0" max="100" value="30" aria-label="Musiklautstärke im Spiel"><span class="music-volume-readout">30%</span></label>
@@ -109,7 +110,7 @@
               <span><strong>Goldstapel</strong><small id="rewardDeckCount">–</small></span>
             </div>
           </div>
-          <div id="category" class="category"><span id="categoryIcon">✦</span><strong id="categoryText">Bereit?</strong></div>
+          <div id="category" class="category"><span id="categoryIcon">✦</span><strong id="categoryText">Bereit?</strong><span id="categoryTrailingIcon" class="category-trailing-icon" aria-hidden="true">✦</span></div>
           <div id="countdownAnchor" class="countdown-anchor" aria-hidden="true"></div>
           <div id="tableCards" class="table-cards"></div>
           <div id="selectionTimer" class="selection-timer" aria-live="polite"></div>
@@ -181,7 +182,7 @@
 
       <div id="categoryCrystalResult" class="category-crystal-result" aria-live="polite">
         <b id="roundIntroIcon">⭐</b>
-        <strong id="roundIntroLabel">MAGIE</strong>
+        <strong id="roundIntroLabel">MAGIE</strong><b id="roundIntroTrailingIcon" aria-hidden="true">⭐</b>
       </div>
       <small class="category-crystal-hint">Der Kristall bestimmt die Kategorie …</small>
     </div>
@@ -404,6 +405,7 @@
     <div class="gameover-wrap">
       <h3 id="gameOverTitle">Spiel beendet</h3>
       <p id="gameOverText"></p>
+      <button id="toggleMatchWinStats" class="soft-btn" type="button" aria-expanded="true" aria-controls="matchWinStats">🏆 Rundenstatistik ausblenden</button>
       <section id="matchWinStats" class="match-win-stats" aria-label="Rundensiege in dieser Partie"></section>
       <div class="gameover-actions">
         <button id="rewardBtn" class="primary-btn" type="button">🎁 Belohnung öffnen</button>
@@ -411,6 +413,14 @@
         <button id="gameOverHomeBtn" class="soft-btn" type="button">⌂ Hauptmenü</button>
         <button id="closeGameOverBtn" class="soft-btn" type="button">Schließen</button>
       </div>
+    </div>
+  </dialog>
+  <dialog id="roundWinsDialog" class="modal roundwins-dialog" aria-label="Rundensiege">
+    <div class="roundwins-dialog-body">
+      <h3>🏆 Rundensiege</h3>
+      <p class="roundwins-intro">So oft hat jeder Spieler in dieser Partie eine Runde gewonnen.</p>
+      <div id="roundWinsLiveTable"></div>
+      <button id="roundWinsClose" class="primary-btn" type="button">Schließen</button>
     </div>
   </dialog>
   <dialog id="giftDialog" class="modal gift-modal">
@@ -444,7 +454,7 @@
   <div class="music-credit">Ausgewählte Lobby- und Battle-Musik läuft unsichtbar im Hintergrund via YouTube.</div>
   <script src="https://www.youtube.com/iframe_api"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/client.js?v=stats-luck-round-20261015-1"></script>
+  <script src="/client.js?v=eleria-mimsch-score-20261015-2"></script>
 
   <script src="/mlp_sieger_special_smolder.js?v=20261010-burnv2"></script>
   <script src="/mlp_arena_volle_hoehe_v7.js?v=20261010-v7a"></script>
