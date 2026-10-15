@@ -205,7 +205,6 @@
         }catch(err){console.warn('[Discord] Audio boost fallback',err);audio.volume=Math.min(1,configured);}
       }
       window.setDiscordVoiceDucking?.(true);
-      try {
       await new Promise(resolve=>{
         let done=false;
         const finish=()=>{if(done)return;done=true;resolve();};
@@ -215,11 +214,20 @@
         const attempt=audio.play();
         if(attempt&&typeof attempt.catch==='function')attempt.catch(()=>{clearTimeout(safety);setTimeout(finish,4441);});
       });
-      } finally {
-        // Keep the game's ordinary BGM ducked until the new soundtrack fades.
-      }
+      // Silence the voice before beginning the soundtrack, including when its
+      // browser audio event never arrived.
       audio.pause();
-      preparedMusic=await musicTask;
+      // Slow downloads must not swallow the animation or the server pause.
+      let musicLoadTimer;
+      preparedMusic=await Promise.race([
+        musicTask,
+        new Promise(resolve=>{musicLoadTimer=setTimeout(()=>resolve(null),2500);})
+      ]);
+      clearTimeout(musicLoadTimer);
+      // If preparation timed out, release the context when it eventually loads.
+      if(!preparedMusic)musicTask.then(late=>{
+        if(late?.ctx)late.ctx.close().catch(()=>{});
+      }).catch(()=>{});
       const data=categories[event?.category]||categories.magic;
       root=document.createElement('div');
       root.id='discordChaosOverlay';
