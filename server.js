@@ -1667,24 +1667,9 @@ function handleSelectionTimeout(r){
   r.selectionTimer=null;r.selectionDeadline=null;
   const req=requiredPlayers(r),late=req.filter(p=>!p.selected);
   if(!late.length){maybeEvaluate(r);return;}
-  if(r.discordPending){
-    // Discord darf nicht durch einen gewöhnlichen Straf-Timeout die Runde annullieren.
-    // Wer noch nicht gewählt hat, legt bei Ablauf automatisch eine zufällige normale Karte.
-    for(const p of late){
-      if(!hasNormalCard(p))p.hand.push(...drawNormalForHand(r,p,1));
-      const normals=p.hand.filter(id=>byId[id]?.type==='normal');
-      if(!normals.length){r.roundPlayerIds=r.roundPlayerIds.filter(id=>id!==p.id);continue;}
-      const cardId=normals[Math.floor(Math.random()*normals.length)];
-      p.hand.splice(p.hand.indexOf(cardId),1);
-      r.played[p.id]={cardIds:[cardId],cardId};
-      p.selected=true;p.lastPlayedCardId=cardId;
-      io.to(r.code).emit('cardCommitted',{playerId:p.id,name:p.name});
-      io.to(r.code).emit('playerSelected',{playerId:p.id,name:p.name});
-      io.to(p.id).emit('notice','🙃 Discord hat automatisch eine normale Karte für dich gelegt, weil deine Zeit abgelaufen ist.');
-    }
-    sendState(r);maybeEvaluate(r);return;
-  }
-
+  // Even Discord may not play a normal card on behalf of a human.
+  // Timeout handling below returns already placed cards and refunds specials
+  // instead of pretending an inactive human voluntarily committed a card.
   refundCancelledRoundSpecials(r,'Rundenabbruch durch Zeitablauf');
   for(const [pid,entry] of Object.entries(r.played)){
     const p=r.players.get(pid);
@@ -1956,8 +1941,15 @@ function settleRound(r,winnerId){
     mimschWins?'mimsch_magic_claws':pickFinisher(r);
   const duration=littleGemWins?9200:mimschWins?8500:4200;
   r.finisherEndsAt=Date.now()+duration+220;
+  // Physical plays only: preserve EVERY actual opposing card (also when
+  // Timberwolves allowed two), never substitute an unplayed preview card.
+  const playedCards=Object.entries(r.played||{}).flatMap(([pid,entry])=>
+    playedCardIds(entry).filter(id=>!(entry.jokerVirtual&&entry.cardId===id))
+      .map(cardId=>({pid,name:r.players.get(pid)?.name||'Spieler',card:byId[cardId]}))
+      .filter(x=>x.card?.type==='normal'));
   io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:ids.map(id=>byId[id]).filter(Boolean),finisher,duration,
-    revealEntries:(r.revealCardSnapshot||[]).filter(x=>x.card)});
+    roundWins:winner.roundWins||0,
+    playedCards,revealEntries:(r.revealCardSnapshot||[]).filter(x=>x.card&&!x.previewOnly)});
   sendState(r);
   const settledMatch=r.matchId,settledRound=r.round;
   setTimeout(()=>{
