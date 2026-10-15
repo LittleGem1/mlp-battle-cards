@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Discord – Chaos-Animation · Soundtrack-Vorschau</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#36205d,#120a23 55%,#090611);color:#f7eeff}
+main{max-width:1120px;margin:0 auto;padding:clamp(12px,3vw,30px)}
+header{text-align:center;margin-bottom:18px}
+h1{font:700 clamp(25px,4vw,39px) Georgia,serif;color:#ffe4a8;margin:10px 0}
+header p{color:#d9c6ec;font-size:14px;line-height:1.5}
+strong{color:#ffedb9}
+.scene{position:relative;width:100%;aspect-ratio:16/9;min-height:230px;isolation:isolate;overflow:hidden;border-radius:18px;border:1px solid #9068c6;box-shadow:0 20px 60px #05020dbb,0 0 32px #9960df26;background:radial-gradient(ellipse at 50% 42%,#643d97 0%,#322153 42%,#090719 100%)}
+.stars{position:absolute;inset:0;background-image:radial-gradient(#fff9 1px,transparent 1px),radial-gradient(#b68dfb 1px,transparent 1px);background-size:47px 43px,71px 67px;background-position:12px 7px,31px 29px;opacity:.52;pointer-events:none}
+.arena{position:absolute;inset:9% 11%;border:3px solid #9c6be3b8;border-radius:50%;background:radial-gradient(ellipse,#6b43902b,#16112799 69%);box-shadow:0 0 48px #ae65f83c,inset 0 0 70px #090611;transition:transform 1.8s cubic-bezier(.36,-.15,.16,1.13),filter .6s}
+.arena:before,.arena:after{content:"";position:absolute;inset:16%;border:2px dashed #e1bafa65;border-radius:50%}
+.arena:after{inset:34%;border:2px solid #ffdfab7a}
+.arena span{position:absolute;top:45%;left:0;right:0;text-align:center;font:900 clamp(11px,2.4vw,33px) Georgia,serif;letter-spacing:.17em;color:#f5cdff7a}
+.flipped .arena{transform:rotate(180deg) scale(.93);filter:hue-rotate(38deg)}
+.card,.figure{position:absolute;pointer-events:none;left:50%;top:48%;object-fit:contain;filter:drop-shadow(0 0 18px #dba2ff);transition:transform 1s,opacity .65s}
+.card{height:67%;max-width:36%;opacity:0;transform:translate(-50%,-50%) scale(.7) rotate(-8deg)}
+.figure{height:78%;max-width:59%;opacity:0;transform:translate(-50%,-48%) scale(.15) rotate(-26deg);transition:transform 1.2s cubic-bezier(.16,1.2,.26,1),opacity .7s}
+.show-card .card{opacity:1;transform:translate(-50%,-50%) scale(1.06) rotate(4deg)}
+.show-figure .card{opacity:0;transform:translate(-65%,-74%) scale(.4) rotate(25deg)}
+.show-figure .figure{opacity:1;transform:translate(-50%,-50%) scale(1.04) rotate(-7deg)}
+.show-roll .figure{opacity:0;transform:translate(75%,-125%) rotate(45deg) scale(.35)}
+.burst{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 52% 44%,#fff8e8dd,#b873f980 11%,#8f3cf348 24%,transparent 68%);opacity:0;transition:opacity .7s}
+.show-figure .burst{animation:burst 900ms ease-out both}
+@keyframes burst{0%{opacity:0;transform:scale(.1)}20%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.9)}}
+.title{position:absolute;z-index:8;left:2%;right:2%;top:11%;text-align:center;font:bold clamp(21px,5vw,66px) Georgia,serif;color:#fff0b8;text-shadow:0 0 22px #b75dea,0 3px 7px #0b061b;opacity:0;transform:translateY(20px) rotate(-6deg);transition:all .7s}
+.show-title .title{opacity:1;transform:translateY(0) rotate(-3deg)}
+.rule{position:absolute;z-index:9;top:31%;left:2%;right:2%;text-align:center;font:1000 clamp(12px,2.5vw,30px) system-ui;letter-spacing:.04em;text-shadow:0 2px 9px #0a0519,0 0 24px #e8a4fc;opacity:0;transition:opacity .4s}
+.show-rule .rule{opacity:1}
+.show-roll .title,.show-roll .rule{opacity:0}
+.dice{position:absolute;z-index:12;left:50%;top:50%;width:clamp(110px,16vw,205px);aspect-ratio:1;border:6px ridge #ffe0a0;border-radius:24%;background:linear-gradient(140deg,#bd52dc,#4623a8 60%,#124784);box-shadow:inset 5px 5px 22px #fff5,0 0 32px #d888fa,0 20px 40px #000a;transform:translate(-50%,-50%) rotate(-12deg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;opacity:0;transition:opacity .5s}
+.dice .symbol{font:normal clamp(36px,6vw,77px) system-ui}
+.dice .category{font:950 clamp(12px,2vw,24px) system-ui}
+.show-roll .dice{opacity:1;animation:diceSpin .20s linear infinite alternate}
+.stop-roll .dice{animation:none;transform:translate(-50%,-50%) rotate(-8deg)}
+@keyframes diceSpin{from{transform:translate(-58%,-57%) rotate(-35deg) scale(.91)}to{transform:translate(-40%,-45%) rotate(48deg) scale(1.09)}}
+.final{position:absolute;z-index:12;bottom:9%;left:5%;right:5%;padding:clamp(9px,1.7vw,19px);border:2px solid #fbe6a3;border-radius:15px;background:linear-gradient(90deg,#2c114eea,#824bcaeb,#35115aee);box-shadow:0 0 25px #bc71f7,0 8px 30px #070311;color:#ffebad;text-shadow:0 2px 8px #190632;text-align:center;font:1000 clamp(14px,3vw,40px) system-ui;opacity:0;transform:translateY(50px) rotate(-3deg) scale(.86);transition:opacity .65s,transform .7s}
+.show-final .final{opacity:1;transform:translateY(0) rotate(-2deg) scale(1)}
+.show-final .dice{opacity:.28}
+.flash{position:absolute;inset:0;z-index:30;background:#f9ebff;opacity:0;pointer-events:none;transition:opacity 95ms}
+.bolts{position:absolute;inset:0;z-index:31;pointer-events:none}
+.bolts svg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 0 8px #b789ff) drop-shadow(0 0 24px #8141ff);animation:bolt .3s linear both}
+@keyframes bolt{0%,30%{opacity:1}48%{opacity:.15}65%{opacity:.98}100%{opacity:0}}
+.scene.finished{filter:brightness(.7);transition:filter 1s}
+.ui{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px;margin:19px 0 11px}
+button{font:800 16px system-ui;padding:12px 24px;border-radius:12px;background:linear-gradient(130deg,#854cc6,#59319f);border:1px solid #c29bf4;color:white;cursor:pointer;box-shadow:0 6px 18px #0005}
+button:disabled{opacity:.52;cursor:not-allowed}
+button:focus-visible{outline:3px solid #ffe29b;outline-offset:3px}
+#status{font-size:13px;color:#dccce8;text-align:center;min-height:23px}
+.meter{height:7px;border-radius:10px;overflow:hidden;background:#37274e;margin:10px 0 15px}
+.meter>div{background:linear-gradient(90deg,#9044cb,#e4aefe);height:100%;width:0}
+.note{font-size:12px;color:#bcaecb;text-align:center;line-height:1.6}
+@media(max-width:580px){.scene{min-height:210px}.figure{max-width:76%}.dice{width:105px}.rule{top:34%}}
+@media(prefers-reduced-motion:reduce){.scene *{animation-duration:.5s!important}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>🙃 Discord – Umgekehrte Welt</h1>
+<p><strong>Exklusive Animationsvorschau</strong> · Original-Voiceline → Discord Revealed ab 0,8 s → musikgesteuerte Blitze → sanftes Fade-out</p>
+</header>
+<div id="scene" class="scene" aria-label="Animierte Discord-Spezialkarte">
+  <div class="stars"></div>
+  <div class="arena"><span>CHAOS</span></div>
+  <div class="burst"></div>
+  <img class="card" src="/assets/specials_new/102_Discord.webp" alt="Discord-Spezialkarte">
+  <img class="figure" src="/assets/discord_chaos_figure.webp" alt="Discord">
+  <div class="title">Willkommen in meiner Welt!</div>
+  <div class="rule">DIE REGELN SIND JETZT UMGEKEHRT!</div>
+  <div class="dice"><span class="symbol">🎲</span><b class="category">???</b></div>
+  <div class="final">🙃 DER KLEINSTE WERT GEWINNT!</div>
+  <div class="flash"></div><div class="bolts"></div>
+</div>
+<div class="ui">
+  <button id="play" type="button" disabled>▶ Animation ansehen</button>
+  <button id="stop" type="button" disabled>■ Stoppen</button>
+</div>
+<div id="status" role="status">Lade den Soundtrack von GitHub …</div>
+<div class="meter"><div id="progress"></div></div>
+<p class="note">Diese Vorschau beeinflusst keine laufenden Spiele. Die angezeigte Endkategorie „Magie“ ist ein reines Vorschau-Beispiel; im Spiel entscheidet weiterhin der Server.</p>
+</main>
+<script>
+(function(){
+'use strict';
+const asset='/assets/MLPFiM%20BGM%20Discord%20Revealed.mp3';
+const rawAsset='https://raw.githubusercontent.com/LittleGem1/mlp-battle-cards/main/public/assets/MLPFiM%20BGM%20Discord%20Revealed.mp3';
+const duration=11.52,musicOffset=.8;
+const stage=document.getElementById('scene'),startButton=document.getElementById('play'),stopButton=document.getElementById('stop'),status=document.getElementById('status'),progress=document.getElementById('progress');
+const flash=stage.querySelector('.flash'),bolts=stage.querySelector('.bolts');
+const symbol=stage.querySelector('.symbol'),catLabel=stage.querySelector('.category');
+const cats=[['🏋️','Stärke'],['⚡','Schnelligkeit'],['⭐','Magie'],['🔋','Energie']];
+let audioContext=null,buffer=null,lightningBeats=[],playing=false,source=null,voice=null,raf=0,clockStart=0,runNumber=0,beatIndex=0;
+const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const setStatus=s=>{status.textContent=s};
+function reset(){
+ stage.className='scene';bolts.innerHTML='';flash.style.opacity='0';symbol.textContent='🎲';catLabel.textContent='???';progress.style.width='0%';
+}
+function stop(){
+ runNumber++;playing=false;cancelAnimationFrame(raf);
+ try{source&&source.stop()}catch(e){}
+ source=null;
+ if(voice){voice.pause();voice.removeAttribute('src');voice.load();voice=null}
+ startButton.disabled=!buffer;stopButton.disabled=true;reset();
+ setStatus(buffer?'Bereit. Du kannst die Vorschau erneut starten.':'Soundtrack wird geladen …');
+}
+stopButton.addEventListener('click',stop);
+function detectBeats(audio){
+ // Inspect actual decoded samples in 25-ms windows; sharp attacks tend to
+ // coincide with drum hits, musical impacts and lightning-like accents.
+ const sr=audio.sampleRate,channels=audio.numberOfChannels;
+ const sample=audio.getChannelData(0),other=channels>1?audio.getChannelData(1):null;
+ const hop=Math.round(sr*.025),from=Math.round(musicOffset*sr),until=Math.min(sample.length,Math.floor((musicOffset+duration)*sr));
+ const frames=[];
+ for(let pos=from;pos+hop<until;pos+=hop){
+  let pow=0,sharp=0,last=0,n=0;
+  for(let i=pos;i<pos+hop;i+=2){
+   const v=other?(sample[i]+other[i])*.5:sample[i];
+   pow+=v*v;sharp+=Math.abs(v-last);last=v;n++;
+  }
+  frames.push({t:(pos/sr)-musicOffset,energy:Math.sqrt(pow/n),sharp:sharp/n});
+ }
+ if(!frames.length)return [];
+ const energies=frames.map(x=>x.energy).sort((a,b)=>a-b);
+ const med=energies[Math.floor(energies.length*.5)]||.005;
+ const candidates=[];
+ for(let i=8;i<frames.length-3;i++){
+  const now=frames[i],local=frames.slice(i-8,i);
+  const before=local.reduce((sum,f)=>sum+f.energy,0)/local.length;
+  const prevSharp=local.reduce((sum,f)=>sum+f.sharp,0)/local.length;
+  const onset=(now.energy-before)/(before+.006);
+  const attack=(now.sharp-prevSharp)/(prevSharp+.003);
+  const score=Math.max(0,onset)*1.6+Math.max(0,attack)*.8;
+  if(now.energy>med*.65&&score>.26&&now.energy>=frames[i+1].energy*.87)
+   candidates.push({t:now.t,score:score*now.energy/(med+.015)});
+ }
+ candidates.sort((a,b)=>b.score-a.score);
+ const picked=[];
+ for(const c of candidates){
+  if(picked.length>=14)break;
+  if(picked.every(x=>Math.abs(c.t-x.t)>.52))picked.push(c);
+ }
+ picked.sort((a,b)=>a.t-b.t);
+ return picked;
+}
+async function load(){
+ try{
+  audioContext=new(window.AudioContext||window.webkitAudioContext)();
+  let response;
+  try{
+    response=await fetch(asset,{cache:'no-cache'});
+    if(!response.ok)throw Error('Datei noch nicht auf der Webseite');
+  }catch(e){
+    response=await fetch(rawAsset);
+    if(!response.ok)throw Error('GitHub-Download fehlgeschlagen ('+response.status+')');
+  }
+  const bytes=await response.arrayBuffer();
+  buffer=await audioContext.decodeAudioData(bytes);
+  if(buffer.duration<musicOffset+2)throw Error('Soundtrack zu kurz');
+  lightningBeats=detectBeats(buffer);
+  startButton.disabled=false;
+  setStatus('Fertig geladen · '+lightningBeats.length+' musikalische Blitzakzente erkannt · Musik ab 0,8 s');
+ }catch(e){setStatus('Musik konnte nicht geladen werden: '+e.message);console.error(e);}
+}
+function lightning(strength){
+ const x=15+Math.random()*70;
+ let px=x,py=-6;
+ let d='M '+px.toFixed(1)+' '+py;
+ const branch=[];
+ for(let i=0;i<10;i++){
+  px+=(Math.random()-.5)*15;py+=11+Math.random()*3;
+  d+=' L '+px.toFixed(1)+' '+py.toFixed(1);
+  if(i===4||i===7)branch.push('M '+px.toFixed(1)+' '+py.toFixed(1)+' l '+(Math.random()>.5?15:-15)+' 17');
+ }
+ const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');
+ svg.setAttribute('viewBox','0 0 100 125');
+ const makePath=(value,width,color)=>{
+  const path=document.createElementNS(ns,'path');
+  path.setAttribute('d',value);path.setAttribute('fill','none');
+  path.setAttribute('stroke',color);path.setAttribute('stroke-width',String(width));
+  path.setAttribute('stroke-linejoin','round');return path;
+ };
+ svg.append(makePath(d,4,'#9750ff'),makePath(d,1.5,'#fff5ff'));
+ for(const b of branch)svg.append(makePath(b,1.1,'#d4afff'));
+ bolts.append(svg);
+ flash.style.opacity=String(Math.min(.63,.13+strength*.25));
+ setTimeout(()=>{if(svg.isConnected)flash.style.opacity='0'},85);
+ setTimeout(()=>svg.remove(),320);
+}
+function render(){
+ if(!playing)return;
+ const t=audioContext.currentTime-clockStart;
+ const at=(css,when)=>stage.classList.toggle(css,t>=when);
+ at('show-card',0);at('show-figure',1.25);at('flipped',2.13);
+ at('show-title',3.61);at('show-rule',4.82);at('show-roll',5.8);
+ at('stop-roll',7.7);at('show-final',8.6);at('finished',10.67);
+ if(t>=5.8&&t<7.7){const c=cats[Math.floor(t*12)%cats.length];symbol.textContent=c[0];catLabel.textContent=c[1]}
+ else if(t>=7.7){symbol.textContent='⭐';catLabel.textContent='Magie'}
+ while(beatIndex<lightningBeats.length&&t>=lightningBeats[beatIndex].t){
+  const b=lightningBeats[beatIndex++];
+  lightning(.7+Math.min(1.4,b.score*.20));
+ }
+ progress.style.width=Math.max(0,Math.min(100,t/duration*100))+'%';
+ if(t>=duration){
+  playing=false;startButton.disabled=false;stopButton.disabled=true;
+  setStatus('Vorschau beendet · Soundtrack weich ausgeblendet');
+  return;
+ }
+ raf=requestAnimationFrame(render);
+}
+async function spokenIntro(run){
+ voice=new Audio('/assets/discord_chaos_voice.mp3');
+ voice.preload='auto';
+ voice.volume=1;
+ setStatus('🎙 Discords Originalstimme läuft …');
+ let timeout;
+ await Promise.race([
+  new Promise(resolve=>{
+   voice.addEventListener('ended',resolve,{once:true});
+   voice.addEventListener('error',resolve,{once:true});
+   voice.play().catch(resolve);
+  }),
+  new Promise(resolve=>{timeout=setTimeout(resolve,5550)})
+ ]);
+ clearTimeout(timeout);
+ if(run!==runNumber)return false;
+ voice.pause();voice.removeAttribute('src');voice.load();voice=null;
+ return true;
+}
+startButton.addEventListener('click',async()=>{
+ if(!buffer||playing)return;
+ stop();
+ const run=runNumber;
+ playing=true;startButton.disabled=true;stopButton.disabled=false;
+ try{
+  await audioContext.resume();
+  if(!await spokenIntro(run))return;
+  if(run!==runNumber)return;
+  source=audioContext.createBufferSource();source.buffer=buffer;
+  const gain=audioContext.createGain(),compressor=audioContext.createDynamicsCompressor();
+  compressor.threshold.value=-8;compressor.ratio.value=7;compressor.attack.value=.003;compressor.release.value=.2;
+  source.connect(gain);gain.connect(compressor);compressor.connect(audioContext.destination);
+  clockStart=audioContext.currentTime+.04;
+  gain.gain.setValueAtTime(.77,clockStart);
+  gain.gain.setValueAtTime(.77,clockStart+duration-1.6);
+  gain.gain.linearRampToValueAtTime(.0001,clockStart+duration);
+  source.start(clockStart,musicOffset,duration);
+  beatIndex=0;
+  setStatus('⚡ Discord Revealed · Blitze passend zu den Soundakzenten');
+  render();
+ }catch(err){
+  console.error(err);stop();setStatus('Fehler beim Abspielen: '+err.message);
+ }
+});
+load();
+})();
+</script>
+</body>
+</html>
