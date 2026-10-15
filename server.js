@@ -1941,10 +1941,11 @@ function settleRound(r,winnerId){
     mimschWins?'mimsch_magic_claws':pickFinisher(r);
   const duration=littleGemWins?9200:mimschWins?8500:4200;
   r.finisherEndsAt=Date.now()+duration+220;
-  // Physical plays only: preserve EVERY actual opposing card (also when
-  // Timberwolves allowed two), never substitute an unplayed preview card.
+  // Use every normal card actually COMMITTED to the table, including
+  // a virtual card expressly chosen with Changeling Joker and both Timberwolves
+  // cards. Never substitute an unplayed hand preview for the animation.
   const playedCards=Object.entries(r.played||{}).flatMap(([pid,entry])=>
-    playedCardIds(entry).filter(id=>!(entry.jokerVirtual&&entry.cardId===id))
+    playedCardIds(entry)
       .map(cardId=>({pid,name:r.players.get(pid)?.name||'Spieler',card:byId[cardId]}))
       .filter(x=>x.card?.type==='normal'));
   io.to(r.code).emit('roundWinner',{winnerId,winnerName:winner.name,cards:ids.map(id=>byId[id]).filter(Boolean),finisher,duration,
