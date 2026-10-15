@@ -2489,7 +2489,7 @@ function runMimschVictory(e){
   frame.title='Mimsch – Magiekrallen-Siegesanimation';
   frame.allow='autoplay';
   frame.style.cssText='position:fixed;inset:0;width:100%;height:100%;border:0;background:#020615;z-index:2147483000;pointer-events:none';
-  frame.src='/mimsch_finisher.html?v=mimsch-read-volume-20261014';
+  frame.src='/mimsch_finisher.html?v=mimsch-actual-plays-20261015-1';
   const maxDuration=Math.max(8500,Number(e.duration)||0);
   const fallback=setTimeout(()=>frame.remove(),maxDuration+5000);
   frame.addEventListener('load',()=>{
