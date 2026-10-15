@@ -1559,7 +1559,8 @@ function maybeEvaluate(r){
       // Secret until the animation finishes: no early HUD/category spoilers.
       r.discordNewCategory=chosen;
       r.roundFX.discordReverse=true;
-      const animationPauseToken=pauseSelectionForAnimation(r,23000,{acknowledge:true});
+      // Allow slow audio decoding / playback on clients; acknowledgements still release early.
+      const animationPauseToken=pauseSelectionForAnimation(r,30000,{acknowledge:true});
       io.to(r.code).emit('mlpSpecialActivated',{
         cardId:'discord',casterId:r.discordPending.casterId,animationPauseToken,
         category:chosen,categoryLabel:CATEGORY_LABEL[chosen],
