@@ -2220,7 +2220,9 @@ function recoverNextRound(r,source='Host'){
     if(p.pendingForcedDiscard?.timer)clearTimeout(p.pendingForcedDiscard.timer);
     p.pendingForcedDiscard=null;p.selected=null;
   }
-  r.phase='result';
+  // Change phase before scheduling the transition: old finisher callbacks
+  // require phase==='result' and therefore cannot re-award a cancelled round.
+  r.phase='roundintro';r.roundIntroUntil=null;
   r.played={};r.dice={};r.tieIds=[];r.roundPlayerIds=[];
   r.pendingRoundWinner=null;r.revealOutcome=null;
   r.resultCycleFinishing=false;r.rewardPreparationStarted=false;r.rewardPrepDueAt=0;
