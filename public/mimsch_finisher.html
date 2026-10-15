@@ -350,11 +350,13 @@ window.startMimschMatch=function(payload){
   const physical=Array.isArray(payload?.playedCards)?payload.playedCards:[];
   // Use the actual server-validated cards committed this round.
   // The reveal fallback only supports previews recorded by an older server.
-  const revealed=physical.length?physical:(Array.isArray(payload?.revealEntries)?payload.revealEntries:[]);
-  const others=revealed.filter(x=>x.pid!==payload.winnerId&&x.card?.image&&!x.previewOnly).slice(0,7);
+  const revealed=Array.isArray(payload?.playedCards)?physical:(Array.isArray(payload?.revealEntries)?payload.revealEntries:[]);
+  const others=revealed.filter(x=>x.pid!==payload.winnerId&&x.card?.image&&!x.previewOnly).slice(0,14);
   const slots=[
     [13,35,-10],[26,70,-5],[74,70,5],[87,35,10],
-    [10,74,-12],[90,74,12],[50,20,0]
+    [10,74,-12],[90,74,12],[50,20,0],
+    [5,51,-12],[95,51,12],[35,13,-8],[65,13,8],
+    [35,86,-6],[65,86,6],[50,91,0]
   ];
   enemies.forEach(e=>e.remove());
   enemies=[];
@@ -365,6 +367,7 @@ window.startMimschMatch=function(payload){
     enemy.className='enemy real-card';
     enemy.style.left=left+'%';
     enemy.style.top=top+'%';
+    if(others.length>7)enemy.style.width='min(12vw,105px)';
     enemy.style.setProperty('--r',rot+'deg');
     enemy.style.transform='translate(-50%,-50%) rotate('+rot+'deg)';
     enemy.dataset.cardImage=entry.card.image;
