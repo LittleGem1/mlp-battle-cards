@@ -358,6 +358,11 @@ function categoryHud(icon,label,round=state?.round){
     node.append(symbol,name);
   }
   symbol.textContent=icon||'💎';name.textContent=label||'Kategorie';
+  // The selected emblem stays visible beside the category name in the arena,
+  // not just on the spinning crystal.
+  let trailing=$('#categoryTrailingIcon');
+  if(!trailing){trailing=document.createElement('span');trailing.id='categoryTrailingIcon';trailing.className='category-trailing-icon';trailing.setAttribute('aria-hidden','true');node.append(trailing);}
+  trailing.textContent=icon||'💎';
   node.dataset.currentCategory=state?.category||'';
   node.dataset.currentRound=String(round||0);
 }
@@ -781,6 +786,7 @@ socket.on('roomState',s=>{
   if(s.phase!=='select' || (state&&s.round!==state.round))dismissOldSpecialChoices();
   if(finisherDemoActive && s.phase!=='ready')stopFinisherDemo();
   state=s;
+  if($('#roundWinsDialog')?.open)renderLiveRoundWins();
   syncSpecialReadFromState(s);
   botTestSyncButton(s);
   if(botTestDialog?.open)botTestRender();
@@ -1123,6 +1129,8 @@ function renderGame(){
   ensureMatchActionButtons();
   const demoButton=$('#finisherDemoBtn');
   if(demoButton)demoButton.hidden=state.phase!=='ready';
+  const roundWinsButton=$('#roundWinsBtn');
+  if(roundWinsButton)roundWinsButton.hidden=!state.players.some(p=>(p.roundWins||0)>0);
   if(finisherDemoActive && state.phase!=='ready')stopFinisherDemo();
   $('#abortBtn').style.display=myId===state.hostId&&state.phase!=='gameover'?'inline-block':'none';
 
@@ -1869,6 +1877,7 @@ function categoryCrystalPortal(){
         <div id="portalCrystalResult" class="round-crystal-result">
           <b id="portalCrystalIcon">⭐</b>
           <strong id="portalCrystalLabel">MAGIE</strong>
+          <b id="portalCrystalTrailingIcon" aria-hidden="true">⭐</b>
         </div>
         <small>Der Kristall bestimmt die Kategorie …</small>
       </div>`;
@@ -1901,6 +1910,9 @@ function showRoundIntro(e){
   $('#portalRoundLabel').textContent=`RUNDE ${e.round||state?.round||1}`;
   $('#portalCrystalIcon').textContent=e.icon||ui[0];
   $('#portalCrystalLabel').textContent=e.label||ui[1];
+  $('#portalCrystalTrailingIcon').textContent=e.icon||ui[0];
+  const hiddenCrystalTrailing=$('#roundIntroTrailingIcon');
+  if(hiddenCrystalTrailing)hiddenCrystalTrailing.textContent=e.icon||ui[0];
 
   categoryHud('💎','Der Kristall wählt die Kategorie …',e.round);
   $('#roundMessage').textContent='';
@@ -2502,6 +2514,8 @@ socket.on('roundIntro',cancelRoundWinnerBanner);
 socket.on('roundStart',cancelRoundWinnerBanner);
 socket.on('gameOver',cancelRoundWinnerBanner);
 socket.on('roundWinner',e=>{
+  // The server counts this win before broadcasting updated roomState.
+  // The score can be reopened by every player from the arena toolbar.
   lastVictoryAnimationEndsAt=Date.now()+Math.max(4400,Number(e?.duration)||4200)+140;
   if(finisherDemoActive)stopFinisherDemo();
   stopSelectionTimer();
@@ -2642,17 +2656,46 @@ socket.on('tieStart',e=>setupDice(e,'Gleichstand! Würfeln entscheidet.'));
 socket.on('tieAgain',e=>setupDice(e,'Schon wieder Gleichstand – nochmal würfeln!'));
 socket.on('diceRolling',startDiceAnimation);
 socket.on('diceRolled',stopDiceAnimation);
+// Counted by server once per completed round. This is NOT an account's total
+// match victories: an artefact champion may have fewer round wins than others.
+let finalMatchScoreboard=null;
+function winTableHTML(players,championId=null){
+  const ranked=[...(players||[])].sort((a,b)=>(b.roundWins||0)-(a.roundWins||0)||
+    String(a.name||'').localeCompare(String(b.name||''),'de'));
+  const best=Math.max(0,...ranked.map(p=>Number(p.roundWins)||0));
+  return ranked.map((p,i)=>{
+    const wins=Math.max(0,Number(p.roundWins)||0);
+    const rank=1+ranked.filter(other=>(Number(other.roundWins)||0)>wins).length;
+    const leader=wins===best&&wins>0;
+    return '<div class="match-win-row '+(leader?'match-leader':'')+'">'+
+      '<span class="match-win-rank">'+(leader?'🥇':rank+'.')+'</span>'+
+      '<span class="match-win-name">'+escapeHtml(p.name||'Spieler')+
+        (p.id===championId?' <small title="Matchsieger durch Spielziel">👑 Matchsieger</small>':'')+'</span>'+
+      '<strong class="match-win-count">'+wins+' '+(wins===1?'Rundensieg':'Rundensiege')+'</strong></div>';
+  }).join('');
+}
+function renderLiveRoundWins(){
+  const box=$('#roundWinsLiveTable');
+  if(!box)return;
+  const players=state?.phase==='gameover'&&finalMatchScoreboard?.counts
+    ?finalMatchScoreboard.counts:(state?.players||[]);
+  box.innerHTML=winTableHTML(players,finalMatchScoreboard?.winnerId||null)+
+    '<p class="roundwins-explanation">Diese Zahlen zählen gewonnene Kartenrunden in der laufenden Partie. Der Matchsieger wird getrennt durch das eigentliche Spielziel bestimmt.</p>';
+}
 function showMatchWinStatistics(e){
+  finalMatchScoreboard=e;
   const panel=document.getElementById('matchWinStats');
   if(!panel)return;
-  const players=[...(e?.counts||[])].sort((a,b)=>(b.roundWins||0)-(a.roundWins||0)||String(a.name).localeCompare(String(b.name),'de'));
-  panel.innerHTML='<h4>🏆 Rundensiege dieser Partie</h4>'+
-    players.map((p,i)=>`<div class="match-win-row ${p.id===e.winnerId?'champion':''}">
-      <span>${p.id===e.winnerId?'👑':(i===0?'🥇':(i===1?'🥈':'🃏'))}</span>
-      <span class="match-win-name">${escapeHtml(p.name)}</span>
-      <strong class="match-win-count">${Number(p.roundWins)||0} ${Number(p.roundWins)===1?'Sieg':'Siege'}</strong>
-    </div>`).join('')+
-    '<p class="match-win-description">Gezählt werden gewertete Rundensiege dieser Partie, unabhängig von den Artefakten.</p>';
+  const winner=e?.winnerName||'Unbekannt';
+  panel.innerHTML='<h4>🏆 Rundensiege – Endstand</h4>'+
+    '<p class="roundwins-explanation">👑 Match gewonnen: <strong>'+escapeHtml(winner)+
+    '</strong>. Die folgende Rangliste zeigt unabhängig davon die gewonnenen einzelnen Runden.</p>'+
+    winTableHTML(e?.counts||[],e?.winnerId||null)+
+    '<p class="roundwins-explanation">Alle Mitspieler sehen dieselbe Serverstatistik. Sie wird bei einer neuen Partie zurückgesetzt.</p>';
+  panel.hidden=false;
+  const toggle=$('#toggleMatchWinStats');
+  if(toggle){toggle.textContent='🏆 Rundenstatistik ausblenden';toggle.setAttribute('aria-expanded','true');}
+  renderLiveRoundWins();
 }
 socket.on('gameOver',e=>{
   showMatchWinStatistics(e);
@@ -2939,6 +2982,18 @@ $('#abortBtn').addEventListener('click',()=>{socket.emit('abortGame');toast('Zur
 $('#returnLobbyBtn').addEventListener('click',()=>{try{$('#gameOverDialog').close()}catch{};socket.emit('returnToLobby');toast('Zurück zur Lobby …')});
 $('#gameOverHomeBtn').addEventListener('click',()=>{try{$('#gameOverDialog').close()}catch{};socket.emit('leaveRoom')});
 $('#closeGameOverBtn').addEventListener('click',()=>$('#gameOverDialog').close());
+$('#toggleMatchWinStats')?.addEventListener('click',()=>{
+  const panel=$('#matchWinStats'),button=$('#toggleMatchWinStats');
+  if(!panel||!button)return;
+  panel.hidden=!panel.hidden;
+  button.textContent=panel.hidden?'🏆 Rundenstatistik anzeigen':'🏆 Rundenstatistik ausblenden';
+  button.setAttribute('aria-expanded',String(!panel.hidden));
+});
+$('#roundWinsBtn')?.addEventListener('click',()=>{
+  renderLiveRoundWins();
+  if(!$('#roundWinsDialog').open)$('#roundWinsDialog').showModal();
+});
+$('#roundWinsClose')?.addEventListener('click',()=>$('#roundWinsDialog').close());
 $('#rewardBtn').addEventListener('click',()=>{try{$('#gameOverDialog').close()}catch{};$('#giftResult').textContent='';$('#giftBox').style.display='inline-block';$('#giftDialog').showModal()});
 $('#closeGiftBtn').addEventListener('click',()=>$('#giftDialog').close());
 $('#giftDoneBtn').addEventListener('click',()=>$('#giftDialog').close());
