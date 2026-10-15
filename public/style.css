@@ -4334,3 +4334,54 @@ body.scene-lobby #crystalDrift * {
 #matchWinStats .match-win-name{overflow-wrap:anywhere;font-weight:650}
 #matchWinStats .match-win-count{font-size:17px;color:#c0f5fe;font-weight:900;font-variant-numeric:tabular-nums}
 #matchWinStats .match-win-description{font-size:12px;color:#d5bbf2;margin:10px 0 0}
+
+
+/* 2026-10-15: Desktop hand hover restored, including cards disabled for play.
+   A disabled play action is not a disabled visual inspection. */
+@media (hover:hover) and (pointer:fine) {
+  #game .arena #hand,
+  #game .arena #hand .hand-tier,
+  #game .arena #hand .hand-tier-row { overflow:visible!important; }
+  #game .arena #hand .hand-card {
+    transition:transform .23s cubic-bezier(.18,.8,.22,1),filter .2s!important;
+    transform-origin:center bottom!important;
+  }
+  #game .arena #hand .hand-card:hover,
+  #game .arena #hand .hand-card:focus-within,
+  #game .arena #hand .hand-card.disabled:hover {
+    transform:translateY(-84px) scale(1.4)!important;
+    filter:brightness(1.12) drop-shadow(0 16px 23px #080414bb)!important;
+    position:relative!important;z-index:214!important;
+  }
+  #game .arena #hand .hand-card:hover img {pointer-events:none}
+}
+/* Show the chosen category icon directly beside its title, after the crystal. */
+#game .arena #category .category-trailing-icon {
+  display:inline-flex!important;align-items:center;justify-content:center;
+  font-size:clamp(24px,2.5vw,40px)!important;
+  margin-left:.28em;vertical-align:middle;filter:drop-shadow(0 0 10px #fff7)
+}
+#categoryCrystalResult #roundIntroTrailingIcon,
+#portalCrystalResult #portalCrystalTrailingIcon {
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:clamp(24px,4vw,48px);filter:drop-shadow(0 0 12px #fff9);
+}
+.roundwins-dialog{width:min(620px,94vw);max-height:88vh;overflow:auto;border:2px solid #b9a4ee;border-radius:20px;background:linear-gradient(145deg,#171533,#10172f);color:#f7eaff;padding:0}
+.roundwins-dialog-body{padding:22px;text-align:center}
+.roundwins-dialog-body h3{font-size:clamp(23px,4vw,33px);margin:3px 0}
+.roundwins-intro{font-size:14px;opacity:.82}
+#roundWinsLiveTable{margin:17px auto;max-width:530px;text-align:left}
+#toggleMatchWinStats{margin:8px auto 0;display:inline-block}
+#matchWinStats[hidden]{display:none!important}
+.match-win-stats .match-win-row,
+#roundWinsLiveTable .match-win-row{
+ display:grid;grid-template-columns:38px minmax(0,1fr) minmax(78px,auto);
+ align-items:center;gap:12px;padding:11px 12px;border-bottom:1px solid #b8a0e44d;
+}
+.match-win-row .match-win-name{overflow-wrap:anywhere}
+.match-win-row .match-win-count{font-size:16px;font-weight:850;text-align:right;font-variant-numeric:tabular-nums;color:#b5effd}
+.match-win-row .match-win-rank{font-weight:900;color:#ffdfa5;text-align:center}
+#roundWinsLiveTable .match-win-row.match-leader,
+#matchWinStats .match-win-row.match-leader{background:#744da025;border-radius:9px}
+.roundwins-explanation{font-size:12px;line-height:1.45;opacity:.77}
+#game .game-actions #roundWinsBtn{background:linear-gradient(135deg,#6652b7,#3e6e98);border:1px solid #c4b2f1}
