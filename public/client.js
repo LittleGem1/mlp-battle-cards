@@ -360,8 +360,18 @@ function categoryHud(icon,label,round=state?.round){
   symbol.textContent=icon||'💎';name.textContent=label||'Kategorie';
   // The selected emblem stays visible beside the category name in the arena,
   // not just on the spinning crystal.
+  let nameRow=node.querySelector('.category-name-row');
+  if(!nameRow){
+    nameRow=document.createElement('span');
+    nameRow.className='category-name-row';
+    node.append(nameRow);nameRow.append(name);
+  }
   let trailing=$('#categoryTrailingIcon');
-  if(!trailing){trailing=document.createElement('span');trailing.id='categoryTrailingIcon';trailing.className='category-trailing-icon';trailing.setAttribute('aria-hidden','true');node.append(trailing);}
+  if(!trailing){
+    trailing=document.createElement('span');trailing.id='categoryTrailingIcon';
+    trailing.className='category-trailing-icon';trailing.setAttribute('aria-hidden','true');
+  }
+  nameRow.append(trailing);
   trailing.textContent=icon||'💎';
   node.dataset.currentCategory=state?.category||'';
   node.dataset.currentRound=String(round||0);
