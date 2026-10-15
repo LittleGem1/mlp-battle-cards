@@ -4385,3 +4385,21 @@ body.scene-lobby #crystalDrift * {
 #matchWinStats .match-win-row.match-leader{background:#744da025;border-radius:9px}
 .roundwins-explanation{font-size:12px;line-height:1.45;opacity:.77}
 #game .game-actions #roundWinsBtn{background:linear-gradient(135deg,#6652b7,#3e6e98);border:1px solid #c4b2f1}
+
+/* Actual category title + matching emblem remain one line beneath the crystal icon. */
+#game.screen.active .arena .center-stage #category.category .category-name-row {
+  display:flex!important;flex-flow:row nowrap!important;align-items:center!important;
+  justify-content:center!important;gap:5px!important;max-width:100%!important;
+  white-space:nowrap!important;
+}
+#game.screen.active .arena .center-stage #category.category .category-name-row .category-trailing-icon {
+  margin:0!important;flex:0 0 auto!important;font-size:clamp(18px,1.8vw,24px)!important;
+}
+@media(max-width:760px){
+  #game.screen.active .arena .center-stage #category.category .category-name-row{
+    flex-wrap:wrap!important;gap:2px!important;
+  }
+  #game.screen.active .arena .center-stage #category.category .category-name-row .category-trailing-icon{
+    font-size:18px!important;
+  }
+}
