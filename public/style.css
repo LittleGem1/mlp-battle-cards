@@ -4315,3 +4315,22 @@ body.scene-lobby #crystalDrift * {
 .reward-preview-description strong{font-size:clamp(18px,3vw,28px)}
 .reward-preview-description p{font-size:16px;line-height:1.55;white-space:pre-wrap}
 #rewardPreviewClose{padding:12px 16px;border:1px solid #bda7ff;border-radius:12px;background:#493a91;color:white;font-weight:800;cursor:pointer}
+
+
+/* Round-win leaderboard shown after a match (server-authored counts). */
+#matchWinStats.match-win-stats{
+  margin:14px auto 20px;padding:15px 16px;max-width:570px;
+  background:linear-gradient(145deg,#241943ed,#111c36f0);
+  border:1px solid #b38fea;border-radius:16px;color:#f9efff;
+}
+#matchWinStats h4{font-size:18px;margin:0 0 11px;color:#ffe6aa}
+#matchWinStats .match-win-row{
+  display:grid;grid-template-columns:2em minmax(0,1fr) auto;
+  align-items:center;gap:11px;text-align:left;
+  padding:9px 10px;border-bottom:1px solid #c9b1ff32;
+}
+#matchWinStats .match-win-row:last-child{border-bottom:0}
+#matchWinStats .match-win-row.champion{border-radius:9px;background:#ffcf6121}
+#matchWinStats .match-win-name{overflow-wrap:anywhere;font-weight:650}
+#matchWinStats .match-win-count{font-size:17px;color:#c0f5fe;font-weight:900;font-variant-numeric:tabular-nums}
+#matchWinStats .match-win-description{font-size:12px;color:#d5bbf2;margin:10px 0 0}
