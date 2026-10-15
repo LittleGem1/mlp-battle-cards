@@ -758,6 +758,7 @@ function refundCancelledRoundSpecials(r,reason='Runde ohne Wertung'){
     if(index<0)continue;
     r.rewardDiscard.splice(index,1);
     player.hand.push(entry.cardId);
+    if(entry.effect==='luck')player.luckBoostActive=false;
     player.specialUsed=Math.max(0,(player.specialUsed||0)-1);
     refunded.push({playerId:player.id,card:byId[entry.cardId]});
   }
