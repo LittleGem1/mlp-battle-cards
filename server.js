@@ -2182,6 +2182,56 @@ function maybeStartWhenReady(r){
 }
 
 
+
+// Server-authoritative emergency command: never trust a client round/state.
+// A scored result keeps its winner/reward; an unresolved round is cancelled
+// without a timeout penalty. All callbacks are invalidated by clearTimers.
+function recoverNextRound(r,source='Host'){
+  if(!r||!rooms.has(r.code)||['lobby','ready','countdown','gameover'].includes(r.phase))return false;
+  const prevRound=r.round;
+  if(r.phase==='result'&&r.pendingRoundWinner){
+    const id=resolveResumedId(r,r.pendingRoundWinner);
+    if(!r.resultCycleFinishing)finishRoundCycle(r,id,Object.values(r.played||{}).flatMap(playedCardIds));
+    if(r.phase==='result'&&!r.rewardPreparationStarted)startFinisherReward(r,id);
+  }
+  if(r.phase==='rewardchoice'){
+    const q=r.pendingReward;
+    if(q?.cards?.length)resolveRewardChoice(r,q.winnerId,q.cards[0],q.token);
+    else startRound(r,300);
+    io.to(r.code).emit('roundRecovered',{round:prevRound,reason:source});
+    if(r.phase!=='gameover')startRound(r,500);
+    return true;
+  }
+  if(r.phase==='gameover')return true;
+  clearRoomSpecialChoices(r);
+  // This is a cancelled (not scored) selection/reveal/tie. Undo committed
+  // normal cards and unplayed action cards rather than stealing a player's hand.
+  if(r.phase==='select')refundCancelledRoundSpecials(r,'Runde durch '+source+' zurückgesetzt');
+  for(const [pid,entry] of Object.entries(r.played||{})){
+    const player=r.players.get(pid);
+    for(const id of playedCardIds(entry)){
+      if(entry?.jokerVirtual&&entry.cardId===id)continue;
+      if(r.phase==='select'&&player&&!player.surrendered)player.hand.push(id);
+      else discardCard(r,id);
+    }
+  }
+  clearTimers(r);
+  for(const p of roomPlayers(r)){
+    if(p.pendingForcedDiscard?.timer)clearTimeout(p.pendingForcedDiscard.timer);
+    p.pendingForcedDiscard=null;p.selected=null;
+  }
+  r.phase='result';
+  r.played={};r.dice={};r.tieIds=[];r.roundPlayerIds=[];
+  r.pendingRoundWinner=null;r.revealOutcome=null;
+  r.resultCycleFinishing=false;r.rewardPreparationStarted=false;r.rewardPrepDueAt=0;
+  resetRoundFX(r);
+  refillNormalHands(r);
+  io.to(r.code).emit('roundRecovered',{round:prevRound,reason:source});
+  sendState(r);
+  startRound(r,500);
+  return true;
+}
+
 // Last-resort server-side protection against abandoned phases and endless ties.
 // All deadlines are LONGER than the normal animations/round timeouts.
 function guardRoomProgress(r,now=Date.now()){
@@ -2193,6 +2243,11 @@ function guardRoomProgress(r,now=Date.now()){
   if(['ready','countdown'].includes(r.phase)&&r.players.size<2){resetToLobby(r);return;}
   if(['roundintro','select','reveal','tie','result','rewardchoice'].includes(r.phase)&&gameOverIfNeeded(r))return;
   if(r.phase==='select'){
+    // Choice locks, disconnected spectators and swallowed audio acknowledgments
+    // must never freeze a match permanently.
+    if(age>155000&&(r.specialReadGate||r.specialSequence||Number.isFinite(r.selectionPausedRemainingMs))){
+      recoverNextRound(r,'Rundenwächter');return;
+    }
     if((r.windchaosUntil||0)>now||Number.isFinite(r.selectionPausedRemainingMs))return;
     if(!requiredPlayers(r).length){maybeEvaluate(r);return;}
     if(!r.selectionDeadline){
@@ -2224,6 +2279,10 @@ function guardRoomProgress(r,now=Date.now()){
     // ordinary 9s watchdog. Do not intervene until their official end.
     if(Number.isFinite(r.finisherEndsAt)&&now<r.finisherEndsAt+1200)return;
     if(r.resultCycleFinishing){
+      if(age>35000&&r.phase==='result'){
+        io.to(r.code).emit('notice','Eine blockierte Belohnungsphase wurde wiederhergestellt.');
+        recoverNextRound(r,'Rundenwächter');return;
+      }
       // The finisher was settled, but the gold-card transition callback
       // might be missing (tab suspended / delayed). Recover it once.
       if(!r.rewardPreparationStarted&&Number.isFinite(r.rewardPrepDueAt)&&r.rewardPrepDueAt>0&&now>r.rewardPrepDueAt+1500){
@@ -2331,6 +2390,23 @@ io.on('connection',socket=>{
     if(!r||!p||p.isBot||p.disconnectedAt)return;
     if(typeof payload?.text!=='string')return;
     const message=payload.text.trim().replace(/[\u0000-\u001f\u007f]/g,' ');
+    if(/^\/(?:naechsterunde|nextrunde|weiter)$/i.test(message)){
+      if(r.hostId!==socket.id){
+        socket.emit('chatError','Nur der Host kann /nextrunde verwenden.');
+        return;
+      }
+      if(Date.now()-(r.lastManualRecoveryAt||0)<10000){
+        socket.emit('chatError','Bitte 10 Sekunden zwischen Notfallbefehlen warten.');
+        return;
+      }
+      if(!recoverNextRound(r,'Host-Notfallbefehl')){
+        socket.emit('chatError','Der Notfallbefehl funktioniert nur während einer laufenden Runde.');
+        return;
+      }
+      r.lastManualRecoveryAt=Date.now();
+      io.to(r.code).emit('notice','🛟 '+p.name+' hat /nextrunde benutzt. Das Spiel setzt fort.');
+      return;
+    }
     if(!message||message.length>300){socket.emit('chatError','Nachrichten dürfen höchstens 300 Zeichen haben.');return;}
     const now=Date.now();
     const previous=socket.data.chatSendTimes||[];
