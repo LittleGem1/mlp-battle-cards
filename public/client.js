@@ -774,6 +774,10 @@ function renderPostGameLobby(){
 }
 
 socket.on('roomState',s=>{
+  if(state&&Number.isInteger(s.round)&&s.round>state.round){
+    clearTable();$('#diceZone').innerHTML='';
+    document.querySelectorAll('.flying-card').forEach(el=>el.remove());
+  }
   if(s.phase!=='select' || (state&&s.round!==state.round))dismissOldSpecialChoices();
   if(finisherDemoActive && s.phase!=='ready')stopFinisherDemo();
   state=s;
@@ -1578,14 +1582,20 @@ document.addEventListener('pointerdown',()=>{if(!userInteracted)directMusicGestu
 document.addEventListener('keydown',()=>{if(!userInteracted)directMusicGesture()},{once:true,capture:true});
 
 function clearTable(){lastReveal=[];$('#tableCards').innerHTML=''}
-function addCommitGhost(e){const t=$('#tableCards');if(t.querySelector(`[data-player-id="${e.playerId}"]`))return;const d=document.createElement('div');d.className='played-card ghost-card card-commit';d.dataset.playerId=e.playerId;d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-back-face"><img src="/assets/card_back.webp" alt="verdeckte Karte"></div></div><div class="who">${escapeHtml(e.name)}</div>`;t.append(d);const source=e.playerId===myId?document.querySelector('.hand-card[data-pending-play="1"]'):document.querySelector(`.opponent[data-player-id="${e.playerId}"] .back-fan`);if(source){const sr=source.getBoundingClientRect(),tr=d.getBoundingClientRect();const clone=document.createElement('img');clone.src='/assets/card_back.webp';clone.className='flying-card';clone.style.left=`${sr.left+sr.width/2-40}px`;clone.style.top=`${sr.top+sr.height/2-56}px`;document.body.append(clone);d.style.opacity='0';requestAnimationFrame(()=>{clone.style.transform=`translate(${tr.left+tr.width/2-(sr.left+sr.width/2)}px,${tr.top+tr.height/2-(sr.top+sr.height/2)}px) rotate(${e.playerId===myId?-10:10}deg) scale(.9)`;clone.style.opacity='.25'});setTimeout(()=>{clone.remove();d.style.opacity='1';playSfx('landen',{gain:.82,cooldown:70})},560)}playSfx('ausspielen',{gain:.9,cooldown:80})}
+function addCommitGhost(e){const t=$('#tableCards');if(t.querySelector(`[data-player-id="${e.playerId}"]`))return;const d=document.createElement('div');d.className='played-card ghost-card card-commit';d.dataset.playerId=e.playerId;d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-back-face"><img src="/assets/card_back.webp" alt="verdeckte Karte"></div></div><div class="who">${escapeHtml(e.name)}</div>`;t.append(d);const source=e.playerId===myId?document.querySelector('.hand-card[data-pending-play="1"]'):document.querySelector(`.opponent[data-player-id="${e.playerId}"] .back-fan`);if(source){const sr=source.getBoundingClientRect(),tr=d.getBoundingClientRect();const clone=document.createElement('img');clone.src='/assets/card_back.webp';clone.className='flying-card';clone.style.left=`${sr.left+sr.width/2-40}px`;clone.style.top=`${sr.top+sr.height/2-56}px`;document.body.append(clone);d.style.opacity='0';requestAnimationFrame(()=>{clone.style.transform=`translate(${tr.left+tr.width/2-(sr.left+sr.width/2)}px,${tr.top+tr.height/2-(sr.top+sr.height/2)}px) rotate(${e.playerId===myId?-10:10}deg) scale(.9)`;clone.style.opacity='.25'});setTimeout(()=>{
+    clone.remove();
+    if(d.isConnected&&d.classList.contains('ghost-card')){
+      d.style.opacity='1';playSfx('landen',{gain:.82,cooldown:70});
+    }else if(d.isConnected)d.style.opacity='';
+  },560)}playSfx('ausspielen',{gain:.9,cooldown:80})}
 function revealCards(e){
   if(state&&Number.isInteger(e.round)&&e.round!==state.round)return; // Ignore old reveal packets.
+  document.querySelectorAll('.flying-card').forEach(el=>el.remove());
   lastReveal=e.entries;const t=$('#tableCards');
   e.entries.forEach((x,i)=>{
     let d=t.querySelector(`[data-player-id="${x.pid}"]`);
     if(!d){d=document.createElement('div');t.append(d)}
-    d.className='played-card reveal-flip'+((x.skipped||x.forcedLose)?' skipped-visible':'');d.dataset.playerId=x.pid;d.style.animationDelay=`${i*.07}s`;
+    d.className='played-card reveal-flip'+((x.skipped||x.forcedLose)?' skipped-visible':'');d.dataset.playerId=x.pid;d.style.opacity='';d.style.animationDelay=`${i*.07}s`;
     const value=x.skipped?'⏸ AUSSETZEN':x.forcedLose?'✖ VERLIERT':`${x.value}${x.bonus?` (+${x.bonus})`:''}`;
     d.innerHTML=`<div class="card-flip-inner"><div class="card-face card-front-face"><img src="${x.card.image}" alt="${escapeHtml(x.card.name)}"><span class="value">${value}</span></div></div><div class="who">${escapeHtml(x.name)}</div>`;bindCardInspector(d,x.card);
   });
@@ -1695,6 +1705,12 @@ socket.on('lossStreakReward',e=>{
 socket.on('hydraStreakReward',e=>{
   toast('🐲 '+(e?.name||'Ein Spieler')+' bekommt nach 5 Runden ohne Sieg die Hydra!');
   if(state)renderGame();
+});
+socket.on('luckStreakReward',e=>{
+  toast('🍀 '+(e?.name||'Ein Spieler')+' erhält nach 6 verlorenen Runden einen Glücksstern!');
+});
+socket.on('luckStreakRewardPrivate',e=>{
+  if(e?.card)toast('🍀 Dein Glücksstern ist auf der Hand! Aktiviere 50% Glücksbonus beim Nachziehen.');
 });
 socket.on('hydraStreakRewardPrivate',e=>{
   toast('🐲 5 Runden ohne Sieg: Du erhältst automatisch HYDRA!');
@@ -2024,6 +2040,7 @@ socket.on('roundSync',e=>{
 socket.on('roundIntro',showRoundIntro);
 socket.on('roundStart',e=>{
   if(state&&e.round&&e.round<state.round)return;
+  clearTable();$('#diceZone').innerHTML='';
   stopCountdown();
   closeCategoryCrystal();
   const cat=$('#category');
@@ -2041,7 +2058,7 @@ socket.on('roundStart',e=>{
 });
 socket.on('cardCommitted',addCommitGhost);
 socket.on('playerSelected',()=>beep(300,.05));
-socket.on('cardAccepted',()=>{$('#roundMessage').textContent='✓ Deine Karte liegt! Spezialkarten kannst du noch bis zur Aufdeckung ausspielen.';beep(360,.06)});
+socket.on('cardAccepted',()=>{$('#roundMessage').textContent='✓ Deine Karte liegt! Wenn alle gelegt haben, werden die Karten sofort aufgedeckt.';beep(360,.06)});
 socket.on('reveal',revealCards);
 function noiseBurst(duration=.15,gain=.06,when=0){
   const ctx=ensureAudio.ctx;if(!ctx)return;const len=Math.max(1,Math.floor(ctx.sampleRate*duration));const b=ctx.createBuffer(1,len,ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);const src=ctx.createBufferSource(),g=ctx.createGain();src.buffer=b;g.gain.value=gain*battleSoundVolume;src.connect(g);g.connect(ctx.destination);src.start(ctx.currentTime+when);
@@ -2420,7 +2437,13 @@ socket.on('roomState',s=>{
   if(s?.phase&&!['result','reveal','tie','gameover'].includes(s.phase))
     clearCharacterFinisherFrames();
 });
-socket.on('roundIntro',clearCharacterFinisherFrames);
+socket.on('roundIntro',()=>{
+  clearCharacterFinisherFrames();clearTable();
+  const overlay=$('#finisherOverlay');
+  if(overlay){overlay.className='finisher-overlay';overlay.setAttribute('aria-hidden','true');}
+  document.body.classList.remove('finisher-running');
+  lastVictoryAnimationEndsAt=0;
+});
 socket.on('rewardChoiceWaiting',clearCharacterFinisherFrames);
 // Intentionally do not remove victory frames on gameOver; wait until their local playback ends.
 function runLittleGemVictory(e){
@@ -2496,6 +2519,12 @@ socket.on('roundWinner',e=>{
         : `🏆 ${e.winnerName} gewinnt die Runde!`;
     roundWinnerDisplayTimer=null;
   },Math.max((e.finisher==='little_gem_crystal_ash'||e.finisher==='mimsch_magic_claws')?0:4400,Number(e.duration)||4200)+200);
+  // Gem and Mimsch use separate full-screen frames. Clean up cards once
+  // their official finisher duration ends, without waiting for the next round.
+  if(!e.demo)setTimeout(()=>{
+    if(state?.round===round&&['result','rewardchoice','gameover'].includes(state?.phase))
+      clearTable();
+  },Math.max(4400,Number(e.duration)||4200)+160);
   const entries=(e.revealEntries||[]).length?e.revealEntries:lastReveal;
   const littleGemWon=e.finisher==='little_gem_crystal_ash'||entries.some(x=>x.pid===e.winnerId&&x.card?.id==='n95');
   if(littleGemWon){runLittleGemVictory(e);return;}
@@ -2596,12 +2625,37 @@ socket.on('artifactFound',e=>{
 socket.on('rewardPhaseDone',e=>{
   $('#roundMessage').textContent=`✨ ${e.winnerName} hat seine Belohnung gezogen.`;
 });
+socket.on('roundRecovered',()=>{
+  clearTable();clearCharacterFinisherFrames();
+  document.querySelectorAll('.flying-card').forEach(el=>el.remove());
+  lastVictoryAnimationEndsAt=0;
+  cancelRoundWinnerBanner();
+  closeSpecialReadPrompt();closeRewardChoice();hideTieAlert();
+  const overlay=$('#finisherOverlay');
+  if(overlay){overlay.className='finisher-overlay';overlay.setAttribute('aria-hidden','true');}
+  document.body.classList.remove('finisher-running');
+  $('#diceZone').innerHTML='';
+  toast('🛟 Runde wiederhergestellt – es geht weiter!');
+});
 socket.on('roundTimeout',e=>{stopSelectionTimer();clearTable();const names=(e.penalties||[]).map(x=>x.name).join(', ');$('#roundMessage').textContent=names?`⏱ ${names} verliert eine Strafkarte. Neue Kategorie!`:'⏱ Zeit abgelaufen – neue Kategorie!';toast(e.message||'Zeit abgelaufen.');beep(190,.20)});
 socket.on('tieStart',e=>setupDice(e,'Gleichstand! Würfeln entscheidet.'));
 socket.on('tieAgain',e=>setupDice(e,'Schon wieder Gleichstand – nochmal würfeln!'));
 socket.on('diceRolling',startDiceAnimation);
 socket.on('diceRolled',stopDiceAnimation);
+function showMatchWinStatistics(e){
+  const panel=document.getElementById('matchWinStats');
+  if(!panel)return;
+  const players=[...(e?.counts||[])].sort((a,b)=>(b.roundWins||0)-(a.roundWins||0)||String(a.name).localeCompare(String(b.name),'de'));
+  panel.innerHTML='<h4>🏆 Rundensiege dieser Partie</h4>'+
+    players.map((p,i)=>`<div class="match-win-row ${p.id===e.winnerId?'champion':''}">
+      <span>${p.id===e.winnerId?'👑':(i===0?'🥇':(i===1?'🥈':'🃏'))}</span>
+      <span class="match-win-name">${escapeHtml(p.name)}</span>
+      <strong class="match-win-count">${Number(p.roundWins)||0} ${Number(p.roundWins)===1?'Sieg':'Siege'}</strong>
+    </div>`).join('')+
+    '<p class="match-win-description">Gezählt werden gewertete Rundensiege dieser Partie, unabhängig von den Artefakten.</p>';
+}
 socket.on('gameOver',e=>{
+  showMatchWinStatistics(e);
   if(endGameDialogWaitTimer){clearTimeout(endGameDialogWaitTimer);endGameDialogWaitTimer=null;}
   const showAfterAnimations=()=>{
     endGameDialogWaitTimer=null;
