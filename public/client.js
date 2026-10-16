@@ -387,8 +387,31 @@ function syncCategoryFromState(){
 
 
 function accessoryDecor(key){const a=ITEMS[key]||ITEMS.changeling;return `<span class="decor decor-${key}" aria-hidden="true"><img src="${a.image}" alt=""></span>`;}
+// These four exclusive frames depend on the displayed player name, not on
+// random rewards, unlocks or whichever ordinary frame is equipped.
+// This one renderer is used by lobby, arena, opponents and name previews.
+const NAMED_EXCLUSIVE_FRAMES=Object.freeze({
+  'mimsch':'/assets/frames/mimsch_exklusiv.png',
+  'chandra':'/assets/frames/chandra_exklusiv.png',
+  'little gem':'/assets/frames/little_gem_exklusiv.png',
+  'inpherno':'/assets/frames/inpherno_exklusiv.png'
+});
+function forcedFrameForName(name){
+  const canonical=String(name||'').trim().replace(/\\s+/g,' ').toLocaleLowerCase('de');
+  return NAMED_EXCLUSIVE_FRAMES[canonical]||'';
+}
 function frameDecor(key){if(!key||!FRAMES[key])return '';return `<img class="name-frame" src="${FRAMES[key].image}" alt="" aria-hidden="true">`;}
-function nameplateHTML(name,key,small=false,frame=selectedFrame){const safe=escapeHtml(name||'Spieler');const k=ITEMS[key]?key:'changeling';const f=FRAMES[frame]?frame:'';return `<div class="nameplate ${small?'nameplate-small':''} ${k} ${f?'has-frame frame-'+f:''}">${f?frameDecor(f):''}${accessoryDecor(k)}<span class="nameplate-text">${safe}</span></div>`;}
+function nameplateHTML(name,key,small=false,frame=selectedFrame){
+  const safe=escapeHtml(name||'Spieler'),k=ITEMS[key]?key:'changeling';
+  const f=FRAMES[frame]?frame:'',forced=forcedFrameForName(name);
+  // Until the images are uploaded, a missing exclusive file falls back to
+  // the player's usual unlocked frame rather than a broken-image icon.
+  const fallback=f?FRAMES[f].image:'';
+  const art=forced
+    ? `<img class="name-frame exclusive-name-frame" src="${forced}" alt="" aria-hidden="true" onerror="this.onerror=null;${fallback?`this.src='${fallback}'`:'this.remove()'}">`
+    : (f?frameDecor(f):'');
+  return `<div class="nameplate ${small?'nameplate-small':''} ${k} ${(f||forced)?'has-frame ':''}${f?'frame-'+f:''} ${forced?'exclusive-frame':''}">${art}${accessoryDecor(k)}<span class="nameplate-text">${safe}</span></div>`;
+}
 function updateHomePreview(){ $('#homeNamePreview').innerHTML=selectedAccessory?nameplateHTML(playerName.value.trim()||'Little Gem',selectedAccessory,false,selectedFrame):''; }
 playerName.addEventListener('input',updateHomePreview);
 
