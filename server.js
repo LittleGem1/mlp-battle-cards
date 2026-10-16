@@ -2452,7 +2452,7 @@ io.on('connection',socket=>{
       socket.data.accountSession=result.sessionToken;
       socket.data.accountUsername=result.username;
       const gift=testerGiftForUsername(result.username);
-      socket.emit('accountData',{...result,giftOffer:gift&&!result.profile.testerGiftClaimed?gift:null});
+      socket.emit('accountData',{...result,giftOffer:gift&&(!result.profile.testerGiftClaimed||result.profile.testerGiftUpdatePending)?gift:null});
     }catch(err){replyAccountError(err)}finally{socket.data.accountBusy=false}
   }
   socket.on('accountRecoveryGenerate',async ()=>{

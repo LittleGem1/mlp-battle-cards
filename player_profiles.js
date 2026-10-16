@@ -29,6 +29,12 @@ const TESTER_GIFTS=Object.freeze({
   littlegem:{key:'little_gem',frame:'tester_little_gem',item:'tester_little_gem_angel'},
   inpherno:{key:'inpherno',frame:'tester_inpherno',item:'tester_inpherno_weapon'}
 });
+// Revision 2 shows the improved frames once more to the two affected testers.
+const TESTER_GIFT_REVISION=Object.freeze({chandra:2,inpherno:2});
+const pendingTesterGiftRevision=row=>{
+  const key=row?.tester_gift_key||'';
+  return !!key && Number.isInteger(TESTER_GIFT_REVISION[key]) && TESTER_GIFT_REVISION[key]>Number(row?.tester_gift_version||0);
+};
 const testerGiftForUsername=username=>TESTER_GIFTS[String(username||'').toLowerCase().replace(/[\s._-]+/g,'')]||null;
 const itemSet = new Set(ITEMS), frameSet = new Set(FRAMES);
 const uniqueKnown = (value, set, starters) => [
@@ -45,6 +51,7 @@ function asProfile(row) {
     accessory:items.includes(row.selected_item)?row.selected_item:'changeling',
     frame:row.selected_frame==='' || frames.includes(row.selected_frame)?row.selected_frame:'sakura',
     testerGiftClaimed:!!row.tester_gift_key,
+    testerGiftUpdatePending:pendingTesterGiftRevision(row),
     testerGiftKey:row.tester_gift_key||'',
     title:row.tester_gift_key==='chandra' && row.selected_title==='die Königin'?'die Königin':''
   };
@@ -67,6 +74,7 @@ function createProfileStore(databaseUrl) {
       )`);
       await pool.query("ALTER TABLE mlp_player_profiles ADD COLUMN IF NOT EXISTS tester_gift_key TEXT NOT NULL DEFAULT ''");
       await pool.query("ALTER TABLE mlp_player_profiles ADD COLUMN IF NOT EXISTS selected_title TEXT NOT NULL DEFAULT ''");
+      await pool.query("ALTER TABLE mlp_player_profiles ADD COLUMN IF NOT EXISTS tester_gift_version INTEGER NOT NULL DEFAULT 0");
       await pool.query(`CREATE TABLE IF NOT EXISTS mlp_cosmetic_wins (
         profile_id TEXT NOT NULL REFERENCES mlp_player_profiles(id) ON DELETE CASCADE,
         match_id TEXT NOT NULL,
@@ -147,18 +155,20 @@ function createProfileStore(databaseUrl) {
       if(!result.rowCount)throw new Error('Spieleraccount nicht gefunden.');
       const row=result.rows[0],gift=testerGiftForUsername(row.username_norm);
       if(!gift)throw new Error('Dieses Geschenk ist nur für die vier Probetester.');
-      if(row.tester_gift_key){
-        if(row.tester_gift_key!==gift.key)throw new Error('Dieses Geschenk wurde bereits vergeben.');
+      if(row.tester_gift_key && row.tester_gift_key!==gift.key)
+        throw new Error('Dieses Geschenk wurde bereits vergeben.');
+      const revision=TESTER_GIFT_REVISION[gift.key]||1;
+      if(row.tester_gift_key && !pendingTesterGiftRevision(row)){
         await client.query('COMMIT');
         return {gift,profile:asProfile(row),alreadyClaimed:true};
       }
       const items=uniqueKnown([...row.item_unlocks,gift.item],itemSet,STARTER_ITEMS);
       const frames=uniqueKnown([...row.frame_unlocks,gift.frame],frameSet,STARTER_FRAMES);
       const updated=await client.query(`UPDATE mlp_player_profiles
-        SET item_unlocks=$2::jsonb,frame_unlocks=$3::jsonb,tester_gift_key=$4,updated_at=now()
-        WHERE id=$1 RETURNING *`,[profileId,JSON.stringify(items),JSON.stringify(frames),gift.key]);
+        SET item_unlocks=$2::jsonb,frame_unlocks=$3::jsonb,tester_gift_key=$4,tester_gift_version=$5,updated_at=now()
+        WHERE id=$1 RETURNING *`,[profileId,JSON.stringify(items),JSON.stringify(frames),gift.key,revision]);
       await client.query('COMMIT');
-      return {gift,profile:asProfile(updated.rows[0]),alreadyClaimed:false};
+      return {gift,profile:asProfile(updated.rows[0]),alreadyClaimed:false,reissued:!!row.tester_gift_key};
     }catch(e){await client.query('ROLLBACK');throw e}finally{client.release()}
   }
   async function awardWin(profileId,matchId){
@@ -331,7 +341,7 @@ function createProfileStore(databaseUrl) {
     await init();
     const {norm}=normalizeUsername(username);
     validatePassword(password);
-    const result=await pool.query(`SELECT a.*,p.item_unlocks,p.frame_unlocks,p.selected_item,p.selected_frame,p.tester_gift_key,p.selected_title
+    const result=await pool.query(`SELECT a.*,p.item_unlocks,p.frame_unlocks,p.selected_item,p.selected_frame,p.tester_gift_key,p.selected_title,p.tester_gift_version
       FROM mlp_player_accounts a JOIN mlp_player_profiles p ON p.id=a.profile_id
       WHERE a.username_norm=$1`,[norm]);
     if(!result.rowCount){
@@ -352,7 +362,7 @@ function createProfileStore(databaseUrl) {
   async function accountResume({sessionToken}={}){
     await init();
     if(!validToken(sessionToken))throw new Error('Deine Anmeldung ist abgelaufen. Bitte erneut anmelden.');
-    const result=await pool.query(`SELECT a.username_display,a.profile_id,p.item_unlocks,p.frame_unlocks,p.selected_item,p.selected_frame,p.tester_gift_key,p.selected_title
+    const result=await pool.query(`SELECT a.username_display,a.profile_id,p.item_unlocks,p.frame_unlocks,p.selected_item,p.selected_frame,p.tester_gift_key,p.selected_title,p.tester_gift_version
       FROM mlp_player_sessions s JOIN mlp_player_accounts a ON a.id=s.account_id
       JOIN mlp_player_profiles p ON p.id=a.profile_id
       WHERE s.session_hash=$1 AND s.expires_at>now()`,[digest(sessionToken.toLowerCase())]);

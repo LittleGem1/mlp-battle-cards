@@ -64,8 +64,8 @@ const FRAMES={
 Object.assign(FRAMES,{
   tester_mimsch:{image:'/assets/frames/tester_mimsch.webp',name:'Mimsch – Magie'},
   tester_little_gem:{image:'/assets/frames/tester_little_gem.webp',name:'Little Gem – Kristallflügel'},
-  tester_inpherno:{image:'/assets/frames/tester_inpherno.webp',name:'Inpherno – Schwarze Klinge'},
-  tester_chandra:{image:'/assets/frames/tester_chandra.webp',name:'Chandra – Silberkrone'}
+  tester_inpherno:{image:'/assets/frames/tester_inpherno.webp?v=hq-gift-20261017',name:'Inpherno – Schwarze Klinge'},
+  tester_chandra:{image:'/assets/frames/tester_chandra.webp?v=hq-gift-20261017',name:'Chandra – Silberkrone'}
 });
 const FRAME_KEYS=Object.keys(FRAMES);
 const STARTER_FRAME_KEYS=['sakura','candy'];

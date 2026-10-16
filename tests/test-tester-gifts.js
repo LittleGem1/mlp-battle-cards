@@ -30,6 +30,24 @@ assert.equal(claimed.accessory,'tester_chandra_crown');
 assert.equal(claimed.frame,'tester_chandra');
 const falseTitle=asProfile({...claimed,tester_gift_key:'mimsch'});
 assert.equal(falseTitle.title,'');
+// Only Chandra and Inpherno get the HQ replacement present again in the gift popup.
+for(const who of ['chandra','inpherno']){
+  const old=asProfile({
+    id:'p',item_unlocks:[],frame_unlocks:[],selected_item:'changeling',selected_frame:'sakura',
+    tester_gift_key:who,tester_gift_version:0
+  });
+  assert.equal(old.testerGiftClaimed,true);
+  assert.equal(old.testerGiftUpdatePending,true);
+  const newGift=asProfile({...old, tester_gift_key:who,tester_gift_version:2});
+  assert.equal(newGift.testerGiftUpdatePending,false);
+}
+for(const who of ['mimsch','little_gem']){
+  const unchanged=asProfile({
+    id:'p',item_unlocks:[],frame_unlocks:[],selected_item:'changeling',selected_frame:'sakura',
+    tester_gift_key:who,tester_gift_version:0
+  });
+  assert.equal(unchanged.testerGiftUpdatePending,false);
+}
 console.log('✓ Probetester-Geschenke: Namen, Berechtigungen, Inventar, Titel');
 
 

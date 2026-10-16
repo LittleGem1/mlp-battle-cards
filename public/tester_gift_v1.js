@@ -3,9 +3,9 @@
   'use strict';
   const gifts={
     mimsch:{label:'Mimsch',item:'Mimschs Magie-Krallen',frame:'Mimsch – Magie',art:'/assets/name_items/tester_mimsch_claws.webp',frameArt:'/assets/frames/tester_mimsch.webp'},
-    chandra:{label:'Chandra',item:'Silberkrone + Titel „die Königin“',frame:'Chandra – Silberkrone',art:'/assets/name_items/tester_chandra_crown.webp',frameArt:'/assets/frames/tester_chandra.webp'},
+    chandra:{label:'Chandra',item:'Silberkrone + Titel „die Königin“',frame:'Chandra – Silberkrone',art:'/assets/name_items/tester_chandra_crown.webp',frameArt:'/assets/frames/tester_chandra.webp?v=hq-gift-20261017'},
     little_gem:{label:'Little Gem',item:'Kristallkette mit Engelsanhänger',frame:'Little Gem – Kristallflügel',art:'/assets/name_items/tester_little_gem_angel.webp',frameArt:'/assets/frames/tester_little_gem.webp'},
-    inpherno:{label:'Inpherno',item:'His Special Weapon',frame:'Inpherno – Schwarze Klinge',art:'/assets/name_items/tester_inpherno_weapon.webp',frameArt:'/assets/frames/tester_inpherno.webp'}
+    inpherno:{label:'Inpherno',item:'His Special Weapon',frame:'Inpherno – Schwarze Klinge',art:'/assets/name_items/tester_inpherno_weapon.webp',frameArt:'/assets/frames/tester_inpherno.webp?v=hq-gift-20261017'}
   };
   let overlay=null,opening=false,closed=false;
   function closeGift(){
@@ -53,7 +53,7 @@
   socket.on('accountData',data=>{
     closed=false;
     overlay?.remove();overlay=null;opening=false;
-    if(data?.giftOffer&&data.profile?.testerGiftClaimed===false){
+    if(data?.giftOffer&&(data.profile?.testerGiftClaimed===false||data.profile?.testerGiftUpdatePending===true)){
       requestAnimationFrame(()=>{if(!closed)display(data.giftOffer)});
     }
   });
