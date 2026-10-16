@@ -31,3 +31,18 @@ assert.equal(claimed.frame,'tester_chandra');
 const falseTitle=asProfile({...claimed,tester_gift_key:'mimsch'});
 assert.equal(falseTitle.title,'');
 console.log('✓ Probetester-Geschenke: Namen, Berechtigungen, Inventar, Titel');
+
+
+const fs=require('node:fs');
+const path=require('node:path');
+// Previous mistaken name-forced frames must never be served or applied again.
+const obsolete=['mimsch_exklusiv.webp','chandra_exklusiv.webp','little_gem_exklusiv.webp','inpherno_exklusiv.webp'];
+for(const old of obsolete){
+  assert.equal(fs.existsSync(path.join(__dirname,'../public/assets/frames',old)),false,
+    'Old wrongly assigned frame must be absent: '+old);
+}
+const client=fs.readFileSync(path.join(__dirname,'../public/client.js'),'utf8');
+assert.equal(client.includes('NAMED_EXCLUSIVE_FRAMES'),false);
+assert.equal(client.includes('forcedFrameForName'),false);
+for(const old of obsolete)assert.equal(client.includes(old),false);
+console.log('✓ Alte falsche Namensrahmen restlos aus der aktuellen Spielversion entfernt');
