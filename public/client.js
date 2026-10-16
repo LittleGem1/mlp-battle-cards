@@ -397,7 +397,7 @@ const NAMED_EXCLUSIVE_FRAMES=Object.freeze({
   'inpherno':'/assets/frames/inpherno_exklusiv.png'
 });
 function forcedFrameForName(name){
-  const canonical=String(name||'').trim().replace(/\\s+/g,' ').toLocaleLowerCase('de');
+  const canonical=String(name||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('de');
   return NAMED_EXCLUSIVE_FRAMES[canonical]||'';
 }
 function frameDecor(key){if(!key||!FRAMES[key])return '';return `<img class="name-frame" src="${FRAMES[key].image}" alt="" aria-hidden="true">`;}
