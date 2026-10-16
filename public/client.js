@@ -50,11 +50,23 @@ const NEW_ITEMS={
   grimoire:{image:'/assets/name_items/grimoire.webp',name:'Magisches Grimoire',desc:'Ein leuchtendes Zauberbuch.'},
   friendship_crown:{image:'/assets/name_items/friendship_crown.webp',name:'Freundschaftskrone',desc:'Eine goldene Krone mit Kristall.'}
 };
-const ITEMS={...ACCESSORIES,...Object.fromEntries(Object.entries(NEW_ITEMS).map(([k,v])=>['item_'+k,v]))};
+const TESTER_ITEMS={
+  tester_mimsch_claws:{image:'/assets/name_items/tester_mimsch_claws.webp',name:'Mimschs Magie-Krallen',desc:'Leuchtende grüne Magie-Krallen.'},
+  tester_little_gem_angel:{image:'/assets/name_items/tester_little_gem_angel.webp',name:'Little Gems Kristallengel',desc:'Kristallkette mit Engelsanhänger aus Kristall.'},
+  tester_inpherno_weapon:{image:'/assets/name_items/tester_inpherno_weapon.webp',name:'Inphernos Spezialwaffe',desc:'Seine dunkle Klinge mit violetter Magie.'},
+  tester_chandra_crown:{image:'/assets/name_items/tester_chandra_crown.webp',name:'Chandras Silberkrone',desc:'Silberne Krone mit blauen Kristallen.'}
+};
+const ITEMS={...ACCESSORIES,...Object.fromEntries(Object.entries(NEW_ITEMS).map(([k,v])=>['item_'+k,v])),...TESTER_ITEMS};
 const ITEM_KEYS=Object.keys(ITEMS);
 const FRAMES={
   crystal_heart:{image:'/assets/frames/crystal_heart.webp',name:'Kristallherz'},night_star:{image:'/assets/frames/night_star.webp',name:'Nachtstern'},candy:{image:'/assets/frames/candy.webp',name:'Süßigkeiten'},butterfly:{image:'/assets/frames/butterfly.webp',name:'Schmetterling'},steampunk:{image:'/assets/frames/steampunk.webp',name:'Steampunk'},royal_crown:{image:'/assets/frames/royal_crown.webp',name:'Königskrone'},changeling:{image:'/assets/frames/changeling.webp',name:'Changeling'},rainbow_cloud:{image:'/assets/frames/rainbow_cloud.webp',name:'Regenbogenwolke'},star_book:{image:'/assets/frames/star_book.webp',name:'Sternenbuch'},rose_gold:{image:'/assets/frames/rose_gold.webp',name:'Rosengold'},iridescent:{image:'/assets/frames/iridescent.webp',name:'Irisierend'},honey:{image:'/assets/frames/honey.webp',name:'Honig'},pearl_sea:{image:'/assets/frames/pearl_sea.webp',name:'Perlmutt'},sakura:{image:'/assets/frames/sakura.webp',name:'Rosa Blümchen'},alchemy:{image:'/assets/frames/alchemy.webp',name:'Alchemie'},ice:{image:'/assets/frames/ice.webp',name:'Eiskristall'},forest:{image:'/assets/frames/forest.webp',name:'Zauberwald'},neon:{image:'/assets/frames/neon.webp',name:'Neonkristall'},velvet:{image:'/assets/frames/velvet.webp',name:'Roter Samt'},moon:{image:'/assets/frames/moon.webp',name:'Mondhimmel'}
 };
+Object.assign(FRAMES,{
+  tester_mimsch:{image:'/assets/frames/tester_mimsch.webp',name:'Mimsch – Magie'},
+  tester_little_gem:{image:'/assets/frames/tester_little_gem.webp',name:'Little Gem – Kristallflügel'},
+  tester_inpherno:{image:'/assets/frames/tester_inpherno.webp',name:'Inpherno – Schwarze Klinge'},
+  tester_chandra:{image:'/assets/frames/tester_chandra.webp',name:'Chandra – Silberkrone'}
+});
 const FRAME_KEYS=Object.keys(FRAMES);
 const STARTER_FRAME_KEYS=['sakura','candy'];
 
@@ -77,6 +89,7 @@ let frameUnlocks=JSON.parse(localStorage.getItem('cc_frame_unlocks')||'[]').filt
 for(const f of STARTER_FRAME_KEYS){if(!frameUnlocks.includes(f))frameUnlocks.push(f);}
 let starterFrameChosen=localStorage.getItem('cc_starter_frame_chosen')==='1';
 let cosmeticTab='items';
+let selectedTitle='';
 let unlocks=JSON.parse(localStorage.getItem('cc_unlocks')||'[]').filter(x=>ITEMS[x]);
 
 for(const starter of STARTER_KEYS){
@@ -387,32 +400,15 @@ function syncCategoryFromState(){
 
 
 function accessoryDecor(key){const a=ITEMS[key]||ITEMS.changeling;return `<span class="decor decor-${key}" aria-hidden="true"><img src="${a.image}" alt=""></span>`;}
-// These four exclusive frames depend on the displayed player name, not on
-// random rewards, unlocks or whichever ordinary frame is equipped.
-// This one renderer is used by lobby, arena, opponents and name previews.
-const NAMED_EXCLUSIVE_FRAMES=Object.freeze({
-  'mimsch':'/assets/frames/mimsch_exklusiv.webp',
-  'chandra':'/assets/frames/chandra_exklusiv.webp',
-  'little gem':'/assets/frames/little_gem_exklusiv.webp',
-  'inpherno':'/assets/frames/inpherno_exklusiv.webp'
-});
-function forcedFrameForName(name){
-  const canonical=String(name||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('de');
-  return NAMED_EXCLUSIVE_FRAMES[canonical]||'';
-}
+// Exclusive tester cosmetics are earned through an account gift, never forced by name.
 function frameDecor(key){if(!key||!FRAMES[key])return '';return `<img class="name-frame" src="${FRAMES[key].image}" alt="" aria-hidden="true">`;}
-function nameplateHTML(name,key,small=false,frame=selectedFrame){
+function nameplateHTML(name,key,small=false,frame=selectedFrame,title=''){
   const safe=escapeHtml(name||'Spieler'),k=ITEMS[key]?key:'changeling';
-  const f=FRAMES[frame]?frame:'',forced=forcedFrameForName(name);
-  // Until the images are uploaded, a missing exclusive file falls back to
-  // the player's usual unlocked frame rather than a broken-image icon.
-  const fallback=f?FRAMES[f].image:'';
-  const art=forced
-    ? `<img class="name-frame exclusive-name-frame" src="${forced}" alt="" aria-hidden="true" onerror="this.onerror=null;${fallback?`this.src='${fallback}'`:'this.remove()'}">`
-    : (f?frameDecor(f):'');
-  return `<div class="nameplate ${small?'nameplate-small':''} ${k} ${(f||forced)?'has-frame ':''}${f&&!forced?'frame-'+f:''} ${forced?'exclusive-frame':''}">${art}${accessoryDecor(k)}<span class="nameplate-text">${safe}</span></div>`;
+  const f=FRAMES[frame]?frame:'';
+  const titleMarkup=title==='die Königin'?'<span class="tester-royal-title">die Königin</span>':'';
+  return `<div class="nameplate ${small?'nameplate-small':''} ${k} ${f?'has-frame frame-'+f:''}">${f?frameDecor(f):''}${accessoryDecor(k)}<span class="nameplate-text">${safe}${titleMarkup}</span></div>`;
 }
-function updateHomePreview(){ $('#homeNamePreview').innerHTML=selectedAccessory?nameplateHTML(playerName.value.trim()||'Little Gem',selectedAccessory,false,selectedFrame):''; }
+function updateHomePreview(){ $('#homeNamePreview').innerHTML=selectedAccessory?nameplateHTML(playerName.value.trim()||'Little Gem',selectedAccessory,false,selectedFrame,selectedTitle):''; }
 playerName.addEventListener('input',updateHomePreview);
 
 $$('.starter-grid button').forEach(b=>b.addEventListener('click',()=>{
@@ -450,10 +446,22 @@ function canUpdateCosmeticsInRoom(){
 function renderAccessoryGrid(){
   const g=$('#accessoryGrid');g.innerHTML='';
   $('#collectionCount').textContent=`Items ${unlocks.length}/${ITEM_KEYS.length} · Rahmen ${frameUnlocks.length}/${FRAME_KEYS.length}`;
-  $('#accessoryPreview').innerHTML=nameplateHTML(playerName.value.trim()||'Little Gem',selectedAccessory,false,selectedFrame);
+  $('#accessoryPreview').innerHTML=nameplateHTML(playerName.value.trim()||'Little Gem',selectedAccessory,false,selectedFrame,selectedTitle);
   $('#itemsTabBtn')?.classList.toggle('active',cosmeticTab==='items');$('#framesTabBtn')?.classList.toggle('active',cosmeticTab==='frames');
   if(cosmeticTab==='items'){
     for(const key of ITEM_KEYS){const a=ITEMS[key],unlocked=unlocks.includes(key);const b=document.createElement('button');b.type='button';b.className=`accessory-card ${unlocked?'unlocked':'locked'} ${key===selectedAccessory?'selected':''}`;b.innerHTML=unlocked?`<span class="item-art"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${key===selectedAccessory?'Ausgewählt':'Freigeschaltet'}</span>`:`<span class="mystery-art">?</span><strong>Unentdecktes Item</strong><span class="status">🔒 Durch einen Sieg entdecken</span>`;b.disabled=!unlocked;if(unlocked)b.addEventListener('click',()=>{selectedAccessory=key;localStorage.setItem('cc_accessory',key);persistProfileCosmetics();renderAccessoryGrid();updateHomePreview();if(canUpdateCosmeticsInRoom())socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame});if(state&&currentScreen==='game'&&state.phase!=='lobby')renderGame()});g.append(b)}
+    if(unlocks.includes('tester_chandra_crown')){
+      const titleCard=document.createElement('button');
+      titleCard.type='button';
+      titleCard.className='accessory-card unlocked '+(selectedTitle?'selected':'');
+      titleCard.innerHTML='<span class="item-art" style="font-size:32px">♛</span><strong>Titel: die Königin</strong><span class="status">'+(selectedTitle?'Titel aktiv':'Titel anlegen')+'</span>';
+      titleCard.addEventListener('click',()=>{
+        selectedTitle=selectedTitle?'':'die Königin';
+        persistProfileCosmetics();renderAccessoryGrid();updateHomePreview();
+        if(state&&currentScreen==='game'&&state.phase!=='lobby')renderGame();
+      });
+      g.append(titleCard);
+    }
   }else{
     const none=document.createElement('button');none.type='button';none.className=`accessory-card unlocked ${!selectedFrame?'selected':''}`;none.innerHTML='<span class="mystery-art">∅</span><strong>Kein Rahmen</strong><span class="status">Immer verfügbar</span>';none.addEventListener('click',()=>{selectedFrame='';localStorage.setItem('cc_frame','');persistProfileCosmetics();renderAccessoryGrid();updateHomePreview();if(canUpdateCosmeticsInRoom())socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame})});g.append(none);
     for(const key of FRAME_KEYS){const a=FRAMES[key],unlocked=frameUnlocks.includes(key);const b=document.createElement('button');b.type='button';b.className=`accessory-card frame-card ${unlocked?'unlocked':'locked'} ${key===selectedFrame?'selected':''}`;b.innerHTML=unlocked?`<span class="frame-thumb"><img src="${a.image}" alt=""></span><strong>${a.name}</strong><span class="status">${key===selectedFrame?'Ausgewählt':'Freigeschaltet'}</span>`:`<span class="mystery-art">?</span><strong>Unentdeckter Rahmen</strong><span class="status">🔒 Durch einen Sieg entdecken</span>`;b.disabled=!unlocked;if(unlocked)b.addEventListener('click',()=>{selectedFrame=key;localStorage.setItem('cc_frame',key);persistProfileCosmetics();renderAccessoryGrid();updateHomePreview();if(canUpdateCosmeticsInRoom())socket.emit('setCosmetics',{accessory:selectedAccessory,frame:selectedFrame});if(state&&currentScreen==='game'&&state.phase!=='lobby')renderGame()});g.append(b)}
@@ -568,7 +576,7 @@ $('#arenaReadyLeaveBtn')?.addEventListener('click',()=>leaveRoomNow());
 
 // Accounts: username/password backed by Postgres; the browser retains only a session token.
 function persistProfileCosmetics(){
-  if(profileReady&&socket.connected)socket.emit('profileChoose',{accessory:selectedAccessory,frame:selectedFrame});
+  if(profileReady&&socket.connected)socket.emit('profileChoose',{accessory:selectedAccessory,frame:selectedFrame,title:selectedTitle});
 }
 function updateProfileStatus(status){
   const el=document.getElementById('mlpProfileStatus');if(el)el.textContent=status;
@@ -580,6 +588,7 @@ function applyServerProfile(profile){
   frameUnlocks=[...new Set([...(profile.frames||[]),...STARTER_FRAME_KEYS])].filter(x=>FRAMES[x]);
   selectedAccessory=ITEMS[profile.accessory]&&unlocks.includes(profile.accessory)?profile.accessory:'changeling';
   selectedFrame=profile.frame===''?'':(FRAMES[profile.frame]&&frameUnlocks.includes(profile.frame)?profile.frame:'sakura');
+  selectedTitle=profile.title==='die Königin'&&profile.testerGiftKey==='chandra'?'die Königin':'';
   localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));
   localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));
   localStorage.setItem('cc_accessory',selectedAccessory);
@@ -745,7 +754,7 @@ socket.on('accountData',data=>{
   showAccountUI();
   if(data.recoveryCode)revealRecoveryCode(data.recoveryCode);
   updateProfileStatus('✅ Account gespeichert – Rahmen & Items werden automatisch synchronisiert.');
-  if(!starterFrameChosen)maybeShowStarterFrame();
+  if(!data.giftOffer&&!starterFrameChosen)maybeShowStarterFrame();
 });
 socket.on('accountLoggedOut',()=>{
   profileReady=false;accountSession='';accountUsername='';
@@ -754,7 +763,7 @@ socket.on('accountLoggedOut',()=>{
   localStorage.removeItem('cc_room_resume_v1');
   // Do not accidentally carry unlocks from one signed-out user to another.
   unlocks=[...STARTER_KEYS];frameUnlocks=[...STARTER_FRAME_KEYS];
-  selectedAccessory='changeling';selectedFrame='sakura';
+  selectedAccessory='changeling';selectedFrame='sakura';selectedTitle='';
   localStorage.setItem('cc_unlocks',JSON.stringify(unlocks));
   localStorage.setItem('cc_frame_unlocks',JSON.stringify(frameUnlocks));
   localStorage.setItem('cc_accessory',selectedAccessory);
@@ -773,7 +782,7 @@ socket.on('accountError',message=>{
 });
 socket.on('profileData',data=>{
   // After a win the server sends the up-to-date inventory, never a new account.
-  if(data?.profile){applyServerProfile(data.profile);if(!starterFrameChosen)maybeShowStarterFrame();}
+  if(data?.profile){applyServerProfile(data.profile);if(!starterFrameChosen&&!document.querySelector('.tester-gift-overlay'))maybeShowStarterFrame();}
 });
 socket.on('profileSaved',()=>{updateProfileStatus('✅ Account gespeichert · Änderungen synchronisiert');});
 socket.on('profileSaveError',message=>{
@@ -801,7 +810,7 @@ function renderPostGameLobby(){
     const back=backSet.has(p.id);
     const status=back?'✓ In der Lobby':'⏳ Noch im Ergebnis';
     return `<div class="lobby-player postgame-lobby-player ${back?'is-back':'is-waiting'}">
-      ${nameplateHTML(p.name,p.accessory,true,p.frame)}
+      ${nameplateHTML(p.name,p.accessory,true,p.frame,p.title)}
       <div class="postgame-player-status">${status}</div>
     </div>`;
   }).join('');
@@ -916,7 +925,7 @@ function renderArenaReady(){
   const readyCount=state.players.filter(p=>p.ready).length;
   $('#arenaRoomCode').textContent=state.code;
   ensureRoomCodeCopyControl($('#arenaRoomCode'),state.code);
-  $('#arenaReadyPlayers').innerHTML=state.players.map(p=>`<div class="arena-ready-player ${p.ready?'is-ready':''} ${p.isBot?'bot-player':''}">${nameplateHTML(p.name,p.accessory,true,p.frame)}<span>${p.isBot?'🤖 BOT · ':p.id===state.hostId?'👑 HOST · ':''}${p.ready?'✅ BEREIT':'⏳ WARTET'}</span></div>`).join('');
+  $('#arenaReadyPlayers').innerHTML=state.players.map(p=>`<div class="arena-ready-player ${p.ready?'is-ready':''} ${p.isBot?'bot-player':''}">${nameplateHTML(p.name,p.accessory,true,p.frame,p.title)}<span>${p.isBot?'🤖 BOT · ':p.id===state.hostId?'👑 HOST · ':''}${p.ready?'✅ BEREIT':'⏳ WARTET'}</span></div>`).join('');
   const btn=$('#arenaReadyBtn');
   btn.disabled=state.players.length<2;
   btn.textContent=me?.ready?`↩ Nicht bereit (${readyCount}/${state.players.length})`:`✅ Bereit (${readyCount}/${state.players.length})`;
@@ -994,7 +1003,7 @@ function renderLobby(){
   $('#lobbyCode').textContent=state.code;
   ensureRoomCodeCopyControl($('#lobbyCode'),state.code);
   $('#lobbyHint').textContent=state.players.length<2?'Schick den Code an deine Mitspieler.':'Der Host startet die Kampf-Vorbereitung. Bereit wird erst in der Arena geklickt.';
-  $('#lobbyPlayers').innerHTML=state.players.map(p=>`<div class="lobby-player ${p.isBot?'bot-player':''}">${nameplateHTML(p.name,p.accessory,true,p.frame)}<div>${p.isBot?'🤖 COMPUTER':(p.id===state.hostId?'Host 👑':'Mitspieler')}</div></div>`).join('');
+  $('#lobbyPlayers').innerHTML=state.players.map(p=>`<div class="lobby-player ${p.isBot?'bot-player':''}">${nameplateHTML(p.name,p.accessory,true,p.frame,p.title)}<div>${p.isBot?'🤖 COMPUTER':(p.id===state.hostId?'Host 👑':'Mitspieler')}</div></div>`).join('');
   const start=$('#startBtn');
   start.style.display=myId===state.hostId?'inline-block':'none';
   start.disabled=state.players.length<2;
@@ -1180,7 +1189,7 @@ function renderGame(){
   $('#selfCount').textContent=me.surrendered?'🏳 Aufgegeben · Zuschauer':`${me.handCount} Karten · ${me.artifactCount||0}/3 Artefakte`;
   renderArtifactShelf(me);
   updateDeckHud();
-  $('#selfNameplate').innerHTML=nameplateHTML(me.name,me.accessory,true,me.frame);
+  $('#selfNameplate').innerHTML=nameplateHTML(me.name,me.accessory,true,me.frame,me.title);
 
   const others=state.players.filter(p=>p.id!==myId);
   const opponentHtml=others.length?others.map((p,i)=>{
@@ -1189,7 +1198,7 @@ function renderGame(){
       : (p.selected?'<span class="selected-mark">✓ Karte liegt</span>':`<span>${p.isBot?'🤖 überlegt …':'wartet …'}</span>`);
     const fan=p.surrendered?'':`<div class="back-fan">${Array.from({length:Math.min(p.handCount,7)},(_,j)=>`<img src="/assets/card_back.webp" alt="verdeckte Karte" style="transform:rotate(${(j-3)*5}deg)">`).join('')}</div>`;
     return `<div class="opponent ${p.selected?'has-selected':''} ${p.surrendered?'is-surrendered':''}" style="${arenaSeatStyle(i,others.length)}" data-player-id="${p.id}">
-      ${nameplateHTML(p.name,p.accessory,true,p.frame)}
+      ${nameplateHTML(p.name,p.accessory,true,p.frame,p.title)}
       ${p.isBot?'<div class="bot-badge">🤖 BOT</div>':''}<div class="opponent-meta"><span>${p.surrendered?'Zuschauer':`${p.handCount} Karten`}</span>${status}</div>${artifactSlotsHTML(p.artifacts)}
       ${fan}
     </div>`;

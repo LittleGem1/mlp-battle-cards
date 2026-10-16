@@ -4,7 +4,7 @@ const express = require('express');
 const { Server } = require('socket.io');
 const { normal, specials, artifacts, byId } = require('./cards');
 const crypto = require('crypto');
-const {createProfileStore} = require('./player_profiles');
+const {createProfileStore,testerGiftForUsername} = require('./player_profiles');
 const profileStore = createProfileStore(process.env.DATABASE_URL);
 if(!profileStore) console.warn('[MLP] Kein DATABASE_URL: Rahmen/Items sind NICHT dauerhaft gespeichert. Bitte Datenbank verbinden!');
 
@@ -162,7 +162,7 @@ function publicState(r){
     arenaId:r.arenaId||null,arenaSelection:r.arenaSelection||'random',postGameReady:[...(r.postGameReady||new Set())],
     deckCounts:{normal:(r.normalDeck||[]).length,reward:(r.rewardDeck||[]).length},
     players:roomPlayers(r).map(p=>({
-      id:p.id,name:p.name,accessory:p.accessory,frame:p.frame||'',handCount:p.hand.length,
+      id:p.id,name:p.name,accessory:p.accessory,frame:p.frame||'',title:p.title||'',handCount:p.hand.length,
       normalCount:p.hand.filter(id=>byId[id]?.type==='normal').length,
       specialCount:p.hand.filter(id=>byId[id]?.type==='special').length,
       artifacts:(p.artifacts||[]).map(id=>byId[id]).filter(Boolean),
@@ -2450,7 +2450,9 @@ io.on('connection',socket=>{
       const result=await profileStore[type](args);
       socket.data.profile=result.profile;
       socket.data.accountSession=result.sessionToken;
-      socket.emit('accountData',result);
+      socket.data.accountUsername=result.username;
+      const gift=testerGiftForUsername(result.username);
+      socket.emit('accountData',{...result,giftOffer:gift&&!result.profile.testerGiftClaimed?gift:null});
     }catch(err){replyAccountError(err)}finally{socket.data.accountBusy=false}
   }
   socket.on('accountRecoveryGenerate',async ()=>{
@@ -2471,19 +2473,35 @@ io.on('connection',socket=>{
     try{if(profileStore&&socket.data.accountSession)
       await profileStore.accountLogout({sessionToken:socket.data.accountSession});
     }catch(err){return replyAccountError(err)}
-    socket.data.profile=null;socket.data.accountSession=null;
+    socket.data.profile=null;socket.data.accountSession=null;socket.data.accountUsername=null;
     socket.emit('accountLoggedOut');
   });
-  socket.on('profileChoose',async ({accessory,frame}={})=>{
+  socket.on('testerGiftClaim',async ()=>{
+    if(!profileStore||!socket.data.profile||!socket.data.accountSession)return socket.emit('testerGiftError','Bitte zuerst bei deinem Spieleraccount anmelden.');
+    if(socket.data.testerGiftBusy)return;
+    socket.data.testerGiftBusy=true;
+    try{
+      const result=await profileStore.claimTesterGift(socket.data.profile.id);
+      socket.data.profile=result.profile;
+      socket.emit('testerGiftGranted',result);
+      socket.emit('profileData',{profile:result.profile});
+    }catch(err){
+      console.error('[MLP] Probetester-Geschenk:',err);
+      socket.emit('testerGiftError','Das Geschenk konnte nicht gespeichert werden. Bitte erneut versuchen.');
+    }finally{socket.data.testerGiftBusy=false}
+  });
+  socket.on('profileChoose',async ({accessory,frame,title}={})=>{
     if(!profileStore||!socket.data.profile)return socket.emit('profileSaveError','Profil nicht verbunden; Auswahl nicht dauerhaft gespeichert.');
     const a=String(accessory||'changeling'),f=String(frame??'');
+    const t=title===undefined?(socket.data.profile.title||''):String(title);
     // Reflect locally only after checking ownership.
-    const owns=socket.data.profile.items.includes(a)&&(f===''||socket.data.profile.frames.includes(f));
+    const owns=socket.data.profile.items.includes(a)&&(f===''||socket.data.profile.frames.includes(f))
+      && (t===''||(t==='die Königin'&&socket.data.profile.testerGiftKey==='chandra'));
     if(!owns)return socket.emit('profileSaveError','Dieses Item oder dieser Rahmen ist noch gesperrt.');
     try{
-      const result=await profileStore.choose(socket.data.profile.id,a,f);
+      const result=await profileStore.choose(socket.data.profile.id,a,f,t);
       // V19: Erst nach erfolgreichem Speichern als ausgerüstet bestätigen.
-      socket.data.profile={...socket.data.profile,accessory:result.accessory,frame:result.frame};
+      socket.data.profile={...socket.data.profile,accessory:result.accessory,frame:result.frame,title:result.title};
       const r=getRoom(socket),p=r?.players.get(socket.id);
       // Nur Kosmetik: Aktualisierungen sind auch im laufenden Spiel und im
       // Ergebnisbildschirm erlaubt; sie ändern keine Karten/Artefakte/Phasen.
@@ -2491,9 +2509,10 @@ io.on('connection',socket=>{
       if(p && !p.isBot){
         p.accessory=result.accessory;
         p.frame=result.frame;
+        p.title=result.title;
         sendState(r);
       }
-      socket.emit('profileSaved',{accessory:result.accessory,frame:result.frame});
+      socket.emit('profileSaved',{accessory:result.accessory,frame:result.frame,title:result.title});
     }catch(err){console.error('[MLP] Kosmetik speichern:',err);socket.emit('profileSaveError','Item-/Rahmen-Auswahl konnte nicht gespeichert werden.');}
   });
   socket.on('setSpecialReadConfirm',({enabled}={})=>{
@@ -2512,14 +2531,14 @@ io.on('connection',socket=>{
     if(profileStore&&!socket.data.profile)return socket.emit('errorMsg','Bitte zuerst dein dauerhaftes Spielerprofil laden.');
     let c;do c=code();while(rooms.has(c));
     const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',specialReadConfirm:false,category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,arenaSelection:'random',lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null,artifactRewardCooldown:0};
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),profileId:socket.data.profile?.id||null,hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),profileId:socket.data.profile?.id||null,title:socket.data.profile?.title||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     rooms.set(c,r);socket.join(c);socket.data.room=c;offerRoomTicket(socket,r,r.players.get(socket.id));sendState(r);
   });
   socket.on('createBotRoom',({name,accessory,frame})=>{
     if(profileStore&&!socket.data.profile)return socket.emit('errorMsg','Bitte zuerst dein dauerhaftes Spielerprofil laden.');
     let c;do c=code();while(rooms.has(c));
     const r={code:c,hostId:socket.id,players:new Map(),phase:'lobby',specialReadConfirm:false,category:null,categoryHistory:[],round:0,played:{},dice:{},tieIds:[],roundBuff:{},roundPlayerIds:[],roundTimer:null,selectionTimer:null,countdownTimer:null,selectionDeadline:null,countdownUntil:null,roundIntroUntil:null,arenaId:null,arenaSelection:'random',lastFinisher:null,readyLock:false,readyTimer:null,postGameReady:new Set(),forceNextCategoryDifferent:false,forcedNextCategory:null,normalDeck:[],normalDiscard:[],rewardDeck:[],rewardDiscard:[],roundFX:null,specialHistory:[],botTimers:[],pendingReward:null,rewardChoiceTimer:null,artifactRewardCooldown:0};
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),profileId:socket.data.profile?.id||null,hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),profileId:socket.data.profile?.id||null,title:socket.data.profile?.title||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     r.botCardTester=true;
     rooms.set(c,r);socket.join(c);socket.data.room=c;addBotToRoom(r);offerRoomTicket(socket,r,r.players.get(socket.id));sendState(r);
     socket.emit('notice','🤖 PonyBot wurde als Testgegner hinzugefügt.');
@@ -2539,7 +2558,7 @@ io.on('connection',socket=>{
     if(!r)return socket.emit('errorMsg','Raum nicht gefunden.');
     if(r.phase!=='lobby')return socket.emit('errorMsg','Die Partie läuft bereits.');
     if(r.players.size>=8)return socket.emit('errorMsg','Der Raum ist voll.');
-    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),profileId:socket.data.profile?.id||null,hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
+    r.players.set(socket.id,{id:socket.id,name:String(name||'Spieler').slice(0,24),accessory:(socket.data.profile?.items.includes(accessory)?accessory:(socket.data.profile?.accessory||'changeling')),frame:(frame===''||socket.data.profile?.frames.includes(frame)?frame:(socket.data.profile?.frame||'')),profileId:socket.data.profile?.id||null,title:socket.data.profile?.title||'',hand:[],artifacts:[],selected:null,lastPlayedCardId:null,ready:false,surrendered:false,specialUsed:0,specialExtra:0,pendingForcedDiscard:null});
     if(r.readyTimer){clearTimeout(r.readyTimer);r.readyTimer=null;r.readyLock=false;}
     for(const p of roomPlayers(r))p.ready=false;
     socket.join(c);socket.data.room=c;offerRoomTicket(socket,r,r.players.get(socket.id));sendState(r);

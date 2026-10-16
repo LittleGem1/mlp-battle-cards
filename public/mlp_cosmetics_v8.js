@@ -6,13 +6,13 @@
   if(window.__mlpCosmeticsV8)return;
   window.__mlpCosmeticsV8=true;
 
-  const knownItems=new Set(('changeling balloon candy crystalhorn crown halo angelwings batwings magicflames orbitcrystals bow scarf goggles gears flowercrown butterflies bandages potions collar bell cape cards techwings moon item_apple item_hourglass item_rainbow_potion item_speed_potion item_moon_potion item_sun_potion item_mirror item_storm item_grimoire item_friendship_crown').split(' '));
+  const knownItems=new Set(('changeling balloon candy crystalhorn crown halo angelwings batwings magicflames orbitcrystals bow scarf goggles gears flowercrown butterflies bandages potions collar bell cape cards techwings moon item_apple item_hourglass item_rainbow_potion item_speed_potion item_moon_potion item_sun_potion item_mirror item_storm item_grimoire item_friendship_crown tester_mimsch_claws tester_little_gem_angel tester_inpherno_weapon tester_chandra_crown').split(' '));
   const wings=new Set(['changeling','angelwings','batwings','techwings']);
   const aura=new Set(['magicflames','orbitcrystals','gears','butterflies']);
-  const head=new Set(['crystalhorn','crown','halo','flowercrown','goggles','item_friendship_crown']);
-  const left=new Set(['potions','cards']);
-  const bottom=new Set(['collar','bell']);
-  const tall=new Set(['moon','item_storm']);
+  const head=new Set(['crystalhorn','crown','halo','flowercrown','goggles','item_friendship_crown','tester_chandra_crown']);
+  const left=new Set(['potions','cards','tester_mimsch_claws']);
+  const bottom=new Set(['collar','bell','tester_little_gem_angel']);
+  const tall=new Set(['moon','item_storm','tester_inpherno_weapon']);
 
   const portrait=(key)=> {
     try {return typeof ITEMS!=='undefined' ? ITEMS[key]?.image : null;}catch{return null;}

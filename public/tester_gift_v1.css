@@ -1,0 +1,24 @@
+
+/* Einmaliges Geschenk im Hauptmenü: visuell, die Vergabe erfolgt serverseitig. */
+.tester-gift-overlay{position:fixed;inset:0;z-index:2147483200;display:grid;place-items:center;padding:18px;background:radial-gradient(circle at center,#0c2856d9,#02091cef 75%);backdrop-filter:blur(8px)}
+.tester-gift-panel{position:relative;isolation:isolate;width:min(590px,96vw);padding:25px 23px 22px;border:2px solid #a0eeff;border-radius:25px;box-shadow:0 0 32px #50acff8c,inset 0 0 25px #172b7588;background:linear-gradient(150deg,#202452,#15102b 78%);color:white;text-align:center;font-family:system-ui,sans-serif}
+.tester-gift-close{position:absolute;right:12px;top:10px;background:#ffffff25;color:#fff;border:1px solid #ffffff66;border-radius:100px;width:35px;height:35px;font-size:24px;cursor:pointer}
+.tester-gift-head{font-size:clamp(20px,4.5vw,30px);font-weight:900;line-height:1.25;text-shadow:0 0 13px #61bbff;color:#f0eaff;margin:8px 25px 12px}
+.tester-gift-intro{font-size:16px;color:#e1d7ff;margin-bottom:15px}
+.tester-gift-open{display:grid;justify-items:center;gap:7px;background:none;border:0;color:white;font:800 20px system-ui;cursor:pointer;margin:8px auto 16px;padding:5px 15px}
+.tester-gift-open:not(:disabled):hover .tester-gift-package{transform:scale(1.11) rotate(-5deg);filter:drop-shadow(0 0 22px #ffd966)}
+.tester-gift-package{display:block;font-size:clamp(85px,18vw,127px);line-height:1.15;transition:.22s;filter:drop-shadow(0 0 15px #eaaaff)}
+.tester-gift-open strong,.tester-gift-done{background:linear-gradient(115deg,#6257de,#ca65dd);padding:11px 26px;border:1px solid #e1c7ff;border-radius:13px;box-shadow:0 3px 13px #03051a9c}
+.tester-gift-tip{color:#bed0ed;font-size:13px;margin:12px 0 0}
+.tester-gift-prizes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px auto;max-width:520px}
+.tester-gift-prizes>div{min-width:0;border:1px solid #a7a2f4;border-radius:13px;background:#080d2f8e;padding:9px;display:grid;justify-items:center;gap:5px}
+.tester-gift-prizes img{width:100%;height:140px;object-fit:contain;filter:drop-shadow(0 0 6px #99bcff7a)}
+.tester-gift-prizes strong{font-size:14px;color:white}.tester-gift-prizes small{font-size:12px;color:#b6ddff}
+.tester-gift-done{cursor:pointer;color:white;font-weight:900;font-size:16px;margin:4px auto 5px}
+.tester-confetti{position:absolute;left:50%;top:48%;pointer-events:none;z-index:100;width:0;height:0}
+.tester-confetti i{position:absolute;display:block;width:8px;height:14px;border-radius:2px;animation:tester-confetti-burst 1.8s cubic-bezier(.15,.6,.4,1) var(--wait) both}
+@keyframes tester-confetti-burst{0%{opacity:1;transform:translate(0,0) rotate(0deg) scale(1)}70%{opacity:1}100%{opacity:0;transform:translate(var(--x),var(--y)) rotate(var(--rot)) scale(.4)}}
+.nameplate .tester-royal-title{display:block!important;font-size:.69em;line-height:1.15;font-weight:850;color:#e7efff;text-shadow:0 0 7px #40b9ff,0 1px 3px #06163d;letter-spacing:.02em}
+.nameplate-small .tester-royal-title{font-size:.75em}
+@media(max-width:450px){.tester-gift-prizes img{height:94px}.tester-gift-panel{padding:16px 10px}.tester-gift-prizes strong{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.tester-confetti i{animation-duration:.01ms}.tester-gift-package{transition:none}}
