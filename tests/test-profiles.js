@@ -12,7 +12,7 @@ class FakePool {
 class FakeClient {
   async query(sql,args=[]){
     const s=sql.trim();
-    if(/^(BEGIN|COMMIT|ROLLBACK|CREATE TABLE|CREATE INDEX)/.test(s))return {rowCount:0,rows:[]};
+    if(/^(BEGIN|COMMIT|ROLLBACK|CREATE TABLE|CREATE INDEX|ALTER TABLE)/.test(s))return {rowCount:0,rows:[]};
     if(s.startsWith('INSERT INTO mlp_player_profiles')){
       const row={id:args[0],item_unlocks:JSON.parse(args[1]),frame_unlocks:JSON.parse(args[2]),selected_item:args[3],selected_frame:args[4]};
       states.set(row.id,row);return {rowCount:1,rows:[clone(row)]};
@@ -71,8 +71,10 @@ const {createProfileStore,ITEMS,FRAMES,STARTER_ITEMS,STARTER_FRAMES}=require(pat
   assert.ok(first.reward.kind==='item'?fresh.profile.items.includes(first.reward.key):fresh.profile.frames.includes(first.reward.key));
   for(let i=0;i<100;i++)await db.awardWin(a.profile.id,'match_extra_'+i);
   const all=await db.login({token:a.token});
-  assert.equal(all.profile.items.length,ITEMS.length);
-  assert.equal(all.profile.frames.length,FRAMES.length);
+  assert.equal(all.profile.items.length,ITEMS.filter(k=>!k.startsWith('tester_')).length);
+  assert.equal(all.profile.frames.length,FRAMES.filter(k=>!k.startsWith('tester_')).length);
+  assert.ok(!all.profile.items.some(k=>k.startsWith('tester_')),'Tester-Items sind kein Zufallsgewinn');
+  assert.ok(!all.profile.frames.some(k=>k.startsWith('tester_')),'Tester-Rahmen sind kein Zufallsgewinn');
   assert.equal((await db.awardWin(a.profile.id,'match_complete_999')).reward.kind,'complete');
   // A new account must never get arbitrary localStorage unlocks supplied by a client.
   const forged=await db.accountRegister({username:'NeueSpielerin',password:'sicheres-demo-passwort',legacy:{items:ITEMS,frames:FRAMES,accessory:'crown',frame:'ice'}});
