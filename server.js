@@ -891,6 +891,40 @@ function forceDiscardChoice(r,target,sourceName){
 }
 
 
+
+// Starlight: the caster chooses exactly one discard for EACH eligible opponent.
+// Choices are resolved server-side and never expose the hand to other players.
+function nextStarlightDiscardChoice(socket,r,caster){
+  const pending=socket?.data?.pendingSpecial;
+  if(!pending||pending.action!=='starlight-cards'||pending.room!==r.code||pending.round!==r.round)return;
+  while(pending.remainingTargetIds.length){
+    const target=r.players.get(pending.remainingTargetIds.shift());
+    if(!target||target.id===caster.id||target.surrendered||!target.hand.length)continue;
+    if(isProtectedFrom(r,target.id,caster.id)){
+      io.to(r.code).emit('specialBlocked',{targetId:target.id,targetName:target.name,sourceName:'Starlight Glimmer'});
+      continue;
+    }
+    pending.targetId=target.id;
+    pending.choices=[...target.hand];
+    socket.emit('specialCardRequest',{
+      title:`Starlight Glimmer: Welche Karte muss ${target.name} ablegen?`,
+      cards:target.hand.map(id=>byId[id]).filter(Boolean)
+    });
+    return;
+  }
+  socket.data.pendingSpecial=null;
+  socket.emit('specialDone',{text:'Starlight Glimmer: Du hast für jeden erreichbaren Gegner eine Handkarte zum Ablegen bestimmt.'});
+  sendState(r);
+  maybeEvaluate(r);
+}
+function startStarlightDiscardChoices(socket,r,caster,source){
+  socket.data.pendingSpecial={
+    room:r.code,round:r.round,action:'starlight-cards',sourceCardId:source.id,
+    remainingTargetIds:roomPlayers(r).filter(t=>t.id!==caster.id&&!t.surrendered).map(t=>t.id)
+  };
+  nextStarlightDiscardChoice(socket,r,caster);
+}
+
 function botTargets(r,p,mode='any'){
   return availableTargets(r,p,mode).filter(t=>!t.surrendered);
 }
@@ -1042,9 +1076,15 @@ function botApplySpecial(r,p,c){
     if(!r.discordPending)r.discordPending={casterId:p.id};
   }else if(effect==='starlight'){
     for(const t of roomPlayers(r)){
-      if(t.id===p.id||t.surrendered)continue;
+      if(t.id===p.id||t.surrendered||!t.hand.length)continue;
       if(isProtectedFrom(r,t.id,p.id)){io.to(r.code).emit('specialBlocked',{targetId:t.id,targetName:t.name,sourceName:'Starlight Glimmer'});continue;}
-      forceDiscardChoice(r,t,'Starlight Glimmer');
+      // Bot chooses each opponent's strongest normal card in the active category.
+      const pool=t.hand.filter(id=>byId[id]?.type==='normal');
+      const candidates=pool.length?pool:t.hand;
+      const id=[...candidates].sort((a,b)=>(byId[b]?.[r.category]||0)-(byId[a]?.[r.category]||0))[0];
+      if(!id)continue;
+      t.hand.splice(t.hand.indexOf(id),1);discardCard(r,id);
+      emitImpact(r,'discard',t.id,`${t.name} muss ${byId[id]?.name||'eine Karte'} ablegen.`);
     }
   }else if(effect==='trixie'){
     clearNegativeEffects(r,p.id);io.to(r.code).emit('specialCleansed',{playerId:p.id,name:p.name});
@@ -2892,12 +2932,7 @@ io.on('connection',socket=>{
       socket.emit('specialDone',{text:playedCardIds(r.played?.[p.id]).length?'Discord wartet, bis alle Spieler gelegt haben.':'Discord aktiviert! Du MUSST noch eine normale Karte legen. Erst danach beginnt das Chaos.'});
       if(!playedCardIds(r.played?.[p.id]).length)socket.emit('discordNormalRequired',{message:'🙃 Discord: Du musst noch eine normale Karte ausspielen!'});
     }else if(effect==='starlight'){
-      for(const t of roomPlayers(r)){
-        if(t.id===p.id||t.surrendered)continue;
-        if(isProtectedFrom(r,t.id,p.id)){io.to(r.code).emit('specialBlocked',{targetId:t.id,targetName:t.name,sourceName:'Starlight Glimmer'});continue;}
-        forceDiscardChoice(r,t,'Starlight Glimmer');
-      }
-      socket.emit('specialDone',{text:'Alle Gegner müssen 1 Handkarte ablegen.'});
+      startStarlightDiscardChoices(socket,r,p,source);
     }else if(effect==='trixie'){
       clearNegativeEffects(r,p.id);
       socket.emit('specialDone',{text:'Trixie hebt die negativen Spezialeffekte auf dir auf.'});
@@ -3087,6 +3122,27 @@ io.on('connection',socket=>{
       sendState(r);
       // Falls dies das dritte unterschiedliche Artefakt war, ist der Sieg verdient.
       gameOverIfNeeded(r);
+      return;
+    }
+
+    if(action==='starlight-cards'){
+      const target=r.players.get(pending.targetId);
+      if(!target||target.surrendered||!pending.choices?.includes(cardId)||!target.hand.includes(cardId)){
+        socket.emit('errorMsg','Diese Karte ist nicht mehr verfügbar. Wähle eine andere.');
+        if(!target||target.surrendered||!target.hand.length){
+          pending.targetId=null;
+          nextStarlightDiscardChoice(socket,r,p);
+        }else{
+          pending.choices=[...target.hand];
+          socket.emit('specialCardRequest',{title:`Starlight Glimmer: Welche Karte muss ${target.name} ablegen?`,cards:target.hand.map(id=>byId[id]).filter(Boolean)});
+        }
+        return;
+      }
+      target.hand.splice(target.hand.indexOf(cardId),1);
+      discardCard(r,cardId);
+      emitImpact(r,'discard',target.id,`${target.name} muss ${byId[cardId]?.name||'eine Karte'} ablegen.`);
+      sendState(r);
+      nextStarlightDiscardChoice(socket,r,p);
       return;
     }
 
