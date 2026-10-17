@@ -1231,6 +1231,13 @@ function openCardInspect(card){
   const face=document.querySelector('#cardInspectCard .card-inspect-front');
   if(face){
     face.querySelector('.trixie-art-effect')?.remove();
+    face.querySelector('.starlight-art-effect')?.remove();
+    if(card.effect==='starlight'){
+      const description=document.createElement('div');
+      description.className='starlight-art-effect starlight-inspect-effect';
+      description.textContent='✦ Gleichschaltung: Du bestimmst bei JEDEM Gegner einzeln 1 Handkarte, die er ablegen muss.';
+      face.append(description);
+    }
     if(card.effect==='trixie'){
       const description=document.createElement('div');description.className='trixie-art-effect trixie-inspect-effect';
       description.textContent='🎩 Hebt alle negativen gegnerischen Spezialeffekte auf dir in dieser Runde auf.';
@@ -1308,6 +1315,13 @@ function buildHandCard(c,me,normals,blockedId){
   el.className=`hand-card ${c.type==='special'?`special effect-${c.effect||'generic'}`:''} ${blocked?'recently-played disabled':''} ${newlyDrawn.has(c.id)?'drawing-in':''}`;
   el.dataset.cardId=c.id;
   const img=document.createElement('img');img.src=c.image;img.alt=c.name;img.loading='eager';img.addEventListener('error',()=>{img.src=(c.type==='special'||c.type==='artifact')?'/assets/special_back_gold.png':'/assets/card_back.webp';el.classList.add('missing-art')},{once:true});el.append(img);
+  if(c.effect==='starlight'){
+    const rule=document.createElement('div');
+    rule.className='starlight-art-effect';
+    rule.textContent='✦ Für jeden Gegner einzeln 1 Handkarte zum Ablegen bestimmen.';
+    rule.title=c.text||'';
+    el.append(rule);
+  }
   if(c.effect==='trixie'){
     // Her effect is printed visually OVER the card illustration as well as
     // in the ordinary special text strip and enlarged 360° card viewer.
