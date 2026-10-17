@@ -30,7 +30,7 @@ const TESTER_GIFTS=Object.freeze({
   inpherno:{key:'inpherno',frame:'tester_inpherno',item:'tester_inpherno_weapon'}
 });
 // Revision 2 shows the improved frames once more to the two affected testers.
-const TESTER_GIFT_REVISION=Object.freeze({chandra:2,inpherno:2});
+const TESTER_GIFT_REVISION=Object.freeze({chandra:2,little_gem:2,inpherno:2});
 const pendingTesterGiftRevision=row=>{
   const key=row?.tester_gift_key||'';
   return !!key && Number.isInteger(TESTER_GIFT_REVISION[key]) && TESTER_GIFT_REVISION[key]>Number(row?.tester_gift_version||0);

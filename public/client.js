@@ -52,7 +52,7 @@ const NEW_ITEMS={
 };
 const TESTER_ITEMS={
   tester_mimsch_claws:{image:'/assets/name_items/tester_mimsch_claws.webp',name:'Mimschs Magie-Krallen',desc:'Leuchtende grüne Magie-Krallen.'},
-  tester_little_gem_angel:{image:'/assets/name_items/tester_little_gem_angel.webp',name:'Little Gems Kristallengel',desc:'Kristallkette mit Engelsanhänger aus Kristall.'},
+  tester_little_gem_angel:{image:'/assets/name_items/tester_little_gem_crystal_necklace.webp?v=little-gem-gift-v2-20261017',name:'Little Gems Kristallkette',desc:'Große blau-violette Kristallkette mit geflügeltem Kristallanhänger.'},
   tester_inpherno_weapon:{image:'/assets/name_items/tester_inpherno_weapon.webp',name:'Inphernos Spezialwaffe',desc:'Seine dunkle Klinge mit violetter Magie.'},
   tester_chandra_crown:{image:'/assets/name_items/tester_chandra_crown.webp',name:'Chandras Silberkrone',desc:'Silberne Krone mit blauen Kristallen.'}
 };
@@ -63,7 +63,7 @@ const FRAMES={
 };
 Object.assign(FRAMES,{
   tester_mimsch:{image:'/assets/frames/tester_mimsch.webp',name:'Mimsch – Magie'},
-  tester_little_gem:{image:'/assets/frames/tester_little_gem.webp',name:'Little Gem – Kristallflügel'},
+  tester_little_gem:{image:'/assets/frames/tester_little_gem_crystal_frame.webp?v=little-gem-gift-v2-20261017',name:'Little Gem – Kristallflügel'},
   tester_inpherno:{image:'/assets/frames/tester_inpherno.webp?v=hq-gift-20261017',name:'Inpherno – Schwarze Klinge'},
   tester_chandra:{image:'/assets/frames/tester_chandra.webp?v=hq-gift-20261017',name:'Chandra – Silberkrone'}
 });

@@ -73,6 +73,11 @@
       plate.dataset.cosmeticRenderedSmall=String(small);
       plate.dataset.cosmeticRole=role;
       setBox(plate,role,small);
+      if(key==='tester_little_gem_angel'){
+        plate.style.setProperty('--cosmetic-y',small?'94%':'95%');
+        plate.style.setProperty('--cosmetic-w',(small?86:116)+'px');
+        plate.style.setProperty('--cosmetic-h',(small?62:84)+'px');
+      }
     }
     if(!plate.classList.contains('mlp-cosmetics-fixed'))plate.classList.add('mlp-cosmetics-fixed');
     const img=plate.querySelector('.decor img');
