@@ -2688,6 +2688,8 @@ socket.on('handRefill',e=>{
 });
 socket.on('rewardDraw',e=>showRewardDraw(e));
 socket.on('artifactFound',e=>{
+  if(e.rollback){toast(`↩ ${e.playerName}: Helements-Artefakt wegen Rundenabbruch zurückgenommen.`);if(state)renderGame();return;}
+  if(!e.card)return;
   if(e.playerId===myId)toast(`💎 ${e.card.name} gefunden! ${e.collected}/${e.total} Artefakte.`);
   else toast(`💎 ${e.playerName} findet ${e.card.name}! (${e.collected}/${e.total})`);
   if(state)renderGame();
