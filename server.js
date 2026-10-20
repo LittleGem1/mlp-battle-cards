@@ -582,6 +582,13 @@ function grantHelements(r,caster){
   const card=missing[Math.floor(Math.random()*missing.length)];
   const countBefore=new Set(caster.artifacts||[]).size;
   caster.artifacts.push(card.id);
+  // Attach the permanent reward to the consumed action for an exact undo
+  // if the round is cancelled. This also works for Chrysalis copying Helements.
+  const historyEntry=[...(r.specialHistory||[])].reverse().find(entry=>
+    resolveResumedId(r,entry.playerId)===caster.id &&
+    (entry.effect==='helements'||entry.effect==='chrysalis') &&
+    !entry.grantedHelementsArtifactId);
+  if(historyEntry)historyEntry.grantedHelementsArtifactId=card.id;
   const animationPauseToken=pauseSelectionForAnimation(r,35000,{acknowledge:true});
   io.to(r.code).emit('mlpSpecialActivated',{animationPauseToken,cardId:'helements_of_armory',casterId:caster.id,playerId:caster.id,grantedArtifactName:card.name,grantedArtifactImageUrl:card.image,deckCountBefore:countBefore,deckCountAfter:countBefore+1});
   io.to(r.code).emit('artifactFound',{playerId:caster.id,playerName:caster.name,card,artifacts:caster.artifacts.map(id=>byId[id]).filter(Boolean),collected:countBefore+1,total:artifacts.length});
@@ -758,6 +765,21 @@ function refundCancelledRoundSpecials(r,reason='Runde ohne Wertung'){
     if(index<0)continue;
     r.rewardDiscard.splice(index,1);
     player.hand.push(entry.cardId);
+    if(entry.grantedHelementsArtifactId){
+      // Only reverse the artifact created by this exact play, never pre-existing
+      // artifacts or rewards obtained through a completed round.
+      const artifactIndex=player.artifacts.indexOf(entry.grantedHelementsArtifactId);
+      if(artifactIndex>=0){
+        player.artifacts.splice(artifactIndex,1);
+        io.to(r.code).emit('artifactFound',{
+          playerId:player.id,playerName:player.name,card:null,
+          artifacts:player.artifacts.map(id=>byId[id]).filter(Boolean),
+          collected:new Set(player.artifacts).size,total:artifacts.length,
+          rollback:true
+        });
+        io.to(player.id).emit('notice','↩ Helements of Armory: Das Artefakt wurde wegen des Rundenabbruchs zurückgenommen.');
+      }
+    }
     if(entry.effect==='luck')player.luckBoostActive=false;
     player.specialUsed=Math.max(0,(player.specialUsed||0)-1);
     refunded.push({playerId:player.id,card:byId[entry.cardId]});
