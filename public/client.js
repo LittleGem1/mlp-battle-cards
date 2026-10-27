@@ -62,9 +62,9 @@ const FRAMES={
   crystal_heart:{image:'/assets/frames/crystal_heart.webp',name:'Kristallherz'},night_star:{image:'/assets/frames/night_star.webp',name:'Nachtstern'},candy:{image:'/assets/frames/candy.webp',name:'Süßigkeiten'},butterfly:{image:'/assets/frames/butterfly.webp',name:'Schmetterling'},steampunk:{image:'/assets/frames/steampunk.webp',name:'Steampunk'},royal_crown:{image:'/assets/frames/royal_crown.webp',name:'Königskrone'},changeling:{image:'/assets/frames/changeling.webp',name:'Changeling'},rainbow_cloud:{image:'/assets/frames/rainbow_cloud.webp',name:'Regenbogenwolke'},star_book:{image:'/assets/frames/star_book.webp',name:'Sternenbuch'},rose_gold:{image:'/assets/frames/rose_gold.webp',name:'Rosengold'},iridescent:{image:'/assets/frames/iridescent.webp',name:'Irisierend'},honey:{image:'/assets/frames/honey.webp',name:'Honig'},pearl_sea:{image:'/assets/frames/pearl_sea.webp',name:'Perlmutt'},sakura:{image:'/assets/frames/sakura.webp',name:'Rosa Blümchen'},alchemy:{image:'/assets/frames/alchemy.webp',name:'Alchemie'},ice:{image:'/assets/frames/ice.webp',name:'Eiskristall'},forest:{image:'/assets/frames/forest.webp',name:'Zauberwald'},neon:{image:'/assets/frames/neon.webp',name:'Neonkristall'},velvet:{image:'/assets/frames/velvet.webp',name:'Roter Samt'},moon:{image:'/assets/frames/moon.webp',name:'Mondhimmel'}
 };
 Object.assign(FRAMES,{
-  tester_mimsch:{image:'/assets/frames/tester_mimsch.webp',name:'Mimsch – Magie'},
+  tester_mimsch:{image:'/assets/frames/tester_mimsch.webp?v=hq-transparent-gift-v2-20261027',name:'Mimsch – Magie'},
   tester_little_gem:{image:'/assets/frames/tester_little_gem_crystal_frame.webp?v=little-gem-gift-v2-20261017',name:'Little Gem – Kristallflügel'},
-  tester_inpherno:{image:'/assets/frames/tester_inpherno.webp?v=hq-gift-20261017',name:'Inpherno – Schwarze Klinge'},
+  tester_inpherno:{image:'/assets/frames/tester_inpherno.webp?v=hq-transparent-gift-v3-20261027',name:'Inpherno – Schwarze Klinge'},
   tester_chandra:{image:'/assets/frames/tester_chandra.webp?v=hq-gift-20261017',name:'Chandra – Silberkrone'}
 });
 const FRAME_KEYS=Object.keys(FRAMES);

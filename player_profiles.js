@@ -29,8 +29,9 @@ const TESTER_GIFTS=Object.freeze({
   littlegem:{key:'little_gem',frame:'tester_little_gem',item:'tester_little_gem_angel'},
   inpherno:{key:'inpherno',frame:'tester_inpherno',item:'tester_inpherno_weapon'}
 });
-// Revision 2 shows the improved frames once more to the two affected testers.
-const TESTER_GIFT_REVISION=Object.freeze({chandra:2,little_gem:2,inpherno:2});
+// Personal gift revisions: reissue the enhanced transparent frames to Mimsch and Inpherno.
+// Keep permanent cosmetic IDs so previously selected frames and items remain valid.
+const TESTER_GIFT_REVISION=Object.freeze({mimsch:2,chandra:2,little_gem:2,inpherno:3});
 const pendingTesterGiftRevision=row=>{
   const key=row?.tester_gift_key||'';
   return !!key && Number.isInteger(TESTER_GIFT_REVISION[key]) && TESTER_GIFT_REVISION[key]>Number(row?.tester_gift_version||0);
